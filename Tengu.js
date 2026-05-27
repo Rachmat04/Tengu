@@ -22,7 +22,7 @@ $(function () {
   mw.loader.using(["mediawiki.util", "mediawiki.api"], function () {
     // ============================================================================
     // [SECTION 00] STATE
-    // Stores runtime configurations and modal dialog initialization flags.
+    // Stores runtime configurations and modal dialogue initialisation flags.
     // ============================================================================
     let config = {};
     let inited = false;
@@ -39,7 +39,7 @@ $(function () {
             animation: tng-fadein .15s ease-out;
         }
 
-        /* --- Dialog container --- */
+        /* --- Dialogue container --- */
         .tng-dialog {
             background: #fff; color: #202122;
             border: 1px solid #a2a9b1; border-radius: 8px;
@@ -51,7 +51,7 @@ $(function () {
             animation: tng-slidein .15s ease-out;
         }
 
-        /* --- Dialog header --- */
+        /* --- Dialogue header --- */
         .tng-dialog-header {
             padding: 11px 16px;
             background: #f8f9fa; border-bottom: 1px solid #eaecf0;
@@ -68,13 +68,13 @@ $(function () {
         }
         .tng-dialog-close:hover { color: #000; }
 
-        /* --- Dialog body --- */
+        /* --- Dialogue body --- */
         .tng-dialog-body {
             padding: 16px; overflow-y: auto; flex: 1;
             display: flex; flex-direction: column; gap: 12px;
         }
 
-        /* --- Dialog footer --- */
+        /* --- Dialogue footer --- */
         .tng-dialog-footer {
             padding: 10px 14px;
             background: #f8f9fa; border-top: 1px solid #eaecf0;
@@ -219,7 +219,7 @@ $(function () {
             .tng-input:focus, .tng-select:focus { border-color: #6699ff; }
             .tng-btn-quiet { color: #eaecf0; border-color: #54595d; }
             .tng-btn-quiet:hover { background: #2a2a35; }
-            
+
             /* Dark mode for Progress Log */
             .tng-log-box { background: #2a2a2a; border-color: #54595d; color: #eaecf0; }
             .tng-log-err { color: #ff6b6b; }
@@ -229,7 +229,7 @@ $(function () {
 
     // ============================================================================
     // [SECTION 02] OVERLAY STACK
-    // Tracks active overlays and binds global escape key event listeners to dismiss dialogs.
+    // Tracks active overlays and binds global Escape key event listeners to dismiss dialogues.
     // ============================================================================
     const overlayStack = [];
     document.addEventListener(
@@ -248,8 +248,8 @@ $(function () {
     );
 
     // ============================================================================
-    // [SECTION 03] DIALOG BUILDER
-    // Utility functions to create layout layers and build primary dialog modal frames.
+    // [SECTION 03] DIALOGUE BUILDER
+    // Utility functions to create layout layers and build primary dialogue modal frames.
     // ============================================================================
     function createOverlay() {
       const overlay = document.createElement("div");
@@ -305,7 +305,7 @@ $(function () {
 
     // ============================================================================
     // [SECTION 04] DOM HELPERS
-    // Standardized DOM element generation scripts for form inputs, checkboxes, and section boxes.
+    // Standardised DOM element generation scripts for form inputs, checkboxes, and section boxes.
     // ============================================================================
     function makeRow(labelText) {
       const row = document.createElement("div");
@@ -447,9 +447,9 @@ $(function () {
           { value: "Sockpuppetry", label: "Sockpuppetry" },
           {
             value:
-              "Revoking talk page access: Inappropriate use of user talk page while blocked",
+              "Revoking talk page access: Inappropriate use of user talk page whilst blocked",
             label:
-              "Revoking talk page access: Inappropriate use of user talk page while blocked",
+              "Revoking talk page access: Inappropriate use of user talk page whilst blocked",
           },
         ],
       },
@@ -458,8 +458,8 @@ $(function () {
         items: [
           { value: "anonblock", label: "anonblock" },
           {
-            value: "anonblock (likely a school based on behavioral evidence)",
-            label: "anonblock (likely a school based on behavioral evidence)",
+            value: "anonblock (likely a school based on behavioural evidence)",
+            label: "anonblock (likely a school based on behavioural evidence)",
           },
           { value: "school block", label: "school block" },
           { value: "rangeblock", label: "rangeblock" },
@@ -613,7 +613,7 @@ $(function () {
 
     // ============================================================================
     // [SECTION 06] MAIN WORK FUNCTION
-    // Executes API orchestration loops for user blocks, rollbacks, and deletions while piping execution log messages.
+    // Executes API orchestration loops for user blocks, rollbacks, and deletions whilst piping execution log messages.
     // ============================================================================
     const work = function () {
       const api = new mw.Api();
@@ -642,11 +642,11 @@ $(function () {
       const btnClose = document.createElement("button");
       btnClose.className = "tng-btn tng-btn-primary";
       btnClose.textContent = "Close & reload";
-      btnClose.disabled = true; // Disable until everything is finished
+      btnClose.disabled = true; // Disabled until all tasks are complete
       btnClose.addEventListener("click", () => overlay.closeHandler());
       footer.appendChild(btnClose);
 
-      // Helper function to append logs
+      // Helper function to append log entries
       const addLog = (msg, isErr) => {
         const d = document.createElement("div");
         d.textContent = msg;
@@ -687,7 +687,7 @@ $(function () {
         promises.push(pBlock);
       }
 
-      // --- Fetch user contribs, then rollback / revdel / delete ---
+      // --- Fetch user contributions, then rollback / revdel / delete ---
       let untildate = new Date();
       if (config.endtime === "inf") {
         untildate = null;
@@ -789,7 +789,7 @@ $(function () {
               },
               (e) => {
                 addLog(`[ROLLBACK] Failed at ${title}: ${e}`, true);
-                // Optional: if you want revdel to run even if rollback fails, handle it here.
+                // Optional: handle revdel even if rollback fails
               },
             );
             subPromises.push(pRb);
@@ -836,7 +836,7 @@ $(function () {
     };
 
     // ============================================================================
-    // [SECTION 07] DIALOG BUILDER (INPUT CONFIG)
+    // [SECTION 07] DIALOGUE BUILDER (INPUT CONFIG)
     // Generates configuration layout panel structures, parses package parameters, and configures field states.
     // ============================================================================
     const init = function () {
@@ -845,9 +845,10 @@ $(function () {
 
       const defaultPackage = {
         tracingedits: { duration: 3600, indefregistered: true },
-        rollback: { enabled: true, bot: false, showname: true, reason: "" },
+        // CHANGE: rollback, block, and page deletion are disabled by default
+        rollback: { enabled: false, bot: false, showname: true, reason: "" },
         block: {
-          enabled: true,
+          enabled: false,
           duration: "1 day",
           indefregistered: true,
           reason: "Vandalism",
@@ -858,7 +859,7 @@ $(function () {
           mail: false,
           hidename: false,
         },
-        pagedelete: { enabled: true, reason: "Vandalism" },
+        pagedelete: { enabled: false, reason: "Vandalism" },
         revisiondelete: {
           enabled: false,
           content: true,
@@ -904,9 +905,21 @@ $(function () {
       fieldTarget.appendChild(inputUsername);
       topSection.appendChild(rowTarget);
       const { row: rowEdits, field: fieldEdits } = makeRow("Edits");
+
+      // CHANGE: expanded dropdown with granular time options
       const selEndtime = makeSelect([
         { value: "3600", label: "In the last 1 hour" },
+        { value: "7200", label: "In the last 2 hours" },
+        { value: "10800", label: "In the last 3 hours" },
+        { value: "21600", label: "In the last 6 hours" },
+        { value: "32400", label: "In the last 9 hours" },
+        { value: "43200", label: "In the last 12 hours" },
         { value: "86400", label: "In the last 1 day" },
+        { value: "172800", label: "In the last 2 days" },
+        { value: "259200", label: "In the last 3 days" },
+        { value: "604800", label: "In the last 1 week" },
+        { value: "1209600", label: "In the last 2 weeks" },
+        { value: "2592000", label: "In the last 1 month" },
         { value: "inf", label: "All edits" },
         { value: "other", label: "Other (seconds):" },
       ]);
@@ -944,11 +957,12 @@ $(function () {
       topSection.appendChild(rowSuffix);
       body.appendChild(topSection);
 
+      // CHANGE: rollback disabled by default (false)
       const {
         section: secRollback,
         sectionBody: bodyRollback,
         enableChk: chkRollback,
-      } = makeSection("Rollback", "↩️", true);
+      } = makeSection("Rollback", "↩️", false);
       const { wrap: wrapBot, chk: chkBot } = makeCheckbox(
         "Mark as bot edits",
         true,
@@ -970,16 +984,17 @@ $(function () {
       const helpRbReason = document.createElement("div");
       helpRbReason.className = "tng-help";
       helpRbReason.textContent =
-        'If set, this overrides the default rollback summary. Uncheck "Show username" to hide the username regardless.';
+        'If set, this overrides the default rollback summary. Untick "Show username" to hide the username regardless.';
       fieldRbReason.appendChild(helpRbReason);
       bodyRollback.appendChild(rowRbReason);
       body.appendChild(secRollback);
 
+      // CHANGE: block disabled by default (false)
       const {
         section: secBlock,
         sectionBody: bodyBlock,
         enableChk: chkBlock,
-      } = makeSection("Block", "🚫", true);
+      } = makeSection("Block", "🚫", false);
       const { row: rowBlockDur, field: fieldBlockDur } = makeRow("Expiration");
       const selBlockDur = makeSelect([
         { value: "1 day", label: "1 day" },
@@ -1062,11 +1077,12 @@ $(function () {
       bodyBlock.appendChild(checksBlock);
       body.appendChild(secBlock);
 
+      // CHANGE: page deletion disabled by default (false)
       const {
         section: secPagedel,
         sectionBody: bodyPagedel,
         enableChk: chkPagedel,
-      } = makeSection("Page deletion", "🗑️", true);
+      } = makeSection("Page deletion", "🗑️", false);
       const { row: rowPagedelReason, field: fieldPagedelReason } =
         makeRow("Reason");
       const selPagedelReason = makeSelect(PAGE_DELETE_REASONS);
@@ -1215,7 +1231,7 @@ $(function () {
           os: chkOversight.checked,
         };
 
-        // Close input dialog and open progress dialog
+        // Close input dialogue and open progress dialogue
         overlay.closeHandler();
         work();
       });
@@ -1361,8 +1377,9 @@ $(function () {
     // ============================================================================
     // [SECTION 08] PORTLET LINK
     // Registers the execution menu item anchor inside the site actions portal drop list.
+    // CHANGE: emoji added before label text.
     // ============================================================================
-    $(mw.util.addPortletLink("p-cactions", "#", "Tengu", "ca-tengu")).on(
+    $(mw.util.addPortletLink("p-cactions", "#", "⛩️ Tengu", "ca-tengu")).on(
       "click",
       function (e) {
         e.preventDefault();
@@ -1370,17 +1387,6 @@ $(function () {
         init();
       },
     );
-
-    // ============================================================================
-    // [SECTION 09] KEYBOARD SHORTCUT
-    // Attaches keypress listeners to run the operation workflow if the user presses Enter.
-    // ============================================================================
-    document.addEventListener("keyup", function (e) {
-      if (e.key !== "Enter") return;
-      if (!overlayStack.length) return;
-      const startBtn = document.querySelector(".tng-btn-destructive");
-      if (startBtn && !startBtn.disabled) startBtn.click();
-    });
   });
 });
 // </nowiki>
