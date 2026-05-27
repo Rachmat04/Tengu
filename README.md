@@ -4,8 +4,6 @@
 
 **Tengu** is a JavaScript moderation utility for MediaWiki-based projects. It combines several common administrator and anti-vandalism tasks into a single tool to help moderators respond more efficiently to disruptive edits and spam activity.
 
----
-
 ## Features
 
 ### Rollback
@@ -24,8 +22,6 @@ Mass-deletes pages created by a target user.
 
 Hides revision content, edit summaries, or usernames from public view.
 
----
-
 ## Purpose
 
 TENGU is designed for:
@@ -37,16 +33,12 @@ TENGU is designed for:
 
 The tool aims to reduce repetitive manual actions by combining multiple moderation utilities into one interface.
 
----
-
 ## Requirements
 
 * MediaWiki-based wiki
 * Appropriate administrator or moderator rights
 * JavaScript enabled
 * Access to the relevant MediaWiki API permissions
-
----
 
 ## Installation
 
@@ -59,8 +51,6 @@ mw.loader.load('PATH_TO_SCRIPT');
 ```
 
 Replace `PATH_TO_SCRIPT` with the location of the script on your wiki.
-
----
 
 ## Usage
 
@@ -76,8 +66,6 @@ Typical workflow:
 
 Always review actions carefully before execution.
 
----
-
 ## Original Script
 
 Based on:
@@ -86,7 +74,7 @@ Based on:
 
 Original source:
 
-* [Meta-Wiki: User:WhitePhosphorus/all-in-one](https://meta.wikimedia.org/wiki/User:WhitePhosphorus/all-in-one?utm_source=chatgpt.com)
+* [Meta-Wiki: User:WhitePhosphorus/all-in-one](https://meta.wikimedia.org/wiki/User:WhitePhosphorus/all-in-one)
 
 ## Disclaimer
 
