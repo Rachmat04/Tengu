@@ -391,8 +391,43 @@ $(function () {
 
     // ============================================================================
     // [SECTION 05] DROPDOWN LIST REASONS
-    // Houses pre-populated reason sets for page deletions and block actions.
+    // Houses pre-populated reason sets for rollbacks, page deletions, and block actions.
     // ============================================================================
+    const ROLLBACK_REASONS = [
+      { value: "", label: "Other:" },
+      { value: "Vandalism", label: "Vandalism" },
+      {
+        value: "Incorrect or unsourced information",
+        label: "Incorrect or unsourced information",
+      },
+      {
+        value: "Violations of biographies of living persons policy",
+        label: "Violations of biographies of living persons policy",
+      },
+      { value: "Copyright violations", label: "Copyright violations" },
+      {
+        value: "Promotional editing or conflict of interest",
+        label: "Promotional editing or conflict of interest",
+      },
+      {
+        value: "Technical disruption or formatting damage",
+        label: "Technical disruption or formatting damage",
+      },
+      {
+        value: "Addition of irrelevant content",
+        label: "Addition of irrelevant content",
+      },
+      {
+        value: "Changes against established consensus",
+        label: "Changes against established consensus",
+      },
+      { value: "Edit warring prevention", label: "Edit warring prevention" },
+      {
+        value: "Block evasion or sockpuppetry",
+        label: "Block evasion or sockpuppetry",
+      },
+    ];
+
     const BLOCK_REASONS = [
       { value: "", label: "Other:" },
       {
@@ -453,7 +488,9 @@ $(function () {
           },
         ],
       },
-      {
+      
+      // Temporarily hiding the following group of block reasons for further review
+      /* {
         group: "Templated reasons",
         items: [
           { value: "anonblock", label: "anonblock" },
@@ -478,7 +515,7 @@ $(function () {
           { value: "colocationwebhost", label: "colocationwebhost" },
           { value: "Oversight block", label: "Oversight block" },
         ],
-      },
+      }, */
     ];
     const PAGE_DELETE_REASONS = [
       {
@@ -619,6 +656,7 @@ $(function () {
       const api = new mw.Api();
       const promises = [];
       const stats = { block: 0, rollback: 0, revdel: 0, delete: 0, error: 0 };
+      const toolTag = " (via ⚙️ [[w:id:Pengguna:Rachmat04/Tengu.js|Tengu]])";
 
       // Build Progress UI
       const { overlay, body, footer } = createDialog({
@@ -666,7 +704,7 @@ $(function () {
           action: "block",
           user: config.username,
           expiry: config.blockDur,
-          reason: config.blockReason,
+          reason: config.blockReason + toolTag,
         };
         if (config.blockAnon) data.anononly = 1;
         if (config.blockAuto) data.autoblock = 1;
@@ -735,7 +773,7 @@ $(function () {
                     type: "revision",
                     ids: idlist,
                     hide: config.rdHides,
-                    reason: config.rdReason,
+                    reason: config.rdReason + toolTag,
                     suppress: config.os ? "yes" : "nochange",
                   })
                   .then(
@@ -757,10 +795,10 @@ $(function () {
             // Rollback first, then revdel
             const rbData = config.rollbackBot ? { markbot: 1 } : {};
             rbData.summary = config.rollbackReason
-              ? config.rollbackReason
+              ? config.rollbackReason + toolTag
               : config.rollbackShow
                 ? ""
-                : "Revert edits by <username hidden>";
+                : "Revert edits by <username hidden>" + toolTag;
 
             let pRb = api.rollback(title, config.username, rbData).then(
               () => {
@@ -773,7 +811,7 @@ $(function () {
                       type: "revision",
                       ids: idlist,
                       hide: config.rdHides,
-                      reason: config.rdReason,
+                      reason: config.rdReason + toolTag,
                       suppress: config.os ? "yes" : "nochange",
                     })
                     .then(
@@ -802,7 +840,7 @@ $(function () {
                 .postWithEditToken({
                   action: "delete",
                   title: title,
-                  reason: config.massdelReason,
+                  reason: config.massdelReason + toolTag,
                 })
                 .then(
                   () => {
@@ -845,7 +883,6 @@ $(function () {
 
       const defaultPackage = {
         tracingedits: { duration: 3600, indefregistered: true },
-        // CHANGE: rollback, block, and page deletion are disabled by default
         rollback: { enabled: false, bot: false, showname: true, reason: "" },
         block: {
           enabled: false,
@@ -865,7 +902,7 @@ $(function () {
           content: true,
           summary: true,
           username: false,
-          reason: "Blatant offensive materials",
+          reason: "Grossly insulting, degrading, or offensive material",
           oversight: false,
         },
       };
@@ -879,7 +916,6 @@ $(function () {
       ];
       const reasons = aioConf.reasons || {
         revisiondelete: [
-          "Criteria for redaction",
           "Violations of copyright policy",
           "Grossly insulting, degrading, or offensive material",
           "Serious BLP violations",
@@ -887,7 +923,7 @@ $(function () {
           "Other valid deletion under deletion policy",
           "Non-contentious housekeeping, RevDel corrections, notes, conversion",
           "Deletion mandated by a decision of the Arbitration Committee",
-          "Orphaned non-free file(s) deleted per F5",
+          "Orphaned non-free file(s) deleted",
         ],
       };
       let packages = aioConf.packages || {};
@@ -977,10 +1013,17 @@ $(function () {
       checksRollback.appendChild(wrapBot);
       checksRollback.appendChild(wrapShow);
       bodyRollback.appendChild(checksRollback);
-      const { row: rowRbReason, field: fieldRbReason } =
-        makeRow("Custom reason");
-      const inputRbReason = makeInput("Leave blank to use default summary");
-      fieldRbReason.appendChild(inputRbReason);
+
+      // CHANGE: Diubah agar menggunakan dropdown alasan kustom terdefinisi
+      const { row: rowRbReason, field: fieldRbReason } = makeRow("Reason");
+      const selRbReason = makeSelect(ROLLBACK_REASONS);
+      const inputRbReason = makeInput("Additional details / custom reason");
+      const reasonWrapRollback = document.createElement("div");
+      reasonWrapRollback.className = "tng-reason-wrap";
+      reasonWrapRollback.appendChild(selRbReason);
+      reasonWrapRollback.appendChild(inputRbReason);
+      fieldRbReason.appendChild(reasonWrapRollback);
+
       const helpRbReason = document.createElement("div");
       helpRbReason.className = "tng-help";
       helpRbReason.textContent =
@@ -1185,6 +1228,13 @@ $(function () {
         const isIP = mw.util.isIPAddress(username);
         let endtime = selEndtime.value;
         if (endtime === "other") endtime = inputEndtime.value.trim() || "3600";
+
+        function buildRollbackReason() {
+          const sel = selRbReason.value;
+          const inp = inputRbReason.value.trim();
+          if (sel && inp) return sel + ": " + inp;
+          return sel || inp;
+        }
         function buildBlockReason() {
           const sel = selBlockReason.value;
           const inp = inputBlockReason.value.trim();
@@ -1210,7 +1260,7 @@ $(function () {
           rollback: chkRollback.checked,
           rollbackBot: chkBot.checked,
           rollbackShow: chkShow.checked,
-          rollbackReason: inputRbReason.value.trim(),
+          rollbackReason: buildRollbackReason(),
           block: chkBlock.checked,
           blockDur:
             selBlockDur.value === "other"
@@ -1269,7 +1319,22 @@ $(function () {
         bodyRollback.classList.toggle("tng-hidden", !chkRollback.checked);
         chkBot.checked = !!rb.bot;
         chkShow.checked = rb.showname !== false;
-        inputRbReason.value = rb.reason || "";
+
+        const rbr = rb.reason || "";
+        let foundRbr = false;
+        for (const opt of selRbReason.options) {
+          if (opt.value === rbr) {
+            foundRbr = true;
+            break;
+          }
+        }
+        if (foundRbr) {
+          selRbReason.value = rbr;
+          inputRbReason.value = "";
+        } else {
+          selRbReason.value = "";
+          inputRbReason.value = rbr;
+        }
 
         const bl = pkg.block || {};
         chkBlock.checked = !!bl.enabled;
@@ -1377,7 +1442,6 @@ $(function () {
     // ============================================================================
     // [SECTION 08] PORTLET LINK
     // Registers the execution menu item anchor inside the site actions portal drop list.
-    // CHANGE: emoji added before label text.
     // ============================================================================
     $(mw.util.addPortletLink("p-cactions", "#", "⛩️ Tengu", "ca-tengu")).on(
       "click",
