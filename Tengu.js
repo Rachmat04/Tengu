@@ -488,7 +488,6 @@ $(function () {
           },
         ],
       },
-      
       // Temporarily hiding the following group of block reasons for further review
       /* {
         group: "Templated reasons",
@@ -911,11 +910,12 @@ $(function () {
       const aioConf = window.p4js_all_in_one;
       const suffixes = aioConf.suffixes || [
         "",
-        " (global sysop action)",
+        " (global sysops action)",
         " (stewards action)",
       ];
       const reasons = aioConf.reasons || {
         revisiondelete: [
+          "Criteria for redaction",
           "Violations of copyright policy",
           "Grossly insulting, degrading, or offensive material",
           "Serious BLP violations",
@@ -942,7 +942,6 @@ $(function () {
       topSection.appendChild(rowTarget);
       const { row: rowEdits, field: fieldEdits } = makeRow("Edits");
 
-      // CHANGE: expanded dropdown with granular time options
       const selEndtime = makeSelect([
         { value: "3600", label: "In the last 1 hour" },
         { value: "7200", label: "In the last 2 hours" },
@@ -993,7 +992,6 @@ $(function () {
       topSection.appendChild(rowSuffix);
       body.appendChild(topSection);
 
-      // CHANGE: rollback disabled by default (false)
       const {
         section: secRollback,
         sectionBody: bodyRollback,
@@ -1014,25 +1012,25 @@ $(function () {
       checksRollback.appendChild(wrapShow);
       bodyRollback.appendChild(checksRollback);
 
-      // CHANGE: Diubah agar menggunakan dropdown alasan kustom terdefinisi
       const { row: rowRbReason, field: fieldRbReason } = makeRow("Reason");
       const selRbReason = makeSelect(ROLLBACK_REASONS);
       const inputRbReason = makeInput("Additional details / custom reason");
+
       const reasonWrapRollback = document.createElement("div");
       reasonWrapRollback.className = "tng-reason-wrap";
       reasonWrapRollback.appendChild(selRbReason);
       reasonWrapRollback.appendChild(inputRbReason);
-      fieldRbReason.appendChild(reasonWrapRollback);
 
       const helpRbReason = document.createElement("div");
       helpRbReason.className = "tng-help";
       helpRbReason.textContent =
         'If set, this overrides the default rollback summary. Untick "Show username" to hide the username regardless.';
-      fieldRbReason.appendChild(helpRbReason);
+      reasonWrapRollback.appendChild(helpRbReason);
+
+      fieldRbReason.appendChild(reasonWrapRollback);
       bodyRollback.appendChild(rowRbReason);
       body.appendChild(secRollback);
 
-      // CHANGE: block disabled by default (false)
       const {
         section: secBlock,
         sectionBody: bodyBlock,
@@ -1120,7 +1118,6 @@ $(function () {
       bodyBlock.appendChild(checksBlock);
       body.appendChild(secBlock);
 
-      // CHANGE: page deletion disabled by default (false)
       const {
         section: secPagedel,
         sectionBody: bodyPagedel,
@@ -1281,7 +1278,6 @@ $(function () {
           os: chkOversight.checked,
         };
 
-        // Close input dialogue and open progress dialogue
         overlay.closeHandler();
         work();
       });
