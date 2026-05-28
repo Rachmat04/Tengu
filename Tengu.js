@@ -4,6 +4,8 @@
  * All-in-One Wiki Moderation Tool
  * ============================================================================
  *
+ * Version: 1.0.0
+ *
  * WHAT THIS DOES
  * - Rollback: reverts all recent edits by a target user
  * - Block: blocks a user or IP with configurable options
@@ -16,20 +18,19 @@
  *
  * ============================================================================
  */
-
 // <nowiki>
 $(function () {
   mw.loader.using(["mediawiki.util", "mediawiki.api"], function () {
     // ============================================================================
     // [SECTION 00] STATE
-    // Stores runtime configurations and modal dialogue initialisation flags.
+    // Stores runtime configurations and dialogue initialisation flags.
     // ============================================================================
     let config = {};
     let inited = false;
 
     // ============================================================================
     // [SECTION 01] STYLESHEET
-    // Appends custom CSS configurations for layout rendering and dark mode support.
+    // Appends customised CSS configurations for layout rendering and dark mode support.
     // ============================================================================
     mw.util.addCSS(`
         /* --- Overlay --- */
@@ -157,10 +158,11 @@ $(function () {
             display: flex; gap: 6px; align-items: center; flex-wrap: wrap;
         }
 
-        /* --- Buttons --- */
+        /* --- Buttons (Bold Styled) --- */
         .tng-btn {
             display: inline-flex; align-items: center; justify-content: center;
             padding: 5px 14px; border-radius: 4px; font-size: 0.9em;
+            font-weight: 600; /* Membuat label text button tebal/bold */
             cursor: pointer; border: 1px solid transparent;
             font-family: inherit; transition: background .12s, border-color .12s;
             white-space: nowrap;
@@ -192,9 +194,9 @@ $(function () {
             padding: 4px 0 2px; pointer-events: none;
         }
 
-        /* --- Progress Log --- */
+        /* --- Progress Log (Optimised Height) --- */
         .tng-log-box {
-            height: 250px; overflow-y: auto; font-family: monospace;
+            height: 160px; overflow-y: auto; font-family: monospace;
             font-size: 0.85em; padding: 10px; border: 1px solid #a2a9b1;
             border-radius: 4px; background: #f8f9fa; color: #202122;
         }
@@ -202,8 +204,10 @@ $(function () {
         .tng-log-succ { color: #14866d; }
 
         /* --- Animations --- */
-        @keyframes tng-fadein  { from { opacity: 0 } to { opacity: 1 } }
-        @keyframes tng-slidein { from { opacity: 0; transform: translateY(-8px) } to { opacity: 1; transform: translateY(0) } }
+        @media (prefers-reduced-motion: no-preference) {
+            @keyframes tng-fadein  { from { opacity: 0 } to { opacity: 1 } }
+            @keyframes tng-slidein { from { opacity: 0; transform: translateY(-8px) } to { opacity: 1; transform: translateY(0) } }
+        }
 
         /* --- Dark mode --- */
         @media (prefers-color-scheme: dark) {
@@ -232,6 +236,22 @@ $(function () {
     // Tracks active overlays and binds global Escape key event listeners to dismiss dialogues.
     // ============================================================================
     const overlayStack = [];
+
+    function createOverlay() {
+      const overlay = document.createElement("div");
+      overlay.className = "tng-overlay";
+      document.body.appendChild(overlay);
+
+      overlay.closeHandler = function () {
+        overlay.remove();
+        const idx = overlayStack.indexOf(overlay);
+        if (idx > -1) overlayStack.splice(idx, 1);
+      };
+
+      overlayStack.push(overlay);
+      return overlay;
+    }
+
     document.addEventListener(
       "keydown",
       function (e) {
@@ -251,19 +271,6 @@ $(function () {
     // [SECTION 03] DIALOGUE BUILDER
     // Utility functions to create layout layers and build primary dialogue modal frames.
     // ============================================================================
-    function createOverlay() {
-      const overlay = document.createElement("div");
-      overlay.className = "tng-overlay";
-      overlay.closeHandler = function () {
-        overlay.remove();
-        const idx = overlayStack.indexOf(overlay);
-        if (idx !== -1) overlayStack.splice(idx, 1);
-      };
-      document.body.appendChild(overlay);
-      overlayStack.push(overlay);
-      return overlay;
-    }
-
     function createDialog(opts) {
       const overlay = createOverlay();
       if (opts && opts.onClose) {
@@ -488,33 +495,6 @@ $(function () {
           },
         ],
       },
-      // Temporarily hiding the following group of block reasons for further review
-      /* {
-        group: "Templated reasons",
-        items: [
-          { value: "anonblock", label: "anonblock" },
-          {
-            value: "anonblock (likely a school based on behavioural evidence)",
-            label: "anonblock (likely a school based on behavioural evidence)",
-          },
-          { value: "school block", label: "school block" },
-          { value: "rangeblock", label: "rangeblock" },
-          { value: "blocked proxy", label: "blocked proxy" },
-          {
-            value:
-              "uw-upeblock (undisclosed paid editing for advertising or promotion)",
-            label:
-              "uw-upeblock (undisclosed paid editing for advertising or promotion)",
-          },
-          { value: "uw-spamblacklistblock", label: "uw-spamblacklistblock" },
-          { value: "CheckUser block", label: "CheckUser block" },
-          { value: "checkuserblock-wide", label: "checkuserblock-wide" },
-          { value: "checkuserblock-account", label: "checkuserblock-account" },
-          { value: "webhostblock", label: "webhostblock" },
-          { value: "colocationwebhost", label: "colocationwebhost" },
-          { value: "Oversight block", label: "Oversight block" },
-        ],
-      }, */
     ];
     const PAGE_DELETE_REASONS = [
       {
@@ -697,6 +677,9 @@ $(function () {
         logBox.scrollTop = logBox.scrollHeight;
       };
 
+      // Add clear visibility notice that the automated process is currently ongoing
+      addLog("⏳ Processing operations... please wait.");
+
       // --- Block ---
       if (config.block) {
         const data = {
@@ -826,7 +809,6 @@ $(function () {
               },
               (e) => {
                 addLog(`[ROLLBACK] Failed at ${title}: ${e}`, true);
-                // Optional: handle revdel even if rollback fails
               },
             );
             subPromises.push(pRb);
@@ -868,6 +850,8 @@ $(function () {
       $.when.apply($, promises).always(function () {
         const finalStatus = `<b>Status: Completed!</b><br/>Summary: <b>${stats.rollback}</b> reverted | <b>${stats.delete}</b> deleted | <b>${stats.revdel}</b> hidden | <b>${stats.error}</b> errors.`;
         statusLbl.innerHTML = finalStatus;
+        // Append explicit clarity log confirming termination of procedures
+        addLog("✅ All operations have been completed successfully.");
         btnClose.disabled = false;
       });
     };
@@ -1049,7 +1033,7 @@ $(function () {
 
       if (!packages["Edit warring or 3RR violation"]) {
         packages["Edit warring or 3RR violation"] = {
-          tracingedits: { duration: 259200, indefregistered: false }, // Last 3 days
+          tracingedits: { duration: 259200, indefregistered: false },
           rollback: {
             enabled: true,
             bot: false,
@@ -1066,7 +1050,7 @@ $(function () {
             create: false,
             talk: false,
             mail: false,
-            hidename: false, // Allow talk page for appeal
+            hidename: false,
           },
           pagedelete: { enabled: false, reason: "" },
           revisiondelete: { enabled: false },
@@ -1075,7 +1059,7 @@ $(function () {
 
       if (!packages["Mass copyright infringement"]) {
         packages["Mass copyright infringement"] = {
-          tracingedits: { duration: 2592000, indefregistered: false }, // Last 1 month
+          tracingedits: { duration: 2592000, indefregistered: false },
           rollback: {
             enabled: true,
             bot: false,
@@ -1097,7 +1081,7 @@ $(function () {
           pagedelete: {
             enabled: true,
             reason: "Unambiguous copyright infringement",
-          }, // Delete if page is 100% copy-paste
+          },
           revisiondelete: {
             enabled: true,
             content: true,
@@ -1128,7 +1112,7 @@ $(function () {
             create: true,
             talk: true,
             mail: false,
-            hidename: false, // Block talk page to stop abuse
+            hidename: false,
           },
           pagedelete: {
             enabled: true,
@@ -1224,7 +1208,7 @@ $(function () {
 
       const { row: rowRbReason, field: fieldRbReason } = makeRow("Reason");
       const selRbReason = makeSelect(ROLLBACK_REASONS);
-      const inputRbReason = makeInput("Additional details / custom reason");
+      const inputRbReason = makeInput("Additional details / customised reason");
 
       const reasonWrapRollback = document.createElement("div");
       reasonWrapRollback.className = "tng-reason-wrap";
@@ -1246,7 +1230,8 @@ $(function () {
         sectionBody: bodyBlock,
         enableChk: chkBlock,
       } = makeSection("Block", "🚫", false);
-      const { row: rowBlockDur, field: fieldBlockDur } = makeRow("Expiration");
+
+      const { row: rowBlockDur, field: fieldBlockDur } = makeRow("Expiry");
       const selBlockDur = makeSelect([
         { value: "1 day", label: "1 day" },
         { value: "31 hours", label: "31 hours" },
@@ -1423,7 +1408,24 @@ $(function () {
       btnCancel.addEventListener("click", function () {
         overlay.closeHandler();
       });
+
       const btnStart = makeBtn("Start", "destructive");
+
+      // Evaluation routine to dynamically handle the Start button state
+      function updateStartBtn() {
+        btnStart.disabled = !(
+          chkRollback.checked ||
+          chkBlock.checked ||
+          chkPagedel.checked ||
+          chkRevdel.checked
+        );
+      }
+
+      // Bind monitoring handlers to state changes of the four operational modules
+      chkRollback.addEventListener("change", updateStartBtn);
+      chkBlock.addEventListener("change", updateStartBtn);
+      chkPagedel.addEventListener("change", updateStartBtn);
+      chkRevdel.addEventListener("change", updateStartBtn);
 
       btnStart.addEventListener("click", function () {
         const username = inputUsername.value.trim();
@@ -1623,6 +1625,9 @@ $(function () {
         } else {
           inputRevdelReason.value = rdr;
         }
+
+        // Trigger dynamic enforcement check when preset package changes checkboxes
+        updateStartBtn();
       }
 
       inputUsername.addEventListener("change", function () {
@@ -1642,6 +1647,9 @@ $(function () {
       applyPackage(defaultPkgName);
       inputUsername.value = mw.config.get("wgRelevantUserName") || "";
       inputUsername.dispatchEvent(new Event("change"));
+
+      // Perform initial check on modal framework launch
+      updateStartBtn();
       inputUsername.focus();
     };
 
