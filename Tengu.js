@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * TENGU — 天狗
- * Version 1.5.2
+ * Version 1.5.3
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -14,6 +14,10 @@
  * - Page deletion: Mass-deletes pages created by a target user.
  * - Page protection: Mass-protects pages edited or created by a target user.
  * - Revision deletion: Hides revision content, summaries, or usernames.
+ *
+ * CHANGELOG v1.5.3:
+ * - Added: In-house notification style for form validation errors.
+ * - Changed: Replaced standard browser alerts with integrated dialog notifications.
  *
  * CHANGELOG v1.5.2:
  * - Added: Automated talk page notification upon account block.
@@ -80,6 +84,25 @@ $(function () {
             font-family: system-ui, -apple-system, sans-serif;
             font-size: 0.94em; overflow: hidden;
             animation: tng-slidein .15s ease-out;
+        }
+
+        /* Container must be relative to position the bubble inside */
+        .tng-input-container { position: relative; }
+        
+        /* The notification bubble styling */
+        .tng-notification {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            background: #fff0f0;
+            border: 1px solid #d33;
+            color: #b32424;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.8em;
+            margin-top: 4px;
+            z-index: 100;
+            display: none;
         }
 
         /* --- Dialogue header --- */
@@ -424,6 +447,19 @@ $(function () {
         sectionBody.classList.toggle("tng-hidden", !enableChk.checked);
       });
       return { section, sectionBody, enableChk };
+    }
+    function showNotification(parent, message) {
+      parent.classList.add("tng-input-container");
+
+      let note = parent.querySelector(".tng-notification");
+      if (!note) {
+        note = document.createElement("div");
+        note.className = "tng-notification";
+        parent.appendChild(note);
+      }
+      note.innerHTML = "⚠️ " + message;
+      note.style.display = "block";
+      return note;
     }
 
     // ============================================================================
@@ -1103,7 +1139,8 @@ $(function () {
                 action: "edit",
                 title: talkTitle,
                 appendtext: "\n\n" + notice,
-                summary: "Automated notification: Page protection notice" + toolTag,
+                summary:
+                  "Automated notification: Page protection notice" + toolTag,
                 bot: true,
               });
               addLog(`[Notify] Notification posted to: ${talkTitle}`);
@@ -1441,6 +1478,14 @@ $(function () {
       const { row: rowTarget, field: fieldTarget } = makeRow("Target");
       const inputUsername = makeInput("Username or IP (not a range)");
       fieldTarget.appendChild(inputUsername);
+
+      inputUsername.addEventListener("input", function () {
+        const existingNote = fieldTarget.querySelector(".tng-notification");
+        if (existingNote) {
+          existingNote.style.display = "none";
+        }
+      });
+
       topSection.appendChild(rowTarget);
       const { row: rowEdits, field: fieldEdits } = makeRow("Edits");
 
@@ -1826,10 +1871,15 @@ $(function () {
       chkProtect.addEventListener("change", updateStartBtn);
       chkRevdel.addEventListener("change", updateStartBtn);
 
+      // Inside the btnStart event listener
       btnStart.addEventListener("click", function () {
         const username = inputUsername.value.trim();
+        const existing = fieldTarget.querySelector(".tng-notification");
+        if (existing) existing.style.display = "none";
+
         if (!username) {
-          mw.notify("Please enter a target username or IP.", { type: "warn" });
+          showNotification(fieldTarget, "Please enter a target username.");
+          inputUsername.focus();
           return;
         }
         const suffix = selSuffix.value;
