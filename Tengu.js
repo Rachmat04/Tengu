@@ -1,25 +1,32 @@
 /**
  * ============================================================================
  * TENGU — 天狗
- * Version 1.3.0
+ * Version 1.4.0
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
  * An all-in-one moderation script for MediaWiki that streamlines user blocking,
- * rollbacks, page deletions, page protections, and revision deletions from a
- * single interface.
+ * rollbacks, page deletions, page protections, and revision deletions from a single interface.
  *
  * KEY FEATURES:
  * - Rollback: Reverts all recent edits by a target user (or via undo fallback).
  * - Block: Blocks a user or IP with configurable options and automatic expiration.
- * - Page deletion: Mass-deletes pages created by a target user with confirmation safety checks.
- * - Page protection: Mass-protects pages edited or created by a target user with confirmation safety checks.
+ * - Page deletion: Mass-deletes pages created by a target user.
+ * - Page protection: Mass-protects pages edited or created by a target user.
  * - Revision deletion: Hides revision content, summaries, or usernames.
  *
+ * CHANGELOG v1.4.0:
+ * - Added: Page protection feature with comprehensive preset reasons.
+ * - Added: Warning confirmation dialogue modal before executing deletion or protection tasks.
  * CHANGELOG v1.3.0:
- * - Added: Page protection feature to mass-protect affected pages via the API.
- * - Added: Warning confirmation prompt step for page deletion and page protection modules before tasks execute.
- * - Changed: All labels, comments, and UI interfaces updated to standardise on en-GB and sentence case rules.
+ * - Added: Preset reasons configuration array for page protection feature.
+ * CHANGELOG v1.2.0:
+ * - Fixed: API request throttling by shifting to sequential execution using native ES6 promises.
+ * - Fixed: Pagination bottlenecks by explicitly handling the query continue token.
+ * - Changed: Standardised all interface elements, logs, labels, and comments to sentence case and en-GB spelling.
+ * CHANGELOG v1.1.0:
+ * - Added: Optional undo fallback method for users without native rollback rights.
+ * - Changed: Reduced the vertical height of the progress log for better screen real-estate utilisation.
  *
  * ORIGINAL SCRIPT:
  * - Based on User:WhitePhosphorus/all-in-one
@@ -30,14 +37,14 @@
 $(function () {
   mw.loader.using(["mediawiki.util", "mediawiki.api"], function () {
     // ============================================================================
-    // [SECTION 00] STATE
+    // [Section 00] State
     // Stores runtime configurations and dialogue initialisation flags.
     // ============================================================================
     let config = {};
     let inited = false;
 
     // ============================================================================
-    // [SECTION 01] STYLESHEET
+    // [Section 01] Stylesheet
     // Appends customised CSS configurations for layout rendering and dark mode support.
     // ============================================================================
     mw.util.addCSS(`
@@ -240,7 +247,7 @@ $(function () {
     `);
 
     // ============================================================================
-    // [SECTION 02] OVERLAY STACK
+    // [Section 02] Overlay stack
     // Tracks active overlays and binds global Escape key event listeners to dismiss dialogues.
     // ============================================================================
     const overlayStack = [];
@@ -276,7 +283,7 @@ $(function () {
     );
 
     // ============================================================================
-    // [SECTION 03] DIALOGUE BUILDER
+    // [Section 03] Dialogue builder
     // Utility functions to create layout layers and build primary dialogue modal frames.
     // ============================================================================
     function createDialog(opts) {
@@ -319,7 +326,7 @@ $(function () {
     }
 
     // ============================================================================
-    // [SECTION 04] DOM HELPERS
+    // [Section 04] DOM helpers
     // Standardised DOM element generation scripts for form inputs, checkboxes, and section boxes.
     // ============================================================================
     function makeRow(labelText) {
@@ -405,8 +412,8 @@ $(function () {
     }
 
     // ============================================================================
-    // [SECTION 05] DROPDOWN LIST REASONS
-    // Houses pre-populated reason sets for rollbacks, blocks, deletions, and protections.
+    // [Section 05] Dropdown list reasons
+    // Houses pre-populated reason sets for rollbacks, page deletions, and block actions.
     // ============================================================================
     const ROLLBACK_REASONS = [
       { value: "", label: "Other:" },
@@ -504,7 +511,6 @@ $(function () {
         ],
       },
     ];
-
     const PAGE_DELETE_REASONS = [
       {
         group: "General",
@@ -565,8 +571,8 @@ $(function () {
             label: "Unambiguous copyright infringement",
           },
           {
-            value: "Abandoned draft or Articles for Creation submission",
-            label: "Abandoned draft or Articles for Creation submission",
+            value: "Abandoned draft or Articles for creation submission",
+            label: "Abandoned draft or Articles for creation submission",
           },
           {
             value: "Unnecessary disambiguation page",
@@ -636,28 +642,98 @@ $(function () {
       },
     ];
 
-    const PROTECT_REASONS = [
+    const PROTECTION_REASONS = [
       { value: "", label: "Other:" },
-      { value: "Persistent vandalism", label: "Persistent vandalism" },
       {
-        value: "Persistent disruptive editing",
-        label: "Persistent disruptive editing",
+        group: "Edit protection",
+        items: [
+          { value: "Persistent vandalism", label: "Persistent vandalism" },
+          { value: "Persistent spamming", label: "Persistent spamming" },
+          {
+            value: "Persistent sockpuppetry",
+            label: "Persistent sockpuppetry",
+          },
+          {
+            value: "Persistent disruptive editing",
+            label: "Persistent disruptive editing",
+          },
+          {
+            value: "Persistent block evasion",
+            label: "Persistent block evasion",
+          },
+          {
+            value: "Violations of the biographies of living persons policy",
+            label: "Violations of the biographies of living persons policy",
+          },
+          {
+            value: "Addition of unsourced or poorly sourced content",
+            label: "Addition of unsourced or poorly sourced content",
+          },
+          {
+            value: "Edit warring / content dispute",
+            label: "Edit warring / content dispute",
+          },
+          {
+            value: "Arbitration enforcement",
+            label: "Arbitration enforcement",
+          },
+          {
+            value: "Contentious topic restriction",
+            label: "Contentious topic restriction",
+          },
+          {
+            value: "Community sanctions enforcement",
+            label: "Community sanctions enforcement",
+          },
+          {
+            value: "User request within own user space",
+            label: "User request within own user space",
+          },
+          {
+            value: "High-risk template or module",
+            label: "High-risk template or module",
+          },
+          {
+            value: "User page of deceased editor",
+            label: "User page of deceased editor",
+          },
+        ],
       },
-      { value: "Edit warring", label: "Edit warring" },
-      { value: "High risk of vandalism", label: "High risk of vandalism" },
       {
-        value: "Blatant promotional content",
-        label: "Blatant promotional content",
+        group: "Move protection",
+        items: [
+          { value: "Page-move vandalism", label: "Page-move vandalism" },
+          { value: "Move warring", label: "Move warring" },
+          { value: "Highly visible page", label: "Highly visible page" },
+        ],
+      },
+      {
+        group: "Images",
+        items: [
+          {
+            value: "Image about to be featured on the Main Page",
+            label: "Image about to be featured on the Main Page",
+          },
+        ],
+      },
+      {
+        group: "Unprotection",
+        items: [
+          {
+            value: "Testing whether long-term protection is still needed",
+            label: "Testing whether long-term protection is still needed",
+          },
+          { value: "No longer necessary", label: "No longer necessary" },
+        ],
       },
     ];
 
     // ============================================================================
-    // [SECTION 06] MAIN WORK FUNCTION
-    // Executes API orchestration loops for user blocks, rollbacks, protections, and deletions.
+    // [Section 06] Main work function
+    // Executes API orchestration loops for user blocks, rollbacks, and deletions whilst piping execution log messages.
     // ============================================================================
-    const work = function () {
+    const work = async function () {
       const api = new mw.Api();
-      const promises = [];
       const stats = {
         block: 0,
         rollback: 0,
@@ -667,6 +743,50 @@ $(function () {
         error: 0,
       };
       const toolTag = " (via ⚙️ [[w:id:Pengguna:Rachmat04/Tengu.js|Tengu]])";
+
+      // Promisified API wrappers converting jQuery promises into standard ES6 promises
+      const apiGet = (params) =>
+        new Promise((resolve, reject) => {
+          api
+            .get(params)
+            .done(resolve)
+            .fail((code, err) =>
+              reject(
+                code +
+                  (err && err.error && err.error.info
+                    ? ": " + err.error.info
+                    : ""),
+              ),
+            );
+        });
+      const apiPost = (params) =>
+        new Promise((resolve, reject) => {
+          api
+            .postWithEditToken(params)
+            .done(resolve)
+            .fail((code, err) =>
+              reject(
+                code +
+                  (err && err.error && err.error.info
+                    ? ": " + err.error.info
+                    : ""),
+              ),
+            );
+        });
+      const apiRollback = (title, user, params) =>
+        new Promise((resolve, reject) => {
+          api
+            .rollback(title, user, params)
+            .done(resolve)
+            .fail((code, err) =>
+              reject(
+                code +
+                  (err && err.error && err.error.info
+                    ? ": " + err.error.info
+                    : ""),
+              ),
+            );
+        });
 
       // Build Progress UI
       const { overlay, body, footer } = createDialog({
@@ -726,19 +846,16 @@ $(function () {
         if (config.blockMail) data.noemail = 1;
         if (config.blockHide) data.hidename = 1;
 
-        const pBlock = api.postWithEditToken(data).then(
-          () => {
-            addLog(`[Block] Successfully blocked user ${config.username}.`);
-            stats.block++;
-          },
-          (e) => {
-            addLog(`[Block] Failed to block: ${e}`, true);
-          },
-        );
-        promises.push(pBlock);
+        try {
+          await apiPost(data);
+          addLog(`[Block] Successfully blocked user ${config.username}.`);
+          stats.block++;
+        } catch (e) {
+          addLog(`[Block] Failed to block: ${e}`, true);
+        }
       }
 
-      // --- Fetch user contributions, then rollback / undo / revdel / delete / protect ---
+      // --- Fetch user contributions with recursive pagination framework ---
       let untildate = new Date();
       if (config.endtime === "inf") {
         untildate = null;
@@ -754,237 +871,219 @@ $(function () {
       };
       if (untildate) contribParams.ucend = untildate.toISOString();
 
-      const pContrib = api.get(contribParams).then(
-        function (data) {
-          const contribs = data.query && data.query.usercontribs;
-          if (!contribs || !contribs.length) {
-            addLog("[Info] No contributions found within this timeframe.");
-            return;
+      let contribs = [];
+      let hasMore = true;
+      let continueToken = {};
+
+      while (hasMore) {
+        const params = Object.assign({}, contribParams, continueToken);
+        try {
+          const data = await apiGet(params);
+          if (data.query && data.query.usercontribs) {
+            contribs = contribs.concat(data.query.usercontribs);
           }
+          if (data.continue) {
+            continueToken = data.continue;
+          } else {
+            hasMore = false;
+          }
+        } catch (e) {
+          addLog(`[Error] Failed to fetch contribution history: ${e}`, true);
+          hasMore = false;
+        }
+      }
 
-          const pageEdits = {};
-          const creation = [];
-          const affectedPages = new Set();
+      if (!contribs.length) {
+        addLog("[Info] No contributions found within this timeframe.");
+      } else {
+        const pageEdits = {};
+        const creation = [];
+        for (const edit of contribs) {
+          if (edit.new === "") {
+            creation.push(edit.title);
+          } else {
+            if (!pageEdits[edit.title]) {
+              pageEdits[edit.title] = {
+                revids: [],
+                latest: edit.revid,
+                oldestParent: edit.parentid,
+              };
+            }
+            pageEdits[edit.title].revids.push(edit.revid);
+            pageEdits[edit.title].oldestParent = edit.parentid;
+          }
+        }
 
-          for (const edit of contribs) {
-            affectedPages.add(edit.title);
-            if (edit.new === "") {
-              creation.push(edit.title);
-            } else {
-              if (!pageEdits[edit.title]) {
-                pageEdits[edit.title] = {
-                  revids: [],
-                  latest: edit.revid,
-                  oldestParent: edit.parentid,
-                };
-              }
-              pageEdits[edit.title].revids.push(edit.revid);
-              // usercontribs returns ordered from newest to oldest,
-              // so the last item encountered updates oldestParent correctly.
-              pageEdits[edit.title].oldestParent = edit.parentid;
+        // Aggregate pages for mass protection to avoid duplicates and skip deleted records
+        const pagesToProtect = new Set();
+        if (config.protect) {
+          for (const title of Object.keys(pageEdits)) {
+            pagesToProtect.add(title);
+          }
+          if (!config.massdel) {
+            for (const title of creation) {
+              pagesToProtect.add(title);
             }
           }
+        }
 
-          const subPromises = [];
+        // Process rollbacks, undos and revision deletions sequentially with a throttling buffer delay
+        for (const [title, info] of Object.entries(pageEdits)) {
+          const idlist = info.revids;
 
-          // Rollback / Undo and/or revision delete for each edited page
-          for (const [title, info] of Object.entries(pageEdits)) {
-            const idlist = info.revids;
+          if (!config.rollback) {
+            // Only revision delete
+            if (config.rd) {
+              try {
+                await apiPost({
+                  action: "revisiondelete",
+                  type: "revision",
+                  ids: idlist,
+                  hide: config.rdHides,
+                  reason: config.rdReason + toolTag,
+                  suppress: config.os ? "yes" : "nochange",
+                });
+                addLog(
+                  `[Revdel] Hiding ${idlist.length} revisions at: ${title}`,
+                );
+                stats.revdel++;
+              } catch (e) {
+                addLog(`[Revdel] Failed at ${title}: ${e}`, true);
+              }
+            }
+            await new Promise((resolve) => setTimeout(resolve, 100)); // Rate limit buffer
+            continue;
+          }
 
-            if (!config.rollback) {
-              // Only revision delete
+          // Execute rollback or undo operation sequentially based on settings
+          if (config.rollbackMethod === "undo") {
+            const undoData = {
+              action: "edit",
+              title: title,
+              undo: info.latest,
+              summary: config.rollbackReason
+                ? config.rollbackReason + toolTag
+                : "Reverting mass edits by " +
+                  (config.rollbackShow
+                    ? config.username
+                    : "<username hidden>") +
+                  toolTag,
+            };
+            if (info.oldestParent) undoData.undoafter = info.oldestParent;
+            if (config.rollbackBot) undoData.bot = 1;
+
+            try {
+              await apiPost(undoData);
+              addLog(`[Undo] Successfully reverted edits via undo: ${title}`);
+              stats.rollback++;
+
               if (config.rd) {
-                let pRd = api
-                  .postWithEditToken({
+                try {
+                  await apiPost({
                     action: "revisiondelete",
                     type: "revision",
                     ids: idlist,
                     hide: config.rdHides,
                     reason: config.rdReason + toolTag,
                     suppress: config.os ? "yes" : "nochange",
-                  })
-                  .then(
-                    () => {
-                      addLog(
-                        `[Revdel] Hiding ${idlist.length} revisions at: ${title}`,
-                      );
-                      stats.revdel++;
-                    },
-                    (e) => {
-                      addLog(`[Revdel] Failed at ${title}: ${e}`, true);
-                    },
-                  );
-                subPromises.push(pRd);
+                  });
+                  addLog(`[Revdel] Hiding revisions at: ${title}`);
+                  stats.revdel++;
+                } catch (e) {
+                  addLog(`[Revdel] Failed at ${title}: ${e}`, true);
+                }
               }
-              continue;
+            } catch (e) {
+              addLog(`[Undo] Failed at ${title}: ${e}`, true);
             }
+          } else {
+            // Native rollback
+            const rbData = config.rollbackBot ? { markbot: 1 } : {};
+            rbData.summary = config.rollbackReason
+              ? config.rollbackReason + toolTag
+              : config.rollbackShow
+                ? ""
+                : "Revert edits by <username hidden>" + toolTag;
 
-            // Execute Rollback or Undo operation based on settings
-            let pRb;
-            if (config.rollbackMethod === "undo") {
-              // Workaround: Perform edit action with undo parameters
-              const undoData = {
-                action: "edit",
+            try {
+              await apiRollback(title, config.username, rbData);
+              addLog(`[Rollback] Successfully reverted: ${title}`);
+              stats.rollback++;
+
+              if (config.rd) {
+                try {
+                  await apiPost({
+                    action: "revisiondelete",
+                    type: "revision",
+                    ids: idlist,
+                    hide: config.rdHides,
+                    reason: config.rdReason + toolTag,
+                    suppress: config.os ? "yes" : "nochange",
+                  });
+                  addLog(`[Revdel] Hiding revisions at: ${title}`);
+                  stats.revdel++;
+                } catch (e) {
+                  addLog(`[Revdel] Failed at ${title}: ${e}`, true);
+                }
+              }
+            } catch (e) {
+              addLog(`[Rollback] Failed at ${title}: ${e}`, true);
+            }
+          }
+          await new Promise((resolve) => setTimeout(resolve, 100)); // Throttling window
+        }
+
+        // Execute sequential page protections if enabled
+        if (config.protect && pagesToProtect.size > 0) {
+          for (const title of pagesToProtect) {
+            try {
+              const protectData = {
+                action: "protect",
                 title: title,
-                undo: info.latest,
-                summary: config.rollbackReason
-                  ? config.rollbackReason + toolTag
-                  : "Reverting mass edits by " +
-                    (config.rollbackShow
-                      ? config.username
-                      : "<username hidden>") +
-                    toolTag,
+                protections: `edit=${config.protectEdit}|move=${config.protectMove}`,
+                expiry: config.protectExpiry,
+                reason: config.protectReason + toolTag,
               };
-              if (info.oldestParent) undoData.undoafter = info.oldestParent;
-              if (config.rollbackBot) undoData.bot = 1;
-
-              pRb = api.postWithEditToken(undoData).then(
-                () => {
-                  addLog(
-                    `[Undo] Successfully reverted edits via undo: ${title}`,
-                  );
-                  stats.rollback++;
-                  if (config.rd) {
-                    return api
-                      .postWithEditToken({
-                        action: "revisiondelete",
-                        type: "revision",
-                        ids: idlist,
-                        hide: config.rdHides,
-                        reason: config.rdReason + toolTag,
-                        suppress: config.os ? "yes" : "nochange",
-                      })
-                      .then(
-                        () => {
-                          addLog(`[Revdel] Hiding revisions at: ${title}`);
-                          stats.revdel++;
-                        },
-                        (e) => {
-                          addLog(`[Revdel] Failed at ${title}: ${e}`, true);
-                        },
-                      );
-                  }
-                },
-                (e) => {
-                  addLog(`[Undo] Failed at ${title}: ${e}`, true);
-                },
-              );
-            } else {
-              // Native Rollback
-              const rbData = config.rollbackBot ? { markbot: 1 } : {};
-              rbData.summary = config.rollbackReason
-                ? config.rollbackReason + toolTag
-                : config.rollbackShow
-                  ? ""
-                  : "Revert edits by <username hidden>" + toolTag;
-
-              pRb = api.rollback(title, config.username, rbData).then(
-                () => {
-                  addLog(`[Rollback] Successfully reverted: ${title}`);
-                  stats.rollback++;
-                  if (config.rd) {
-                    return api
-                      .postWithEditToken({
-                        action: "revisiondelete",
-                        type: "revision",
-                        ids: idlist,
-                        hide: config.rdHides,
-                        reason: config.rdReason + toolTag,
-                        suppress: config.os ? "yes" : "nochange",
-                      })
-                      .then(
-                        () => {
-                          addLog(`[Revdel] Hiding revisions at: ${title}`);
-                          stats.revdel++;
-                        },
-                        (e) => {
-                          addLog(`[Revdel] Failed at ${title}: ${e}`, true);
-                        },
-                      );
-                  }
-                },
-                (e) => {
-                  addLog(`[Rollback] Failed at ${title}: ${e}`, true);
-                },
-              );
+              await apiPost(protectData);
+              addLog(`[Protect] Protected page: ${title}`);
+              stats.protect++;
+            } catch (e) {
+              addLog(`[Protect] Failed to protect ${title}: ${e}`, true);
             }
-            subPromises.push(pRb);
+            await new Promise((resolve) => setTimeout(resolve, 100));
           }
+        }
 
-          // Mass-delete pages
-          if (config.massdel) {
-            for (const title of creation) {
-              let pDel = api
-                .postWithEditToken({
-                  action: "delete",
-                  title: title,
-                  reason: config.massdelReason + toolTag,
-                })
-                .then(
-                  () => {
-                    addLog(`[Delete] Deleted page: ${title}`);
-                    stats.delete++;
-                  },
-                  (e) => {
-                    addLog(`[Delete] Failed to delete ${title}: ${e}`, true);
-                  },
-                );
-              subPromises.push(pDel);
+        // Mass-delete pages sequentially
+        if (config.massdel) {
+          for (const title of creation) {
+            try {
+              await apiPost({
+                action: "delete",
+                title: title,
+                reason: config.massdelReason + toolTag,
+              });
+              addLog(`[Delete] Deleted page: ${title}`);
+              stats.delete++;
+            } catch (e) {
+              addLog(`[Delete] Failed to delete ${title}: ${e}`, true);
             }
+            await new Promise((resolve) => setTimeout(resolve, 100)); // Throttling window
           }
+        }
+      }
 
-          // Mass-protect pages
-          if (config.protect) {
-            affectedPages.forEach(function (title) {
-              let pProt = api
-                .postWithEditToken({
-                  action: "protect",
-                  title: title,
-                  protections:
-                    "edit=" +
-                    config.protectLevel +
-                    "|move=" +
-                    config.protectLevel,
-                  expiry: config.protectDur,
-                  reason: config.protectReason + toolTag,
-                })
-                .then(
-                  () => {
-                    addLog(`[Protect] Successfully protected page: ${title}`);
-                    stats.protect++;
-                  },
-                  (e) => {
-                    addLog(`[Protect] Failed to protect ${title}: ${e}`, true);
-                  },
-                );
-              subPromises.push(pProt);
-            });
-          }
-
-          // Wait for all sub-tasks to finish
-          return $.when.apply($, subPromises);
-        },
-        function (e) {
-          addLog(`[Error] Failed to fetch contribution history: ${e}`, true);
-        },
-      );
-
-      promises.push(pContrib);
-
-      // --- When EVERYTHING finishes ---
-      $.when.apply($, promises).always(function () {
-        const methodTxt =
-          config.rollbackMethod === "undo" ? "undone" : "reverted";
-        const finalStatus = `<b>Status: Completed!</b><br/>Summary: <b>${stats.rollback}</b> ${methodTxt} | <b>${stats.delete}</b> deleted | <b>${stats.protect}</b> protected | <b>${stats.revdel}</b> hidden | <b>${stats.error}</b> errors.`;
-        statusLbl.innerHTML = finalStatus;
-        // Append explicit clarity log confirming termination of procedures
-        addLog("✅ All operations have been completed successfully.");
-        btnClose.disabled = false;
-      });
+      // Termination and interface cleanup operations
+      const methodTxt =
+        config.rollbackMethod === "undo" ? "undone" : "reverted";
+      const finalStatus = `<b>Status: Completed!</b><br/>Summary: <b>${stats.rollback}</b> ${methodTxt} | <b>${stats.delete}</b> deleted | <b>${stats.protect}</b> protected | <b>${stats.revdel}</b> hidden | <b>${stats.error}</b> errors.`;
+      statusLbl.innerHTML = finalStatus;
+      addLog("✅ All operations have been completed successfully.");
+      btnClose.disabled = false;
     };
 
     // ============================================================================
-    // [SECTION 07] DIALOGUE BUILDER (INPUT CONFIG)
+    // [Section 07] Dialogue builder (input config)
     // Generates configuration layout panel structures, parses package parameters, and configures field states.
     // ============================================================================
     const init = function () {
@@ -1009,9 +1108,10 @@ $(function () {
         pagedelete: { enabled: false, reason: "Vandalism" },
         pageprotection: {
           enabled: false,
-          level: "sysop",
-          duration: "1 week",
-          reason: "Persistent vandalism",
+          edit: "all",
+          move: "all",
+          expiry: "1 day",
+          reason: "",
         },
         revisiondelete: {
           enabled: false,
@@ -1038,7 +1138,7 @@ $(function () {
           "Serious BLP violations",
           "Purely disruptive material",
           "Other valid deletion under deletion policy",
-          "Non-contentious housekeeping, RevDel corrections, notes, conversion",
+          "Non-contentious housekeeping, revdel corrections, notes, conversion",
           "Deletion mandated by a decision of the Arbitration Committee",
           "Orphaned non-free file(s) deleted",
         ],
@@ -1047,9 +1147,7 @@ $(function () {
       let packages = aioConf.packages || {};
       if (!packages.Default) packages.Default = defaultPackage;
 
-      // ============================================================================
-      // NATIVE PRESETS
-      // ============================================================================
+      // Native presets
       if (!packages["Severe vandalism"]) {
         packages["Severe vandalism"] = {
           tracingedits: { duration: 86400, indefregistered: false },
@@ -1072,12 +1170,7 @@ $(function () {
             hidename: false,
           },
           pagedelete: { enabled: false, reason: "" },
-          pageprotection: {
-            enabled: false,
-            level: "sysop",
-            duration: "1 week",
-            reason: "",
-          },
+          pageprotection: { enabled: false },
           revisiondelete: { enabled: false },
         };
       }
@@ -1104,12 +1197,7 @@ $(function () {
             hidename: false,
           },
           pagedelete: { enabled: false, reason: "" },
-          pageprotection: {
-            enabled: false,
-            level: "sysop",
-            duration: "1 week",
-            reason: "",
-          },
+          pageprotection: { enabled: false },
           revisiondelete: { enabled: false },
         };
       }
@@ -1136,12 +1224,7 @@ $(function () {
             hidename: true,
           },
           pagedelete: { enabled: false, reason: "" },
-          pageprotection: {
-            enabled: false,
-            level: "sysop",
-            duration: "1 week",
-            reason: "",
-          },
+          pageprotection: { enabled: false },
           revisiondelete: {
             enabled: true,
             content: true,
@@ -1178,12 +1261,7 @@ $(function () {
             enabled: true,
             reason: "Unambiguous advertising or promotion",
           },
-          pageprotection: {
-            enabled: false,
-            level: "sysop",
-            duration: "1 week",
-            reason: "",
-          },
+          pageprotection: { enabled: false },
           revisiondelete: { enabled: false },
         };
       }
@@ -1210,12 +1288,7 @@ $(function () {
             hidename: false,
           },
           pagedelete: { enabled: false, reason: "" },
-          pageprotection: {
-            enabled: true,
-            level: "sysop",
-            duration: "3 days",
-            reason: "Edit warring",
-          },
+          pageprotection: { enabled: false },
           revisiondelete: { enabled: false },
         };
       }
@@ -1245,12 +1318,7 @@ $(function () {
             enabled: true,
             reason: "Unambiguous copyright infringement",
           },
-          pageprotection: {
-            enabled: false,
-            level: "sysop",
-            duration: "1 week",
-            reason: "",
-          },
+          pageprotection: { enabled: false },
           revisiondelete: {
             enabled: true,
             content: true,
@@ -1288,12 +1356,7 @@ $(function () {
             reason:
               "Creation by a banned or blocked user in violation of ban or block",
           },
-          pageprotection: {
-            enabled: false,
-            level: "sysop",
-            duration: "1 week",
-            reason: "",
-          },
+          pageprotection: { enabled: false },
           revisiondelete: { enabled: false },
         };
       }
@@ -1361,7 +1424,6 @@ $(function () {
       topSection.appendChild(rowSuffix);
       body.appendChild(topSection);
 
-      // --- Rollback UI ---
       const {
         section: secRollback,
         sectionBody: bodyRollback,
@@ -1406,7 +1468,6 @@ $(function () {
       bodyRollback.appendChild(rowRbReason);
       body.appendChild(secRollback);
 
-      // --- Block UI ---
       const {
         section: secBlock,
         sectionBody: bodyBlock,
@@ -1429,7 +1490,7 @@ $(function () {
         { value: "never", label: "Indefinite" },
         { value: "other", label: "Other:" },
       ]);
-      const inputBlockDur = makeInput("E.g. 6 months, 2099-01-01");
+      const inputBlockDur = makeInput("e.g. 6 months, 2099-01-01");
       inputBlockDur.classList.add("tng-hidden");
       selBlockDur.addEventListener("change", function () {
         inputBlockDur.classList.toggle(
@@ -1495,7 +1556,6 @@ $(function () {
       bodyBlock.appendChild(checksBlock);
       body.appendChild(secBlock);
 
-      // --- Page Deletion UI ---
       const {
         section: secPagedel,
         sectionBody: bodyPagedel,
@@ -1526,52 +1586,68 @@ $(function () {
       bodyPagedel.appendChild(rowPagedelReason);
       body.appendChild(secPagedel);
 
-      // --- Page Protection UI ---
+      // Page protection module injection setup
       const {
         section: secProtect,
         sectionBody: bodyProtect,
         enableChk: chkProtect,
-      } = makeSection("Page protection", "🔒", false);
-      const { row: rowProtectLevel, field: fieldProtectLevel } =
-        makeRow("Protection level");
-      const selProtectLevel = makeSelect([
-        { value: "sysop", label: "Administrators only" },
-        { value: "autoconfirmed", label: "Autoconfirmed users only" },
-      ]);
-      fieldProtectLevel.appendChild(selProtectLevel);
-      bodyProtect.appendChild(rowProtectLevel);
+      } = makeSection("Page protection", "🛡️", false);
 
-      const { row: rowProtectDur, field: fieldProtectDur } = makeRow("Expiry");
-      const selProtectDur = makeSelect([
+      const { row: rowProtectEdit, field: fieldProtectEdit } =
+        makeRow("Edit restriction");
+      const selProtectEdit = makeSelect([
+        { value: "all", label: "All users (unrestricted)" },
+        { value: "autoconfirmed", label: "Autoconfirmed users" },
+        { value: "sysop", label: "Administrators only" },
+      ]);
+      fieldProtectEdit.appendChild(selProtectEdit);
+      bodyProtect.appendChild(rowProtectEdit);
+
+      const { row: rowProtectMove, field: fieldProtectMove } =
+        makeRow("Move restriction");
+      const selProtectMove = makeSelect([
+        { value: "all", label: "All users (unrestricted)" },
+        { value: "autoconfirmed", label: "Autoconfirmed users" },
+        { value: "sysop", label: "Administrators only" },
+      ]);
+      fieldProtectMove.appendChild(selProtectMove);
+      bodyProtect.appendChild(rowProtectMove);
+
+      const { row: rowProtectExpiry, field: fieldProtectExpiry } =
+        makeRow("Expiry");
+      const selProtectExpiry = makeSelect([
         { value: "1 day", label: "1 day" },
         { value: "3 days", label: "3 days" },
         { value: "1 week", label: "1 week" },
         { value: "2 weeks", label: "2 weeks" },
         { value: "1 month", label: "1 month" },
         { value: "3 months", label: "3 months" },
+        { value: "6 months", label: "6 months" },
+        { value: "1 year", label: "1 year" },
         { value: "never", label: "Indefinite" },
         { value: "other", label: "Other:" },
       ]);
-      const inputProtectDur = makeInput("E.g. 1 week, 2099-01-01");
-      inputProtectDur.classList.add("tng-hidden");
-      selProtectDur.addEventListener("change", function () {
-        inputProtectDur.classList.toggle(
+      const inputProtectExpiry = makeInput("e.g. 6 months, 2099-01-01");
+      inputProtectExpiry.classList.add("tng-hidden");
+      selProtectExpiry.addEventListener("change", function () {
+        inputProtectExpiry.classList.toggle(
           "tng-hidden",
-          selProtectDur.value !== "other",
+          selProtectExpiry.value !== "other",
         );
       });
-      const protectDurGroup = document.createElement("div");
-      protectDurGroup.style.cssText = "display: flex; gap: 6px; width: 100%;";
-      selProtectDur.style.flex = "1";
-      inputProtectDur.style.flex = "1";
-      protectDurGroup.appendChild(selProtectDur);
-      protectDurGroup.appendChild(inputProtectDur);
-      fieldProtectDur.appendChild(protectDurGroup);
-      bodyProtect.appendChild(rowProtectDur);
+      const protectExpiryGroup = document.createElement("div");
+      protectExpiryGroup.style.cssText =
+        "display: flex; gap: 6px; width: 100%;";
+      selProtectExpiry.style.flex = "1";
+      inputProtectExpiry.style.flex = "1";
+      protectExpiryGroup.appendChild(selProtectExpiry);
+      protectExpiryGroup.appendChild(inputProtectExpiry);
+      fieldProtectExpiry.appendChild(protectExpiryGroup);
+      bodyProtect.appendChild(rowProtectExpiry);
 
       const { row: rowProtectReason, field: fieldProtectReason } =
         makeRow("Reason");
-      const selProtectReason = makeSelect(PROTECT_REASONS);
+      const selProtectReason = makeSelect(PROTECTION_REASONS);
       const inputProtectReason = makeInput("Full reason to submit");
       const btnProtectAppend = makeBtn("Append", "quiet");
       btnProtectAppend.className += " tng-btn-sm";
@@ -1594,7 +1670,6 @@ $(function () {
       bodyProtect.appendChild(rowProtectReason);
       body.appendChild(secProtect);
 
-      // --- Revision Deletion UI ---
       const {
         section: secRevdel,
         sectionBody: bodyRevdel,
@@ -1650,6 +1725,7 @@ $(function () {
       reasonTopRevdel.className = "tng-reason-top";
       reasonTopRevdel.appendChild(selRevdelReason);
       reasonTopRevdel.appendChild(btnRevdelAppend);
+      reasonWrapRevdel.appendChild(reasonTopProtect);
       reasonWrapRevdel.appendChild(reasonTopRevdel);
       reasonWrapRevdel.appendChild(inputRevdelReason);
       fieldRevdelReason.appendChild(reasonWrapRevdel);
@@ -1663,7 +1739,7 @@ $(function () {
 
       const btnStart = makeBtn("Start", "destructive");
 
-      // Evaluation routine to dynamically handle the Start button state
+      // Evaluation routine to dynamically handle the start button state
       function updateStartBtn() {
         btnStart.disabled = !(
           chkRollback.checked ||
@@ -1674,7 +1750,7 @@ $(function () {
         );
       }
 
-      // Bind monitoring handlers to state changes of the five operational modules
+      // Bind monitoring handlers to state changes of operational modules
       chkRollback.addEventListener("change", updateStartBtn);
       chkBlock.addEventListener("change", updateStartBtn);
       chkPagedel.addEventListener("change", updateStartBtn);
@@ -1743,11 +1819,12 @@ $(function () {
           massdel: chkPagedel.checked,
           massdelReason: buildPagedelReason() + suffix,
           protect: chkProtect.checked,
-          protectLevel: selProtectLevel.value,
-          protectDur:
-            selProtectDur.value === "other"
-              ? inputProtectDur.value.trim()
-              : selProtectDur.value,
+          protectEdit: selProtectEdit.value,
+          protectMove: selProtectMove.value,
+          protectExpiry:
+            selProtectExpiry.value === "other"
+              ? inputProtectExpiry.value.trim()
+              : selProtectExpiry.value,
           protectReason: buildProtectReason() + suffix,
           rd: chkRevdel.checked,
           rdHides: rdHides,
@@ -1755,49 +1832,39 @@ $(function () {
           os: chkOversight.checked,
         };
 
-        function executeTasks() {
-          overlay.closeHandler();
-          work();
-        }
-
-        // Warning prompt safety UI for page deletion and page protection tasks
+        // Inject high-impact verification confirmation prompt modal for deletion and protection features
         if (config.massdel || config.protect) {
-          let warningMsg = "You have selected actions that modify page states:";
-          if (config.massdel) {
-            warningMsg +=
-              "<br/>• <b>Mass page deletion</b> will permanently delete pages created by this user.";
-          }
-          if (config.protect) {
-            warningMsg +=
-              "<br/>• <b>Page protection</b> will restrict future edits on pages affected by this user.";
-          }
-          warningMsg +=
-            "<br/><br/>Are you sure you want to proceed with these potentially disruptive actions?";
-
           const confirmDlg = createDialog({
-            title: "Confirm destructive actions",
+            title: "Confirm dangerous operations",
             icon: "⚠️",
           });
 
-          const warnText = document.createElement("div");
-          warnText.innerHTML = warningMsg;
-          confirmDlg.body.appendChild(warnText);
+          const warningMsg = document.createElement("p");
+          warningMsg.style.margin = "0 0 12px 0";
+          warningMsg.innerHTML =
+            "You have enabled <b>page deletion</b> or <b>page protection</b> tasks. These operations can modify multiple pages across the wiki simultaneously. Please confirm that you want to execute these tasks.";
+          confirmDlg.body.appendChild(warningMsg);
 
-          const btnAbort = makeBtn("Cancel", "quiet");
-          btnAbort.addEventListener("click", function () {
+          const btnCancelConfirm = makeBtn("Cancel", "quiet");
+          btnCancelConfirm.addEventListener("click", function () {
             confirmDlg.overlay.closeHandler();
           });
 
-          const btnConfirm = makeBtn("Confirm", "destructive");
-          btnConfirm.addEventListener("click", function () {
+          const btnProceedConfirm = makeBtn(
+            "Confirm and execute",
+            "destructive",
+          );
+          btnProceedConfirm.addEventListener("click", function () {
             confirmDlg.overlay.closeHandler();
-            executeTasks();
+            overlay.closeHandler();
+            work();
           });
 
-          confirmDlg.footer.appendChild(btnAbort);
-          confirmDlg.footer.appendChild(btnConfirm);
+          confirmDlg.footer.appendChild(btnCancelConfirm);
+          confirmDlg.footer.appendChild(btnProceedConfirm);
         } else {
-          executeTasks();
+          overlay.closeHandler();
+          work();
         }
       });
 
@@ -1914,35 +1981,18 @@ $(function () {
           inputPagedelReason.value = pdr;
         }
 
+        // Apply fallback resets to page protection state variables
         const pt = pkg.pageprotection || {};
         chkProtect.checked = !!pt.enabled;
         secProtect.classList.toggle("tng-disabled", !chkProtect.checked);
         bodyProtect.classList.toggle("tng-hidden", !chkProtect.checked);
-        selProtectLevel.value = pt.level || "sysop";
-        const ptdur = pt.duration || "1 week";
-        if (
-          [...selProtectDur.options].find(function (o) {
-            return o.value === ptdur;
-          })
-        ) {
-          selProtectDur.value = ptdur;
-          inputProtectDur.classList.add("tng-hidden");
-        } else {
-          selProtectDur.value = "other";
-          inputProtectDur.value = ptdur;
-          inputProtectDur.classList.remove("tng-hidden");
-        }
-        const ptr = pt.reason || "";
-        if (
-          [...selProtectReason.options].find(function (o) {
-            return o.value === ptr;
-          })
-        ) {
-          selProtectReason.value = ptr;
-          inputProtectReason.value = "";
-        } else {
-          inputProtectReason.value = ptr;
-        }
+        selProtectEdit.value = pt.edit || "all";
+        selProtectMove.value = pt.move || "all";
+        selProtectExpiry.value = pt.expiry || "1 day";
+        inputProtectExpiry.value = "";
+        inputProtectExpiry.classList.add("tng-hidden");
+        inputProtectReason.value = pt.reason || "";
+        selProtectReason.selectedIndex = 0;
 
         const rd = pkg.revisiondelete || {};
         chkRevdel.checked = !!rd.enabled;
@@ -1992,7 +2042,7 @@ $(function () {
     };
 
     // ============================================================================
-    // [SECTION 08] PORTLET LINK
+    // [Section 08] Portlet link
     // Registers the execution menu item anchor inside the site actions portal drop list.
     // ============================================================================
     $(mw.util.addPortletLink("p-cactions", "#", "⛩️ Tengu", "ca-tengu")).on(
