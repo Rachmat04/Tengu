@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * TENGU — 天狗
- * Version 1.4.0
+ * Version 1.4.1
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -14,7 +14,8 @@
  * - Page deletion: Mass-deletes pages created by a target user.
  * - Page protection: Mass-protects pages edited or created by a target user.
  * - Revision deletion: Hides revision content, summaries, or usernames.
- *
+ * * CHANGELOG v1.4.1:
+ * - Fixed: UI bug where the page protection preset reasons dropdown was incorrectly appended to the revision deletion module.
  * CHANGELOG v1.4.0:
  * - Added: Page protection feature with comprehensive preset reasons.
  * - Added: Warning confirmation dialogue modal before executing deletion or protection tasks.
@@ -1725,7 +1726,6 @@ $(function () {
       reasonTopRevdel.className = "tng-reason-top";
       reasonTopRevdel.appendChild(selRevdelReason);
       reasonTopRevdel.appendChild(btnRevdelAppend);
-      reasonWrapRevdel.appendChild(reasonTopProtect);
       reasonWrapRevdel.appendChild(reasonTopRevdel);
       reasonWrapRevdel.appendChild(inputRevdelReason);
       fieldRevdelReason.appendChild(reasonWrapRevdel);
