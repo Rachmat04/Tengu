@@ -1,26 +1,25 @@
 /**
  * ============================================================================
  * TENGU — 天狗
- * Version 1.2.0
+ * Version 1.3.0
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
  * An all-in-one moderation script for MediaWiki that streamlines user blocking,
- * rollbacks, page deletions, and revision deletions from a single interface.
+ * rollbacks, page deletions, page protections, and revision deletions from a
+ * single interface.
  *
  * KEY FEATURES:
  * - Rollback: Reverts all recent edits by a target user (or via undo fallback).
  * - Block: Blocks a user or IP with configurable options and automatic expiration.
- * - Page deletion: Mass-deletes pages created by a target user.
+ * - Page deletion: Mass-deletes pages created by a target user with confirmation safety checks.
+ * - Page protection: Mass-protects pages edited or created by a target user with confirmation safety checks.
  * - Revision deletion: Hides revision content, summaries, or usernames.
  *
- * CHANGELOG v1.2.0:
- * - Fixed: API request throttling by shifting to sequential execution using native ES6 promises.
- * - Fixed: Pagination bottlenecks by explicitly handling the query continue token.
- * - Changed: Standardised all interface elements, logs, labels, and comments to sentence case and en-GB spelling.
- * CHANGELOG v1.1.0:
- * - Added: Optional undo fallback method for users without native rollback rights.
- * - Changed: Reduced the vertical height of the progress log for better screen real-estate utilisation.
+ * CHANGELOG v1.3.0:
+ * - Added: Page protection feature to mass-protect affected pages via the API.
+ * - Added: Warning confirmation prompt step for page deletion and page protection modules before tasks execute.
+ * - Changed: All labels, comments, and UI interfaces updated to standardise on en-GB and sentence case rules.
  *
  * ORIGINAL SCRIPT:
  * - Based on User:WhitePhosphorus/all-in-one
@@ -31,14 +30,14 @@
 $(function () {
   mw.loader.using(["mediawiki.util", "mediawiki.api"], function () {
     // ============================================================================
-    // [Section 00] State
+    // [SECTION 00] STATE
     // Stores runtime configurations and dialogue initialisation flags.
     // ============================================================================
     let config = {};
     let inited = false;
 
     // ============================================================================
-    // [Section 01] Stylesheet
+    // [SECTION 01] STYLESHEET
     // Appends customised CSS configurations for layout rendering and dark mode support.
     // ============================================================================
     mw.util.addCSS(`
@@ -241,7 +240,7 @@ $(function () {
     `);
 
     // ============================================================================
-    // [Section 02] Overlay stack
+    // [SECTION 02] OVERLAY STACK
     // Tracks active overlays and binds global Escape key event listeners to dismiss dialogues.
     // ============================================================================
     const overlayStack = [];
@@ -277,7 +276,7 @@ $(function () {
     );
 
     // ============================================================================
-    // [Section 03] Dialogue builder
+    // [SECTION 03] DIALOGUE BUILDER
     // Utility functions to create layout layers and build primary dialogue modal frames.
     // ============================================================================
     function createDialog(opts) {
@@ -320,7 +319,7 @@ $(function () {
     }
 
     // ============================================================================
-    // [Section 04] DOM helpers
+    // [SECTION 04] DOM HELPERS
     // Standardised DOM element generation scripts for form inputs, checkboxes, and section boxes.
     // ============================================================================
     function makeRow(labelText) {
@@ -406,8 +405,8 @@ $(function () {
     }
 
     // ============================================================================
-    // [Section 05] Dropdown list reasons
-    // Houses pre-populated reason sets for rollbacks, page deletions, and block actions.
+    // [SECTION 05] DROPDOWN LIST REASONS
+    // Houses pre-populated reason sets for rollbacks, blocks, deletions, and protections.
     // ============================================================================
     const ROLLBACK_REASONS = [
       { value: "", label: "Other:" },
@@ -505,6 +504,7 @@ $(function () {
         ],
       },
     ];
+
     const PAGE_DELETE_REASONS = [
       {
         group: "General",
@@ -565,8 +565,8 @@ $(function () {
             label: "Unambiguous copyright infringement",
           },
           {
-            value: "Abandoned draft or Articles for creation submission",
-            label: "Abandoned draft or Articles for creation submission",
+            value: "Abandoned draft or Articles for Creation submission",
+            label: "Abandoned draft or Articles for Creation submission",
           },
           {
             value: "Unnecessary disambiguation page",
@@ -636,58 +636,37 @@ $(function () {
       },
     ];
 
-    // ============================================================================
-    // [Section 06] Main work function
-    // Executes API orchestration loops for user blocks, rollbacks, and deletions whilst piping execution log messages.
-    // ============================================================================
-    const work = async function () {
-      const api = new mw.Api();
-      const stats = { block: 0, rollback: 0, revdel: 0, delete: 0, error: 0 };
-      const toolTag = " (via ⚙️ [[w:id:Pengguna:Rachmat04/Tengu.js|Tengu]])";
+    const PROTECT_REASONS = [
+      { value: "", label: "Other:" },
+      { value: "Persistent vandalism", label: "Persistent vandalism" },
+      {
+        value: "Persistent disruptive editing",
+        label: "Persistent disruptive editing",
+      },
+      { value: "Edit warring", label: "Edit warring" },
+      { value: "High risk of vandalism", label: "High risk of vandalism" },
+      {
+        value: "Blatant promotional content",
+        label: "Blatant promotional content",
+      },
+    ];
 
-      // Promisified API wrappers converting jQuery promises into standard ES6 promises
-      const apiGet = (params) =>
-        new Promise((resolve, reject) => {
-          api
-            .get(params)
-            .done(resolve)
-            .fail((code, err) =>
-              reject(
-                code +
-                  (err && err.error && err.error.info
-                    ? ": " + err.error.info
-                    : ""),
-              ),
-            );
-        });
-      const apiPost = (params) =>
-        new Promise((resolve, reject) => {
-          api
-            .postWithEditToken(params)
-            .done(resolve)
-            .fail((code, err) =>
-              reject(
-                code +
-                  (err && err.error && err.error.info
-                    ? ": " + err.error.info
-                    : ""),
-              ),
-            );
-        });
-      const apiRollback = (title, user, params) =>
-        new Promise((resolve, reject) => {
-          api
-            .rollback(title, user, params)
-            .done(resolve)
-            .fail((code, err) =>
-              reject(
-                code +
-                  (err && err.error && err.error.info
-                    ? ": " + err.error.info
-                    : ""),
-              ),
-            );
-        });
+    // ============================================================================
+    // [SECTION 06] MAIN WORK FUNCTION
+    // Executes API orchestration loops for user blocks, rollbacks, protections, and deletions.
+    // ============================================================================
+    const work = function () {
+      const api = new mw.Api();
+      const promises = [];
+      const stats = {
+        block: 0,
+        rollback: 0,
+        revdel: 0,
+        delete: 0,
+        protect: 0,
+        error: 0,
+      };
+      const toolTag = " (via ⚙️ [[w:id:Pengguna:Rachmat04/Tengu.js|Tengu]])";
 
       // Build Progress UI
       const { overlay, body, footer } = createDialog({
@@ -747,16 +726,19 @@ $(function () {
         if (config.blockMail) data.noemail = 1;
         if (config.blockHide) data.hidename = 1;
 
-        try {
-          await apiPost(data);
-          addLog(`[Block] Successfully blocked user ${config.username}.`);
-          stats.block++;
-        } catch (e) {
-          addLog(`[Block] Failed to block: ${e}`, true);
-        }
+        const pBlock = api.postWithEditToken(data).then(
+          () => {
+            addLog(`[Block] Successfully blocked user ${config.username}.`);
+            stats.block++;
+          },
+          (e) => {
+            addLog(`[Block] Failed to block: ${e}`, true);
+          },
+        );
+        promises.push(pBlock);
       }
 
-      // --- Fetch user contributions with recursive pagination framework ---
+      // --- Fetch user contributions, then rollback / undo / revdel / delete / protect ---
       let untildate = new Date();
       if (config.endtime === "inf") {
         untildate = null;
@@ -772,185 +754,237 @@ $(function () {
       };
       if (untildate) contribParams.ucend = untildate.toISOString();
 
-      let contribs = [];
-      let hasMore = true;
-      let continueToken = {};
-
-      while (hasMore) {
-        const params = Object.assign({}, contribParams, continueToken);
-        try {
-          const data = await apiGet(params);
-          if (data.query && data.query.usercontribs) {
-            contribs = contribs.concat(data.query.usercontribs);
+      const pContrib = api.get(contribParams).then(
+        function (data) {
+          const contribs = data.query && data.query.usercontribs;
+          if (!contribs || !contribs.length) {
+            addLog("[Info] No contributions found within this timeframe.");
+            return;
           }
-          if (data.continue) {
-            continueToken = data.continue;
-          } else {
-            hasMore = false;
-          }
-        } catch (e) {
-          addLog(`[Error] Failed to fetch contribution history: ${e}`, true);
-          hasMore = false;
-        }
-      }
 
-      if (!contribs.length) {
-        addLog("[Info] No contributions found within this timeframe.");
-      } else {
-        const pageEdits = {};
-        const creation = [];
-        for (const edit of contribs) {
-          if (edit.new === "") {
-            creation.push(edit.title);
-          } else {
-            if (!pageEdits[edit.title]) {
-              pageEdits[edit.title] = {
-                revids: [],
-                latest: edit.revid,
-                oldestParent: edit.parentid,
-              };
-            }
-            pageEdits[edit.title].revids.push(edit.revid);
-            pageEdits[edit.title].oldestParent = edit.parentid;
-          }
-        }
+          const pageEdits = {};
+          const creation = [];
+          const affectedPages = new Set();
 
-        // Process rollbacks, undos and revision deletions sequentially with a throttling buffer delay
-        for (const [title, info] of Object.entries(pageEdits)) {
-          const idlist = info.revids;
-
-          if (!config.rollback) {
-            // Only revision delete
-            if (config.rd) {
-              try {
-                await apiPost({
-                  action: "revisiondelete",
-                  type: "revision",
-                  ids: idlist,
-                  hide: config.rdHides,
-                  reason: config.rdReason + toolTag,
-                  suppress: config.os ? "yes" : "nochange",
-                });
-                addLog(
-                  `[Revdel] Hiding ${idlist.length} revisions at: ${title}`,
-                );
-                stats.revdel++;
-              } catch (e) {
-                addLog(`[Revdel] Failed at ${title}: ${e}`, true);
+          for (const edit of contribs) {
+            affectedPages.add(edit.title);
+            if (edit.new === "") {
+              creation.push(edit.title);
+            } else {
+              if (!pageEdits[edit.title]) {
+                pageEdits[edit.title] = {
+                  revids: [],
+                  latest: edit.revid,
+                  oldestParent: edit.parentid,
+                };
               }
+              pageEdits[edit.title].revids.push(edit.revid);
+              // usercontribs returns ordered from newest to oldest,
+              // so the last item encountered updates oldestParent correctly.
+              pageEdits[edit.title].oldestParent = edit.parentid;
             }
-            await new Promise((resolve) => setTimeout(resolve, 100)); // Rate limit buffer
-            continue;
           }
 
-          // Execute rollback or undo operation sequentially based on settings
-          if (config.rollbackMethod === "undo") {
-            const undoData = {
-              action: "edit",
-              title: title,
-              undo: info.latest,
-              summary: config.rollbackReason
-                ? config.rollbackReason + toolTag
-                : "Reverting mass edits by " +
-                  (config.rollbackShow
-                    ? config.username
-                    : "<username hidden>") +
-                  toolTag,
-            };
-            if (info.oldestParent) undoData.undoafter = info.oldestParent;
-            if (config.rollbackBot) undoData.bot = 1;
+          const subPromises = [];
 
-            try {
-              await apiPost(undoData);
-              addLog(`[Undo] Successfully reverted edits via undo: ${title}`);
-              stats.rollback++;
+          // Rollback / Undo and/or revision delete for each edited page
+          for (const [title, info] of Object.entries(pageEdits)) {
+            const idlist = info.revids;
 
+            if (!config.rollback) {
+              // Only revision delete
               if (config.rd) {
-                try {
-                  await apiPost({
+                let pRd = api
+                  .postWithEditToken({
                     action: "revisiondelete",
                     type: "revision",
                     ids: idlist,
                     hide: config.rdHides,
                     reason: config.rdReason + toolTag,
                     suppress: config.os ? "yes" : "nochange",
-                  });
-                  addLog(`[Revdel] Hiding revisions at: ${title}`);
-                  stats.revdel++;
-                } catch (e) {
-                  addLog(`[Revdel] Failed at ${title}: ${e}`, true);
-                }
+                  })
+                  .then(
+                    () => {
+                      addLog(
+                        `[Revdel] Hiding ${idlist.length} revisions at: ${title}`,
+                      );
+                      stats.revdel++;
+                    },
+                    (e) => {
+                      addLog(`[Revdel] Failed at ${title}: ${e}`, true);
+                    },
+                  );
+                subPromises.push(pRd);
               }
-            } catch (e) {
-              addLog(`[Undo] Failed at ${title}: ${e}`, true);
+              continue;
             }
-          } else {
-            // Native rollback
-            const rbData = config.rollbackBot ? { markbot: 1 } : {};
-            rbData.summary = config.rollbackReason
-              ? config.rollbackReason + toolTag
-              : config.rollbackShow
-                ? ""
-                : "Revert edits by <username hidden>" + toolTag;
 
-            try {
-              await apiRollback(title, config.username, rbData);
-              addLog(`[Rollback] Successfully reverted: ${title}`);
-              stats.rollback++;
-
-              if (config.rd) {
-                try {
-                  await apiPost({
-                    action: "revisiondelete",
-                    type: "revision",
-                    ids: idlist,
-                    hide: config.rdHides,
-                    reason: config.rdReason + toolTag,
-                    suppress: config.os ? "yes" : "nochange",
-                  });
-                  addLog(`[Revdel] Hiding revisions at: ${title}`);
-                  stats.revdel++;
-                } catch (e) {
-                  addLog(`[Revdel] Failed at ${title}: ${e}`, true);
-                }
-              }
-            } catch (e) {
-              addLog(`[Rollback] Failed at ${title}: ${e}`, true);
-            }
-          }
-          await new Promise((resolve) => setTimeout(resolve, 100)); // Throttling window
-        }
-
-        // Mass-delete pages sequentially
-        if (config.massdel) {
-          for (const title of creation) {
-            try {
-              await apiPost({
-                action: "delete",
+            // Execute Rollback or Undo operation based on settings
+            let pRb;
+            if (config.rollbackMethod === "undo") {
+              // Workaround: Perform edit action with undo parameters
+              const undoData = {
+                action: "edit",
                 title: title,
-                reason: config.massdelReason + toolTag,
-              });
-              addLog(`[Delete] Deleted page: ${title}`);
-              stats.delete++;
-            } catch (e) {
-              addLog(`[Delete] Failed to delete ${title}: ${e}`, true);
-            }
-            await new Promise((resolve) => setTimeout(resolve, 100)); // Throttling window
-          }
-        }
-      }
+                undo: info.latest,
+                summary: config.rollbackReason
+                  ? config.rollbackReason + toolTag
+                  : "Reverting mass edits by " +
+                    (config.rollbackShow
+                      ? config.username
+                      : "<username hidden>") +
+                    toolTag,
+              };
+              if (info.oldestParent) undoData.undoafter = info.oldestParent;
+              if (config.rollbackBot) undoData.bot = 1;
 
-      // Termination and interface cleanup operations
-      const methodTxt =
-        config.rollbackMethod === "undo" ? "undone" : "reverted";
-      const finalStatus = `<b>Status: Completed!</b><br/>Summary: <b>${stats.rollback}</b> ${methodTxt} | <b>${stats.delete}</b> deleted | <b>${stats.revdel}</b> hidden | <b>${stats.error}</b> errors.`;
-      statusLbl.innerHTML = finalStatus;
-      addLog("✅ All operations have been completed successfully.");
-      btnClose.disabled = false;
+              pRb = api.postWithEditToken(undoData).then(
+                () => {
+                  addLog(
+                    `[Undo] Successfully reverted edits via undo: ${title}`,
+                  );
+                  stats.rollback++;
+                  if (config.rd) {
+                    return api
+                      .postWithEditToken({
+                        action: "revisiondelete",
+                        type: "revision",
+                        ids: idlist,
+                        hide: config.rdHides,
+                        reason: config.rdReason + toolTag,
+                        suppress: config.os ? "yes" : "nochange",
+                      })
+                      .then(
+                        () => {
+                          addLog(`[Revdel] Hiding revisions at: ${title}`);
+                          stats.revdel++;
+                        },
+                        (e) => {
+                          addLog(`[Revdel] Failed at ${title}: ${e}`, true);
+                        },
+                      );
+                  }
+                },
+                (e) => {
+                  addLog(`[Undo] Failed at ${title}: ${e}`, true);
+                },
+              );
+            } else {
+              // Native Rollback
+              const rbData = config.rollbackBot ? { markbot: 1 } : {};
+              rbData.summary = config.rollbackReason
+                ? config.rollbackReason + toolTag
+                : config.rollbackShow
+                  ? ""
+                  : "Revert edits by <username hidden>" + toolTag;
+
+              pRb = api.rollback(title, config.username, rbData).then(
+                () => {
+                  addLog(`[Rollback] Successfully reverted: ${title}`);
+                  stats.rollback++;
+                  if (config.rd) {
+                    return api
+                      .postWithEditToken({
+                        action: "revisiondelete",
+                        type: "revision",
+                        ids: idlist,
+                        hide: config.rdHides,
+                        reason: config.rdReason + toolTag,
+                        suppress: config.os ? "yes" : "nochange",
+                      })
+                      .then(
+                        () => {
+                          addLog(`[Revdel] Hiding revisions at: ${title}`);
+                          stats.revdel++;
+                        },
+                        (e) => {
+                          addLog(`[Revdel] Failed at ${title}: ${e}`, true);
+                        },
+                      );
+                  }
+                },
+                (e) => {
+                  addLog(`[Rollback] Failed at ${title}: ${e}`, true);
+                },
+              );
+            }
+            subPromises.push(pRb);
+          }
+
+          // Mass-delete pages
+          if (config.massdel) {
+            for (const title of creation) {
+              let pDel = api
+                .postWithEditToken({
+                  action: "delete",
+                  title: title,
+                  reason: config.massdelReason + toolTag,
+                })
+                .then(
+                  () => {
+                    addLog(`[Delete] Deleted page: ${title}`);
+                    stats.delete++;
+                  },
+                  (e) => {
+                    addLog(`[Delete] Failed to delete ${title}: ${e}`, true);
+                  },
+                );
+              subPromises.push(pDel);
+            }
+          }
+
+          // Mass-protect pages
+          if (config.protect) {
+            affectedPages.forEach(function (title) {
+              let pProt = api
+                .postWithEditToken({
+                  action: "protect",
+                  title: title,
+                  protections:
+                    "edit=" +
+                    config.protectLevel +
+                    "|move=" +
+                    config.protectLevel,
+                  expiry: config.protectDur,
+                  reason: config.protectReason + toolTag,
+                })
+                .then(
+                  () => {
+                    addLog(`[Protect] Successfully protected page: ${title}`);
+                    stats.protect++;
+                  },
+                  (e) => {
+                    addLog(`[Protect] Failed to protect ${title}: ${e}`, true);
+                  },
+                );
+              subPromises.push(pProt);
+            });
+          }
+
+          // Wait for all sub-tasks to finish
+          return $.when.apply($, subPromises);
+        },
+        function (e) {
+          addLog(`[Error] Failed to fetch contribution history: ${e}`, true);
+        },
+      );
+
+      promises.push(pContrib);
+
+      // --- When EVERYTHING finishes ---
+      $.when.apply($, promises).always(function () {
+        const methodTxt =
+          config.rollbackMethod === "undo" ? "undone" : "reverted";
+        const finalStatus = `<b>Status: Completed!</b><br/>Summary: <b>${stats.rollback}</b> ${methodTxt} | <b>${stats.delete}</b> deleted | <b>${stats.protect}</b> protected | <b>${stats.revdel}</b> hidden | <b>${stats.error}</b> errors.`;
+        statusLbl.innerHTML = finalStatus;
+        // Append explicit clarity log confirming termination of procedures
+        addLog("✅ All operations have been completed successfully.");
+        btnClose.disabled = false;
+      });
     };
 
     // ============================================================================
-    // [Section 07] Dialogue builder (input config)
+    // [SECTION 07] DIALOGUE BUILDER (INPUT CONFIG)
     // Generates configuration layout panel structures, parses package parameters, and configures field states.
     // ============================================================================
     const init = function () {
@@ -973,6 +1007,12 @@ $(function () {
           hidename: false,
         },
         pagedelete: { enabled: false, reason: "Vandalism" },
+        pageprotection: {
+          enabled: false,
+          level: "sysop",
+          duration: "1 week",
+          reason: "Persistent vandalism",
+        },
         revisiondelete: {
           enabled: false,
           content: true,
@@ -998,7 +1038,7 @@ $(function () {
           "Serious BLP violations",
           "Purely disruptive material",
           "Other valid deletion under deletion policy",
-          "Non-contentious housekeeping, revdel corrections, notes, conversion",
+          "Non-contentious housekeeping, RevDel corrections, notes, conversion",
           "Deletion mandated by a decision of the Arbitration Committee",
           "Orphaned non-free file(s) deleted",
         ],
@@ -1008,7 +1048,7 @@ $(function () {
       if (!packages.Default) packages.Default = defaultPackage;
 
       // ============================================================================
-      // Native presets
+      // NATIVE PRESETS
       // ============================================================================
       if (!packages["Severe vandalism"]) {
         packages["Severe vandalism"] = {
@@ -1032,6 +1072,12 @@ $(function () {
             hidename: false,
           },
           pagedelete: { enabled: false, reason: "" },
+          pageprotection: {
+            enabled: false,
+            level: "sysop",
+            duration: "1 week",
+            reason: "",
+          },
           revisiondelete: { enabled: false },
         };
       }
@@ -1058,6 +1104,12 @@ $(function () {
             hidename: false,
           },
           pagedelete: { enabled: false, reason: "" },
+          pageprotection: {
+            enabled: false,
+            level: "sysop",
+            duration: "1 week",
+            reason: "",
+          },
           revisiondelete: { enabled: false },
         };
       }
@@ -1084,6 +1136,12 @@ $(function () {
             hidename: true,
           },
           pagedelete: { enabled: false, reason: "" },
+          pageprotection: {
+            enabled: false,
+            level: "sysop",
+            duration: "1 week",
+            reason: "",
+          },
           revisiondelete: {
             enabled: true,
             content: true,
@@ -1120,6 +1178,12 @@ $(function () {
             enabled: true,
             reason: "Unambiguous advertising or promotion",
           },
+          pageprotection: {
+            enabled: false,
+            level: "sysop",
+            duration: "1 week",
+            reason: "",
+          },
           revisiondelete: { enabled: false },
         };
       }
@@ -1146,6 +1210,12 @@ $(function () {
             hidename: false,
           },
           pagedelete: { enabled: false, reason: "" },
+          pageprotection: {
+            enabled: true,
+            level: "sysop",
+            duration: "3 days",
+            reason: "Edit warring",
+          },
           revisiondelete: { enabled: false },
         };
       }
@@ -1174,6 +1244,12 @@ $(function () {
           pagedelete: {
             enabled: true,
             reason: "Unambiguous copyright infringement",
+          },
+          pageprotection: {
+            enabled: false,
+            level: "sysop",
+            duration: "1 week",
+            reason: "",
           },
           revisiondelete: {
             enabled: true,
@@ -1211,6 +1287,12 @@ $(function () {
             enabled: true,
             reason:
               "Creation by a banned or blocked user in violation of ban or block",
+          },
+          pageprotection: {
+            enabled: false,
+            level: "sysop",
+            duration: "1 week",
+            reason: "",
           },
           revisiondelete: { enabled: false },
         };
@@ -1279,6 +1361,7 @@ $(function () {
       topSection.appendChild(rowSuffix);
       body.appendChild(topSection);
 
+      // --- Rollback UI ---
       const {
         section: secRollback,
         sectionBody: bodyRollback,
@@ -1323,6 +1406,7 @@ $(function () {
       bodyRollback.appendChild(rowRbReason);
       body.appendChild(secRollback);
 
+      // --- Block UI ---
       const {
         section: secBlock,
         sectionBody: bodyBlock,
@@ -1345,7 +1429,7 @@ $(function () {
         { value: "never", label: "Indefinite" },
         { value: "other", label: "Other:" },
       ]);
-      const inputBlockDur = makeInput("e.g. 6 months, 2099-01-01");
+      const inputBlockDur = makeInput("E.g. 6 months, 2099-01-01");
       inputBlockDur.classList.add("tng-hidden");
       selBlockDur.addEventListener("change", function () {
         inputBlockDur.classList.toggle(
@@ -1411,6 +1495,7 @@ $(function () {
       bodyBlock.appendChild(checksBlock);
       body.appendChild(secBlock);
 
+      // --- Page Deletion UI ---
       const {
         section: secPagedel,
         sectionBody: bodyPagedel,
@@ -1441,6 +1526,75 @@ $(function () {
       bodyPagedel.appendChild(rowPagedelReason);
       body.appendChild(secPagedel);
 
+      // --- Page Protection UI ---
+      const {
+        section: secProtect,
+        sectionBody: bodyProtect,
+        enableChk: chkProtect,
+      } = makeSection("Page protection", "🔒", false);
+      const { row: rowProtectLevel, field: fieldProtectLevel } =
+        makeRow("Protection level");
+      const selProtectLevel = makeSelect([
+        { value: "sysop", label: "Administrators only" },
+        { value: "autoconfirmed", label: "Autoconfirmed users only" },
+      ]);
+      fieldProtectLevel.appendChild(selProtectLevel);
+      bodyProtect.appendChild(rowProtectLevel);
+
+      const { row: rowProtectDur, field: fieldProtectDur } = makeRow("Expiry");
+      const selProtectDur = makeSelect([
+        { value: "1 day", label: "1 day" },
+        { value: "3 days", label: "3 days" },
+        { value: "1 week", label: "1 week" },
+        { value: "2 weeks", label: "2 weeks" },
+        { value: "1 month", label: "1 month" },
+        { value: "3 months", label: "3 months" },
+        { value: "never", label: "Indefinite" },
+        { value: "other", label: "Other:" },
+      ]);
+      const inputProtectDur = makeInput("E.g. 1 week, 2099-01-01");
+      inputProtectDur.classList.add("tng-hidden");
+      selProtectDur.addEventListener("change", function () {
+        inputProtectDur.classList.toggle(
+          "tng-hidden",
+          selProtectDur.value !== "other",
+        );
+      });
+      const protectDurGroup = document.createElement("div");
+      protectDurGroup.style.cssText = "display: flex; gap: 6px; width: 100%;";
+      selProtectDur.style.flex = "1";
+      inputProtectDur.style.flex = "1";
+      protectDurGroup.appendChild(selProtectDur);
+      protectDurGroup.appendChild(inputProtectDur);
+      fieldProtectDur.appendChild(protectDurGroup);
+      bodyProtect.appendChild(rowProtectDur);
+
+      const { row: rowProtectReason, field: fieldProtectReason } =
+        makeRow("Reason");
+      const selProtectReason = makeSelect(PROTECT_REASONS);
+      const inputProtectReason = makeInput("Full reason to submit");
+      const btnProtectAppend = makeBtn("Append", "quiet");
+      btnProtectAppend.className += " tng-btn-sm";
+      btnProtectAppend.addEventListener("click", function () {
+        const cur = inputProtectReason.value;
+        const add = selProtectReason.value;
+        if (!add) return;
+        inputProtectReason.value = cur ? cur + "; " + add : add;
+        selProtectReason.selectedIndex = 0;
+      });
+      const reasonWrapProtect = document.createElement("div");
+      reasonWrapProtect.className = "tng-reason-wrap";
+      const reasonTopProtect = document.createElement("div");
+      reasonTopProtect.className = "tng-reason-top";
+      reasonTopProtect.appendChild(selProtectReason);
+      reasonTopProtect.appendChild(btnProtectAppend);
+      reasonWrapProtect.appendChild(reasonTopProtect);
+      reasonWrapProtect.appendChild(inputProtectReason);
+      fieldProtectReason.appendChild(reasonWrapProtect);
+      bodyProtect.appendChild(rowProtectReason);
+      body.appendChild(secProtect);
+
+      // --- Revision Deletion UI ---
       const {
         section: secRevdel,
         sectionBody: bodyRevdel,
@@ -1509,20 +1663,22 @@ $(function () {
 
       const btnStart = makeBtn("Start", "destructive");
 
-      // Evaluation routine to dynamically handle the start button state
+      // Evaluation routine to dynamically handle the Start button state
       function updateStartBtn() {
         btnStart.disabled = !(
           chkRollback.checked ||
           chkBlock.checked ||
           chkPagedel.checked ||
+          chkProtect.checked ||
           chkRevdel.checked
         );
       }
 
-      // Bind monitoring handlers to state changes of the four operational modules
+      // Bind monitoring handlers to state changes of the five operational modules
       chkRollback.addEventListener("change", updateStartBtn);
       chkBlock.addEventListener("change", updateStartBtn);
       chkPagedel.addEventListener("change", updateStartBtn);
+      chkProtect.addEventListener("change", updateStartBtn);
       chkRevdel.addEventListener("change", updateStartBtn);
 
       btnStart.addEventListener("click", function () {
@@ -1550,6 +1706,9 @@ $(function () {
         }
         function buildPagedelReason() {
           return inputPagedelReason.value.trim() || selPagedelReason.value;
+        }
+        function buildProtectReason() {
+          return inputProtectReason.value.trim() || selProtectReason.value;
         }
         function buildRevdelReason() {
           return inputRevdelReason.value.trim() || selRevdelReason.value;
@@ -1583,14 +1742,63 @@ $(function () {
           blockHide: chkHidename.checked,
           massdel: chkPagedel.checked,
           massdelReason: buildPagedelReason() + suffix,
+          protect: chkProtect.checked,
+          protectLevel: selProtectLevel.value,
+          protectDur:
+            selProtectDur.value === "other"
+              ? inputProtectDur.value.trim()
+              : selProtectDur.value,
+          protectReason: buildProtectReason() + suffix,
           rd: chkRevdel.checked,
           rdHides: rdHides,
           rdReason: buildRevdelReason() + suffix,
           os: chkOversight.checked,
         };
 
-        overlay.closeHandler();
-        work();
+        function executeTasks() {
+          overlay.closeHandler();
+          work();
+        }
+
+        // Warning prompt safety UI for page deletion and page protection tasks
+        if (config.massdel || config.protect) {
+          let warningMsg = "You have selected actions that modify page states:";
+          if (config.massdel) {
+            warningMsg +=
+              "<br/>• <b>Mass page deletion</b> will permanently delete pages created by this user.";
+          }
+          if (config.protect) {
+            warningMsg +=
+              "<br/>• <b>Page protection</b> will restrict future edits on pages affected by this user.";
+          }
+          warningMsg +=
+            "<br/><br/>Are you sure you want to proceed with these potentially disruptive actions?";
+
+          const confirmDlg = createDialog({
+            title: "Confirm destructive actions",
+            icon: "⚠️",
+          });
+
+          const warnText = document.createElement("div");
+          warnText.innerHTML = warningMsg;
+          confirmDlg.body.appendChild(warnText);
+
+          const btnAbort = makeBtn("Cancel", "quiet");
+          btnAbort.addEventListener("click", function () {
+            confirmDlg.overlay.closeHandler();
+          });
+
+          const btnConfirm = makeBtn("Confirm", "destructive");
+          btnConfirm.addEventListener("click", function () {
+            confirmDlg.overlay.closeHandler();
+            executeTasks();
+          });
+
+          confirmDlg.footer.appendChild(btnAbort);
+          confirmDlg.footer.appendChild(btnConfirm);
+        } else {
+          executeTasks();
+        }
       });
 
       footer.appendChild(btnCancel);
@@ -1706,6 +1914,36 @@ $(function () {
           inputPagedelReason.value = pdr;
         }
 
+        const pt = pkg.pageprotection || {};
+        chkProtect.checked = !!pt.enabled;
+        secProtect.classList.toggle("tng-disabled", !chkProtect.checked);
+        bodyProtect.classList.toggle("tng-hidden", !chkProtect.checked);
+        selProtectLevel.value = pt.level || "sysop";
+        const ptdur = pt.duration || "1 week";
+        if (
+          [...selProtectDur.options].find(function (o) {
+            return o.value === ptdur;
+          })
+        ) {
+          selProtectDur.value = ptdur;
+          inputProtectDur.classList.add("tng-hidden");
+        } else {
+          selProtectDur.value = "other";
+          inputProtectDur.value = ptdur;
+          inputProtectDur.classList.remove("tng-hidden");
+        }
+        const ptr = pt.reason || "";
+        if (
+          [...selProtectReason.options].find(function (o) {
+            return o.value === ptr;
+          })
+        ) {
+          selProtectReason.value = ptr;
+          inputProtectReason.value = "";
+        } else {
+          inputProtectReason.value = ptr;
+        }
+
         const rd = pkg.revisiondelete || {};
         chkRevdel.checked = !!rd.enabled;
         secRevdel.classList.toggle("tng-disabled", !chkRevdel.checked);
@@ -1754,7 +1992,7 @@ $(function () {
     };
 
     // ============================================================================
-    // [Section 08] Portlet link
+    // [SECTION 08] PORTLET LINK
     // Registers the execution menu item anchor inside the site actions portal drop list.
     // ============================================================================
     $(mw.util.addPortletLink("p-cactions", "#", "⛩️ Tengu", "ca-tengu")).on(
