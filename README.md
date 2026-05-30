@@ -1,4 +1,4 @@
-# TENGU — 天狗
+# Tengu — 天狗
 
 **Version:** 1.5.0  
 **Type:** All-in-one MediaWiki moderation tool  
