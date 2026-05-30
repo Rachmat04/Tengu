@@ -1,81 +1,154 @@
-# Tengu — 天狗
+# TENGU — 天狗
 
-**All-in-One Wiki Moderation Tool**
+**Version:** 1.5.0  
+**Type:** All-in-one MediaWiki moderation tool  
+**Language:** JavaScript (User script)
 
-**Tengu** is a JavaScript moderation utility for MediaWiki-based projects. It combines several common administrator and anti-vandalism tasks into a single tool to help moderators respond more efficiently to disruptive edits and spam activity.
+---
 
-## Features
+## Overview
 
-### Rollback
+**Tengu** (天狗) is an all-in-one moderation script designed for MediaWiki platforms. It brings several common administrative actions into a single interface, helping moderators manage users and pages more efficiently.
 
-Reverts all recent edits made by a target user.
+It is intended for experienced users with the appropriate rights on a wiki.
 
-### Block
-
-Blocks a registered user or IP address with configurable block options.
-
-### Page Deletion
-
-Mass-deletes pages created by a target user.
-
-### Revision Deletion
-
-Hides revision content, edit summaries, or usernames from public view.
+---
 
 ## Purpose
 
-TENGU is designed for:
+This tool combines multiple moderation tasks into one workflow:
 
-* Anti-vandalism work
-* Spam cleanup
-* Rapid moderation actions
-* Administrative maintenance tasks
+- User blocking
+- Page rollback
+- Page deletion
+- Page protection
+- Revision deletion
 
-The tool aims to reduce repetitive manual actions by combining multiple moderation utilities into one interface.
+The goal is to reduce the need to switch between different interfaces when performing routine moderation work.
 
-## Requirements
+---
 
-* MediaWiki-based wiki
-* Appropriate administrator or moderator rights
-* JavaScript enabled
-* Access to the relevant MediaWiki API permissions
+## Key Features
+
+### Rollback
+- Reverts all recent edits by a selected user.
+- Uses undo fallback when rollback rights are not available.
+
+### Block user / IP
+- Blocks users or IP addresses.
+- Supports configurable options.
+- Includes automatic expiry settings.
+
+### Page deletion
+- Mass-deletes pages created by a target user.
+
+### Page protection
+- Mass-protects pages created or edited by a target user.
+- Includes preset reason options.
+
+### Revision deletion
+- Hides revision content, edit summaries, or usernames.
+
+### Task control
+- Abort button added in v1.5.0 to cancel running operations.
+
+---
 
 ## Installation
 
-Add the script to your personal JavaScript page or gadget configuration.
+This script is designed for MediaWiki user scripts.
 
-Example:
+1. Copy the script into your wiki user JavaScript page (for example: `User:<username>/common.js`).
+2. Save the page.
+3. Refresh your browser cache.
+4. Open the moderation interface from the configured entry point (depends on implementation in your wiki setup).
 
-```javascript
-mw.loader.load('PATH_TO_SCRIPT');
-```
-
-Replace `PATH_TO_SCRIPT` with the location of the script on your wiki.
+---
 
 ## Usage
 
-After installation, TENGU adds moderation utilities accessible through the wiki interface.
+1. Open the Tengu interface.
+2. Enter the target username or IP address.
+3. Select the moderation action:
+   - Rollback
+   - Block
+   - Delete pages
+   - Protect pages
+   - Revision deletion
+4. Configure options where required.
+5. Confirm the action in the warning dialogue.
+6. Monitor progress in the log panel.
 
-Typical workflow:
+---
 
-1. Open the tool interface
-2. Enter the target username or IP
-3. Select the desired moderation action
-4. Configure options if needed
-5. Execute the action
+## Safety notes
 
-Always review actions carefully before execution.
+- This tool performs high-impact administrative actions.
+- Always verify the target before confirming any operation.
+- Some actions may be irreversible (e.g. deletions and revision hiding).
+- Use caution when applying mass operations.
 
-## Original Script
+---
 
-Based on:
+## Installation
 
-* WhitePhosphorus — “all-in-one”
+This script can be installed either locally (on a single wiki) or globally (across multiple wikis, if your account supports global scripts).
 
-Original source:
+### Local installation (common.js)
 
-* [Meta-Wiki: User:WhitePhosphorus/all-in-one](https://meta.wikimedia.org/wiki/User:WhitePhosphorus/all-in-one)
+Use this method if you want Tengu on one wiki only.
+
+1. Open your user JavaScript page:
+```
+User:<username>/common.js
+```
+2. Add the script code to the page.
+- Paste the full Tengu script.
+3. Save the page.
+4. Clear your browser cache or perform a hard refresh.
+5. Reload the wiki page to activate the tool.
+
+### Global installation (global.js)
+
+Use this method if your wiki account supports global scripts (e.g. via Global Preferences or a global.js setup).
+
+1. Open your global JavaScript page:
+```
+User:<username>/global.js
+```
+2. Paste the full Tengu script into the file.
+3. Save the page.
+4. Ensure global scripts are enabled in your preferences (if required by your wiki setup).
+5. Refresh all open wiki tabs or restart your browser session.
+6. The tool should now load on all supported wikis.
+
+---
+
+### Notes
+
+- Some wikis may disable global scripts for security reasons.
+- If it does not appear after installation: check browser console for errors, confirm your user rights allow script execution, and verify the script is not blocked by another gadget or user script.
+
+---
+
+## Credits
+
+- Based on: `User:WhitePhosphorus/all-in-one`
+- Original script: https://meta.wikimedia.org/wiki/User:WhitePhosphorus/all-in-one
+
+---
+
+## License
+
+This project is licensed under the MIT License.
+
+---
 
 ## Disclaimer
 
-This tool performs administrative actions that may affect users, revisions, and pages permanently. Use responsibly and ensure actions comply with local wiki policies and community guidelines.
+- This tool is provided as-is, without any guarantee of correctness, stability, or suitability for any specific use.
+- The developer does not take responsibility for any actions performed using this tool.
+- All use of this script is the sole responsibility of the user.
+- Users are expected to ensure compliance with their local wiki policies and rules before using any features.
+
+Use of this tool may result in irreversible changes (such as deletions, blocks, or revision suppression). Always verify targets and settings before confirming actions.
