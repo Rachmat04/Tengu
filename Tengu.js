@@ -1,21 +1,22 @@
 /**
  * ============================================================================
  * TENGU — 天狗
+ * Version 1.1.0
  * All-in-One Wiki Moderation Tool
  * ============================================================================
+ * PURPOSE:
+ * An all-in-one moderation script for MediaWiki that streamlines user blocking,
+ * rollbacks, page deletions, and revision deletions from a single interface.
  *
- * Version: 1.0.0
+ * KEY FEATURES:
+ * - Rollback: Reverts all recent edits by a target user (or via undo fallback).
+ * - Block: Blocks a user or IP with configurable options and automatic expiration.
+ * - Page deletion: Mass-deletes pages created by a target user.
+ * - Revision deletion: Hides revision content, summaries, or usernames.
  *
- * WHAT THIS DOES
- * - Rollback: reverts all recent edits by a target user
- * - Block: blocks a user or IP with configurable options
- * - Page deletion: mass-deletes pages created by a target user
- * - Revision deletion: hides revision content, summaries, or usernames
- *
- * ORIGINAL SCRIPT
- * - Based on User:WhitePhosphorus/all-in-one
- * - See: https://meta.wikimedia.org/wiki/User:WhitePhosphorus/all-in-one
- *
+ * CHANGELOG v1.1.0:
+ * - Added: Optional undo fallback method for users without native rollback rights.
+ * - Changed: Reduced the vertical height of the progress log for better screen real-estate utilisation.
  * ============================================================================
  */
 // <nowiki>
@@ -158,11 +159,11 @@ $(function () {
             display: flex; gap: 6px; align-items: center; flex-wrap: wrap;
         }
 
-        /* --- Buttons (Bold Styled) --- */
+        /* --- Buttons --- */
         .tng-btn {
             display: inline-flex; align-items: center; justify-content: center;
             padding: 5px 14px; border-radius: 4px; font-size: 0.9em;
-            font-weight: 600; /* Membuat label text button tebal/bold */
+            font-weight: 600;
             cursor: pointer; border: 1px solid transparent;
             font-family: inherit; transition: background .12s, border-color .12s;
             white-space: nowrap;
@@ -658,7 +659,7 @@ $(function () {
 
       const btnClose = document.createElement("button");
       btnClose.className = "tng-btn tng-btn-primary";
-      btnClose.textContent = "Close & reload";
+      btnClose.textContent = "Close and reload";
       btnClose.disabled = true; // Disabled until all tasks are complete
       btnClose.addEventListener("click", () => overlay.closeHandler());
       footer.appendChild(btnClose);
@@ -697,17 +698,17 @@ $(function () {
 
         const pBlock = api.postWithEditToken(data).then(
           () => {
-            addLog(`[BLOCK] Successfully blocked user ${config.username}.`);
+            addLog(`[Block] Successfully blocked user ${config.username}.`);
             stats.block++;
           },
           (e) => {
-            addLog(`[BLOCK] Failed to block: ${e}`, true);
+            addLog(`[Block] Failed to block: ${e}`, true);
           },
         );
         promises.push(pBlock);
       }
 
-      // --- Fetch user contributions, then rollback / revdel / delete ---
+      // --- Fetch user contributions, then rollback / undo / revdel / delete ---
       let untildate = new Date();
       if (config.endtime === "inf") {
         untildate = null;
@@ -727,25 +728,36 @@ $(function () {
         function (data) {
           const contribs = data.query && data.query.usercontribs;
           if (!contribs || !contribs.length) {
-            addLog("[INFO] No contributions found within this timeframe.");
+            addLog("[Info] No contributions found within this timeframe.");
             return;
           }
 
-          const ids = {};
+          const pageEdits = {};
           const creation = [];
           for (const edit of contribs) {
             if (edit.new === "") {
               creation.push(edit.title);
             } else {
-              if (!ids[edit.title]) ids[edit.title] = [];
-              ids[edit.title].push(edit.revid);
+              if (!pageEdits[edit.title]) {
+                pageEdits[edit.title] = {
+                  revids: [],
+                  latest: edit.revid,
+                  oldestParent: edit.parentid,
+                };
+              }
+              pageEdits[edit.title].revids.push(edit.revid);
+              // usercontribs returns ordered from newest to oldest,
+              // so the last item encountered updates oldestParent correctly.
+              pageEdits[edit.title].oldestParent = edit.parentid;
             }
           }
 
           const subPromises = [];
 
-          // Rollback and/or revision delete for each edited page
-          for (const [title, idlist] of Object.entries(ids)) {
+          // Rollback / Undo and/or revision delete for each edited page
+          for (const [title, info] of Object.entries(pageEdits)) {
+            const idlist = info.revids;
+
             if (!config.rollback) {
               // Only revision delete
               if (config.rd) {
@@ -761,12 +773,12 @@ $(function () {
                   .then(
                     () => {
                       addLog(
-                        `[REVDEL] Hiding ${idlist.length} revisions at: ${title}`,
+                        `[Revdel] Hiding ${idlist.length} revisions at: ${title}`,
                       );
                       stats.revdel++;
                     },
                     (e) => {
-                      addLog(`[REVDEL] Failed at ${title}: ${e}`, true);
+                      addLog(`[Revdel] Failed at ${title}: ${e}`, true);
                     },
                   );
                 subPromises.push(pRd);
@@ -774,43 +786,95 @@ $(function () {
               continue;
             }
 
-            // Rollback first, then revdel
-            const rbData = config.rollbackBot ? { markbot: 1 } : {};
-            rbData.summary = config.rollbackReason
-              ? config.rollbackReason + toolTag
-              : config.rollbackShow
-                ? ""
-                : "Revert edits by <username hidden>" + toolTag;
+            // Execute Rollback or Undo operation based on settings
+            let pRb;
+            if (config.rollbackMethod === "undo") {
+              // Workaround: Perform edit action with undo parameters
+              const undoData = {
+                action: "edit",
+                title: title,
+                undo: info.latest,
+                summary: config.rollbackReason
+                  ? config.rollbackReason + toolTag
+                  : "Reverting mass edits by " +
+                    (config.rollbackShow
+                      ? config.username
+                      : "<username hidden>") +
+                    toolTag,
+              };
+              if (info.oldestParent) undoData.undoafter = info.oldestParent;
+              if (config.rollbackBot) undoData.bot = 1;
 
-            let pRb = api.rollback(title, config.username, rbData).then(
-              () => {
-                addLog(`[ROLLBACK] Successfully reverted: ${title}`);
-                stats.rollback++;
-                if (config.rd) {
-                  return api
-                    .postWithEditToken({
-                      action: "revisiondelete",
-                      type: "revision",
-                      ids: idlist,
-                      hide: config.rdHides,
-                      reason: config.rdReason + toolTag,
-                      suppress: config.os ? "yes" : "nochange",
-                    })
-                    .then(
-                      () => {
-                        addLog(`[REVDEL] Hiding revisions at: ${title}`);
-                        stats.revdel++;
-                      },
-                      (e) => {
-                        addLog(`[REVDEL] Failed at ${title}: ${e}`, true);
-                      },
-                    );
-                }
-              },
-              (e) => {
-                addLog(`[ROLLBACK] Failed at ${title}: ${e}`, true);
-              },
-            );
+              pRb = api.postWithEditToken(undoData).then(
+                () => {
+                  addLog(
+                    `[Undo] Successfully reverted edits via undo: ${title}`,
+                  );
+                  stats.rollback++;
+                  if (config.rd) {
+                    return api
+                      .postWithEditToken({
+                        action: "revisiondelete",
+                        type: "revision",
+                        ids: idlist,
+                        hide: config.rdHides,
+                        reason: config.rdReason + toolTag,
+                        suppress: config.os ? "yes" : "nochange",
+                      })
+                      .then(
+                        () => {
+                          addLog(`[Revdel] Hiding revisions at: ${title}`);
+                          stats.revdel++;
+                        },
+                        (e) => {
+                          addLog(`[Revdel] Failed at ${title}: ${e}`, true);
+                        },
+                      );
+                  }
+                },
+                (e) => {
+                  addLog(`[Undo] Failed at ${title}: ${e}`, true);
+                },
+              );
+            } else {
+              // Native Rollback
+              const rbData = config.rollbackBot ? { markbot: 1 } : {};
+              rbData.summary = config.rollbackReason
+                ? config.rollbackReason + toolTag
+                : config.rollbackShow
+                  ? ""
+                  : "Revert edits by <username hidden>" + toolTag;
+
+              pRb = api.rollback(title, config.username, rbData).then(
+                () => {
+                  addLog(`[Rollback] Successfully reverted: ${title}`);
+                  stats.rollback++;
+                  if (config.rd) {
+                    return api
+                      .postWithEditToken({
+                        action: "revisiondelete",
+                        type: "revision",
+                        ids: idlist,
+                        hide: config.rdHides,
+                        reason: config.rdReason + toolTag,
+                        suppress: config.os ? "yes" : "nochange",
+                      })
+                      .then(
+                        () => {
+                          addLog(`[Revdel] Hiding revisions at: ${title}`);
+                          stats.revdel++;
+                        },
+                        (e) => {
+                          addLog(`[Revdel] Failed at ${title}: ${e}`, true);
+                        },
+                      );
+                  }
+                },
+                (e) => {
+                  addLog(`[Rollback] Failed at ${title}: ${e}`, true);
+                },
+              );
+            }
             subPromises.push(pRb);
           }
 
@@ -825,11 +889,11 @@ $(function () {
                 })
                 .then(
                   () => {
-                    addLog(`[DELETE] Deleted page: ${title}`);
+                    addLog(`[Delete] Deleted page: ${title}`);
                     stats.delete++;
                   },
                   (e) => {
-                    addLog(`[DELETE] Failed to delete ${title}: ${e}`, true);
+                    addLog(`[Delete] Failed to delete ${title}: ${e}`, true);
                   },
                 );
               subPromises.push(pDel);
@@ -840,7 +904,7 @@ $(function () {
           return $.when.apply($, subPromises);
         },
         function (e) {
-          addLog(`[ERROR] Failed to fetch contribution history: ${e}`, true);
+          addLog(`[Error] Failed to fetch contribution history: ${e}`, true);
         },
       );
 
@@ -848,7 +912,9 @@ $(function () {
 
       // --- When EVERYTHING finishes ---
       $.when.apply($, promises).always(function () {
-        const finalStatus = `<b>Status: Completed!</b><br/>Summary: <b>${stats.rollback}</b> reverted | <b>${stats.delete}</b> deleted | <b>${stats.revdel}</b> hidden | <b>${stats.error}</b> errors.`;
+        const methodTxt =
+          config.rollbackMethod === "undo" ? "undone" : "reverted";
+        const finalStatus = `<b>Status: Completed!</b><br/>Summary: <b>${stats.rollback}</b> ${methodTxt} | <b>${stats.delete}</b> deleted | <b>${stats.revdel}</b> hidden | <b>${stats.error}</b> errors.`;
         statusLbl.innerHTML = finalStatus;
         // Append explicit clarity log confirming termination of procedures
         addLog("✅ All operations have been completed successfully.");
@@ -1199,11 +1265,16 @@ $(function () {
         "Show username in summary",
         true,
       );
+      const { wrap: wrapUndo, chk: chkUndo } = makeCheckbox(
+        "Use undo feature (Alternative without rollback rights)",
+        false,
+      );
       const checksRollback = document.createElement("div");
       checksRollback.className = "tng-checks";
       checksRollback.style.paddingLeft = "0";
       checksRollback.appendChild(wrapBot);
       checksRollback.appendChild(wrapShow);
+      checksRollback.appendChild(wrapUndo);
       bodyRollback.appendChild(checksRollback);
 
       const { row: rowRbReason, field: fieldRbReason } = makeRow("Reason");
@@ -1218,7 +1289,7 @@ $(function () {
       const helpRbReason = document.createElement("div");
       helpRbReason.className = "tng-help";
       helpRbReason.textContent =
-        'If set, this overrides the default rollback summary. Untick "Show username" to hide the username regardless.';
+        'If set, this overrides the default rollback summary. Uncheck "Show username" to hide the username regardless.';
       reasonWrapRollback.appendChild(helpRbReason);
 
       fieldRbReason.appendChild(reasonWrapRollback);
@@ -1467,6 +1538,7 @@ $(function () {
           isIP: isIP,
           endtime: endtime,
           rollback: chkRollback.checked,
+          rollbackMethod: chkUndo.checked ? "undo" : "rollback",
           rollbackBot: chkBot.checked,
           rollbackShow: chkShow.checked,
           rollbackReason: buildRollbackReason(),
@@ -1527,6 +1599,7 @@ $(function () {
         bodyRollback.classList.toggle("tng-hidden", !chkRollback.checked);
         chkBot.checked = !!rb.bot;
         chkShow.checked = rb.showname !== false;
+        chkUndo.checked = false; // Reset to default rollback method when switching packages
 
         const rbr = rb.reason || "";
         let foundRbr = false;
