@@ -142,6 +142,8 @@ User:<username>/global.js
 
 This project is licensed under the MIT License.
 
+You are free to use, copy, modify, and distribute this software under the terms of the MIT License, provided that the original copyright notice and permission notice are included in all copies or substantial portions of the software.
+
 ---
 
 ## Disclaimer
