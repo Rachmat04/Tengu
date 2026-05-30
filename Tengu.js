@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * TENGU — 天狗
- * Version 1.5.3
+ * Version 1.5.4
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -14,6 +14,10 @@
  * - Page deletion: Mass-deletes pages created by a target user.
  * - Page protection: Mass-protects pages edited or created by a target user.
  * - Revision deletion: Hides revision content, summaries, or usernames.
+ *
+ * CHANGELOG v1.5.4:
+ * - Added: Auto-dismissing inline notification bubbles for input validation.
+ * - Improved: Validation UI now supports 5-second auto-hide and automatic clearing on input.
  *
  * CHANGELOG v1.5.3:
  * - Added: In-house notification style for form validation errors.
@@ -457,8 +461,16 @@ $(function () {
         note.className = "tng-notification";
         parent.appendChild(note);
       }
+
+      if (note.tngTimeout) clearTimeout(note.tngTimeout);
+
       note.innerHTML = "⚠️ " + message;
       note.style.display = "block";
+
+      note.tngTimeout = setTimeout(function () {
+        note.style.display = "none";
+      }, 5000);
+
       return note;
     }
 
@@ -1482,6 +1494,7 @@ $(function () {
       inputUsername.addEventListener("input", function () {
         const existingNote = fieldTarget.querySelector(".tng-notification");
         if (existingNote) {
+          if (existingNote.tngTimeout) clearTimeout(existingNote.tngTimeout);
           existingNote.style.display = "none";
         }
       });
@@ -1874,8 +1887,12 @@ $(function () {
       // Inside the btnStart event listener
       btnStart.addEventListener("click", function () {
         const username = inputUsername.value.trim();
+
         const existing = fieldTarget.querySelector(".tng-notification");
-        if (existing) existing.style.display = "none";
+        if (existing) {
+          if (existing.tngTimeout) clearTimeout(existing.tngTimeout);
+          existing.style.display = "none";
+        }
 
         if (!username) {
           showNotification(fieldTarget, "Please enter a target username.");
