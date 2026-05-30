@@ -1,8 +1,8 @@
 /**
  * ============================================================================
  * TENGU — 天狗
- * Version 1.1.0
- * All-in-One Wiki Moderation Tool
+ * Version 1.2.0
+ * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
  * An all-in-one moderation script for MediaWiki that streamlines user blocking,
@@ -14,23 +14,31 @@
  * - Page deletion: Mass-deletes pages created by a target user.
  * - Revision deletion: Hides revision content, summaries, or usernames.
  *
+ * CHANGELOG v1.2.0:
+ * - Fixed: API request throttling by shifting to sequential execution using native ES6 promises.
+ * - Fixed: Pagination bottlenecks by explicitly handling the query continue token.
+ * - Changed: Standardised all interface elements, logs, labels, and comments to sentence case and en-GB spelling.
  * CHANGELOG v1.1.0:
  * - Added: Optional undo fallback method for users without native rollback rights.
  * - Changed: Reduced the vertical height of the progress log for better screen real-estate utilisation.
+ *
+ * ORIGINAL SCRIPT:
+ * - Based on User:WhitePhosphorus/all-in-one
+ * - See: https://meta.wikimedia.org/wiki/User:WhitePhosphorus/all-in-one
  * ============================================================================
  */
 // <nowiki>
 $(function () {
   mw.loader.using(["mediawiki.util", "mediawiki.api"], function () {
     // ============================================================================
-    // [SECTION 00] STATE
+    // [Section 00] State
     // Stores runtime configurations and dialogue initialisation flags.
     // ============================================================================
     let config = {};
     let inited = false;
 
     // ============================================================================
-    // [SECTION 01] STYLESHEET
+    // [Section 01] Stylesheet
     // Appends customised CSS configurations for layout rendering and dark mode support.
     // ============================================================================
     mw.util.addCSS(`
@@ -195,7 +203,7 @@ $(function () {
             padding: 4px 0 2px; pointer-events: none;
         }
 
-        /* --- Progress Log (Optimised Height) --- */
+        /* --- Progress log (optimised height) --- */
         .tng-log-box {
             height: 160px; overflow-y: auto; font-family: monospace;
             font-size: 0.85em; padding: 10px; border: 1px solid #a2a9b1;
@@ -225,7 +233,7 @@ $(function () {
             .tng-btn-quiet { color: #eaecf0; border-color: #54595d; }
             .tng-btn-quiet:hover { background: #2a2a35; }
 
-            /* Dark mode for Progress Log */
+            /* Dark mode for progress log */
             .tng-log-box { background: #2a2a2a; border-color: #54595d; color: #eaecf0; }
             .tng-log-err { color: #ff6b6b; }
             .tng-log-succ { color: #00af89; }
@@ -233,7 +241,7 @@ $(function () {
     `);
 
     // ============================================================================
-    // [SECTION 02] OVERLAY STACK
+    // [Section 02] Overlay stack
     // Tracks active overlays and binds global Escape key event listeners to dismiss dialogues.
     // ============================================================================
     const overlayStack = [];
@@ -269,7 +277,7 @@ $(function () {
     );
 
     // ============================================================================
-    // [SECTION 03] DIALOGUE BUILDER
+    // [Section 03] Dialogue builder
     // Utility functions to create layout layers and build primary dialogue modal frames.
     // ============================================================================
     function createDialog(opts) {
@@ -312,7 +320,7 @@ $(function () {
     }
 
     // ============================================================================
-    // [SECTION 04] DOM HELPERS
+    // [Section 04] DOM helpers
     // Standardised DOM element generation scripts for form inputs, checkboxes, and section boxes.
     // ============================================================================
     function makeRow(labelText) {
@@ -398,7 +406,7 @@ $(function () {
     }
 
     // ============================================================================
-    // [SECTION 05] DROPDOWN LIST REASONS
+    // [Section 05] Dropdown list reasons
     // Houses pre-populated reason sets for rollbacks, page deletions, and block actions.
     // ============================================================================
     const ROLLBACK_REASONS = [
@@ -557,8 +565,8 @@ $(function () {
             label: "Unambiguous copyright infringement",
           },
           {
-            value: "Abandoned draft or Articles for Creation submission",
-            label: "Abandoned draft or Articles for Creation submission",
+            value: "Abandoned draft or Articles for creation submission",
+            label: "Abandoned draft or Articles for creation submission",
           },
           {
             value: "Unnecessary disambiguation page",
@@ -629,14 +637,57 @@ $(function () {
     ];
 
     // ============================================================================
-    // [SECTION 06] MAIN WORK FUNCTION
+    // [Section 06] Main work function
     // Executes API orchestration loops for user blocks, rollbacks, and deletions whilst piping execution log messages.
     // ============================================================================
-    const work = function () {
+    const work = async function () {
       const api = new mw.Api();
-      const promises = [];
       const stats = { block: 0, rollback: 0, revdel: 0, delete: 0, error: 0 };
       const toolTag = " (via ⚙️ [[w:id:Pengguna:Rachmat04/Tengu.js|Tengu]])";
+
+      // Promisified API wrappers converting jQuery promises into standard ES6 promises
+      const apiGet = (params) =>
+        new Promise((resolve, reject) => {
+          api
+            .get(params)
+            .done(resolve)
+            .fail((code, err) =>
+              reject(
+                code +
+                  (err && err.error && err.error.info
+                    ? ": " + err.error.info
+                    : ""),
+              ),
+            );
+        });
+      const apiPost = (params) =>
+        new Promise((resolve, reject) => {
+          api
+            .postWithEditToken(params)
+            .done(resolve)
+            .fail((code, err) =>
+              reject(
+                code +
+                  (err && err.error && err.error.info
+                    ? ": " + err.error.info
+                    : ""),
+              ),
+            );
+        });
+      const apiRollback = (title, user, params) =>
+        new Promise((resolve, reject) => {
+          api
+            .rollback(title, user, params)
+            .done(resolve)
+            .fail((code, err) =>
+              reject(
+                code +
+                  (err && err.error && err.error.info
+                    ? ": " + err.error.info
+                    : ""),
+              ),
+            );
+        });
 
       // Build Progress UI
       const { overlay, body, footer } = createDialog({
@@ -696,19 +747,16 @@ $(function () {
         if (config.blockMail) data.noemail = 1;
         if (config.blockHide) data.hidename = 1;
 
-        const pBlock = api.postWithEditToken(data).then(
-          () => {
-            addLog(`[Block] Successfully blocked user ${config.username}.`);
-            stats.block++;
-          },
-          (e) => {
-            addLog(`[Block] Failed to block: ${e}`, true);
-          },
-        );
-        promises.push(pBlock);
+        try {
+          await apiPost(data);
+          addLog(`[Block] Successfully blocked user ${config.username}.`);
+          stats.block++;
+        } catch (e) {
+          addLog(`[Block] Failed to block: ${e}`, true);
+        }
       }
 
-      // --- Fetch user contributions, then rollback / undo / revdel / delete ---
+      // --- Fetch user contributions with recursive pagination framework ---
       let untildate = new Date();
       if (config.endtime === "inf") {
         untildate = null;
@@ -724,206 +772,185 @@ $(function () {
       };
       if (untildate) contribParams.ucend = untildate.toISOString();
 
-      const pContrib = api.get(contribParams).then(
-        function (data) {
-          const contribs = data.query && data.query.usercontribs;
-          if (!contribs || !contribs.length) {
-            addLog("[Info] No contributions found within this timeframe.");
-            return;
-          }
+      let contribs = [];
+      let hasMore = true;
+      let continueToken = {};
 
-          const pageEdits = {};
-          const creation = [];
-          for (const edit of contribs) {
-            if (edit.new === "") {
-              creation.push(edit.title);
-            } else {
-              if (!pageEdits[edit.title]) {
-                pageEdits[edit.title] = {
-                  revids: [],
-                  latest: edit.revid,
-                  oldestParent: edit.parentid,
-                };
-              }
-              pageEdits[edit.title].revids.push(edit.revid);
-              // usercontribs returns ordered from newest to oldest,
-              // so the last item encountered updates oldestParent correctly.
-              pageEdits[edit.title].oldestParent = edit.parentid;
+      while (hasMore) {
+        const params = Object.assign({}, contribParams, continueToken);
+        try {
+          const data = await apiGet(params);
+          if (data.query && data.query.usercontribs) {
+            contribs = contribs.concat(data.query.usercontribs);
+          }
+          if (data.continue) {
+            continueToken = data.continue;
+          } else {
+            hasMore = false;
+          }
+        } catch (e) {
+          addLog(`[Error] Failed to fetch contribution history: ${e}`, true);
+          hasMore = false;
+        }
+      }
+
+      if (!contribs.length) {
+        addLog("[Info] No contributions found within this timeframe.");
+      } else {
+        const pageEdits = {};
+        const creation = [];
+        for (const edit of contribs) {
+          if (edit.new === "") {
+            creation.push(edit.title);
+          } else {
+            if (!pageEdits[edit.title]) {
+              pageEdits[edit.title] = {
+                revids: [],
+                latest: edit.revid,
+                oldestParent: edit.parentid,
+              };
             }
+            pageEdits[edit.title].revids.push(edit.revid);
+            pageEdits[edit.title].oldestParent = edit.parentid;
+          }
+        }
+
+        // Process rollbacks, undos and revision deletions sequentially with a throttling buffer delay
+        for (const [title, info] of Object.entries(pageEdits)) {
+          const idlist = info.revids;
+
+          if (!config.rollback) {
+            // Only revision delete
+            if (config.rd) {
+              try {
+                await apiPost({
+                  action: "revisiondelete",
+                  type: "revision",
+                  ids: idlist,
+                  hide: config.rdHides,
+                  reason: config.rdReason + toolTag,
+                  suppress: config.os ? "yes" : "nochange",
+                });
+                addLog(
+                  `[Revdel] Hiding ${idlist.length} revisions at: ${title}`,
+                );
+                stats.revdel++;
+              } catch (e) {
+                addLog(`[Revdel] Failed at ${title}: ${e}`, true);
+              }
+            }
+            await new Promise((resolve) => setTimeout(resolve, 100)); // Rate limit buffer
+            continue;
           }
 
-          const subPromises = [];
+          // Execute rollback or undo operation sequentially based on settings
+          if (config.rollbackMethod === "undo") {
+            const undoData = {
+              action: "edit",
+              title: title,
+              undo: info.latest,
+              summary: config.rollbackReason
+                ? config.rollbackReason + toolTag
+                : "Reverting mass edits by " +
+                  (config.rollbackShow
+                    ? config.username
+                    : "<username hidden>") +
+                  toolTag,
+            };
+            if (info.oldestParent) undoData.undoafter = info.oldestParent;
+            if (config.rollbackBot) undoData.bot = 1;
 
-          // Rollback / Undo and/or revision delete for each edited page
-          for (const [title, info] of Object.entries(pageEdits)) {
-            const idlist = info.revids;
+            try {
+              await apiPost(undoData);
+              addLog(`[Undo] Successfully reverted edits via undo: ${title}`);
+              stats.rollback++;
 
-            if (!config.rollback) {
-              // Only revision delete
               if (config.rd) {
-                let pRd = api
-                  .postWithEditToken({
+                try {
+                  await apiPost({
                     action: "revisiondelete",
                     type: "revision",
                     ids: idlist,
                     hide: config.rdHides,
                     reason: config.rdReason + toolTag,
                     suppress: config.os ? "yes" : "nochange",
-                  })
-                  .then(
-                    () => {
-                      addLog(
-                        `[Revdel] Hiding ${idlist.length} revisions at: ${title}`,
-                      );
-                      stats.revdel++;
-                    },
-                    (e) => {
-                      addLog(`[Revdel] Failed at ${title}: ${e}`, true);
-                    },
-                  );
-                subPromises.push(pRd);
+                  });
+                  addLog(`[Revdel] Hiding revisions at: ${title}`);
+                  stats.revdel++;
+                } catch (e) {
+                  addLog(`[Revdel] Failed at ${title}: ${e}`, true);
+                }
               }
-              continue;
+            } catch (e) {
+              addLog(`[Undo] Failed at ${title}: ${e}`, true);
             }
+          } else {
+            // Native rollback
+            const rbData = config.rollbackBot ? { markbot: 1 } : {};
+            rbData.summary = config.rollbackReason
+              ? config.rollbackReason + toolTag
+              : config.rollbackShow
+                ? ""
+                : "Revert edits by <username hidden>" + toolTag;
 
-            // Execute Rollback or Undo operation based on settings
-            let pRb;
-            if (config.rollbackMethod === "undo") {
-              // Workaround: Perform edit action with undo parameters
-              const undoData = {
-                action: "edit",
+            try {
+              await apiRollback(title, config.username, rbData);
+              addLog(`[Rollback] Successfully reverted: ${title}`);
+              stats.rollback++;
+
+              if (config.rd) {
+                try {
+                  await apiPost({
+                    action: "revisiondelete",
+                    type: "revision",
+                    ids: idlist,
+                    hide: config.rdHides,
+                    reason: config.rdReason + toolTag,
+                    suppress: config.os ? "yes" : "nochange",
+                  });
+                  addLog(`[Revdel] Hiding revisions at: ${title}`);
+                  stats.revdel++;
+                } catch (e) {
+                  addLog(`[Revdel] Failed at ${title}: ${e}`, true);
+                }
+              }
+            } catch (e) {
+              addLog(`[Rollback] Failed at ${title}: ${e}`, true);
+            }
+          }
+          await new Promise((resolve) => setTimeout(resolve, 100)); // Throttling window
+        }
+
+        // Mass-delete pages sequentially
+        if (config.massdel) {
+          for (const title of creation) {
+            try {
+              await apiPost({
+                action: "delete",
                 title: title,
-                undo: info.latest,
-                summary: config.rollbackReason
-                  ? config.rollbackReason + toolTag
-                  : "Reverting mass edits by " +
-                    (config.rollbackShow
-                      ? config.username
-                      : "<username hidden>") +
-                    toolTag,
-              };
-              if (info.oldestParent) undoData.undoafter = info.oldestParent;
-              if (config.rollbackBot) undoData.bot = 1;
-
-              pRb = api.postWithEditToken(undoData).then(
-                () => {
-                  addLog(
-                    `[Undo] Successfully reverted edits via undo: ${title}`,
-                  );
-                  stats.rollback++;
-                  if (config.rd) {
-                    return api
-                      .postWithEditToken({
-                        action: "revisiondelete",
-                        type: "revision",
-                        ids: idlist,
-                        hide: config.rdHides,
-                        reason: config.rdReason + toolTag,
-                        suppress: config.os ? "yes" : "nochange",
-                      })
-                      .then(
-                        () => {
-                          addLog(`[Revdel] Hiding revisions at: ${title}`);
-                          stats.revdel++;
-                        },
-                        (e) => {
-                          addLog(`[Revdel] Failed at ${title}: ${e}`, true);
-                        },
-                      );
-                  }
-                },
-                (e) => {
-                  addLog(`[Undo] Failed at ${title}: ${e}`, true);
-                },
-              );
-            } else {
-              // Native Rollback
-              const rbData = config.rollbackBot ? { markbot: 1 } : {};
-              rbData.summary = config.rollbackReason
-                ? config.rollbackReason + toolTag
-                : config.rollbackShow
-                  ? ""
-                  : "Revert edits by <username hidden>" + toolTag;
-
-              pRb = api.rollback(title, config.username, rbData).then(
-                () => {
-                  addLog(`[Rollback] Successfully reverted: ${title}`);
-                  stats.rollback++;
-                  if (config.rd) {
-                    return api
-                      .postWithEditToken({
-                        action: "revisiondelete",
-                        type: "revision",
-                        ids: idlist,
-                        hide: config.rdHides,
-                        reason: config.rdReason + toolTag,
-                        suppress: config.os ? "yes" : "nochange",
-                      })
-                      .then(
-                        () => {
-                          addLog(`[Revdel] Hiding revisions at: ${title}`);
-                          stats.revdel++;
-                        },
-                        (e) => {
-                          addLog(`[Revdel] Failed at ${title}: ${e}`, true);
-                        },
-                      );
-                  }
-                },
-                (e) => {
-                  addLog(`[Rollback] Failed at ${title}: ${e}`, true);
-                },
-              );
+                reason: config.massdelReason + toolTag,
+              });
+              addLog(`[Delete] Deleted page: ${title}`);
+              stats.delete++;
+            } catch (e) {
+              addLog(`[Delete] Failed to delete ${title}: ${e}`, true);
             }
-            subPromises.push(pRb);
+            await new Promise((resolve) => setTimeout(resolve, 100)); // Throttling window
           }
+        }
+      }
 
-          // Mass-delete pages
-          if (config.massdel) {
-            for (const title of creation) {
-              let pDel = api
-                .postWithEditToken({
-                  action: "delete",
-                  title: title,
-                  reason: config.massdelReason + toolTag,
-                })
-                .then(
-                  () => {
-                    addLog(`[Delete] Deleted page: ${title}`);
-                    stats.delete++;
-                  },
-                  (e) => {
-                    addLog(`[Delete] Failed to delete ${title}: ${e}`, true);
-                  },
-                );
-              subPromises.push(pDel);
-            }
-          }
-
-          // Wait for all sub-tasks to finish
-          return $.when.apply($, subPromises);
-        },
-        function (e) {
-          addLog(`[Error] Failed to fetch contribution history: ${e}`, true);
-        },
-      );
-
-      promises.push(pContrib);
-
-      // --- When EVERYTHING finishes ---
-      $.when.apply($, promises).always(function () {
-        const methodTxt =
-          config.rollbackMethod === "undo" ? "undone" : "reverted";
-        const finalStatus = `<b>Status: Completed!</b><br/>Summary: <b>${stats.rollback}</b> ${methodTxt} | <b>${stats.delete}</b> deleted | <b>${stats.revdel}</b> hidden | <b>${stats.error}</b> errors.`;
-        statusLbl.innerHTML = finalStatus;
-        // Append explicit clarity log confirming termination of procedures
-        addLog("✅ All operations have been completed successfully.");
-        btnClose.disabled = false;
-      });
+      // Termination and interface cleanup operations
+      const methodTxt =
+        config.rollbackMethod === "undo" ? "undone" : "reverted";
+      const finalStatus = `<b>Status: Completed!</b><br/>Summary: <b>${stats.rollback}</b> ${methodTxt} | <b>${stats.delete}</b> deleted | <b>${stats.revdel}</b> hidden | <b>${stats.error}</b> errors.`;
+      statusLbl.innerHTML = finalStatus;
+      addLog("✅ All operations have been completed successfully.");
+      btnClose.disabled = false;
     };
 
     // ============================================================================
-    // [SECTION 07] DIALOGUE BUILDER (INPUT CONFIG)
+    // [Section 07] Dialogue builder (input config)
     // Generates configuration layout panel structures, parses package parameters, and configures field states.
     // ============================================================================
     const init = function () {
@@ -971,7 +998,7 @@ $(function () {
           "Serious BLP violations",
           "Purely disruptive material",
           "Other valid deletion under deletion policy",
-          "Non-contentious housekeeping, RevDel corrections, notes, conversion",
+          "Non-contentious housekeeping, revdel corrections, notes, conversion",
           "Deletion mandated by a decision of the Arbitration Committee",
           "Orphaned non-free file(s) deleted",
         ],
@@ -981,7 +1008,7 @@ $(function () {
       if (!packages.Default) packages.Default = defaultPackage;
 
       // ============================================================================
-      // NATIVE PRESETS
+      // Native presets
       // ============================================================================
       if (!packages["Severe vandalism"]) {
         packages["Severe vandalism"] = {
@@ -1266,7 +1293,7 @@ $(function () {
         true,
       );
       const { wrap: wrapUndo, chk: chkUndo } = makeCheckbox(
-        "Use undo feature (Alternative without rollback rights)",
+        "Use undo feature (alternative without rollback rights)",
         false,
       );
       const checksRollback = document.createElement("div");
@@ -1482,7 +1509,7 @@ $(function () {
 
       const btnStart = makeBtn("Start", "destructive");
 
-      // Evaluation routine to dynamically handle the Start button state
+      // Evaluation routine to dynamically handle the start button state
       function updateStartBtn() {
         btnStart.disabled = !(
           chkRollback.checked ||
@@ -1727,7 +1754,7 @@ $(function () {
     };
 
     // ============================================================================
-    // [SECTION 08] PORTLET LINK
+    // [Section 08] Portlet link
     // Registers the execution menu item anchor inside the site actions portal drop list.
     // ============================================================================
     $(mw.util.addPortletLink("p-cactions", "#", "⛩️ Tengu", "ca-tengu")).on(
