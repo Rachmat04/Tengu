@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * TENGU — 天狗
- * Version 1.4.1
+ * Version 1.5.0
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -14,7 +14,9 @@
  * - Page deletion: Mass-deletes pages created by a target user.
  * - Page protection: Mass-protects pages edited or created by a target user.
  * - Revision deletion: Hides revision content, summaries, or usernames.
- * * CHANGELOG v1.4.1:
+ * * CHANGELOG v1.5.0:
+ * - Added: Abort button during task execution to allow cancelling ongoing operations.
+ * CHANGELOG v1.4.1:
  * - Fixed: UI bug where the page protection preset reasons dropdown was incorrectly appended to the revision deletion module.
  * CHANGELOG v1.4.0:
  * - Added: Page protection feature with comprehensive preset reasons.
@@ -734,6 +736,7 @@ $(function () {
     // Executes API orchestration loops for user blocks, rollbacks, and deletions whilst piping execution log messages.
     // ============================================================================
     const work = async function () {
+      let isAborted = false;
       const api = new mw.Api();
       const stats = {
         block: 0,
@@ -808,6 +811,19 @@ $(function () {
       body.appendChild(statusLbl);
       body.appendChild(logBox);
 
+      const btnAbort = document.createElement("button");
+      btnAbort.className = "tng-btn tng-btn-destructive";
+      btnAbort.textContent = "Abort operations";
+      btnAbort.addEventListener("click", () => {
+        if (!isAborted) {
+          isAborted = true;
+          btnAbort.disabled = true;
+          btnAbort.textContent = "Aborting...";
+          addLog("⚠️ Operations are being aborted...");
+        }
+      });
+      footer.appendChild(btnAbort);
+
       const btnClose = document.createElement("button");
       btnClose.className = "tng-btn tng-btn-primary";
       btnClose.textContent = "Close and reload";
@@ -833,7 +849,7 @@ $(function () {
       addLog("⏳ Processing operations... please wait.");
 
       // --- Block ---
-      if (config.block) {
+      if (config.block && !isAborted) {
         const data = {
           action: "block",
           user: config.username,
@@ -876,7 +892,7 @@ $(function () {
       let hasMore = true;
       let continueToken = {};
 
-      while (hasMore) {
+      while (hasMore && !isAborted) {
         const params = Object.assign({}, contribParams, continueToken);
         try {
           const data = await apiGet(params);
@@ -894,9 +910,9 @@ $(function () {
         }
       }
 
-      if (!contribs.length) {
+      if (!contribs.length && !isAborted) {
         addLog("[Info] No contributions found within this timeframe.");
-      } else {
+      } else if (!isAborted) {
         const pageEdits = {};
         const creation = [];
         for (const edit of contribs) {
@@ -930,6 +946,8 @@ $(function () {
 
         // Process rollbacks, undos and revision deletions sequentially with a throttling buffer delay
         for (const [title, info] of Object.entries(pageEdits)) {
+          if (isAborted) break;
+
           const idlist = info.revids;
 
           if (!config.rollback) {
@@ -978,7 +996,7 @@ $(function () {
               addLog(`[Undo] Successfully reverted edits via undo: ${title}`);
               stats.rollback++;
 
-              if (config.rd) {
+              if (config.rd && !isAborted) {
                 try {
                   await apiPost({
                     action: "revisiondelete",
@@ -1011,7 +1029,7 @@ $(function () {
               addLog(`[Rollback] Successfully reverted: ${title}`);
               stats.rollback++;
 
-              if (config.rd) {
+              if (config.rd && !isAborted) {
                 try {
                   await apiPost({
                     action: "revisiondelete",
@@ -1037,6 +1055,7 @@ $(function () {
         // Execute sequential page protections if enabled
         if (config.protect && pagesToProtect.size > 0) {
           for (const title of pagesToProtect) {
+            if (isAborted) break;
             try {
               const protectData = {
                 action: "protect",
@@ -1058,6 +1077,7 @@ $(function () {
         // Mass-delete pages sequentially
         if (config.massdel) {
           for (const title of creation) {
+            if (isAborted) break;
             try {
               await apiPost({
                 action: "delete",
@@ -1075,11 +1095,20 @@ $(function () {
       }
 
       // Termination and interface cleanup operations
+      btnAbort.style.display = "none";
       const methodTxt =
         config.rollbackMethod === "undo" ? "undone" : "reverted";
-      const finalStatus = `<b>Status: Completed!</b><br/>Summary: <b>${stats.rollback}</b> ${methodTxt} | <b>${stats.delete}</b> deleted | <b>${stats.protect}</b> protected | <b>${stats.revdel}</b> hidden | <b>${stats.error}</b> errors.`;
+      const statusPrefix = isAborted
+        ? "<b>Status: Aborted!</b><br/>"
+        : "<b>Status: Completed!</b><br/>";
+      const finalStatus = `${statusPrefix}Summary: <b>${stats.rollback}</b> ${methodTxt} | <b>${stats.delete}</b> deleted | <b>${stats.protect}</b> protected | <b>${stats.revdel}</b> hidden | <b>${stats.error}</b> errors.`;
       statusLbl.innerHTML = finalStatus;
-      addLog("✅ All operations have been completed successfully.");
+
+      if (isAborted) {
+        addLog("⛔ Operations aborted by user.");
+      } else {
+        addLog("✅ All operations have been completed successfully.");
+      }
       btnClose.disabled = false;
     };
 
