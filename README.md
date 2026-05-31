@@ -123,6 +123,12 @@ User:<username>/global.js
 
 ---
 
+## Changelogs
+
+[View changelogs](./CHANGELOG.md)
+
+---
+
 ### Notes
 
 - Some wikis may disable global scripts for security reasons.
