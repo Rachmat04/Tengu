@@ -1190,7 +1190,6 @@ $(function () {
         }
 
         // Mass-delete pages sequentially
-        // Mass-delete pages sequentially
         if (config.massdel) {
           for (const title of creation) {
             if (isAborted) break;
