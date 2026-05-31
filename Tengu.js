@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * TENGU — 天狗
- * Version 1.5.5
+ * Version 1.5.6
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -14,6 +14,9 @@
  * - Page deletion: Mass-deletes pages created by a target user.
  * - Page protection: Mass-protects pages edited or created by a target user.
  * - Revision deletion: Hides revision content, summaries, or usernames.
+ * 
+ * CHANGELOG v1.5.6:
+ * - Added: Automated deletion of associated talk pages when deleting a page.
  *
  * CHANGELOG v1.5.5:
  * - Added: Self-block verification step to prevent accidental self-blocking.
@@ -1187,10 +1190,12 @@ $(function () {
         }
 
         // Mass-delete pages sequentially
+        // Mass-delete pages sequentially
         if (config.massdel) {
           for (const title of creation) {
             if (isAborted) break;
             try {
+              // Delete the page
               await apiPost({
                 action: "delete",
                 title: title,
@@ -1198,8 +1203,39 @@ $(function () {
               });
               addLog(`[Delete] Deleted page: ${title}`);
               stats.delete++;
+
+              // Delete the associated talk page if it exists
+              const talkTitle = new mw.Title(title)
+                .getTalkPage()
+                .getPrefixedText();
+              // Check if talk page exists before attempting deletion
+              const pageInfo = await apiGet({
+                action: "query",
+                titles: talkTitle,
+                formatversion: 2,
+              });
+
+              if (
+                pageInfo.query &&
+                pageInfo.query.pages[0] &&
+                !pageInfo.query.pages[0].missing
+              ) {
+                await apiPost({
+                  action: "delete",
+                  title: talkTitle,
+                  reason:
+                    "Associated talk page of deleted page: " +
+                    config.massdelReason +
+                    toolTag,
+                });
+                addLog(`[Delete] Deleted associated talk page: ${talkTitle}`);
+                stats.delete++;
+              }
             } catch (e) {
-              addLog(`[Delete] Failed to delete ${title}: ${e}`, true);
+              addLog(
+                `[Delete] Failed to delete ${title} or its talk page: ${e}`,
+                true,
+              );
             }
             await new Promise((resolve) => setTimeout(resolve, 100)); // Throttling window
           }
