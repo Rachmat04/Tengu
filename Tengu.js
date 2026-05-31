@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 1.6.0
+ * Version 1.6.1
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -36,6 +36,7 @@ $(function () {
     // [Section 01] Stylesheet
     // Appends customised CSS configurations for layout rendering, dark mode support,
     // and the user rights panel displayed in the dialogue footer.
+    // Inline field error state (.tng-input-error) replaces the previous bubble notification.
     // ============================================================================
     mw.util.addCSS(`
         /* --- Overlay --- */
@@ -57,23 +58,14 @@ $(function () {
             animation: tng-slidein .15s ease-out;
         }
 
-        /* Container must be relative to position the bubble inside */
-        .tng-input-container { position: relative; }
-        
-        /* The notification bubble styling */
-        .tng-notification {
-            position: absolute;
-            top: 100%;
-            left: 0;
-            background: #fff0f0;
-            border: 1px solid #d33;
+        /* Error state applied directly to the input field */
+        .tng-input-error {
+            border-color: #d33 !important;
+            box-shadow: 0 0 0 2px rgba(211,51,51,.18) !important;
+        }
+        .tng-input-error::placeholder {
             color: #b32424;
-            padding: 4px 8px;
-            border-radius: 4px;
-            font-size: 0.8em;
-            margin-top: 4px;
-            z-index: 100;
-            display: none;
+            opacity: 1;
         }
 
         /* --- Dialogue header --- */
@@ -293,6 +285,10 @@ $(function () {
             .tng-log-err  { color: #ff6b6b; }
             .tng-log-warn { color: #e8a04d; }
             .tng-log-succ { color: #00af89; }
+
+            /* Dark mode for inline field error */
+            .tng-input-error { border-color: #ff6b6b !important; box-shadow: 0 0 0 2px rgba(255,107,107,.22) !important; }
+            .tng-input-error::placeholder { color: #ff6b6b; }
         }
     `);
 
@@ -378,8 +374,10 @@ $(function () {
     // ============================================================================
     // [Section 04] DOM helpers
     // Standardised DOM element generation scripts for form inputs, checkboxes, and section boxes.
-    // Also includes formatApiError(), which annotates permission-related API error strings
-    // with a plain-language hint so users understand why an action may have failed.
+    // Includes showNotification(), which applies an inline error state to a target input field,
+    // and clearInputError(), which reverts it. Also includes formatApiError(), which annotates
+    // permission-related API error strings with a plain-language hint so users understand why
+    // an action may have failed.
     // ============================================================================
     function makeRow(labelText) {
       const row = document.createElement("div");
@@ -462,26 +460,29 @@ $(function () {
       });
       return { section, sectionBody, enableChk };
     }
+    // Displays a validation error directly within the target input field.
+    // Applies an error border and sets the placeholder to the message text,
+    // then reverts automatically after 5 seconds or when the user types.
     function showNotification(parent, message) {
-      parent.classList.add("tng-input-container");
-
-      let note = parent.querySelector(".tng-notification");
-      if (!note) {
-        note = document.createElement("div");
-        note.className = "tng-notification";
-        parent.appendChild(note);
+      const inp = parent.querySelector(".tng-input") || parent;
+      if (!inp.classList.contains("tng-input-error")) {
+        inp.dataset.tngOrigPlaceholder = inp.placeholder;
       }
-
-      if (note.tngTimeout) clearTimeout(note.tngTimeout);
-
-      note.innerHTML = "⚠️ " + message;
-      note.style.display = "block";
-
-      note.tngTimeout = setTimeout(function () {
-        note.style.display = "none";
+      if (inp._tngErrTimeout) clearTimeout(inp._tngErrTimeout);
+      inp.classList.add("tng-input-error");
+      inp.placeholder = "⚠️ " + message;
+      inp._tngErrTimeout = setTimeout(function () {
+        inp.classList.remove("tng-input-error");
+        inp.placeholder = inp.dataset.tngOrigPlaceholder || "";
+        delete inp.dataset.tngOrigPlaceholder;
       }, 5000);
-
-      return note;
+    }
+    // Clears an active inline field error, restoring the original placeholder.
+    function clearInputError(inp) {
+      if (inp._tngErrTimeout) clearTimeout(inp._tngErrTimeout);
+      inp.classList.remove("tng-input-error");
+      inp.placeholder = inp.dataset.tngOrigPlaceholder || "";
+      delete inp.dataset.tngOrigPlaceholder;
     }
     // Formats a raw API error string with a plain-language hint when the error
     // indicates a permission problem. Helps users understand why an action failed —
@@ -1684,11 +1685,7 @@ $(function () {
       fieldTarget.appendChild(inputUsername);
 
       inputUsername.addEventListener("input", function () {
-        const existingNote = fieldTarget.querySelector(".tng-notification");
-        if (existingNote) {
-          if (existingNote.tngTimeout) clearTimeout(existingNote.tngTimeout);
-          existingNote.style.display = "none";
-        }
+        clearInputError(inputUsername);
       });
 
       topSection.appendChild(rowTarget);
@@ -2080,11 +2077,7 @@ $(function () {
       btnStart.addEventListener("click", function () {
         const username = inputUsername.value.trim();
 
-        const existing = fieldTarget.querySelector(".tng-notification");
-        if (existing) {
-          if (existing.tngTimeout) clearTimeout(existing.tngTimeout);
-          existing.style.display = "none";
-        }
+        clearInputError(inputUsername);
 
         if (!username) {
           showNotification(fieldTarget, "Please enter a target username.");

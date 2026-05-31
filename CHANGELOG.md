@@ -1,3 +1,22 @@
+## v1.6.1
+### Changed
+
+* Replaced floating validation notification bubbles with inline input error states displayed directly within the affected field.
+* Updated `showNotification()` to apply temporary error styling and display validation messages through the input placeholder instead of creating separate notification elements.
+* Simplified validation handling in username input and Start button checks by using the new `clearInputError()` helper.
+* Updated section comments and documentation to reflect the revised validation system.
+
+### Added
+
+* Added the `clearInputError()` helper to immediately restore inputs to their normal state and cancel pending validation reset timers.
+* Added `.tng-input-error` styling for validation errors, including red borders and placeholder text.
+* Added dark mode support for inline validation error states.
+
+### Removed
+
+* Removed the `.tng-input-container` wrapper previously used to position validation notifications.
+* Removed the `.tng-notification` bubble system and its associated styling.
+
 ## v1.6.0
 ### Added
 - Added a rights panel to the dialog footer displaying the user's available permissions.
