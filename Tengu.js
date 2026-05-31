@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 1.5.9
+ * Version 1.6.0
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -14,6 +14,8 @@
  * - Page deletion: Mass-deletes pages created by a target user.
  * - Page protection: Mass-protects pages edited or created by a target user.
  * - Revision deletion: Hides revision content, summaries, or usernames.
+ * - User rights panel: Displays the current user's rollback and sysop/admin rights
+ *   in the dialogue footer. Sections requiring rights the user lacks are locked.
  *
  * ORIGINAL SCRIPT:
  * - Based on User:WhitePhosphorus/all-in-one
@@ -32,7 +34,8 @@ $(function () {
 
     // ============================================================================
     // [Section 01] Stylesheet
-    // Appends customised CSS configurations for layout rendering and dark mode support.
+    // Appends customised CSS configurations for layout rendering, dark mode support,
+    // and the user rights panel displayed in the dialogue footer.
     // ============================================================================
     mw.util.addCSS(`
         /* --- Overlay --- */
@@ -225,6 +228,38 @@ $(function () {
         .tng-log-warn { color: #ac6600; font-weight: bold; }
         .tng-log-succ { color: #14866d; }
 
+        /* --- User rights panel (footer, bottom-left) --- */
+        .tng-rights-panel {
+            display: flex; align-items: center; gap: 6px;
+            flex-wrap: wrap; margin-right: auto;
+            padding: 5px 10px; border: 1px solid #a2a9b1;
+            border-radius: 6px; background: #f0f2f5;
+        }
+        .tng-rights-title {
+            font-size: 0.78em; color: #54595d;
+            font-weight: 700; white-space: nowrap; margin-right: 2px;
+        }
+        .tng-rights-badge {
+            display: inline-flex; align-items: center; gap: 3px;
+            padding: 2px 9px; border-radius: 10px;
+            font-size: 0.78em; font-weight: 600;
+            white-space: nowrap; border: 1px solid transparent;
+        }
+        .tng-rights-have {
+            background: #d4edda; color: #155724; border-color: #b7dfbb;
+        }
+        .tng-rights-lack {
+            background: #f8d7da; color: #721c24; border-color: #f1b0b7;
+        }
+        .tng-rights-loading {
+            background: #e9ecef; color: #6c757d;
+            border-color: #ced4da; font-style: italic;
+        }
+        .tng-rights-lock {
+            margin-left: auto; font-size: 0.85em;
+            opacity: 0.65; pointer-events: none;
+        }
+
         /* --- Animations --- */
         @media (prefers-reduced-motion: no-preference) {
             @keyframes tng-fadein  { from { opacity: 0 } to { opacity: 1 } }
@@ -245,6 +280,13 @@ $(function () {
             .tng-input:focus, .tng-select:focus { border-color: #6699ff; }
             .tng-btn-quiet { color: #eaecf0; border-color: #54595d; }
             .tng-btn-quiet:hover { background: #2a2a35; }
+
+            /* Dark mode for rights panel */
+            .tng-rights-panel { background: #252525; border-color: #3a3a3a; }
+            .tng-rights-title { color: #a2a9b1; }
+            .tng-rights-have { background: #1a3a24; color: #75c987; border-color: #2d6a3f; }
+            .tng-rights-lack { background: #3a1a1e; color: #f08080; border-color: #6a2d33; }
+            .tng-rights-loading { background: #2a2a2a; color: #8a8a8a; border-color: #3a3a3a; }
 
             /* Dark mode for progress log */
             .tng-log-box  { background: #2a2a2a; border-color: #54595d; color: #eaecf0; }
@@ -1333,11 +1375,31 @@ $(function () {
 
     // ============================================================================
     // [Section 07] Dialogue builder (input config)
-    // Generates configuration layout panel structures, parses package parameters, and configures field states.
+    // Generates configuration layout panel structures, parses package parameters,
+    // and configures field states. Also fetches the current user's rights to
+    // populate the footer rights panel and lock sections the user lacks access to.
     // ============================================================================
     const init = function () {
       if (inited) return;
       inited = true;
+
+      // Fetch the current user's rights and groups immediately so the result is
+      // ready (or very close to ready) by the time the dialogue finishes building.
+      const rightsApi = new mw.Api();
+      const rightsPromise = new Promise(function (resolve) {
+        rightsApi
+          .get({ action: "query", meta: "userinfo", uiprop: "rights|groups" })
+          .done(function (data) {
+            const ui = data && data.query && data.query.userinfo;
+            resolve({
+              rights: (ui && ui.rights) || [],
+              groups: (ui && ui.groups) || [],
+            });
+          })
+          .fail(function () {
+            resolve({ rights: [], groups: [] });
+          });
+      });
 
       const defaultPackage = {
         tracingedits: { duration: 3600, indefregistered: true },
@@ -2137,6 +2199,103 @@ $(function () {
       footer.appendChild(btnCancel);
       footer.appendChild(btnStart);
 
+      // --- User rights panel (bottom-left of dialogue footer) ---
+      // Build the panel with loading placeholders first; the promise below
+      // fills in real values and locks sections the user lacks rights for.
+      const rightsPanel = document.createElement("div");
+      rightsPanel.className = "tng-rights-panel";
+
+      const rightsTitle = document.createElement("span");
+      rightsTitle.className = "tng-rights-title";
+      rightsTitle.textContent = "Your rights:";
+      rightsPanel.appendChild(rightsTitle);
+
+      function makeRightsBadge(text, state) {
+        const b = document.createElement("span");
+        b.className = "tng-rights-badge tng-rights-" + state;
+        b.textContent = text;
+        return b;
+      }
+      const badgeRollback = makeRightsBadge("Rollback", "loading");
+      const badgeSysop = makeRightsBadge("Sysop", "loading");
+      rightsPanel.appendChild(badgeRollback);
+      rightsPanel.appendChild(badgeSysop);
+
+      // Insert before the Cancel button so it sits on the left
+      footer.insertBefore(rightsPanel, btnCancel);
+
+      // Resolve rights, update badges, and lock any sections the user cannot use
+      rightsPromise.then(function (info) {
+        const hasRollback = info.rights.indexOf("rollback") !== -1;
+        const inSysopGroup = info.groups.indexOf("sysop") !== -1;
+        const hasBlock = info.rights.indexOf("block") !== -1;
+        const hasDelete = info.rights.indexOf("delete") !== -1;
+        const hasProtect = info.rights.indexOf("protect") !== -1;
+        const hasRevdel = info.rights.indexOf("deleterevision") !== -1;
+        // Treat the user as sysop/admin if they are in the sysop group or hold
+        // at least the three core admin rights (block, delete, protect).
+        const hasSysop = inSysopGroup || (hasBlock && hasDelete && hasProtect);
+
+        // Update rollback badge
+        badgeRollback.className =
+          "tng-rights-badge tng-rights-" + (hasRollback ? "have" : "lack");
+        badgeRollback.textContent =
+          (hasRollback ? "✔️  " : "❌  ") + "Rollback";
+
+        // Update sysop/admin badge
+        badgeSysop.className =
+          "tng-rights-badge tng-rights-" + (hasSysop ? "have" : "lack");
+        badgeSysop.textContent = (hasSysop ? "✔️  " : "❌  ") + "Sysop";
+
+        // Lock a section: uncheck and disable its toggle, collapse its body,
+        // and append a lock indicator to the header so the restriction is visible.
+        function lockSection(sec, secBody, chk, reason) {
+          chk.checked = false;
+          chk.disabled = true;
+          sec.classList.add("tng-disabled");
+          secBody.classList.add("tng-hidden");
+          const hdr = sec.querySelector(".tng-section-header");
+          hdr.title = "Unavailable: " + reason;
+          const lockBadge = document.createElement("span");
+          lockBadge.className = "tng-rights-lock";
+          lockBadge.textContent = "🔒";
+          lockBadge.title = "Unavailable: " + reason;
+          hdr.appendChild(lockBadge);
+        }
+
+        if (!hasBlock)
+          lockSection(
+            secBlock,
+            bodyBlock,
+            chkBlock,
+            "you do not have the block right on this wiki",
+          );
+        if (!hasDelete)
+          lockSection(
+            secPagedel,
+            bodyPagedel,
+            chkPagedel,
+            "you do not have the delete right on this wiki",
+          );
+        if (!hasProtect)
+          lockSection(
+            secProtect,
+            bodyProtect,
+            chkProtect,
+            "you do not have the protect right on this wiki",
+          );
+        if (!hasRevdel)
+          lockSection(
+            secRevdel,
+            bodyRevdel,
+            chkRevdel,
+            "you do not have the deleterevision right on this wiki",
+          );
+
+        // Re-evaluate the Start button in case locks changed the checked state
+        updateStartBtn();
+      });
+
       function applyPackage(pkgName) {
         const pkg = packages[pkgName] || defaultPackage;
         const isIP = mw.util.isIPAddress(inputUsername.value.trim());
@@ -2186,9 +2345,11 @@ $(function () {
         }
 
         const bl = pkg.block || {};
-        chkBlock.checked = !!bl.enabled;
-        secBlock.classList.toggle("tng-disabled", !chkBlock.checked);
-        bodyBlock.classList.toggle("tng-hidden", !chkBlock.checked);
+        if (!chkBlock.disabled) {
+          chkBlock.checked = !!bl.enabled;
+          secBlock.classList.toggle("tng-disabled", !chkBlock.checked);
+          bodyBlock.classList.toggle("tng-hidden", !chkBlock.checked);
+        }
         if (trac.indefregistered && !isIP) {
           selBlockDur.value = "never";
           inputBlockDur.classList.add("tng-hidden");
@@ -2232,9 +2393,11 @@ $(function () {
         chkHidename.checked = !!bl.hidename;
 
         const pd = pkg.pagedelete || {};
-        chkPagedel.checked = !!pd.enabled;
-        secPagedel.classList.toggle("tng-disabled", !chkPagedel.checked);
-        bodyPagedel.classList.toggle("tng-hidden", !chkPagedel.checked);
+        if (!chkPagedel.disabled) {
+          chkPagedel.checked = !!pd.enabled;
+          secPagedel.classList.toggle("tng-disabled", !chkPagedel.checked);
+          bodyPagedel.classList.toggle("tng-hidden", !chkPagedel.checked);
+        }
         const pdr = pd.reason || "";
         if (
           [...selPagedelReason.options].find(function (o) {
@@ -2249,9 +2412,11 @@ $(function () {
 
         // Apply fallback resets to page protection state variables
         const pt = pkg.pageprotection || {};
-        chkProtect.checked = !!pt.enabled;
-        secProtect.classList.toggle("tng-disabled", !chkProtect.checked);
-        bodyProtect.classList.toggle("tng-hidden", !chkProtect.checked);
+        if (!chkProtect.disabled) {
+          chkProtect.checked = !!pt.enabled;
+          secProtect.classList.toggle("tng-disabled", !chkProtect.checked);
+          bodyProtect.classList.toggle("tng-hidden", !chkProtect.checked);
+        }
         selProtectEdit.value = pt.edit || "all";
         selProtectMove.value = pt.move || "all";
         selProtectExpiry.value = pt.expiry || "1 day";
@@ -2261,9 +2426,11 @@ $(function () {
         selProtectReason.selectedIndex = 0;
 
         const rd = pkg.revisiondelete || {};
-        chkRevdel.checked = !!rd.enabled;
-        secRevdel.classList.toggle("tng-disabled", !chkRevdel.checked);
-        bodyRevdel.classList.toggle("tng-hidden", !chkRevdel.checked);
+        if (!chkRevdel.disabled) {
+          chkRevdel.checked = !!rd.enabled;
+          secRevdel.classList.toggle("tng-disabled", !chkRevdel.checked);
+          bodyRevdel.classList.toggle("tng-hidden", !chkRevdel.checked);
+        }
         chkRdContent.checked = rd.content !== false;
         chkRdSummary.checked = rd.summary !== false;
         chkRdUsername.checked = !!rd.username;

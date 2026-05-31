@@ -1,3 +1,22 @@
+## v1.6.0
+### Added
+- Added a rights panel to the dialog footer displaying the user's available permissions.
+- Added automatic user rights detection using the MediaWiki API (`userinfo` rights and groups).
+- Added visual status badges for Rollback and Sysop/Admin permissions.
+- Added automatic section locking for actions that require unavailable rights, including Block, Delete, Protect, and Revision Deletion.
+- Added lock indicators and tooltips to restricted sections.
+- Added graceful fallback behaviour when user rights cannot be retrieved.
+
+### Changed
+- Updated header comments and section documentation to reflect the new rights management functionality.
+- Updated the Start button state after rights checks are completed, ensuring locked sections are excluded from execution.
+- Package presets can no longer re-enable sections that have been disabled due to insufficient permissions.
+
+### Improved
+- Added dedicated styling for the rights panel, including badges, loading states, lock indicators, and dark mode support.
+- Improved the dialog footer layout by displaying permission information alongside action controls.
+- Expanded administrator detection to support both local administrators and users with equivalent rights through global or custom permission groups.
+
 ## v1.5.9
 ### Added
 - Added `formatApiError()` helper (Section 04) to provide plain-language hints for permission-related API failures when users lack required rights.
