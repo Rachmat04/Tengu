@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * TENGU — 天狗
- * Version 1.5.7
+ * Version 1.5.8
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -14,52 +14,6 @@
  * - Page deletion: Mass-deletes pages created by a target user.
  * - Page protection: Mass-protects pages edited or created by a target user.
  * - Revision deletion: Hides revision content, summaries, or usernames.
- *
- * CHANGELOG v1.5.7:
- * - Added: Improved log messages when an undo operation is skipped due to the page already having been reverted.
- * - Improved: Consistency in sentence case and en-GB spelling across all interfaces and logs.
-
- * CHANGELOG v1.5.6:
- * - Added: Automated deletion of associated talk pages when deleting a page.
- *
- * CHANGELOG v1.5.5:
- * - Added: Self-block verification step to prevent accidental self-blocking.
- *
- * CHANGELOG v1.5.4:
- * - Added: Auto-dismissing inline notification bubbles for input validation.
- * - Improved: Validation UI now supports 5-second auto-hide and automatic clearing on input.
- *
- * CHANGELOG v1.5.3:
- * - Added: In-house notification style for form validation errors.
- * - Changed: Replaced standard browser alerts with integrated dialog notifications.
- *
- * CHANGELOG v1.5.2:
- * - Added: Automated talk page notification upon account block.
- *
- * CHANGELOG v1.5.1:
- * - Added: Automated talk page notification upon page protection.
- *
- * CHANGELOG v1.5.0:
- * - Added: Abort button during task execution to allow cancelling ongoing operations.
- *
- * CHANGELOG v1.4.1:
- * - Fixed: UI bug where the page protection preset reasons dropdown was incorrectly appended to the revision deletion module.
- *
- * CHANGELOG v1.4.0:
- * - Added: Page protection feature with comprehensive preset reasons.
- * - Added: Warning confirmation dialogue modal before executing deletion or protection tasks.
- *
- * CHANGELOG v1.3.0:
- * - Added: Preset reasons configuration array for page protection feature.
- *
- * CHANGELOG v1.2.0:
- * - Fixed: API request throttling by shifting to sequential execution using native ES6 promises.
- * - Fixed: Pagination bottlenecks by explicitly handling the query continue token.
- * - Changed: Standardised all interface elements, logs, labels, and comments to sentence case and en-GB spelling.
- *
- * CHANGELOG v1.1.0:
- * - Added: Optional undo fallback method for users without native rollback rights.
- * - Changed: Reduced the vertical height of the progress log for better screen real-estate utilisation.
  *
  * ORIGINAL SCRIPT:
  * - Based on User:WhitePhosphorus/all-in-one
@@ -267,7 +221,8 @@ $(function () {
             font-size: 0.85em; padding: 10px; border: 1px solid #a2a9b1;
             border-radius: 4px; background: #f8f9fa; color: #202122;
         }
-        .tng-log-err { color: #b00020; font-weight: bold; }
+        .tng-log-err  { color: #b00020; font-weight: bold; }
+        .tng-log-warn { color: #ac6600; font-weight: bold; }
         .tng-log-succ { color: #14866d; }
 
         /* --- Animations --- */
@@ -292,8 +247,9 @@ $(function () {
             .tng-btn-quiet:hover { background: #2a2a35; }
 
             /* Dark mode for progress log */
-            .tng-log-box { background: #2a2a2a; border-color: #54595d; color: #eaecf0; }
-            .tng-log-err { color: #ff6b6b; }
+            .tng-log-box  { background: #2a2a2a; border-color: #54595d; color: #eaecf0; }
+            .tng-log-err  { color: #ff6b6b; }
+            .tng-log-warn { color: #e8a04d; }
             .tng-log-succ { color: #00af89; }
         }
     `);
@@ -901,11 +857,14 @@ $(function () {
       btnClose.addEventListener("click", () => overlay.closeHandler());
       footer.appendChild(btnClose);
 
-      // Helper function to append log entries
+      // Helper function to append log entries.
+      // isErr: true = error (red), "warn" = warning (amber), omit/false = success (green).
       const addLog = (msg, isErr) => {
         const d = document.createElement("div");
         d.textContent = msg;
-        if (isErr) {
+        if (isErr === "warn") {
+          d.className = "tng-log-warn";
+        } else if (isErr) {
           d.className = "tng-log-err";
           stats.error++;
         } else {
@@ -1121,7 +1080,8 @@ $(function () {
                 e.includes("nothingtorevert")
               ) {
                 addLog(
-                  `[Undo] Skipped: Edits on ${title} have already been reverted.`,
+                  `[Undo] Skipped: ${title} — page had already been reverted by another user; undo was not applied by this operation.`,
+                  "warn",
                 );
               } else {
                 addLog(`[Undo] Failed at ${title}: ${e}`, true);
