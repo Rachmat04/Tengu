@@ -90,6 +90,14 @@ This script is designed for MediaWiki user scripts.
 - Separated talk-page notification errors from action errors in Block and Protect sections, so a failed notification no longer marks the main action as failed.
 - Separated main-page and talk-page deletion errors in the Delete section, so a failed talk-page deletion does not hide a successful main-page deletion.
 - Applied `formatApiError()` across all catch blocks, including Revdel, Undo, Rollback, Protect, Block, Delete, and contribution fetch operations.
+- Simplified wording in block and protection notifications by removing redundant references to automation.
+
+#### Fixed
+- Block notifications now display "blocked indefinitely" instead of "blocked for never".
+- Block expiry messages are now shown conditionally and correctly handle indefinite blocks.
+- Protection notifications no longer append an incorrect "days" suffix to expiry values.
+- Protection notifications now display "protected indefinitely" instead of "protected for never".
+- Protection expiry messages are now shown conditionally and correctly handle indefinite protections.
 
 ### v1.5.8
 #### Fixed
