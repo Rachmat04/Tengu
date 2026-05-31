@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * TENGU — 天狗
- * Version 1.5.4
+ * Version 1.5.5
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -14,6 +14,9 @@
  * - Page deletion: Mass-deletes pages created by a target user.
  * - Page protection: Mass-protects pages edited or created by a target user.
  * - Revision deletion: Hides revision content, summaries, or usernames.
+ *
+ * CHANGELOG v1.5.5:
+ * - Added: Self-block verification step to prevent accidental self-blocking.
  *
  * CHANGELOG v1.5.4:
  * - Added: Auto-dismissing inline notification bubbles for input validation.
@@ -910,6 +913,26 @@ $(function () {
 
       // --- Block ---
       if (config.block && !isAborted) {
+        const confirm = await new Promise((resolve) => {
+          const { overlay, dialog, body, footer } = createDialog({
+            title: "Self-block confirmation",
+            icon: "⚠️",
+            onClose: () => resolve(false),
+          });
+          body.innerHTML =
+            "<p>You are attempting to block your own account. Are you certain you wish to proceed?</p>";
+          const btnConfirm = makeBtn("Proceed", "destructive");
+          btnConfirm.addEventListener("click", () => {
+            overlay.closeHandler();
+            resolve(true);
+          });
+          footer.appendChild(btnConfirm);
+        });
+        if (!confirm) {
+          addLog("[Block] Operation cancelled: Cannot block self.");
+          return;
+        }
+
         const data = {
           action: "block",
           user: config.username,

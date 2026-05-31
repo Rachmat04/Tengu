@@ -27,7 +27,7 @@ The goal is to reduce the need to switch between different interfaces when perfo
 
 ---
 
-## Key Features
+## Key features
 
 ### Rollback
 - Reverts all recent edits by a selected user.
