@@ -82,6 +82,15 @@ This script is designed for MediaWiki user scripts.
 
 ## Changelogs
 
+### v1.5.9
+#### Added
+- Added `formatApiError()` helper (Section 04) to provide plain-language hints for permission-related API failures when users lack required rights.
+
+#### Changed
+- Separated talk-page notification errors from action errors in Block and Protect sections, so a failed notification no longer marks the main action as failed.
+- Separated main-page and talk-page deletion errors in the Delete section, so a failed talk-page deletion does not hide a successful main-page deletion.
+- Applied `formatApiError()` across all catch blocks, including Revdel, Undo, Rollback, Protect, Block, Delete, and contribution fetch operations.
+
 ### v1.5.8
 #### Fixed
 - Undo-skipped log messages now render in amber (warning) instead of green (success), making it clear that no undo action was applied and no page changes were made by the operation.
