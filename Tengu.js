@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * TENGU — 天狗
- * Version 1.5.6
+ * Version 1.5.7
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -14,7 +14,11 @@
  * - Page deletion: Mass-deletes pages created by a target user.
  * - Page protection: Mass-protects pages edited or created by a target user.
  * - Revision deletion: Hides revision content, summaries, or usernames.
- * 
+ *
+ * CHANGELOG v1.5.7:
+ * - Added: Improved log messages when an undo operation is skipped due to the page already having been reverted.
+ * - Improved: Consistency in sentence case and en-GB spelling across all interfaces and logs.
+
  * CHANGELOG v1.5.6:
  * - Added: Automated deletion of associated talk pages when deleting a page.
  *
@@ -1112,7 +1116,16 @@ $(function () {
                 }
               }
             } catch (e) {
-              addLog(`[Undo] Failed at ${title}: ${e}`, true);
+              if (
+                e.includes("alreadyreverted") ||
+                e.includes("nothingtorevert")
+              ) {
+                addLog(
+                  `[Undo] Skipped: Edits on ${title} have already been reverted.`,
+                );
+              } else {
+                addLog(`[Undo] Failed at ${title}: ${e}`, true);
+              }
             }
           } else {
             // Native rollback
