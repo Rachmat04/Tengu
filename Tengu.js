@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 1.7.4
+ * Version 1.7.5
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -2582,14 +2582,15 @@ $(function () {
         badgeSysop.textContent = (hasSysop ? "✔️  " : "❌  ") + "Sysop";
 
         // Lock a section: uncheck and disable its toggle, collapse its body,
-        // and append a lock indicator to the header so the restriction is visible.
+        // remove the chevron (section cannot be opened), and append a lock
+        // indicator to the header so the restriction is visible.
         function lockSection(sec, secBody, chk, reason) {
           chk.checked = false;
           chk.disabled = true;
           sec.classList.add("tng-disabled");
           secBody.classList.add("tng-hidden");
           const arrow = sec.querySelector(".tng-section-arrow");
-          if (arrow) arrow.classList.remove("tng-arrow-up");
+          if (arrow) arrow.remove();
           const hdr = sec.querySelector(".tng-section-header");
           hdr.title = "Unavailable: " + reason;
           const lockBadge = document.createElement("span");

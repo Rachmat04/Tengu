@@ -1,3 +1,19 @@
+## 1.7.5
+
+### Changed
+
+* Updated `lockSection()` to remove the section chevron entirely when a section is permission-locked
+
+### Fixed
+
+* Fixed header alignment in locked sections by removing the unused chevron element instead of leaving it in the DOM
+* Prevented the lock badge from being offset by a redundant chevron that could no longer be interacted with
+
+### Improved
+
+* Simplified the locked-section UI by displaying only the lock indicator for sections that cannot be expanded
+* Improved visual consistency for permission-restricted sections
+
 ## 1.7.4
 
 ### Changed
