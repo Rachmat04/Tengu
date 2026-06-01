@@ -1,3 +1,26 @@
+## 1.7.4
+
+### Changed
+
+* Refactored section behaviour so enablement and expansion are controlled independently
+* Updated disabled-state styling to apply only to section bodies rather than entire sections
+
+### Fixed
+
+* Fixed chevron state synchronisation when switching between packages
+* Fixed inconsistencies where section bodies could be shown or hidden while the chevron displayed the wrong state
+* Ensured locked sections always start collapsed with the chevron in the correct position
+
+### Improved
+
+* Ticking a feature checkbox automatically expands the section if it is currently collapsed
+* Unticking a feature no longer collapses the section; the contents remain visible but non-interactive
+* Section headers remain fully visible and interactive regardless of feature enablement state
+* Disabled section bodies now use reduced opacity and block pointer interaction while preserving header functionality
+* Header clicks control expansion independently of feature enablement
+* Permission-locked sections prevent header-based expansion while maintaining consistent visual behaviour
+* Improved consistency between section state, chevron state, and package loading behaviour
+
 ## 1.7.3
 
 ### Added

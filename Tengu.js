@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 1.7.3
+ * Version 1.7.4
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -104,10 +104,14 @@ $(function () {
         /* --- Section blocks (rollback, block, etc.) --- */
         .tng-section {
             border: 1px solid #a2a9b1; border-radius: 6px;
-            overflow: hidden; transition: opacity .25s;
+            overflow: hidden;
             flex-shrink: 0;
         }
-        .tng-section.tng-disabled { opacity: .45; }
+        /* When a section is disabled but still open, dim and disable only the body */
+        .tng-section.tng-disabled .tng-section-body {
+            opacity: .45; pointer-events: none; user-select: none;
+            transition: opacity .25s;
+        }
 
         .tng-section-header {
             padding: 8px 12px;
@@ -497,10 +501,22 @@ $(function () {
         "tng-section-body" + (enabledByDefault ? "" : " tng-hidden");
       section.appendChild(hdr);
       section.appendChild(sectionBody);
+      // Checkbox controls enabled/disabled state only.
+      // Enabling also opens the section body if it was collapsed.
       enableChk.addEventListener("change", function () {
         section.classList.toggle("tng-disabled", !enableChk.checked);
-        sectionBody.classList.toggle("tng-hidden", !enableChk.checked);
-        arrow.classList.toggle("tng-arrow-up", enableChk.checked);
+        if (enableChk.checked) {
+          sectionBody.classList.remove("tng-hidden");
+          arrow.classList.add("tng-arrow-up");
+        }
+      });
+      // Header click (outside the checkbox label) toggles section open/closed.
+      // Locked sections (checkbox disabled) cannot be expanded.
+      hdr.addEventListener("click", function (e) {
+        if (chkWrap.contains(e.target)) return;
+        if (enableChk.disabled) return;
+        const isHidden = sectionBody.classList.toggle("tng-hidden");
+        arrow.classList.toggle("tng-arrow-up", !isHidden);
       });
       return { section, sectionBody, enableChk };
     }
@@ -2572,6 +2588,8 @@ $(function () {
           chk.disabled = true;
           sec.classList.add("tng-disabled");
           secBody.classList.add("tng-hidden");
+          const arrow = sec.querySelector(".tng-section-arrow");
+          if (arrow) arrow.classList.remove("tng-arrow-up");
           const hdr = sec.querySelector(".tng-section-header");
           hdr.title = "Unavailable: " + reason;
           const lockBadge = document.createElement("span");
@@ -2642,6 +2660,9 @@ $(function () {
         chkRollback.checked = rb.enabled !== false;
         secRollback.classList.toggle("tng-disabled", !chkRollback.checked);
         bodyRollback.classList.toggle("tng-hidden", !chkRollback.checked);
+        secRollback
+          .querySelector(".tng-section-arrow")
+          .classList.toggle("tng-arrow-up", chkRollback.checked);
         chkBot.checked = !!rb.bot;
         chkShow.checked = rb.showname !== false;
         chkUndo.checked = false; // Reset to default rollback method when switching packages
@@ -2667,6 +2688,9 @@ $(function () {
           chkBlock.checked = !!bl.enabled;
           secBlock.classList.toggle("tng-disabled", !chkBlock.checked);
           bodyBlock.classList.toggle("tng-hidden", !chkBlock.checked);
+          secBlock
+            .querySelector(".tng-section-arrow")
+            .classList.toggle("tng-arrow-up", chkBlock.checked);
         }
         if (trac.indefregistered && !isIP) {
           selBlockDur.value = "never";
@@ -2715,6 +2739,9 @@ $(function () {
           chkPagedel.checked = !!pd.enabled;
           secPagedel.classList.toggle("tng-disabled", !chkPagedel.checked);
           bodyPagedel.classList.toggle("tng-hidden", !chkPagedel.checked);
+          secPagedel
+            .querySelector(".tng-section-arrow")
+            .classList.toggle("tng-arrow-up", chkPagedel.checked);
         }
         const pdr = pd.reason || "";
         if (
@@ -2734,6 +2761,9 @@ $(function () {
           chkProtect.checked = !!pt.enabled;
           secProtect.classList.toggle("tng-disabled", !chkProtect.checked);
           bodyProtect.classList.toggle("tng-hidden", !chkProtect.checked);
+          secProtect
+            .querySelector(".tng-section-arrow")
+            .classList.toggle("tng-arrow-up", chkProtect.checked);
         }
         selProtectEdit.value = pt.edit || "all";
         selProtectMove.value = pt.move || "all";
@@ -2748,6 +2778,9 @@ $(function () {
           chkRevdel.checked = !!rd.enabled;
           secRevdel.classList.toggle("tng-disabled", !chkRevdel.checked);
           bodyRevdel.classList.toggle("tng-hidden", !chkRevdel.checked);
+          secRevdel
+            .querySelector(".tng-section-arrow")
+            .classList.toggle("tng-arrow-up", chkRevdel.checked);
         }
         chkRdContent.checked = rd.content !== false;
         chkRdSummary.checked = rd.summary !== false;
