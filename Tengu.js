@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 1.7.5
+ * Version 1.7.6
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -19,9 +19,8 @@
  * - User rights panel: Displays the current user's rollback and sysop/admin rights
  *   in the dialogue footer. Sections requiring rights the user lacks are locked.
  *
- * ORIGINAL SCRIPT:
- * - Based on User:WhitePhosphorus/all-in-one
- * - See: https://meta.wikimedia.org/wiki/User:WhitePhosphorus/all-in-one
+ * REPOSITORY:
+ * https://github.com/Rachmat04/Tengu
  * ============================================================================
  */
 // <nowiki>
@@ -593,7 +592,7 @@ $(function () {
       });
       section.appendChild(hdr);
       section.appendChild(sectionBody);
-      return { section, sectionBody };
+      return { section, sectionBody, arrow };
     }
 
     // ============================================================================
@@ -1555,12 +1554,21 @@ $(function () {
       }
 
       // Build the three display-only collapsible sections
-      const { section: secBlockLog, sectionBody: bodyBlockLog } =
-        makeDisplaySection("Block log", "🚫");
-      const { section: secRights, sectionBody: bodyRights } =
-        makeDisplaySection("Rights changes", "🔑");
-      const { section: secAbuseLog, sectionBody: bodyAbuseLog } =
-        makeDisplaySection("Abuse filter log", "⚠️");
+      const {
+        section: secBlockLog,
+        sectionBody: bodyBlockLog,
+        arrow: arrowBlockLog,
+      } = makeDisplaySection("Block log", "🚫");
+      const {
+        section: secRights,
+        sectionBody: bodyRights,
+        arrow: arrowRights,
+      } = makeDisplaySection("Rights changes", "🔑");
+      const {
+        section: secAbuseLog,
+        sectionBody: bodyAbuseLog,
+        arrow: arrowAbuseLog,
+      } = makeDisplaySection("Abuse filter log", "⚠️");
 
       setLoading(bodyBlockLog, "Loading block log…");
       setLoading(bodyRights, "Loading rights changes…");
@@ -1590,6 +1598,9 @@ $(function () {
             setEmpty(bodyBlockLog, "No block log entries found.");
             return;
           }
+          // Auto-expand: entries found warrant attention
+          bodyBlockLog.classList.remove("tng-hidden");
+          arrowBlockLog.classList.add("tng-arrow-up");
           bodyBlockLog.innerHTML = "";
           for (const e of entries) {
             const duration = (e.params && e.params.duration) || "—";
@@ -1634,6 +1645,9 @@ $(function () {
             setEmpty(bodyRights, "No rights change entries found.");
             return;
           }
+          // Auto-expand: entries found warrant attention
+          bodyRights.classList.remove("tng-hidden");
+          arrowRights.classList.add("tng-arrow-up");
           bodyRights.innerHTML = "";
           for (const e of entries) {
             const oldGroups =
@@ -1677,6 +1691,9 @@ $(function () {
             setEmpty(bodyAbuseLog, "No abuse filter log entries found.");
             return;
           }
+          // Auto-expand: entries found warrant attention
+          bodyAbuseLog.classList.remove("tng-hidden");
+          arrowAbuseLog.classList.add("tng-arrow-up");
           bodyAbuseLog.innerHTML = "";
           for (const e of entries) {
             const filterLabel = e.filter_id

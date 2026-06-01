@@ -1,3 +1,26 @@
+## 1.7.6
+
+### Changed
+
+* Updated `makeDisplaySection()` to return the section arrow alongside the section and section body
+
+### Added
+
+* Added programmatic access to display-section chevrons for external state management
+
+### Improved
+
+* User information sections now automatically expand when relevant data is found
+* Block log sections automatically open when one or more block log entries are returned
+* Rights changes sections automatically open when one or more rights log entries are returned
+* Abuse filter log sections automatically open when one or more abuse log entries are returned
+* Chevron state is automatically synchronised when sections are opened programmatically
+* Sections with no results remain collapsed to reduce visual clutter
+
+### Notes
+
+* Error handling behaviour is unchanged; sections that encounter errors remain collapsed while continuing to display the existing error message content
+
 ## 1.7.5
 
 ### Changed
@@ -82,7 +105,6 @@
 
 ### Changed
 
-* Version bump to 1.7.0
 * Updated header documentation to include the new feature and en-GB/sentence case style conventions
 * Renumbered internal sections to accommodate the new user information feature
 
