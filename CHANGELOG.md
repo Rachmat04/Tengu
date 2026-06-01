@@ -1,3 +1,14 @@
+## 1.7.2
+
+### Fixed
+
+* Fixed a workflow interruption when cancelling a self-block confirmation
+* Replaced the early `return` in the self-block cancellation path with a control flag so execution continues to the finalisation stage
+* Ensured dialog cleanup logic always runs, including restoring button states after a self-block cancellation
+* Prevented the block API request from being sent when a self-block is cancelled while preserving normal dialog completion behaviour
+
+## 1.7.1
+
 ### Fixed
 
 * Fixed the self-block confirmation dialogue appearing for all block actions
@@ -33,10 +44,6 @@
 * Improved error handling so failures in one information source do not affect the others
 * Added dedicated loading, empty-state, and error messages for each information section
 * Integrated the new information dialog with the existing modal stack and Escape-key handling
-
-### Notes
-
-* The processing dialog icon (⚙️) remains unchanged and continues to serve a separate purpose.
 
 ## v1.6.1
 ### Changed

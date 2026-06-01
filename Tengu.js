@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 1.7.1
+ * Version 1.7.2
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -987,6 +987,8 @@ $(function () {
 
       // --- Block ---
       if (config.block && !isAborted) {
+        let proceedWithBlock = true;
+
         // Show a confirmation dialogue only when the target account matches the current user.
         const isSelfBlock =
           config.username.toLowerCase() ===
@@ -1014,64 +1016,70 @@ $(function () {
             footer.appendChild(btnConfirm);
           });
           if (!confirmed) {
-            addLog("[Block] Self-block cancelled.");
-            return;
+            addLog("[Block] Self-block cancelled.", "warn");
+            proceedWithBlock = false;
           }
         }
 
-        const data = {
-          action: "block",
-          user: config.username,
-          expiry: config.blockDur,
-          reason: config.blockReason + toolTag,
-        };
-        if (config.blockAnon) data.anononly = 1;
-        if (config.blockAuto) data.autoblock = 1;
-        if (config.blockCreate) data.nocreate = 1;
-        if (!config.blockTalk) data.allowusertalk = 1;
-        if (config.blockMail) data.noemail = 1;
-        if (config.blockHide) data.hidename = 1;
+        if (proceedWithBlock) {
+          const data = {
+            action: "block",
+            user: config.username,
+            expiry: config.blockDur,
+            reason: config.blockReason + toolTag,
+          };
+          if (config.blockAnon) data.anononly = 1;
+          if (config.blockAuto) data.autoblock = 1;
+          if (config.blockCreate) data.nocreate = 1;
+          if (!config.blockTalk) data.allowusertalk = 1;
+          if (config.blockMail) data.noemail = 1;
+          if (config.blockHide) data.hidename = 1;
 
-        try {
-          await apiPost(data);
-          addLog(`[Block] Successfully blocked user ${config.username}.`);
-          stats.block++;
-        } catch (e) {
-          addLog(
-            `[Block] Failed to block ${config.username}: ${formatApiError(e)}`,
-            true,
-          );
-        }
-
-        // Post notification to user talk page (separate from block action above,
-        // so a notification failure does not misreport the block as having failed)
-        if (stats.block > 0) {
-          const talkTitle = new mw.Title(config.username, 3).getPrefixedText();
-          const blockDurDisplay =
-            config.blockDur === "never"
-              ? "indefinitely"
-              : `for ${config.blockDur}`;
-          const blockExpiryText =
-            config.blockDur === "never"
-              ? "This block does not expire automatically and will remain in effect unless modified by an administrator."
-              : "The block is scheduled to remain in effect until it expires, unless modified by an administrator.";
-          const notice = `== Account block notice ==\nThe account "${config.username}" has been blocked ${blockDurDisplay} due to the following reason: ${config.blockReason}.\n\nDuring the block period, the account may be unable to perform some or all actions that normally require editing privileges. ${blockExpiryText}\n\nThis notification was posted automatically. Please direct any questions or concerns to my user talk page. ~~~~`;
           try {
-            await apiPost({
-              action: "edit",
-              title: talkTitle,
-              appendtext: "\n\n" + notice,
-              summary: "Automated notification: Account block notice" + toolTag,
-              bot: true,
-            });
-            addLog(`[Notify] Notification posted to: ${talkTitle}`);
+            await apiPost(data);
+            addLog(`[Block] Successfully blocked user ${config.username}.`);
+            stats.block++;
           } catch (e) {
             addLog(
-              `[Notify] Failed to post block notification to ${talkTitle}: ${formatApiError(e)}`,
-              "warn",
+              `[Block] Failed to block ${config.username}: ${formatApiError(e)}`,
+              true,
             );
           }
-        }
+
+          // Post notification to user talk page (separate from block action above,
+          // so a notification failure does not misreport the block as having failed)
+          if (stats.block > 0) {
+            const talkTitle = new mw.Title(
+              config.username,
+              3,
+            ).getPrefixedText();
+            const blockDurDisplay =
+              config.blockDur === "never"
+                ? "indefinitely"
+                : `for ${config.blockDur}`;
+            const blockExpiryText =
+              config.blockDur === "never"
+                ? "This block does not expire automatically and will remain in effect unless modified by an administrator."
+                : "The block is scheduled to remain in effect until it expires, unless modified by an administrator.";
+            const notice = `== Account block notice ==\nThe account "${config.username}" has been blocked ${blockDurDisplay} due to the following reason: ${config.blockReason}.\n\nDuring the block period, the account may be unable to perform some or all actions that normally require editing privileges. ${blockExpiryText}\n\nThis notification was posted automatically. Please direct any questions or concerns to my user talk page. ~~~~`;
+            try {
+              await apiPost({
+                action: "edit",
+                title: talkTitle,
+                appendtext: "\n\n" + notice,
+                summary:
+                  "Automated notification: Account block notice" + toolTag,
+                bot: true,
+              });
+              addLog(`[Notify] Notification posted to: ${talkTitle}`);
+            } catch (e) {
+              addLog(
+                `[Notify] Failed to post block notification to ${talkTitle}: ${formatApiError(e)}`,
+                "warn",
+              );
+            }
+          }
+        } // end if (proceedWithBlock)
       }
 
       // --- Fetch user contributions with recursive pagination framework ---
