@@ -1,3 +1,32 @@
+## 1.7.0
+
+### Changed
+
+* Version bump to 1.7.0
+* Updated header documentation to include the new feature and en-GB/sentence case style conventions
+* Renumbered internal sections to accommodate the new user information feature
+
+### Added
+
+* Added a **Get info** button beside the username field
+* Added a user information dialog with independently loading sections for:
+  * Block log
+  * Rights changes
+  * Abuse filter log
+* Added `makeDisplaySection()` helper for read-only collapsible sections
+* Added `getUserInfo()` helper for retrieving and displaying user activity data
+
+### Improved
+
+* Enabled parallel loading of user information sources for faster retrieval
+* Improved error handling so failures in one information source do not affect the others
+* Added dedicated loading, empty-state, and error messages for each information section
+* Integrated the new information dialog with the existing modal stack and Escape-key handling
+
+### Notes
+
+* The processing dialog icon (⚙️) remains unchanged and continues to serve a separate purpose.
+
 ## v1.6.1
 ### Changed
 

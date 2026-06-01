@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 1.6.1
+ * Version 1.7.0
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -14,6 +14,8 @@
  * - Page deletion: Mass-deletes pages created by a target user.
  * - Page protection: Mass-protects pages edited or created by a target user.
  * - Revision deletion: Hides revision content, summaries, or usernames.
+ * - Get user info: Displays block log, rights changes, and abuse filter log
+ *   for a target user in a read-only panel without leaving the dialogue.
  * - User rights panel: Displays the current user's rollback and sysop/admin rights
  *   in the dialogue footer. Sections requiring rights the user lacks are locked.
  *
@@ -252,6 +254,18 @@ $(function () {
             opacity: 0.65; pointer-events: none;
         }
 
+        /* --- User info panel entries --- */
+        .tng-info-entry {
+            padding: 8px 10px;
+            border: 1px solid #eaecf0; border-radius: 4px;
+            background: #fff; font-size: 0.87em; line-height: 1.6;
+            display: flex; flex-direction: column; gap: 1px;
+        }
+        .tng-info-entry + .tng-info-entry { margin-top: 6px; }
+        .tng-info-loading, .tng-info-empty {
+            color: #72777d; font-style: italic; font-size: 0.88em; padding: 4px 0;
+        }
+
         /* --- Animations --- */
         @media (prefers-reduced-motion: no-preference) {
             @keyframes tng-fadein  { from { opacity: 0 } to { opacity: 1 } }
@@ -289,6 +303,10 @@ $(function () {
             /* Dark mode for inline field error */
             .tng-input-error { border-color: #ff6b6b !important; box-shadow: 0 0 0 2px rgba(255,107,107,.22) !important; }
             .tng-input-error::placeholder { color: #ff6b6b; }
+
+            /* Dark mode for user info panel entries */
+            .tng-info-entry { background: #252525; border-color: #3a3a3a; }
+            .tng-info-loading, .tng-info-empty { color: #8a8a8a; }
         }
     `);
 
@@ -510,6 +528,24 @@ $(function () {
         }
       }
       return e;
+    }
+    // Creates a read-only collapsible section without an enable/disable checkbox.
+    // Used by the user info panel to display log entries in an expandable container.
+    function makeDisplaySection(title, icon) {
+      const section = document.createElement("div");
+      section.className = "tng-section";
+      const hdr = document.createElement("div");
+      hdr.className = "tng-section-header";
+      hdr.textContent = icon + " " + title;
+      const sectionBody = document.createElement("div");
+      sectionBody.className = "tng-section-body";
+      sectionBody.style.maxHeight = "320px";
+      hdr.addEventListener("click", function () {
+        sectionBody.classList.toggle("tng-hidden");
+      });
+      section.appendChild(hdr);
+      section.appendChild(sectionBody);
+      return { section, sectionBody };
     }
 
     // ============================================================================
@@ -844,7 +880,7 @@ $(function () {
         protect: 0,
         error: 0,
       };
-      const toolTag = " (via ⚙️ [[w:id:Pengguna:Rachmat04/Tengu.js|Tengu]])";
+      const toolTag = " — ⛩️ [[w:id:Pengguna:Rachmat04/Tengu.js|Tengu]]";
 
       // Promisified API wrappers converting jQuery promises into standard ES6 promises
       const apiGet = (params) =>
@@ -893,7 +929,7 @@ $(function () {
       // Build Progress UI
       const { overlay, body, footer } = createDialog({
         title: "Processing Tengu tasks",
-        icon: "⚙️",
+        icon: "⛩️",
         onClose: () => {
           window.location.reload();
         },
@@ -1375,7 +1411,230 @@ $(function () {
     };
 
     // ============================================================================
-    // [Section 07] Dialogue builder (input config)
+    // [Section 07] Get user info
+    // Fetches and displays block log entries, access rights changes, and abuse
+    // filter log entries for a target user in a read-only dialogue panel.
+    // Three collapsible sections are rendered in parallel; each fires its own
+    // API request independently so a failure in one does not block the others.
+    // ============================================================================
+    const getUserInfo = async function (username) {
+      const api = new mw.Api();
+      const apiGet = (params) =>
+        new Promise((resolve, reject) => {
+          api
+            .get(params)
+            .done(resolve)
+            .fail((code, err) =>
+              reject(
+                code +
+                  (err && err.error && err.error.info
+                    ? ": " + err.error.info
+                    : ""),
+              ),
+            );
+        });
+
+      const { overlay, body, footer } = createDialog({
+        title: "User info: " + username,
+        icon: "🔍",
+      });
+
+      // Format an ISO timestamp as a human-readable UTC string.
+      function fmtTimestamp(ts) {
+        if (!ts) return "Unknown";
+        const d = new Date(ts);
+        return d.toUTCString().replace("GMT", "UTC");
+      }
+
+      // Build a bordered entry card with labelled rows.
+      function makeEntry(rows) {
+        const entry = document.createElement("div");
+        entry.className = "tng-info-entry";
+        for (const [label, value] of rows) {
+          const line = document.createElement("div");
+          const b = document.createElement("b");
+          b.textContent = label + ": ";
+          line.appendChild(b);
+          line.appendChild(document.createTextNode(value || "—"));
+          entry.appendChild(line);
+        }
+        return entry;
+      }
+
+      function setLoading(container, msg) {
+        container.innerHTML = "";
+        const el = document.createElement("div");
+        el.className = "tng-info-loading";
+        el.textContent = msg || "Loading…";
+        container.appendChild(el);
+      }
+
+      function setEmpty(container, msg) {
+        container.innerHTML = "";
+        const el = document.createElement("div");
+        el.className = "tng-info-empty";
+        el.textContent = msg || "No entries found.";
+        container.appendChild(el);
+      }
+
+      function setError(container, msg) {
+        container.innerHTML = "";
+        const el = document.createElement("div");
+        el.className = "tng-log-err";
+        el.style.padding = "6px 0";
+        el.textContent = "⚠ " + msg;
+        container.appendChild(el);
+      }
+
+      // Build the three display-only collapsible sections
+      const { section: secBlockLog, sectionBody: bodyBlockLog } =
+        makeDisplaySection("Block log", "🚫");
+      const { section: secRights, sectionBody: bodyRights } =
+        makeDisplaySection("Rights changes", "🔑");
+      const { section: secAbuseLog, sectionBody: bodyAbuseLog } =
+        makeDisplaySection("Abuse filter log", "⚠️");
+
+      setLoading(bodyBlockLog, "Loading block log…");
+      setLoading(bodyRights, "Loading rights changes…");
+      setLoading(bodyAbuseLog, "Loading abuse filter log…");
+
+      body.appendChild(secBlockLog);
+      body.appendChild(secRights);
+      body.appendChild(secAbuseLog);
+
+      const btnClose = makeBtn("Close", "quiet");
+      btnClose.addEventListener("click", () => overlay.closeHandler());
+      footer.appendChild(btnClose);
+
+      // --- Block log ---
+      (async function () {
+        try {
+          const data = await apiGet({
+            action: "query",
+            list: "logevents",
+            letype: "block",
+            letitle: "User:" + username,
+            lelimit: 50,
+            leprop: "user|timestamp|comment|details",
+          });
+          const entries = (data.query && data.query.logevents) || [];
+          if (!entries.length) {
+            setEmpty(bodyBlockLog, "No block log entries found.");
+            return;
+          }
+          bodyBlockLog.innerHTML = "";
+          for (const e of entries) {
+            const duration = (e.params && e.params.duration) || "—";
+            const expiry =
+              e.params && e.params.expiry
+                ? e.params.expiry === "infinity"
+                  ? "Indefinite"
+                  : fmtTimestamp(e.params.expiry)
+                : "—";
+            bodyBlockLog.appendChild(
+              makeEntry([
+                ["Time", fmtTimestamp(e.timestamp)],
+                ["Action", e.action || "block"],
+                ["Performed by", e.user || "—"],
+                ["Duration", duration],
+                ["Expiry", expiry],
+                ["Reason", e.comment || "(no reason given)"],
+              ]),
+            );
+          }
+        } catch (err) {
+          setError(
+            bodyBlockLog,
+            "Failed to load block log: " + formatApiError(err),
+          );
+        }
+      })();
+
+      // --- Rights changes ---
+      (async function () {
+        try {
+          const data = await apiGet({
+            action: "query",
+            list: "logevents",
+            letype: "rights",
+            letitle: "User:" + username,
+            lelimit: 50,
+            leprop: "user|timestamp|comment|details",
+          });
+          const entries = (data.query && data.query.logevents) || [];
+          if (!entries.length) {
+            setEmpty(bodyRights, "No rights change entries found.");
+            return;
+          }
+          bodyRights.innerHTML = "";
+          for (const e of entries) {
+            const oldGroups =
+              e.params && e.params.oldgroups && e.params.oldgroups.length
+                ? e.params.oldgroups.join(", ")
+                : "(none)";
+            const newGroups =
+              e.params && e.params.newgroups && e.params.newgroups.length
+                ? e.params.newgroups.join(", ")
+                : "(none)";
+            bodyRights.appendChild(
+              makeEntry([
+                ["Time", fmtTimestamp(e.timestamp)],
+                ["Changed by", e.user || "—"],
+                ["Previous groups", oldGroups],
+                ["New groups", newGroups],
+                ["Reason", e.comment || "(no reason given)"],
+              ]),
+            );
+          }
+        } catch (err) {
+          setError(
+            bodyRights,
+            "Failed to load rights changes: " + formatApiError(err),
+          );
+        }
+      })();
+
+      // --- Abuse filter log ---
+      (async function () {
+        try {
+          const data = await apiGet({
+            action: "query",
+            list: "abuselog",
+            afluser: username,
+            afllimit: 50,
+            aflprop: "ids|user|title|action|result|timestamp|filter",
+          });
+          const entries = (data.query && data.query.abuselog) || [];
+          if (!entries.length) {
+            setEmpty(bodyAbuseLog, "No abuse filter log entries found.");
+            return;
+          }
+          bodyAbuseLog.innerHTML = "";
+          for (const e of entries) {
+            const filterLabel = e.filter_id
+              ? "#" + e.filter_id + (e.filter ? " (" + e.filter + ")" : "")
+              : "—";
+            bodyAbuseLog.appendChild(
+              makeEntry([
+                ["Time", fmtTimestamp(e.timestamp)],
+                ["Page", e.title || "—"],
+                ["Action", e.action || "—"],
+                ["Filter", filterLabel],
+                ["Result", e.result || "(none)"],
+              ]),
+            );
+          }
+        } catch (err) {
+          setError(
+            bodyAbuseLog,
+            "Failed to load abuse filter log: " + formatApiError(err),
+          );
+        }
+      })();
+    };
+
+    // ============================================================================
+    // [Section 08] Dialogue builder (input config)
     // Generates configuration layout panel structures, parses package parameters,
     // and configures field states. Also fetches the current user's rights to
     // populate the footer rights panel and lock sections the user lacks access to.
@@ -1684,8 +1943,22 @@ $(function () {
       const inputUsername = makeInput("Username or IP (not a range)");
       fieldTarget.appendChild(inputUsername);
 
+      const btnGetInfo = makeBtn("Get info", "quiet");
+      btnGetInfo.className += " tng-btn-sm";
+      btnGetInfo.title =
+        "View block log, rights changes, and abuse filter log for this user";
+      btnGetInfo.disabled = true;
+      fieldTarget.appendChild(btnGetInfo);
+
       inputUsername.addEventListener("input", function () {
         clearInputError(inputUsername);
+        btnGetInfo.disabled = !inputUsername.value.trim();
+      });
+
+      btnGetInfo.addEventListener("click", function () {
+        const username = inputUsername.value.trim();
+        if (!username) return;
+        getUserInfo(username);
       });
 
       topSection.appendChild(rowTarget);
@@ -2460,6 +2733,7 @@ $(function () {
       selPackage.value = defaultPkgName;
       applyPackage(defaultPkgName);
       inputUsername.value = mw.config.get("wgRelevantUserName") || "";
+      btnGetInfo.disabled = !inputUsername.value.trim();
       inputUsername.dispatchEvent(new Event("change"));
 
       // Perform initial check on modal framework launch
@@ -2468,7 +2742,7 @@ $(function () {
     };
 
     // ============================================================================
-    // [Section 08] Portlet link
+    // [Section 09] Portlet link
     // Registers the execution menu item anchor inside the site actions portal drop list.
     // ============================================================================
     $(mw.util.addPortletLink("p-cactions", "#", "⛩️ Tengu", "ca-tengu")).on(
