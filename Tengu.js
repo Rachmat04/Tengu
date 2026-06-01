@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 1.7.0
+ * Version 1.7.1
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -987,24 +987,36 @@ $(function () {
 
       // --- Block ---
       if (config.block && !isAborted) {
-        const confirm = await new Promise((resolve) => {
-          const { overlay, dialog, body, footer } = createDialog({
-            title: "Self-block confirmation",
-            icon: "⚠️",
-            onClose: () => resolve(false),
+        // Show a confirmation dialogue only when the target account matches the current user.
+        const isSelfBlock =
+          config.username.toLowerCase() ===
+          (mw.config.get("wgUserName") || "").toLowerCase();
+        if (isSelfBlock) {
+          const confirmed = await new Promise((resolve) => {
+            const { overlay, dialog, body, footer } = createDialog({
+              title: "Self-block confirmation",
+              icon: "⚠️",
+              onClose: () => resolve(false),
+            });
+            body.innerHTML =
+              "<p>You are about to block your own account. Are you certain you wish to proceed?</p>";
+            const btnCancel = makeBtn("Cancel", "quiet");
+            btnCancel.addEventListener("click", () => {
+              overlay.closeHandler();
+              resolve(false);
+            });
+            const btnConfirm = makeBtn("Proceed", "destructive");
+            btnConfirm.addEventListener("click", () => {
+              overlay.closeHandler();
+              resolve(true);
+            });
+            footer.appendChild(btnCancel);
+            footer.appendChild(btnConfirm);
           });
-          body.innerHTML =
-            "<p>You are attempting to block your own account. Are you certain you wish to proceed?</p>";
-          const btnConfirm = makeBtn("Proceed", "destructive");
-          btnConfirm.addEventListener("click", () => {
-            overlay.closeHandler();
-            resolve(true);
-          });
-          footer.appendChild(btnConfirm);
-        });
-        if (!confirm) {
-          addLog("[Block] Operation cancelled: Cannot block self.");
-          return;
+          if (!confirmed) {
+            addLog("[Block] Self-block cancelled.");
+            return;
+          }
         }
 
         const data = {

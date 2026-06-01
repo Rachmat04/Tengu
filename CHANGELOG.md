@@ -1,3 +1,14 @@
+### Fixed
+
+* Fixed the self-block confirmation dialogue appearing for all block actions
+* Added a case-insensitive self-block check so the confirmation dialogue is only shown when blocking the currently logged-in account
+* Corrected the self-block cancellation log message from "Operation cancelled: Cannot block self." to "Self-block cancelled."
+
+### Improved
+
+* Added a dedicated **Cancel** button to the self-block confirmation dialogue
+* Updated self-block confirmation wording from "attempting to block" to "about to block" for clearer, more consistent language
+
 ## 1.7.0
 
 ### Changed
