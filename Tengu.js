@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 1.7.2
+ * Version 1.7.3
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -266,6 +266,24 @@ $(function () {
             color: #72777d; font-style: italic; font-size: 0.88em; padding: 4px 0;
         }
 
+        /* --- Collapsible section arrow --- */
+        .tng-section-arrow {
+            margin-left: auto;
+            flex-shrink: 0;
+            display: inline-block;
+            width: 7px; height: 7px;
+            border-right: 2px solid #54595d;
+            border-bottom: 2px solid #54595d;
+            transform: rotate(45deg);
+            transition: transform 0.18s ease;
+            pointer-events: none;
+            position: relative; top: -2px;
+        }
+        .tng-section-arrow.tng-arrow-up {
+            transform: rotate(225deg);
+            top: 2px;
+        }
+
         /* --- Animations --- */
         @media (prefers-reduced-motion: no-preference) {
             @keyframes tng-fadein  { from { opacity: 0 } to { opacity: 1 } }
@@ -307,6 +325,9 @@ $(function () {
             /* Dark mode for user info panel entries */
             .tng-info-entry { background: #252525; border-color: #3a3a3a; }
             .tng-info-loading, .tng-info-empty { color: #8a8a8a; }
+
+            /* Dark mode for section arrow */
+            .tng-section-arrow { border-color: #a2a9b1; }
         }
     `);
 
@@ -467,6 +488,10 @@ $(function () {
       );
       enableChk.style.marginRight = "4px";
       hdr.appendChild(chkWrap);
+      const arrow = document.createElement("span");
+      arrow.className =
+        "tng-section-arrow" + (enabledByDefault ? " tng-arrow-up" : "");
+      hdr.appendChild(arrow);
       const sectionBody = document.createElement("div");
       sectionBody.className =
         "tng-section-body" + (enabledByDefault ? "" : " tng-hidden");
@@ -475,6 +500,7 @@ $(function () {
       enableChk.addEventListener("change", function () {
         section.classList.toggle("tng-disabled", !enableChk.checked);
         sectionBody.classList.toggle("tng-hidden", !enableChk.checked);
+        arrow.classList.toggle("tng-arrow-up", enableChk.checked);
       });
       return { section, sectionBody, enableChk };
     }
@@ -536,12 +562,18 @@ $(function () {
       section.className = "tng-section";
       const hdr = document.createElement("div");
       hdr.className = "tng-section-header";
-      hdr.textContent = icon + " " + title;
+      const titleSpan = document.createElement("span");
+      titleSpan.textContent = icon + " " + title;
+      hdr.appendChild(titleSpan);
+      const arrow = document.createElement("span");
+      arrow.className = "tng-section-arrow";
+      hdr.appendChild(arrow);
       const sectionBody = document.createElement("div");
-      sectionBody.className = "tng-section-body";
+      sectionBody.className = "tng-section-body tng-hidden";
       sectionBody.style.maxHeight = "320px";
       hdr.addEventListener("click", function () {
-        sectionBody.classList.toggle("tng-hidden");
+        const isHidden = sectionBody.classList.toggle("tng-hidden");
+        arrow.classList.toggle("tng-arrow-up", !isHidden);
       });
       section.appendChild(hdr);
       section.appendChild(sectionBody);

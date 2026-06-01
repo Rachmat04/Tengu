@@ -1,3 +1,22 @@
+## 1.7.3
+
+### Added
+
+* Added a CSS-based chevron indicator for collapsible sections using a border-drawn design
+* Added dark mode styling for chevron indicators
+
+### Changed
+
+* Updated `.tng-arrow-up` rotation to `225deg` for a cleaner upward chevron appearance
+* Adjusted vertical positioning between expanded and collapsed states to keep the chevron visually centred
+
+### Improved
+
+* Improved visual consistency of expand/collapse indicators across all section types
+* Corrected dark mode styling to use `border-color` instead of `color`
+* Kept chevron state synchronised with section visibility in both editable and read-only sections
+* User information sections remain collapsed by default and provide clearer visual feedback when expanded
+
 ## 1.7.2
 
 ### Fixed
