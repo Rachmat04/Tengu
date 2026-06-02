@@ -1,3 +1,27 @@
+## 1.8.1
+
+### Changed
+
+* Reverted the rights panel layout from a two-row structure to a single flex row
+* Updated rights panel rendering to display local and global rights in a single flow with automatic wrapping on narrow viewports
+
+### Added
+
+* Added `.tng-rights-sep`, a vertical separator between local and global rights groups
+* Added dark mode styling for the rights panel separator
+
+### Removed
+
+* Removed `.tng-rights-row` and its associated row-based layout structure
+* Removed local and global row wrapper elements from the rights panel DOM
+
+### Improved
+
+* Simplified rights panel markup and layout
+* Improved space efficiency by displaying all rights information within a single flex container
+* Added a clearer visual distinction between local and global rights through a dedicated separator
+* Preserved responsive behaviour by allowing rights badges to wrap naturally on smaller screens
+
 ## 1.8.0
 
 ### Changed

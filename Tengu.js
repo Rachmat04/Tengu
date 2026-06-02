@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 1.8.0
+ * Version 1.8.1
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -216,21 +216,22 @@ $(function () {
 
         /* --- User rights panel (footer, bottom-left) --- */
         .tng-rights-panel {
-            display: flex; flex-direction: column; align-items: flex-start; gap: 4px;
-            margin-right: auto;
+            display: flex; align-items: center; gap: 5px;
+            flex-wrap: wrap; margin-right: auto;
             padding: 5px 10px; border: 1px solid #a2a9b1;
             border-radius: 6px; background: #f0f2f5;
         }
         .tng-rights-title {
             font-size: 0.78em; color: #54595d;
-            font-weight: 700; white-space: nowrap;
-        }
-        .tng-rights-row {
-            display: flex; align-items: center; gap: 5px; flex-wrap: wrap;
+            font-weight: 700; white-space: nowrap; margin-right: 2px;
         }
         .tng-rights-subtitle {
             font-size: 0.75em; color: #72777d;
             font-weight: 600; white-space: nowrap;
+        }
+        .tng-rights-sep {
+            width: 1px; height: 14px; background: #c8ccd1;
+            flex-shrink: 0; align-self: center; margin: 0 2px;
         }
         .tng-rights-badge {
             display: inline-flex; align-items: center; gap: 3px;
@@ -308,6 +309,7 @@ $(function () {
             .tng-rights-panel { background: #252525; border-color: #3a3a3a; }
             .tng-rights-title { color: #a2a9b1; }
             .tng-rights-subtitle { color: #6a6a6a; }
+            .tng-rights-sep { background: #4a4a4a; }
             .tng-rights-have { background: #1a3a24; color: #75c987; border-color: #2d6a3f; }
             .tng-rights-lack { background: #3a1a1e; color: #f08080; border-color: #6a2d33; }
             .tng-rights-loading { background: #2a2a2a; color: #8a8a8a; border-color: #3a3a3a; }
@@ -2575,7 +2577,7 @@ $(function () {
 
       const rightsTitle = document.createElement("span");
       rightsTitle.className = "tng-rights-title";
-      rightsTitle.textContent = "Your rights";
+      rightsTitle.textContent = "Your rights:";
       rightsPanel.appendChild(rightsTitle);
 
       function makeRightsBadge(text, state) {
@@ -2585,33 +2587,32 @@ $(function () {
         return b;
       }
 
-      // Local rights row
-      const localRow = document.createElement("div");
-      localRow.className = "tng-rights-row";
+      // Local rights (this wiki)
       const localLabel = document.createElement("span");
       localLabel.className = "tng-rights-subtitle";
       localLabel.textContent = "This wiki:";
-      localRow.appendChild(localLabel);
+      rightsPanel.appendChild(localLabel);
       const badgeRollback = makeRightsBadge("Rollback", "loading");
       const badgeSysop = makeRightsBadge("Sysop", "loading");
-      localRow.appendChild(badgeRollback);
-      localRow.appendChild(badgeSysop);
-      rightsPanel.appendChild(localRow);
+      rightsPanel.appendChild(badgeRollback);
+      rightsPanel.appendChild(badgeSysop);
 
-      // Global rights row
-      const globalRow = document.createElement("div");
-      globalRow.className = "tng-rights-row";
+      // Separator between local and global groups
+      const rightsSep = document.createElement("span");
+      rightsSep.className = "tng-rights-sep";
+      rightsPanel.appendChild(rightsSep);
+
+      // Global rights
       const globalLabel = document.createElement("span");
       globalLabel.className = "tng-rights-subtitle";
       globalLabel.textContent = "Global:";
-      globalRow.appendChild(globalLabel);
+      rightsPanel.appendChild(globalLabel);
       const badgeGlobalRollback = makeRightsBadge("Global rollback", "loading");
       const badgeGlobalSysop = makeRightsBadge("Global sysop", "loading");
       const badgeSteward = makeRightsBadge("Steward", "loading");
-      globalRow.appendChild(badgeGlobalRollback);
-      globalRow.appendChild(badgeGlobalSysop);
-      globalRow.appendChild(badgeSteward);
-      rightsPanel.appendChild(globalRow);
+      rightsPanel.appendChild(badgeGlobalRollback);
+      rightsPanel.appendChild(badgeGlobalSysop);
+      rightsPanel.appendChild(badgeSteward);
 
       // Insert before the Cancel button so it sits on the left
       footer.insertBefore(rightsPanel, btnCancel);
