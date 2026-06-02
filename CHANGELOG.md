@@ -1,3 +1,18 @@
+## 1.8.2
+
+### Changed
+
+* Renamed global rights badges:
+
+  * "Global rollback" → "Rollback"
+  * "Global sysop" → "Sysop"
+
+### Improved
+
+* Reduced redundant wording in the global rights panel
+* Relied on the existing "Global:" scope label to provide context for global rights badges
+* Improved readability and visual consistency between local and global rights displays
+
 ## 1.8.1
 
 ### Changed

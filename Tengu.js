@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 1.8.1
+ * Version 1.8.2
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -1749,11 +1749,7 @@ $(function () {
       // Used to populate the global-rights row in the footer panel.
       const globalRightsPromise = new Promise(function (resolve) {
         rightsApi
-          .get({
-            action: "query",
-            meta: "globaluserinfo",
-            guiprop: "groups|rights",
-          })
+          .get({ action: "query", meta: "globaluserinfo", guiprop: "groups|rights" })
           .done(function (data) {
             const gui = data && data.query && data.query.globaluserinfo;
             resolve({
@@ -2607,8 +2603,8 @@ $(function () {
       globalLabel.className = "tng-rights-subtitle";
       globalLabel.textContent = "Global:";
       rightsPanel.appendChild(globalLabel);
-      const badgeGlobalRollback = makeRightsBadge("Global rollback", "loading");
-      const badgeGlobalSysop = makeRightsBadge("Global sysop", "loading");
+      const badgeGlobalRollback = makeRightsBadge("Rollback", "loading");
+      const badgeGlobalSysop = makeRightsBadge("Sysop", "loading");
       const badgeSteward = makeRightsBadge("Steward", "loading");
       rightsPanel.appendChild(badgeGlobalRollback);
       rightsPanel.appendChild(badgeGlobalSysop);
@@ -2621,107 +2617,102 @@ $(function () {
       // any sections the user cannot use based on their local effective rights.
       // (Global rights from CentralAuth are already reflected in userinfo rights,
       // so locking is driven by local rights only.)
-      Promise.all([rightsPromise, globalRightsPromise]).then(
-        function (results) {
-          const info = results[0];
-          const globalInfo = results[1];
+      Promise.all([rightsPromise, globalRightsPromise]).then(function (results) {
+        const info = results[0];
+        const globalInfo = results[1];
 
-          const hasRollback = info.rights.indexOf("rollback") !== -1;
-          const inSysopGroup = info.groups.indexOf("sysop") !== -1;
-          const hasBlock = info.rights.indexOf("block") !== -1;
-          const hasDelete = info.rights.indexOf("delete") !== -1;
-          const hasProtect = info.rights.indexOf("protect") !== -1;
-          const hasRevdel = info.rights.indexOf("deleterevision") !== -1;
-          // Treat the user as sysop/admin if they are in the sysop group or hold
-          // at least the three core admin rights (block, delete, protect).
-          const hasSysop =
-            inSysopGroup || (hasBlock && hasDelete && hasProtect);
+        const hasRollback = info.rights.indexOf("rollback") !== -1;
+        const inSysopGroup = info.groups.indexOf("sysop") !== -1;
+        const hasBlock = info.rights.indexOf("block") !== -1;
+        const hasDelete = info.rights.indexOf("delete") !== -1;
+        const hasProtect = info.rights.indexOf("protect") !== -1;
+        const hasRevdel = info.rights.indexOf("deleterevision") !== -1;
+        // Treat the user as sysop/admin if they are in the sysop group or hold
+        // at least the three core admin rights (block, delete, protect).
+        const hasSysop = inSysopGroup || (hasBlock && hasDelete && hasProtect);
 
-          // Global group membership
-          const globalGroups = globalInfo.groups;
-          const hasGlobalRollback =
-            globalGroups.indexOf("global-rollbacker") !== -1;
-          const hasGlobalSysop = globalGroups.indexOf("global-sysop") !== -1;
-          const isSteward = globalGroups.indexOf("steward") !== -1;
+        // Global group membership
+        const globalGroups = globalInfo.groups;
+        const hasGlobalRollback = globalGroups.indexOf("global-rollbacker") !== -1;
+        const hasGlobalSysop = globalGroups.indexOf("global-sysop") !== -1;
+        const isSteward = globalGroups.indexOf("steward") !== -1;
 
-          // Update local badges
-          badgeRollback.className =
-            "tng-rights-badge tng-rights-" + (hasRollback ? "have" : "lack");
-          badgeRollback.textContent =
-            (hasRollback ? "✔️  " : "❌  ") + "Rollback";
+        // Update local badges
+        badgeRollback.className =
+          "tng-rights-badge tng-rights-" + (hasRollback ? "have" : "lack");
+        badgeRollback.textContent =
+          (hasRollback ? "✔️  " : "❌  ") + "Rollback";
 
-          badgeSysop.className =
-            "tng-rights-badge tng-rights-" + (hasSysop ? "have" : "lack");
-          badgeSysop.textContent = (hasSysop ? "✔️  " : "❌  ") + "Sysop";
+        badgeSysop.className =
+          "tng-rights-badge tng-rights-" + (hasSysop ? "have" : "lack");
+        badgeSysop.textContent = (hasSysop ? "✔️  " : "❌  ") + "Sysop";
 
-          // Update global badges
-          badgeGlobalRollback.className =
-            "tng-rights-badge tng-rights-" +
-            (hasGlobalRollback ? "have" : "lack");
-          badgeGlobalRollback.textContent =
-            (hasGlobalRollback ? "✔️  " : "❌  ") + "Global rollback";
+        // Update global badges
+        badgeGlobalRollback.className =
+          "tng-rights-badge tng-rights-" + (hasGlobalRollback ? "have" : "lack");
+        badgeGlobalRollback.textContent =
+          (hasGlobalRollback ? "✔️  " : "❌  ") + "Rollback";
 
-          badgeGlobalSysop.className =
-            "tng-rights-badge tng-rights-" + (hasGlobalSysop ? "have" : "lack");
-          badgeGlobalSysop.textContent =
-            (hasGlobalSysop ? "✔️  " : "❌  ") + "Global sysop";
+        badgeGlobalSysop.className =
+          "tng-rights-badge tng-rights-" + (hasGlobalSysop ? "have" : "lack");
+        badgeGlobalSysop.textContent =
+          (hasGlobalSysop ? "✔️  " : "❌  ") + "Sysop";
 
-          badgeSteward.className =
-            "tng-rights-badge tng-rights-" + (isSteward ? "have" : "lack");
-          badgeSteward.textContent = (isSteward ? "✔️  " : "❌  ") + "Steward";
+        badgeSteward.className =
+          "tng-rights-badge tng-rights-" + (isSteward ? "have" : "lack");
+        badgeSteward.textContent = (isSteward ? "✔️  " : "❌  ") + "Steward";
 
-          // Lock a section: uncheck and disable its toggle, collapse its body,
-          // remove the chevron (section cannot be opened), and append a lock
-          // indicator to the header so the restriction is visible.
-          function lockSection(sec, secBody, chk, reason) {
-            chk.checked = false;
-            chk.disabled = true;
-            sec.classList.add("tng-disabled");
-            secBody.classList.add("tng-hidden");
-            const arrow = sec.querySelector(".tng-section-arrow");
-            if (arrow) arrow.remove();
-            const hdr = sec.querySelector(".tng-section-header");
-            hdr.title = "Unavailable: " + reason;
-            const lockBadge = document.createElement("span");
-            lockBadge.className = "tng-rights-lock";
-            lockBadge.textContent = "🔒";
-            lockBadge.title = "Unavailable: " + reason;
-            hdr.appendChild(lockBadge);
-          }
+        // Lock a section: uncheck and disable its toggle, collapse its body,
+        // remove the chevron (section cannot be opened), and append a lock
+        // indicator to the header so the restriction is visible.
+        function lockSection(sec, secBody, chk, reason) {
+          chk.checked = false;
+          chk.disabled = true;
+          sec.classList.add("tng-disabled");
+          secBody.classList.add("tng-hidden");
+          const arrow = sec.querySelector(".tng-section-arrow");
+          if (arrow) arrow.remove();
+          const hdr = sec.querySelector(".tng-section-header");
+          hdr.title = "Unavailable: " + reason;
+          const lockBadge = document.createElement("span");
+          lockBadge.className = "tng-rights-lock";
+          lockBadge.textContent = "🔒";
+          lockBadge.title = "Unavailable: " + reason;
+          hdr.appendChild(lockBadge);
+        }
 
-          if (!hasBlock)
-            lockSection(
-              secBlock,
-              bodyBlock,
-              chkBlock,
-              "you do not have the block right on this wiki",
-            );
-          if (!hasDelete)
-            lockSection(
-              secPagedel,
-              bodyPagedel,
-              chkPagedel,
-              "you do not have the delete right on this wiki",
-            );
-          if (!hasProtect)
-            lockSection(
-              secProtect,
-              bodyProtect,
-              chkProtect,
-              "you do not have the protect right on this wiki",
-            );
-          if (!hasRevdel)
-            lockSection(
-              secRevdel,
-              bodyRevdel,
-              chkRevdel,
-              "you do not have the deleterevision right on this wiki",
-            );
+        if (!hasBlock)
+          lockSection(
+            secBlock,
+            bodyBlock,
+            chkBlock,
+            "you do not have the block right on this wiki",
+          );
+        if (!hasDelete)
+          lockSection(
+            secPagedel,
+            bodyPagedel,
+            chkPagedel,
+            "you do not have the delete right on this wiki",
+          );
+        if (!hasProtect)
+          lockSection(
+            secProtect,
+            bodyProtect,
+            chkProtect,
+            "you do not have the protect right on this wiki",
+          );
+        if (!hasRevdel)
+          lockSection(
+            secRevdel,
+            bodyRevdel,
+            chkRevdel,
+            "you do not have the deleterevision right on this wiki",
+          );
 
-          // Re-evaluate the Start button in case locks changed the checked state
-          updateStartBtn();
-        },
-      );
+        // Re-evaluate the Start button in case locks changed the checked state
+        updateStartBtn();
+      });
 
       function applyPackage(pkgName) {
         const pkg = packages[pkgName] || defaultPackage;
