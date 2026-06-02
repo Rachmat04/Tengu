@@ -1,3 +1,34 @@
+## 1.8.0
+
+### Changed
+
+* Updated header documentation to describe both local and global rights in the user rights panel
+* Redesigned the rights panel layout from a single-row display to a two-row structure for local and global permissions
+* Updated the rights panel heading from "Your rights:" to "Your rights"
+
+### Added
+
+* Added global rights detection using `action=query&meta=globaluserinfo&guiprop=groups|rights`
+* Added a dedicated **Global** rights row in the rights panel
+* Added badges for:
+  * Global rollback
+  * Global sysop
+  * Steward
+* Added `.tng-rights-row` for grouped rights displays
+* Added `.tng-rights-subtitle` for local/global scope labels
+* Added dark mode styling for rights panel subtitles
+
+### Improved
+
+* Rights information is now presented separately for local and global permissions
+* Combined local and global rights loading through `Promise.all()` for coordinated badge updates
+* Global rights lookup fails gracefully and does not affect the rest of the interface if unavailable
+* Preserved existing permission-locking behaviour, which continues to rely on effective rights provided by MediaWiki
+
+### Notes
+
+* Permission-locking logic is unchanged and remains based on effective user rights on the current wiki.
+
 ## 1.7.6
 
 ### Changed
