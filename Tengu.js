@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 1.9.0
+ * Version 1.10.0
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -269,6 +269,47 @@ $(function () {
             color: #72777d; font-style: italic; font-size: 0.88em; padding: 4px 0;
         }
 
+        /* --- Target user rights card (user info dialogue) --- */
+        .tng-user-rights-card {
+            border: 1px solid #a2a9b1; border-radius: 6px;
+            overflow: hidden; flex-shrink: 0;
+        }
+        .tng-user-rights-header {
+            padding: 8px 12px;
+            background: #f0f2f5; border-bottom: 1px solid #eaecf0;
+            font-weight: 700; font-size: 0.9em;
+            display: flex; align-items: center; gap: 6px;
+        }
+        .tng-user-rights-body {
+            padding: 10px 12px; display: flex; flex-direction: column; gap: 10px;
+        }
+        .tng-user-rights-row {
+            display: flex; flex-direction: column; gap: 5px;
+        }
+        .tng-user-rights-scope {
+            font-size: 0.79em; font-weight: 700; color: #54595d;
+            text-transform: uppercase; letter-spacing: 0.04em;
+        }
+        .tng-user-rights-badges {
+            display: flex; flex-wrap: wrap; gap: 4px;
+        }
+        .tng-rights-badge-group {
+            background: #dce8f8; color: #1a4a8a; border-color: #a8c4e8;
+        }
+        .tng-rights-badge-none {
+            background: #f0f2f5; color: #72777d; border-color: #c8ccd1;
+            font-style: italic;
+        }
+        .tng-user-rights-divider {
+            border: none; border-top: 1px solid #eaecf0; margin: 2px 0;
+        }
+        .tng-user-rights-list {
+            font-size: 0.79em; color: #54595d; line-height: 1.55;
+            padding: 4px 7px; background: #f8f9fa;
+            border-radius: 3px; border: 1px solid #eaecf0;
+            word-break: break-word;
+        }
+
         /* --- Collapsible section arrow --- */
         .tng-section-arrow {
             margin-left: auto;
@@ -330,6 +371,15 @@ $(function () {
             /* Dark mode for user info panel entries */
             .tng-info-entry { background: #252525; border-color: #3a3a3a; }
             .tng-info-loading, .tng-info-empty { color: #8a8a8a; }
+
+            /* Dark mode for target user rights card */
+            .tng-user-rights-card { border-color: #3a3a3a; }
+            .tng-user-rights-header { background: #252525; border-color: #3a3a3a; }
+            .tng-user-rights-scope { color: #a2a9b1; }
+            .tng-user-rights-divider { border-color: #3a3a3a; }
+            .tng-rights-badge-group { background: #1a3060; color: #80aaff; border-color: #2a5090; }
+            .tng-rights-badge-none { background: #2a2a2a; color: #8a8a8a; border-color: #3a3a3a; }
+            .tng-user-rights-list { background: #2a2a2a; color: #a2a9b1; border-color: #3a3a3a; }
 
             /* Dark mode for section arrow */
             .tng-section-arrow { border-color: #a2a9b1; }
@@ -1574,6 +1624,183 @@ $(function () {
       setLoading(bodyRights, "Loading rights changes…");
       setLoading(bodyAbuseLog, "Loading abuse filter log…");
 
+      // --- Access rights card ---
+      // Displayed before log sections. Shows the target user's groups and rights
+      // on the local wiki and globally (CentralAuth). Two parallel API requests
+      // are fired; each populates its own section independently.
+      const isTargetIP = mw.util.isIPAddress(username);
+      const localWikiId =
+        mw.config.get("wgDBname") || mw.config.get("wgSiteName") || "this wiki";
+
+      const rightsCard = document.createElement("div");
+      rightsCard.className = "tng-user-rights-card";
+
+      const rightsCardHdr = document.createElement("div");
+      rightsCardHdr.className = "tng-user-rights-header";
+      rightsCardHdr.textContent = "🎖️ Access rights";
+      rightsCard.appendChild(rightsCardHdr);
+
+      const rightsCardBody = document.createElement("div");
+      rightsCardBody.className = "tng-user-rights-body";
+      rightsCard.appendChild(rightsCardBody);
+
+      // Local groups/rights row
+      const localRow = document.createElement("div");
+      localRow.className = "tng-user-rights-row";
+      const localScope = document.createElement("div");
+      localScope.className = "tng-user-rights-scope";
+      localScope.textContent = "Local — " + localWikiId;
+      localRow.appendChild(localScope);
+      const localBadgesEl = document.createElement("div");
+      localBadgesEl.className = "tng-user-rights-badges";
+      const localLoadingEl = document.createElement("span");
+      localLoadingEl.className = "tng-info-loading";
+      localLoadingEl.textContent = "Loading…";
+      localBadgesEl.appendChild(localLoadingEl);
+      localRow.appendChild(localBadgesEl);
+      const localRightsListEl = document.createElement("div");
+      localRightsListEl.className = "tng-user-rights-list tng-hidden";
+      localRow.appendChild(localRightsListEl);
+      rightsCardBody.appendChild(localRow);
+
+      // Divider between local and global rows
+      const rightsHr = document.createElement("hr");
+      rightsHr.className = "tng-user-rights-divider";
+      rightsCardBody.appendChild(rightsHr);
+
+      // Global groups/rights row
+      const globalRow = document.createElement("div");
+      globalRow.className = "tng-user-rights-row";
+      const globalScope = document.createElement("div");
+      globalScope.className = "tng-user-rights-scope";
+      globalScope.textContent = "Global (Wikimedia / CentralAuth)";
+      globalRow.appendChild(globalScope);
+      const globalBadgesEl = document.createElement("div");
+      globalBadgesEl.className = "tng-user-rights-badges";
+      const globalLoadingEl = document.createElement("span");
+      // IP addresses do not have CentralAuth accounts
+      globalLoadingEl.className = isTargetIP
+        ? "tng-info-empty"
+        : "tng-info-loading";
+      globalLoadingEl.textContent = isTargetIP
+        ? "Not applicable for IP addresses."
+        : "Loading…";
+      globalBadgesEl.appendChild(globalLoadingEl);
+      globalRow.appendChild(globalBadgesEl);
+      const globalRightsListEl = document.createElement("div");
+      globalRightsListEl.className = "tng-user-rights-list tng-hidden";
+      globalRow.appendChild(globalRightsListEl);
+      rightsCardBody.appendChild(globalRow);
+
+      body.appendChild(rightsCard);
+
+      // Helper: populates a badges container and a rights text block.
+      // groups  — array of group names to render as badges.
+      // rights  — array of individual right strings to render as a text list.
+      // scopeLabel — short word used in the "no groups" fallback badge (e.g. "local").
+      function renderTargetRights(
+        badgesEl,
+        rightsListEl,
+        groups,
+        rights,
+        scopeLabel,
+      ) {
+        badgesEl.innerHTML = "";
+        if (!groups || !groups.length) {
+          const none = document.createElement("span");
+          none.className = "tng-rights-badge tng-rights-badge-none";
+          none.textContent = "No " + scopeLabel + " groups";
+          badgesEl.appendChild(none);
+        } else {
+          for (const g of groups) {
+            const b = document.createElement("span");
+            b.className = "tng-rights-badge tng-rights-badge-group";
+            b.textContent = g;
+            badgesEl.appendChild(b);
+          }
+        }
+        if (rights && rights.length) {
+          rightsListEl.textContent = "Rights: " + rights.join(", ");
+          rightsListEl.classList.remove("tng-hidden");
+        }
+      }
+
+      // Local rights request
+      (async function () {
+        try {
+          const data = await apiGet({
+            action: "query",
+            list: "users",
+            ususers: username,
+            usprop: "groups|rights",
+          });
+          const userEntry =
+            data.query && data.query.users && data.query.users[0];
+          if (!userEntry || userEntry.missing !== undefined) {
+            localBadgesEl.innerHTML = "";
+            const msg = document.createElement("span");
+            msg.className = "tng-info-empty";
+            msg.textContent = "Account not found on this wiki.";
+            localBadgesEl.appendChild(msg);
+          } else {
+            // Filter out implicit groups every account belongs to (*) and (user)
+            const groups = (userEntry.groups || []).filter(function (g) {
+              return g !== "*" && g !== "user";
+            });
+            const rights = userEntry.rights || [];
+            renderTargetRights(
+              localBadgesEl,
+              localRightsListEl,
+              groups,
+              rights,
+              "local",
+            );
+          }
+        } catch (err) {
+          setError(
+            localBadgesEl,
+            "Failed to load local rights: " + formatApiError(err),
+          );
+        }
+      })();
+
+      // Global rights request (skipped for IP addresses)
+      if (!isTargetIP) {
+        (async function () {
+          try {
+            const data = await apiGet({
+              action: "query",
+              meta: "globaluserinfo",
+              guiuser: username,
+              guiprop: "groups|rights",
+            });
+            const gui = data.query && data.query.globaluserinfo;
+            if (!gui || gui.missing !== undefined) {
+              globalBadgesEl.innerHTML = "";
+              const msg = document.createElement("span");
+              msg.className = "tng-info-empty";
+              msg.textContent = "No global account found.";
+              globalBadgesEl.appendChild(msg);
+            } else {
+              const groups = gui.groups || [];
+              const rights = gui.rights || [];
+              renderTargetRights(
+                globalBadgesEl,
+                globalRightsListEl,
+                groups,
+                rights,
+                "global",
+              );
+            }
+          } catch (err) {
+            setError(
+              globalBadgesEl,
+              "Failed to load global rights: " + formatApiError(err),
+            );
+          }
+        })();
+      }
+
       body.appendChild(secBlockLog);
       body.appendChild(secRights);
       body.appendChild(secAbuseLog);
@@ -2055,10 +2282,10 @@ $(function () {
       const inputUsername = makeInput("Username or IP (not a range)");
       fieldTarget.appendChild(inputUsername);
 
-      const btnGetInfo = makeBtn("Get info", "quiet");
+      const btnGetInfo = makeBtn("Get information on this user", "quiet");
       btnGetInfo.className += " tng-btn-sm";
       btnGetInfo.title =
-        "View block log, rights changes, and abuse filter log for this user";
+        "View access rights, block log, rights changes, and abuse filter log for this user";
       btnGetInfo.disabled = true;
       fieldTarget.appendChild(btnGetInfo);
 

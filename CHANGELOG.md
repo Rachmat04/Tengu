@@ -1,3 +1,38 @@
+## 1.10.0
+
+### Changed
+
+* Renamed the user information button from "Get info" to "Get information on this user"
+* Updated the button tooltip to describe the expanded information available
+
+### Added
+
+* Added an **Access rights** card to the user information dialog
+* Added local rights and global rights sections within the access rights card
+* Added badges displaying user group memberships for both local and global scopes
+* Added expandable rights lists showing individual permissions for each scope
+* Added dedicated styling for:
+
+  * User rights cards
+  * Rights scope labels
+  * Rights badge containers
+  * Group badges
+  * Empty-state badges
+  * Rights dividers
+  * Rights lists
+* Added dark mode support for all user rights card components
+
+### Improved
+
+* Displayed local wiki groups and rights separately from global Wikimedia/CentralAuth groups and rights
+* Filtered implicit local groups (`*` and `user`) so only meaningful group memberships are shown
+* Added clear fallback states for users with no local or global groups
+* Added dedicated handling for accounts that do not exist
+* Added dedicated handling for users without a global account
+* Displayed a "Not applicable for IP addresses" message for global rights on IP users
+* Loaded local and global rights independently so failures in one source do not affect the other
+* Integrated access rights information directly into the user information workflow alongside existing logs
+
 ## 1.9.0
 
 ### Changed
