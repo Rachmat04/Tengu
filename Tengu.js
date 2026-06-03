@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 1.8.2
+ * Version 1.9.0
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -21,14 +21,17 @@ $(function () {
     // ============================================================================
     let config = {};
     let inited = false;
+    let cssInited = false; // CSS injected once on first dialogue open
+    let escListenerBound = false; // Escape key listener registered once on first overlay
 
     // ============================================================================
     // [Section 01] Stylesheet
-    // Appends customised CSS configurations for layout rendering, dark mode support,
-    // and the user rights panel displayed in the dialogue footer.
-    // Inline field error state (.tng-input-error) replaces the previous bubble notification.
+    // Stores the CSS string for layout rendering, dark mode support, and the user
+    // rights panel displayed in the dialogue footer. The stylesheet is injected
+    // lazily on first dialogue open (see init()) rather than unconditionally on
+    // every page load, so no CSSOM mutation occurs on pages where Tengu is unused.
     // ============================================================================
-    mw.util.addCSS(`
+    const TNG_CSS = `
         /* --- Overlay --- */
         .tng-overlay {
             position: fixed; inset: 0; background: rgba(0,0,0,.52); z-index: 100000;
@@ -331,11 +334,12 @@ $(function () {
             /* Dark mode for section arrow */
             .tng-section-arrow { border-color: #a2a9b1; }
         }
-    `);
+    `;
 
     // ============================================================================
     // [Section 02] Overlay stack
-    // Tracks active overlays and binds global Escape key event listeners to dismiss dialogues.
+    // Tracks active overlays. The global Escape key listener is registered once,
+    // lazily, the first time an overlay is created — not at script load time.
     // ============================================================================
     const overlayStack = [];
 
@@ -351,23 +355,28 @@ $(function () {
       };
 
       overlayStack.push(overlay);
+
+      // Register the Escape key listener once, the first time an overlay is created.
+      if (!escListenerBound) {
+        escListenerBound = true;
+        document.addEventListener(
+          "keydown",
+          function (e) {
+            if (e.key === "Escape" || e.keyCode === 27) {
+              const top = overlayStack[overlayStack.length - 1];
+              if (top) {
+                e.preventDefault();
+                e.stopPropagation();
+                top.closeHandler();
+              }
+            }
+          },
+          true,
+        );
+      }
+
       return overlay;
     }
-
-    document.addEventListener(
-      "keydown",
-      function (e) {
-        if (e.key === "Escape" || e.keyCode === 27) {
-          const top = overlayStack[overlayStack.length - 1];
-          if (top) {
-            e.preventDefault();
-            e.stopPropagation();
-            top.closeHandler();
-          }
-        }
-      },
-      true,
-    );
 
     // ============================================================================
     // [Section 03] Dialogue builder
@@ -595,7 +604,60 @@ $(function () {
     }
 
     // ============================================================================
-    // [Section 05] Dropdown list reasons
+    // [Section 05] Shared API instance and promisified wrappers
+    // A single mw.Api instance is shared across work() and getUserInfo().
+    // Promisified wrappers convert jQuery Deferred objects to standard ES6 promises,
+    // defined once here rather than duplicated inside each function.
+    // ============================================================================
+    const api = new mw.Api();
+
+    const apiGet = (params) =>
+      new Promise((resolve, reject) => {
+        api
+          .get(params)
+          .done(resolve)
+          .fail((code, err) =>
+            reject(
+              code +
+                (err && err.error && err.error.info
+                  ? ": " + err.error.info
+                  : ""),
+            ),
+          );
+      });
+
+    const apiPost = (params) =>
+      new Promise((resolve, reject) => {
+        api
+          .postWithEditToken(params)
+          .done(resolve)
+          .fail((code, err) =>
+            reject(
+              code +
+                (err && err.error && err.error.info
+                  ? ": " + err.error.info
+                  : ""),
+            ),
+          );
+      });
+
+    const apiRollback = (title, user, params) =>
+      new Promise((resolve, reject) => {
+        api
+          .rollback(title, user, params)
+          .done(resolve)
+          .fail((code, err) =>
+            reject(
+              code +
+                (err && err.error && err.error.info
+                  ? ": " + err.error.info
+                  : ""),
+            ),
+          );
+      });
+
+    // ============================================================================
+    // [Section 06] Dropdown list reasons
     // Houses pre-populated reason sets for rollbacks, page deletions, and block actions.
     // ============================================================================
     const ROLLBACK_REASONS = [
@@ -912,12 +974,11 @@ $(function () {
     ];
 
     // ============================================================================
-    // [Section 06] Main work function
+    // [Section 07] Main work function
     // Executes API orchestration loops for user blocks, rollbacks, and deletions whilst piping execution log messages.
     // ============================================================================
     const work = async function () {
       let isAborted = false;
-      const api = new mw.Api();
       const stats = {
         block: 0,
         rollback: 0,
@@ -927,50 +988,6 @@ $(function () {
         error: 0,
       };
       const toolTag = " — ⛩️ [[w:id:Pengguna:Rachmat04/Tengu.js|Tengu]]";
-
-      // Promisified API wrappers converting jQuery promises into standard ES6 promises
-      const apiGet = (params) =>
-        new Promise((resolve, reject) => {
-          api
-            .get(params)
-            .done(resolve)
-            .fail((code, err) =>
-              reject(
-                code +
-                  (err && err.error && err.error.info
-                    ? ": " + err.error.info
-                    : ""),
-              ),
-            );
-        });
-      const apiPost = (params) =>
-        new Promise((resolve, reject) => {
-          api
-            .postWithEditToken(params)
-            .done(resolve)
-            .fail((code, err) =>
-              reject(
-                code +
-                  (err && err.error && err.error.info
-                    ? ": " + err.error.info
-                    : ""),
-              ),
-            );
-        });
-      const apiRollback = (title, user, params) =>
-        new Promise((resolve, reject) => {
-          api
-            .rollback(title, user, params)
-            .done(resolve)
-            .fail((code, err) =>
-              reject(
-                code +
-                  (err && err.error && err.error.info
-                    ? ": " + err.error.info
-                    : ""),
-              ),
-            );
-        });
 
       // Build Progress UI
       const { overlay, body, footer } = createDialog({
@@ -1477,29 +1494,13 @@ $(function () {
     };
 
     // ============================================================================
-    // [Section 07] Get user info
+    // [Section 08] Get user info
     // Fetches and displays block log entries, access rights changes, and abuse
     // filter log entries for a target user in a read-only dialogue panel.
     // Three collapsible sections are rendered in parallel; each fires its own
     // API request independently so a failure in one does not block the others.
     // ============================================================================
     const getUserInfo = async function (username) {
-      const api = new mw.Api();
-      const apiGet = (params) =>
-        new Promise((resolve, reject) => {
-          api
-            .get(params)
-            .done(resolve)
-            .fail((code, err) =>
-              reject(
-                code +
-                  (err && err.error && err.error.info
-                    ? ": " + err.error.info
-                    : ""),
-              ),
-            );
-        });
-
       const { overlay, body, footer } = createDialog({
         title: "User info: " + username,
         icon: "🔍",
@@ -1718,7 +1719,7 @@ $(function () {
     };
 
     // ============================================================================
-    // [Section 08] Dialogue builder (input config)
+    // [Section 09] Dialogue builder (input config)
     // Generates configuration layout panel structures, parses package parameters,
     // and configures field states. Also fetches the current user's rights to
     // populate the footer rights panel and lock sections the user lacks access to.
@@ -1726,6 +1727,13 @@ $(function () {
     const init = function () {
       if (inited) return;
       inited = true;
+
+      // Inject the stylesheet once on first dialogue open; defers CSSOM mutation
+      // from script load time so pages that never open Tengu pay no style cost.
+      if (!cssInited) {
+        cssInited = true;
+        mw.util.addCSS(TNG_CSS);
+      }
 
       // Fetch the current user's rights and groups immediately so the result is
       // ready (or very close to ready) by the time the dialogue finishes building.
@@ -1749,7 +1757,11 @@ $(function () {
       // Used to populate the global-rights row in the footer panel.
       const globalRightsPromise = new Promise(function (resolve) {
         rightsApi
-          .get({ action: "query", meta: "globaluserinfo", guiprop: "groups|rights" })
+          .get({
+            action: "query",
+            meta: "globaluserinfo",
+            guiprop: "groups|rights",
+          })
           .done(function (data) {
             const gui = data && data.query && data.query.globaluserinfo;
             resolve({
@@ -2617,102 +2629,107 @@ $(function () {
       // any sections the user cannot use based on their local effective rights.
       // (Global rights from CentralAuth are already reflected in userinfo rights,
       // so locking is driven by local rights only.)
-      Promise.all([rightsPromise, globalRightsPromise]).then(function (results) {
-        const info = results[0];
-        const globalInfo = results[1];
+      Promise.all([rightsPromise, globalRightsPromise]).then(
+        function (results) {
+          const info = results[0];
+          const globalInfo = results[1];
 
-        const hasRollback = info.rights.indexOf("rollback") !== -1;
-        const inSysopGroup = info.groups.indexOf("sysop") !== -1;
-        const hasBlock = info.rights.indexOf("block") !== -1;
-        const hasDelete = info.rights.indexOf("delete") !== -1;
-        const hasProtect = info.rights.indexOf("protect") !== -1;
-        const hasRevdel = info.rights.indexOf("deleterevision") !== -1;
-        // Treat the user as sysop/admin if they are in the sysop group or hold
-        // at least the three core admin rights (block, delete, protect).
-        const hasSysop = inSysopGroup || (hasBlock && hasDelete && hasProtect);
+          const hasRollback = info.rights.indexOf("rollback") !== -1;
+          const inSysopGroup = info.groups.indexOf("sysop") !== -1;
+          const hasBlock = info.rights.indexOf("block") !== -1;
+          const hasDelete = info.rights.indexOf("delete") !== -1;
+          const hasProtect = info.rights.indexOf("protect") !== -1;
+          const hasRevdel = info.rights.indexOf("deleterevision") !== -1;
+          // Treat the user as sysop/admin if they are in the sysop group or hold
+          // at least the three core admin rights (block, delete, protect).
+          const hasSysop =
+            inSysopGroup || (hasBlock && hasDelete && hasProtect);
 
-        // Global group membership
-        const globalGroups = globalInfo.groups;
-        const hasGlobalRollback = globalGroups.indexOf("global-rollbacker") !== -1;
-        const hasGlobalSysop = globalGroups.indexOf("global-sysop") !== -1;
-        const isSteward = globalGroups.indexOf("steward") !== -1;
+          // Global group membership
+          const globalGroups = globalInfo.groups;
+          const hasGlobalRollback =
+            globalGroups.indexOf("global-rollbacker") !== -1;
+          const hasGlobalSysop = globalGroups.indexOf("global-sysop") !== -1;
+          const isSteward = globalGroups.indexOf("steward") !== -1;
 
-        // Update local badges
-        badgeRollback.className =
-          "tng-rights-badge tng-rights-" + (hasRollback ? "have" : "lack");
-        badgeRollback.textContent =
-          (hasRollback ? "✔️  " : "❌  ") + "Rollback";
+          // Update local badges
+          badgeRollback.className =
+            "tng-rights-badge tng-rights-" + (hasRollback ? "have" : "lack");
+          badgeRollback.textContent =
+            (hasRollback ? "✔️  " : "❌  ") + "Rollback";
 
-        badgeSysop.className =
-          "tng-rights-badge tng-rights-" + (hasSysop ? "have" : "lack");
-        badgeSysop.textContent = (hasSysop ? "✔️  " : "❌  ") + "Sysop";
+          badgeSysop.className =
+            "tng-rights-badge tng-rights-" + (hasSysop ? "have" : "lack");
+          badgeSysop.textContent = (hasSysop ? "✔️  " : "❌  ") + "Sysop";
 
-        // Update global badges
-        badgeGlobalRollback.className =
-          "tng-rights-badge tng-rights-" + (hasGlobalRollback ? "have" : "lack");
-        badgeGlobalRollback.textContent =
-          (hasGlobalRollback ? "✔️  " : "❌  ") + "Rollback";
+          // Update global badges
+          badgeGlobalRollback.className =
+            "tng-rights-badge tng-rights-" +
+            (hasGlobalRollback ? "have" : "lack");
+          badgeGlobalRollback.textContent =
+            (hasGlobalRollback ? "✔️  " : "❌  ") + "Rollback";
 
-        badgeGlobalSysop.className =
-          "tng-rights-badge tng-rights-" + (hasGlobalSysop ? "have" : "lack");
-        badgeGlobalSysop.textContent =
-          (hasGlobalSysop ? "✔️  " : "❌  ") + "Sysop";
+          badgeGlobalSysop.className =
+            "tng-rights-badge tng-rights-" + (hasGlobalSysop ? "have" : "lack");
+          badgeGlobalSysop.textContent =
+            (hasGlobalSysop ? "✔️  " : "❌  ") + "Sysop";
 
-        badgeSteward.className =
-          "tng-rights-badge tng-rights-" + (isSteward ? "have" : "lack");
-        badgeSteward.textContent = (isSteward ? "✔️  " : "❌  ") + "Steward";
+          badgeSteward.className =
+            "tng-rights-badge tng-rights-" + (isSteward ? "have" : "lack");
+          badgeSteward.textContent = (isSteward ? "✔️  " : "❌  ") + "Steward";
 
-        // Lock a section: uncheck and disable its toggle, collapse its body,
-        // remove the chevron (section cannot be opened), and append a lock
-        // indicator to the header so the restriction is visible.
-        function lockSection(sec, secBody, chk, reason) {
-          chk.checked = false;
-          chk.disabled = true;
-          sec.classList.add("tng-disabled");
-          secBody.classList.add("tng-hidden");
-          const arrow = sec.querySelector(".tng-section-arrow");
-          if (arrow) arrow.remove();
-          const hdr = sec.querySelector(".tng-section-header");
-          hdr.title = "Unavailable: " + reason;
-          const lockBadge = document.createElement("span");
-          lockBadge.className = "tng-rights-lock";
-          lockBadge.textContent = "🔒";
-          lockBadge.title = "Unavailable: " + reason;
-          hdr.appendChild(lockBadge);
-        }
+          // Lock a section: uncheck and disable its toggle, collapse its body,
+          // remove the chevron (section cannot be opened), and append a lock
+          // indicator to the header so the restriction is visible.
+          function lockSection(sec, secBody, chk, reason) {
+            chk.checked = false;
+            chk.disabled = true;
+            sec.classList.add("tng-disabled");
+            secBody.classList.add("tng-hidden");
+            const arrow = sec.querySelector(".tng-section-arrow");
+            if (arrow) arrow.remove();
+            const hdr = sec.querySelector(".tng-section-header");
+            hdr.title = "Unavailable: " + reason;
+            const lockBadge = document.createElement("span");
+            lockBadge.className = "tng-rights-lock";
+            lockBadge.textContent = "🔒";
+            lockBadge.title = "Unavailable: " + reason;
+            hdr.appendChild(lockBadge);
+          }
 
-        if (!hasBlock)
-          lockSection(
-            secBlock,
-            bodyBlock,
-            chkBlock,
-            "you do not have the block right on this wiki",
-          );
-        if (!hasDelete)
-          lockSection(
-            secPagedel,
-            bodyPagedel,
-            chkPagedel,
-            "you do not have the delete right on this wiki",
-          );
-        if (!hasProtect)
-          lockSection(
-            secProtect,
-            bodyProtect,
-            chkProtect,
-            "you do not have the protect right on this wiki",
-          );
-        if (!hasRevdel)
-          lockSection(
-            secRevdel,
-            bodyRevdel,
-            chkRevdel,
-            "you do not have the deleterevision right on this wiki",
-          );
+          if (!hasBlock)
+            lockSection(
+              secBlock,
+              bodyBlock,
+              chkBlock,
+              "you do not have the block right on this wiki",
+            );
+          if (!hasDelete)
+            lockSection(
+              secPagedel,
+              bodyPagedel,
+              chkPagedel,
+              "you do not have the delete right on this wiki",
+            );
+          if (!hasProtect)
+            lockSection(
+              secProtect,
+              bodyProtect,
+              chkProtect,
+              "you do not have the protect right on this wiki",
+            );
+          if (!hasRevdel)
+            lockSection(
+              secRevdel,
+              bodyRevdel,
+              chkRevdel,
+              "you do not have the deleterevision right on this wiki",
+            );
 
-        // Re-evaluate the Start button in case locks changed the checked state
-        updateStartBtn();
-      });
+          // Re-evaluate the Start button in case locks changed the checked state
+          updateStartBtn();
+        },
+      );
 
       function applyPackage(pkgName) {
         const pkg = packages[pkgName] || defaultPackage;
@@ -2909,7 +2926,7 @@ $(function () {
     };
 
     // ============================================================================
-    // [Section 09] Portlet link
+    // [Section 10] Portlet link
     // Registers the execution menu item anchor inside the site actions portal drop list.
     // ============================================================================
     $(mw.util.addPortletLink("p-cactions", "#", "⛩️ Tengu", "ca-tengu")).on(

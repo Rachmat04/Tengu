@@ -1,3 +1,24 @@
+## 1.9.0
+
+### Changed
+
+* Moved shared API helpers and a shared `mw.Api` instance into a dedicated module-level section
+* Renumbered internal sections to accommodate the new shared API section
+
+### Improved
+
+* Deferred CSS injection until the Tengu dialogue is first opened, avoiding unnecessary CSSOM modifications on pages where the tool is never used
+* Added one-time CSS initialisation guarding to prevent repeated stylesheet injection
+* Reused a single shared `mw.Api` instance across all operations, reducing redundant object creation and improving token cache reuse
+* Centralised `apiGet`, `apiPost`, and `apiRollback` helper functions to eliminate duplicate wrapper definitions
+* Deferred Escape-key listener registration until the first overlay is created, removing global keydown overhead on pages where no dialogue is opened
+* Reduced script size by normalising line endings from CRLF to LF
+
+### Notes
+
+* No functional or user-facing behaviour changes were introduced
+* Optimisations are internal and fully backward compatible
+
 ## 1.8.2
 
 ### Changed
