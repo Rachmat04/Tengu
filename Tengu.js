@@ -275,10 +275,11 @@ $(function () {
             overflow: hidden; flex-shrink: 0;
         }
         .tng-user-rights-header {
-            padding: 8px 12px;
-            background: #f0f2f5; border-bottom: 1px solid #eaecf0;
-            font-weight: 700; font-size: 0.9em;
-            display: flex; align-items: center; gap: 6px;
+          padding: 8px 12px;
+          background: #f0f2f5; border-bottom: 1px solid #eaecf0;
+          font-weight: 700; font-size: 0.9em;
+          display: flex; align-items: center; gap: 6px;
+          cursor: pointer; user-select: none;
         }
         .tng-user-rights-body {
             padding: 10px 12px; display: flex; flex-direction: column; gap: 10px;
@@ -1637,7 +1638,16 @@ $(function () {
 
       const rightsCardHdr = document.createElement("div");
       rightsCardHdr.className = "tng-user-rights-header";
-      rightsCardHdr.textContent = "🎖️ Access rights";
+      const rightsCardHdrTitle = document.createElement("span");
+      rightsCardHdrTitle.textContent = "🎖️ Access rights";
+      rightsCardHdr.appendChild(rightsCardHdrTitle);
+      const rightsCardArrow = document.createElement("span");
+      rightsCardArrow.className = "tng-section-arrow tng-arrow-up";
+      rightsCardHdr.appendChild(rightsCardArrow);
+      rightsCardHdr.addEventListener("click", function () {
+        const isHidden = rightsCardBody.classList.toggle("tng-hidden");
+        rightsCardArrow.classList.toggle("tng-arrow-up", !isHidden);
+      });
       rightsCard.appendChild(rightsCardHdr);
 
       const rightsCardBody = document.createElement("div");

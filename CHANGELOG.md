@@ -21,6 +21,7 @@
   * Rights dividers
   * Rights lists
 * Added dark mode support for all user rights card components
+* Added a collapsible chevron to the Access rights card header, matching the appearance and behaviour of other collapsible sections
 
 ### Improved
 
