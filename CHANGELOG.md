@@ -1,3 +1,21 @@
+## 1.13.0
+
+### Changed
+
+* Updated MediaInfo revert payload construction to use `claims` instead of `statements`
+* Revised MediaInfo restoration logic to preserve the complete entity structure when preparing revert data
+
+### Fixed
+
+* Fixed MediaInfo revert requests using an API field that was not recognised by `wbeditentity`
+* Fixed an issue where structured data could be cleared without correctly restoring the previous statements during a revert
+* Fixed an issue where captions and other entity data could be lost during MediaInfo restoration
+
+### Improved
+
+* MediaInfo reverts now restore the previous entity state using a full entity copy before applying changes
+* Improved reliability of structured data reverts while keeping MediaInfo-specific logic isolated from standard page undo and rollback workflows
+
 ## 1.12.1
 
 ### Changed

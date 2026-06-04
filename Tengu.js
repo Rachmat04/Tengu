@@ -1469,14 +1469,19 @@ $(function () {
           // --- MEDIAINFO / STRUCTURED DATA REVERT EXECUTION ---
           if (mediainfoNeedsRevert && pageId) {
             try {
+              let restoredData = Object.assign({}, goodMediaInfo);
+              if (restoredData.statements) {
+                restoredData.claims = restoredData.statements;
+                delete restoredData.statements;
+              } else if (!restoredData.claims) {
+                restoredData.claims = {};
+              }
+
               await apiPost({
                 action: "wbeditentity",
                 id: "M" + pageId,
                 clear: true,
-                data: JSON.stringify({
-                  statements:
-                    goodMediaInfo.statements || goodMediaInfo.claims || {},
-                }),
+                data: JSON.stringify(restoredData),
                 summary:
                   config.rollbackMethod === "undo"
                     ? undoSummaryStr
@@ -1487,7 +1492,7 @@ $(function () {
                 `[Undo] Successfully reverted structured data at: ${title}`,
               );
               if (!standardRevertSuccess) {
-                stats.rollback++; // Ensure it's counted if wikitext rollback failed/was skipped
+                stats.rollback++;
               }
             } catch (e) {
               addLog(
