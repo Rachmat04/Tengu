@@ -2052,7 +2052,6 @@ $(function () {
       ];
       const reasons = aioConf.reasons || {
         revisiondelete: [
-          "Criteria for redaction",
           "Violations of copyright policy",
           "Grossly insulting, degrading, or offensive material",
           "Serious BLP violations",

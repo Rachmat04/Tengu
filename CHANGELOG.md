@@ -1,3 +1,9 @@
+## 1.10.1
+
+### Fixed
+
+* Removed "Criteria for redaction" from the `revisiondelete` array to align available options with intended configuration
+
 ## 1.10.0
 
 ### Changed
@@ -12,7 +18,6 @@
 * Added badges displaying user group memberships for both local and global scopes
 * Added expandable rights lists showing individual permissions for each scope
 * Added dedicated styling for:
-
   * User rights cards
   * Rights scope labels
   * Rights badge containers
