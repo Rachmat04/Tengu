@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 1.10.0
+ * Version 1.11.0
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -745,7 +745,6 @@ $(function () {
         label: "Block evasion or sockpuppetry",
       },
     ];
-
     const BLOCK_REASONS = [
       { value: "", label: "Other:" },
       {
@@ -803,6 +802,43 @@ $(function () {
               "Revoking talk page access: Inappropriate use of user talk page whilst blocked",
             label:
               "Revoking talk page access: Inappropriate use of user talk page whilst blocked",
+          },
+          {
+            value: "Account is used solely for vandalism",
+            label: "Account is used solely for vandalism",
+          },
+        ],
+      },
+      {
+        group: "Username policy violations",
+        items: [
+          {
+            value: "Username violates the username policy",
+            label: "Username violates the username policy",
+          },
+          {
+            value: "Username indicates use of a bot without authorisation",
+            label: "Username indicates use of a bot without authorisation",
+          },
+          {
+            value: "Username is promotional or advertising in nature",
+            label: "Username is promotional or advertising in nature",
+          },
+          {
+            value: "Username is too similar to another user's",
+            label: "Username is too similar to another user's",
+          },
+          {
+            value: "Username impersonates another user",
+            label: "Username impersonates another user",
+          },
+          {
+            value: "Username impersonates a famous figure",
+            label: "Username impersonates a famous figure",
+          },
+          {
+            value: "Username impersonates a (non-)profit organisation",
+            label: "Username impersonates a (non-)profit organisation",
           },
         ],
       },

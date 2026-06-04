@@ -1,3 +1,16 @@
+## 1.11.0
+
+### Added
+
+* Added **"Account is used solely for vandalism"** to the **Common block reasons** list
+* Added a new **Username policy violations** optgroup to block reasons
+* Added seven username-policy-related block reasons under the new optgroup
+
+### Improved
+
+* Expanded and better organised the available block reason presets
+* Improved discoverability of username-related enforcement options by grouping them separately
+
 ## 1.10.2
 
 ### Added
