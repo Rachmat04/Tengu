@@ -1,3 +1,44 @@
+## 1.12.1
+
+### Changed
+
+* Updated MediaInfo revert payload to use `statements` instead of `claims` when submitting data through `wbeditentity`
+
+### Fixed
+
+* Fixed structured data revert submissions by using the expected `statements` field in the entity payload
+* Restored error reporting for failed undo operations when MediaInfo revert handling is involved
+* Restored error reporting for failed rollback operations when MediaInfo revert handling is involved
+* Removed conditions that could suppress API error messages during MediaInfo-related revert failures
+
+### Improved
+
+* Improved visibility of revert failures by ensuring undo and rollback errors are always logged
+* Simplified error-handling logic in both undo and rollback workflows
+
+## 1.12.0
+
+### Changed
+
+* Refactored the main revert workflow to support conditional handling based on revision content models
+
+### Added
+
+* Added content model detection before processing revert actions
+* Added support for reverting edits to the `mediainfo` slot
+* Added a dedicated revert path using the `wbeditentity` API for structured data revisions
+* Added retrieval of the parent entity state when reverting `mediainfo` changes
+
+### Improved
+
+* Automatically routes revert operations to the appropriate API endpoint based on revision type
+* Preserves compatibility with standard page revision reverts while extending support to structured data edits
+* Enables restoration of previous structured data statements by overwriting the modified entity with its parent state
+
+### Fixed
+
+* Fixed the inability to properly revert structured data (`mediainfo`) edits through the standard revert workflow
+
 ## 1.11.0
 
 ### Added

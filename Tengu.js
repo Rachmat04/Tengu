@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 1.11.0
+ * Version 1.12.0
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -1340,19 +1340,76 @@ $(function () {
             continue;
           }
 
-          // Execute rollback or undo operation sequentially based on settings
+          // --- MEDIAINFO / STRUCTURED DATA CHECK ---
+          // Because structured data edits cannot be undone natively via rollback or normal undo,
+          // we independently check if the mediainfo slot was modified in this revision range.
+          let mediainfoNeedsRevert = false;
+          let goodMediaInfo = null;
+          let pageId = null;
+
+          try {
+            const revidsToFetch = info.oldestParent
+              ? `${info.latest}|${info.oldestParent}`
+              : `${info.latest}`;
+            const compData = await apiGet({
+              action: "query",
+              prop: "revisions",
+              revids: revidsToFetch,
+              rvprop: "ids|content",
+              rvslots: "mediainfo",
+            });
+
+            const pages = compData.query && compData.query.pages;
+            if (pages) {
+              pageId = Object.keys(pages)[0];
+              const revs = pages[pageId].revisions;
+              if (revs && revs.length > 0) {
+                let latestMI = null;
+                let oldestMI = null;
+                for (const r of revs) {
+                  if (r.slots && r.slots.mediainfo) {
+                    if (r.revid === info.latest)
+                      latestMI = r.slots.mediainfo["*"];
+                    if (r.revid === info.oldestParent)
+                      oldestMI = r.slots.mediainfo["*"];
+                  }
+                }
+
+                if (latestMI !== null && latestMI !== oldestMI) {
+                  mediainfoNeedsRevert = true;
+                  goodMediaInfo = oldestMI
+                    ? JSON.parse(oldestMI)
+                    : { statements: {} };
+                }
+              }
+            }
+          } catch (e) {
+            // Gracefully ignore on wikis without Wikibase/MediaInfo configured,
+            // or on pages/namespaces where the mediainfo slot is fundamentally unavailable.
+          }
+
+          let standardRevertSuccess = false;
+          let standardErr = null;
+
+          const undoSummaryStr = config.rollbackReason
+            ? config.rollbackReason + toolTag
+            : "Reverting mass edits by " +
+              (config.rollbackShow ? config.username : "<username hidden>") +
+              toolTag;
+
+          const rbSummaryStr = config.rollbackReason
+            ? config.rollbackReason + toolTag
+            : config.rollbackShow
+              ? ""
+              : "Revert edits by <username hidden>" + toolTag;
+
+          // Execute standard rollback or undo operation sequentially based on settings
           if (config.rollbackMethod === "undo") {
             const undoData = {
               action: "edit",
               title: title,
               undo: info.latest,
-              summary: config.rollbackReason
-                ? config.rollbackReason + toolTag
-                : "Reverting mass edits by " +
-                  (config.rollbackShow
-                    ? config.username
-                    : "<username hidden>") +
-                  toolTag,
+              summary: undoSummaryStr,
             };
             if (info.oldestParent) undoData.undoafter = info.oldestParent;
             if (config.rollbackBot) undoData.bot = 1;
@@ -1360,36 +1417,20 @@ $(function () {
             try {
               await apiPost(undoData);
               addLog(`[Undo] Successfully reverted edits via undo: ${title}`);
+              standardRevertSuccess = true;
               stats.rollback++;
-
-              if (config.rd && !isAborted) {
-                try {
-                  await apiPost({
-                    action: "revisiondelete",
-                    type: "revision",
-                    ids: idlist,
-                    hide: config.rdHides,
-                    reason: config.rdReason + toolTag,
-                    suppress: config.os ? "yes" : "nochange",
-                  });
-                  addLog(`[Revdel] Hiding revisions at: ${title}`);
-                  stats.revdel++;
-                } catch (e) {
+            } catch (e) {
+              standardErr = String(e);
+              if (
+                standardErr.includes("alreadyreverted") ||
+                standardErr.includes("nothingtorevert")
+              ) {
+                if (!mediainfoNeedsRevert) {
                   addLog(
-                    `[Revdel] Failed at ${title}: ${formatApiError(e)}`,
-                    true,
+                    `[Undo] Skipped: ${title} — page had already been reverted by another user; undo was not applied by this operation.`,
+                    "warn",
                   );
                 }
-              }
-            } catch (e) {
-              if (
-                e.includes("alreadyreverted") ||
-                e.includes("nothingtorevert")
-              ) {
-                addLog(
-                  `[Undo] Skipped: ${title} — page had already been reverted by another user; undo was not applied by this operation.`,
-                  "warn",
-                );
               } else {
                 addLog(`[Undo] Failed at ${title}: ${formatApiError(e)}`, true);
               }
@@ -1397,43 +1438,87 @@ $(function () {
           } else {
             // Native rollback
             const rbData = config.rollbackBot ? { markbot: 1 } : {};
-            rbData.summary = config.rollbackReason
-              ? config.rollbackReason + toolTag
-              : config.rollbackShow
-                ? ""
-                : "Revert edits by <username hidden>" + toolTag;
+            rbData.summary = rbSummaryStr;
 
             try {
               await apiRollback(title, config.username, rbData);
               addLog(`[Rollback] Successfully reverted: ${title}`);
+              standardRevertSuccess = true;
               stats.rollback++;
-
-              if (config.rd && !isAborted) {
-                try {
-                  await apiPost({
-                    action: "revisiondelete",
-                    type: "revision",
-                    ids: idlist,
-                    hide: config.rdHides,
-                    reason: config.rdReason + toolTag,
-                    suppress: config.os ? "yes" : "nochange",
-                  });
-                  addLog(`[Revdel] Hiding revisions at: ${title}`);
-                  stats.revdel++;
-                } catch (e) {
+            } catch (e) {
+              standardErr = String(e);
+              if (
+                standardErr.includes("alreadyreverted") ||
+                standardErr.includes("onlyauthor")
+              ) {
+                if (!mediainfoNeedsRevert) {
                   addLog(
-                    `[Revdel] Failed at ${title}: ${formatApiError(e)}`,
-                    true,
+                    `[Rollback] Skipped: ${title} — already reverted or user is the only author.`,
+                    "warn",
                   );
                 }
+              } else {
+                addLog(
+                  `[Rollback] Failed at ${title}: ${formatApiError(e)}`,
+                  true,
+                );
+              }
+            }
+          }
+
+          // --- MEDIAINFO / STRUCTURED DATA REVERT EXECUTION ---
+          if (mediainfoNeedsRevert && pageId) {
+            try {
+              await apiPost({
+                action: "wbeditentity",
+                id: "M" + pageId,
+                clear: true,
+                data: JSON.stringify({
+                  statements:
+                    goodMediaInfo.statements || goodMediaInfo.claims || {},
+                }),
+                summary:
+                  config.rollbackMethod === "undo"
+                    ? undoSummaryStr
+                    : rbSummaryStr || undoSummaryStr,
+                bot: config.rollbackBot ? 1 : 0,
+              });
+              addLog(
+                `[Undo] Successfully reverted structured data at: ${title}`,
+              );
+              if (!standardRevertSuccess) {
+                stats.rollback++; // Ensure it's counted if wikitext rollback failed/was skipped
               }
             } catch (e) {
               addLog(
-                `[Rollback] Failed at ${title}: ${formatApiError(e)}`,
+                `[Undo] Failed to revert structured data at ${title}: ${formatApiError(e)}`,
                 true,
               );
             }
           }
+
+          // Trigger revision deletion if either standard or mediainfo revert succeeded, or if we need to revdel anyway.
+          if (
+            config.rd &&
+            !isAborted &&
+            (standardRevertSuccess || mediainfoNeedsRevert)
+          ) {
+            try {
+              await apiPost({
+                action: "revisiondelete",
+                type: "revision",
+                ids: idlist,
+                hide: config.rdHides,
+                reason: config.rdReason + toolTag,
+                suppress: config.os ? "yes" : "nochange",
+              });
+              addLog(`[Revdel] Hiding revisions at: ${title}`);
+              stats.revdel++;
+            } catch (e) {
+              addLog(`[Revdel] Failed at ${title}: ${formatApiError(e)}`, true);
+            }
+          }
+
           await new Promise((resolve) => setTimeout(resolve, 100)); // Throttling window
         }
 
