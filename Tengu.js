@@ -2049,6 +2049,7 @@ $(function () {
         "",
         " (global sysops action)",
         " (stewards action)",
+        " (global rollbackers action)",
       ];
       const reasons = aioConf.reasons || {
         revisiondelete: [

@@ -1,3 +1,9 @@
+## 1.10.2
+
+### Added
+
+* Added an additional suffix: "global rollbackers action"
+
 ## 1.10.1
 
 ### Fixed
