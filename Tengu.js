@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 1.18.1
+ * Version 1.18.3
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -2429,9 +2429,9 @@ $(function () {
         mw.util.addCSS(TNG_CSS);
       }
 
-      // Determine operating context mode: User Mode or Page Mode
+      // Determine the initial operating context mode dynamically.
       const isUserMode = !!mw.config.get("wgRelevantUserName");
-      const tenguMode = isUserMode ? "user" : "page";
+      let currentMode = isUserMode ? "user" : "page";
 
       // Fetch the current user's rights and groups immediately so the result is
       // ready (or very close to ready) by the time the dialogue finishes building.
@@ -2760,25 +2760,77 @@ $(function () {
       const btnGetInfo = makeBtn("Get info", "quiet");
       btnGetInfo.className += " tng-btn-sm";
       btnGetInfo.title = isUserMode
-        ? "View access rights, block log, rights changes, and abuse filter log for this user"
-        : "View abuse filter, protection, deletion, and move logs for this page";
+        ? "View access rights, block log, rights changes and abuse filter log for this user"
+        : "View abuse filter, protection, deletion and move logs for this page";
       btnGetInfo.disabled = true;
 
+      // Update the operating mode dynamically when the input value changes.
       inputTarget.addEventListener("input", function () {
         clearInputError(inputTarget);
         btnGetInfo.disabled = !inputTarget.value.trim();
+
+        const val = inputTarget.value.trim();
+        const relevantUser = mw.config.get("wgRelevantUserName");
+        const fullPageName = mw.config.get("wgPageName")
+          ? mw.config.get("wgPageName").replace(/_/g, " ")
+          : "";
+
+        if (val === fullPageName) {
+          currentMode = "page";
+          if (typeof btnToggleTarget !== "undefined")
+            btnToggleTarget.textContent = "Swap to user target";
+        } else if (val === relevantUser) {
+          currentMode = "user";
+          if (typeof btnToggleTarget !== "undefined")
+            btnToggleTarget.textContent = "Swap to full page target";
+        } else {
+          currentMode = val.includes(":") ? "page" : "user";
+        }
       });
 
       btnGetInfo.addEventListener("click", function () {
         const target = inputTarget.value.trim();
         if (!target) return;
-        if (isUserMode) {
+        if (currentMode === "user") {
           getUserInfo(target);
         } else {
           getPageInfo(target);
         }
       });
       fieldTarget.appendChild(btnGetInfo);
+
+      // Add a target toggle button if a relevant user page context exists.
+      const relevantUser = mw.config.get("wgRelevantUserName");
+      const fullPageName = mw.config.get("wgPageName")
+        ? mw.config.get("wgPageName").replace(/_/g, " ")
+        : "";
+      let btnToggleTarget;
+
+      if (relevantUser && fullPageName && fullPageName !== relevantUser) {
+        btnToggleTarget = makeBtn("Swap to full page target", "quiet");
+        btnToggleTarget.className += " tng-btn-sm";
+        btnToggleTarget.title =
+          "Toggle between targeting the user account and the full page title";
+
+        btnToggleTarget.addEventListener("click", function (e) {
+          e.preventDefault();
+          if (currentMode === "user") {
+            inputTarget.value = fullPageName;
+            currentMode = "page";
+            btnToggleTarget.textContent = "Swap to user target";
+          } else {
+            inputTarget.value = relevantUser;
+            currentMode = "user";
+            btnToggleTarget.textContent = "Swap to full page target";
+          }
+          applyModeLocks(currentMode);
+          inputTarget.dispatchEvent(new Event("change"));
+          clearInputError(inputTarget);
+          btnGetInfo.disabled = !inputTarget.value.trim();
+        });
+
+        fieldTarget.appendChild(btnToggleTarget);
+      }
 
       topSection.appendChild(rowTarget);
       const { row: rowEdits, field: fieldEdits } = makeRow("Edits");
@@ -3186,7 +3238,7 @@ $(function () {
         sec.classList.add("tng-disabled");
         secBody.classList.add("tng-hidden");
         const arrow = sec.querySelector(".tng-section-arrow");
-        if (arrow) arrow.remove();
+        if (arrow) arrow.style.display = "none";
         const hdr = sec.querySelector(".tng-section-header");
         hdr.title = "Unavailable: " + reason;
         const lockBadge = document.createElement("span");
@@ -3194,6 +3246,76 @@ $(function () {
         lockBadge.textContent = "🔒";
         lockBadge.title = "Unavailable: " + reason;
         hdr.appendChild(lockBadge);
+      }
+      function unlockSection(sec, secBody, chk) {
+        if (!chk.disabled) return;
+        chk.disabled = false;
+        const hdr = sec.querySelector(".tng-section-header");
+        const lockBadge = hdr.querySelector(".tng-rights-lock");
+        if (lockBadge) lockBadge.remove();
+        hdr.removeAttribute("title");
+        const arrow = sec.querySelector(".tng-section-arrow");
+        if (arrow) arrow.style.display = "";
+        // Leave the section disabled/collapsed — the user must opt in explicitly.
+        sec.classList.add("tng-disabled");
+        secBody.classList.add("tng-hidden");
+      }
+
+      // Cached result from the rights promise; populated once the API call
+      // resolves. Used by applyModeLocks to re-lock rights-restricted sections
+      // when switching back to user mode.
+      let cachedRights = null;
+
+      // Locks or unlocks the three user-mode-only sections (rollback, block,
+      // revdel) to match the current operating mode. Must be called whenever
+      // currentMode changes via the target toggle button.
+      function applyModeLocks(mode) {
+        if (mode === "page") {
+          lockSection(
+            secRollback,
+            bodyRollback,
+            chkRollback,
+            "Tengu is targeting a page, not a user.",
+          );
+          lockSection(
+            secBlock,
+            bodyBlock,
+            chkBlock,
+            "Tengu is targeting a page, not a user.",
+          );
+          lockSection(
+            secRevdel,
+            bodyRevdel,
+            chkRevdel,
+            "Tengu is targeting a page, not a user.",
+          );
+        } else {
+          // Unlock sections that were locked for page mode, then re-apply any
+          // rights-based locks if the rights API call has already resolved.
+          unlockSection(secRollback, bodyRollback, chkRollback);
+          unlockSection(secBlock, bodyBlock, chkBlock);
+          unlockSection(secRevdel, bodyRevdel, chkRevdel);
+          if (cachedRights) {
+            const info = cachedRights[0];
+            if (info.rights.indexOf("block") === -1) {
+              lockSection(
+                secBlock,
+                bodyBlock,
+                chkBlock,
+                "you do not have the block right on this wiki",
+              );
+            }
+            if (info.rights.indexOf("deleterevision") === -1) {
+              lockSection(
+                secRevdel,
+                bodyRevdel,
+                chkRevdel,
+                "you do not have the deleterevision right on this wiki",
+              );
+            }
+          }
+        }
+        updateStartBtn();
       }
 
       // Automatically lock User Mode features if executed in Page Mode
@@ -3252,7 +3374,7 @@ $(function () {
         if (!targetVal) {
           showNotification(
             fieldTarget,
-            isUserMode
+            currentMode === "user"
               ? "Please enter a target username."
               : "Please enter a target page title.",
           );
@@ -3291,7 +3413,7 @@ $(function () {
         if (chkRdUsername.checked) rdHides += "user|";
 
         config = {
-          mode: tenguMode,
+          mode: currentMode,
           target: targetVal,
           suffix: suffix,
           isIP: isIP,
@@ -3422,6 +3544,7 @@ $(function () {
       // any sections the user cannot use based on their local effective rights.
       // (Global rights from CentralAuth are already reflected in userinfo rights,
       // so locking is driven by local rights only.)
+      cachedRights = results;
       Promise.all([rightsPromise, globalRightsPromise]).then(
         function (results) {
           const info = results[0];
@@ -3471,7 +3594,7 @@ $(function () {
             "tng-rights-badge tng-rights-" + (isSteward ? "have" : "lack");
           badgeSteward.textContent = (isSteward ? "✔️  " : "❌  ") + "Steward";
 
-          if (!hasBlock && isUserMode)
+          if (!hasBlock && currentMode === "user")
             lockSection(
               secBlock,
               bodyBlock,
@@ -3492,7 +3615,7 @@ $(function () {
               chkProtect,
               "you do not have the protect right on this wiki",
             );
-          if (!hasRevdel && isUserMode)
+          if (!hasRevdel && currentMode === "user")
             lockSection(
               secRevdel,
               bodyRevdel,

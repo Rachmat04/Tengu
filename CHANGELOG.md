@@ -1,3 +1,30 @@
+## 1.18.3
+
+### Changed
+
+* Updated `lockSection()` to hide the section chevron instead of removing it from the DOM
+* Updated the rights resolution workflow to cache API results for later synchronous use
+
+### Added
+
+* Added `unlockSection()` to reverse section locks and restore normal interaction
+* Added `cachedRights` to retain resolved rights information after the initial API request
+* Added `applyModeLocks(mode)` to centralise Page Mode and User Mode locking behaviour
+
+### Fixed
+
+* Fixed an issue where locked sections could not be properly unlocked because the chevron element had been removed from the DOM
+* Fixed mode switching so rollback, block, and revision deletion sections can be correctly restored when returning from Page Mode
+* Fixed package application ordering so locked sections cannot be re-enabled by package presets when they should remain unavailable for the current mode
+* Fixed lock-state synchronisation during target mode changes
+
+### Improved
+
+* Mode-specific locking and unlocking is now handled through a single dedicated function
+* Rights-based restrictions are automatically re-applied after returning to User Mode when rights data is available
+* Section state transitions are more predictable when switching between page and user targets
+* Preserved existing event-handler references by keeping chevron elements in the DOM
+
 ## 1.18.1
 
 ### Fixed
