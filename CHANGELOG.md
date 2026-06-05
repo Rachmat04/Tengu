@@ -1,3 +1,29 @@
+## 1.14.0
+
+### Changed
+
+* Added `protectTalk` to the protection configuration object
+* Updated package application logic to reset and restore the talk-page protection option when switching packages
+
+### Added
+
+* Added an **"Also protect the talk page"** option to the page protection section
+* Added contextual help text explaining how talk-page protection is applied
+* Added a tooltip describing the behaviour and limitations of the option
+* Added automatic protection of associated talk pages when the option is enabled
+
+### Improved
+
+* Talk-page protections inherit the same protection level, expiry, and reason as the main page
+* Talk pages are skipped automatically when the protected page is already a talk page
+* Talk-page protection failures are logged without interrupting the main processing loop
+* Added success and error logging for talk-page protection actions
+* Applied a consistent throttle delay after talk-page protection requests
+
+### Notes
+
+* Existing talk-page notification behaviour is unchanged and continues to operate independently of the new protection option.
+
 ## 1.13.0
 
 ### Changed

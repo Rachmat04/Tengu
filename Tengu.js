@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 1.12.0
+ * Version 1.14.0
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -1551,6 +1551,39 @@ $(function () {
               continue;
             }
 
+            // Also protect the talk page if that option was selected and this
+            // page is not itself a talk page (talk pages have no talk page).
+            if (config.protectTalk) {
+              let talkForProtect = null;
+              try {
+                const titleObj = new mw.Title(title);
+                if (!titleObj.isTalkPage()) {
+                  talkForProtect = titleObj.getTalkPage().getPrefixedText();
+                }
+              } catch (e) {
+                // Skip if the title cannot be resolved to a talk page.
+              }
+              if (talkForProtect) {
+                try {
+                  await apiPost({
+                    action: "protect",
+                    title: talkForProtect,
+                    protections: `edit=${config.protectEdit}|move=${config.protectMove}`,
+                    expiry: config.protectExpiry,
+                    reason: config.protectReason + toolTag,
+                  });
+                  addLog(`[Protect] Protected talk page: ${talkForProtect}`);
+                  stats.protect++;
+                } catch (e) {
+                  addLog(
+                    `[Protect] Failed to protect talk page ${talkForProtect}: ${formatApiError(e)}`,
+                    true,
+                  );
+                }
+                await new Promise((resolve) => setTimeout(resolve, 100));
+              }
+            }
+
             // Post notification to talk page (separate from protect action above,
             // so a notification failure does not misreport the protection as having failed)
             try {
@@ -2733,6 +2766,24 @@ $(function () {
       reasonWrapProtect.appendChild(inputProtectReason);
       fieldProtectReason.appendChild(reasonWrapProtect);
       bodyProtect.appendChild(rowProtectReason);
+
+      // 'Also protect the talk page' option
+      const { wrap: wrapProtectTalk, chk: chkProtectTalk } = makeCheckbox(
+        "Also protect the talk page",
+        false,
+      );
+      wrapProtectTalk.title =
+        "Applies the same protection level and expiry to the talk page of each protected article. Useful when both the article and its talk page suffer persistent vandalism.";
+      const helpProtectTalk = document.createElement("div");
+      helpProtectTalk.className = "tng-help";
+      helpProtectTalk.textContent =
+        "When ticked, each protected page's talk page will also be protected at the same level and expiry. Pages that are already talk pages are skipped.";
+      const checksProtect = document.createElement("div");
+      checksProtect.className = "tng-checks";
+      checksProtect.style.paddingLeft = "0";
+      checksProtect.appendChild(wrapProtectTalk);
+      bodyProtect.appendChild(checksProtect);
+      bodyProtect.appendChild(helpProtectTalk);
       body.appendChild(secProtect);
 
       const {
@@ -2895,6 +2946,7 @@ $(function () {
               ? inputProtectExpiry.value.trim()
               : selProtectExpiry.value,
           protectReason: buildProtectReason() + suffix,
+          protectTalk: chkProtectTalk.checked,
           rd: chkRevdel.checked,
           rdHides: rdHides,
           rdReason: buildRevdelReason() + suffix,
@@ -3234,6 +3286,7 @@ $(function () {
         inputProtectExpiry.classList.add("tng-hidden");
         inputProtectReason.value = pt.reason || "";
         selProtectReason.selectedIndex = 0;
+        chkProtectTalk.checked = !!pt.protectTalk;
 
         const rd = pkg.revisiondelete || {};
         if (!chkRevdel.disabled) {
