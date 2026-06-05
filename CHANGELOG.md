@@ -1,3 +1,17 @@
+## 1.17.1
+
+### Changed
+
+* Updated multiple entries in `PAGE_DELETE_REASONS` to use clearer and more descriptive wording
+* Expanded several deletion reasons by spelling out abbreviations and adding contextual explanations
+
+### Improved
+
+* Improved readability and understanding of page deletion reason presets
+* Reduced reliance on project-specific acronyms and shorthand
+* Made deletion reasons more accessible to users who may be unfamiliar with internal terminology
+* Increased consistency and clarity across the page deletion reason list while preserving existing functionality
+
 ## 1.17.0
 
 ### Changed
