@@ -1,3 +1,29 @@
+## 1.15.0
+
+### Changed
+
+* Moved the talk-page protection help text from an inline help element to the checkbox tooltip
+* Updated the talk-page protection tooltip text to describe the actual protection behaviour and skip conditions
+
+### Added
+
+* Added an **"Also delete the talk page"** option to the page deletion section
+* Added a tooltip explaining how optional talk-page deletion works
+* Added `massdelTalk` support to the deletion workflow configuration
+* Added package support for talk-page deletion through `pagedelete.talkdelete`
+
+### Improved
+
+* Talk-page deletion is now optional and controlled by a dedicated checkbox
+* Talk pages are skipped automatically when the target page is already a talk page
+* Package switching correctly resets the talk-page deletion option to its configured state
+* Reduced UI clutter by moving explanatory protection text into a tooltip
+* Improved consistency between page protection and page deletion options for handling associated talk pages
+
+### Notes
+
+* Existing deletion behaviour remains unchanged when the talk-page deletion option is left unticked.
+
 ## 1.14.0
 
 ### Changed

@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 1.14.0
+ * Version 1.15.0
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -1643,8 +1643,9 @@ $(function () {
               );
             }
 
-            // Delete the associated talk page if the main page was deleted successfully
-            if (mainDeleted) {
+            // Delete the associated talk page if the main page was deleted
+            // and the user opted into it via the checkbox
+            if (mainDeleted && config.massdelTalk) {
               try {
                 const talkTitle = new mw.Title(title)
                   .getTalkPage()
@@ -2682,6 +2683,19 @@ $(function () {
       reasonWrapPagedel.appendChild(inputPagedelReason);
       fieldPagedelReason.appendChild(reasonWrapPagedel);
       bodyPagedel.appendChild(rowPagedelReason);
+
+      // 'Also delete the talk page' option
+      const { wrap: wrapPagedelTalk, chk: chkPagedelTalk } = makeCheckbox(
+        "Also delete the talk page",
+        false,
+      );
+      wrapPagedelTalk.title =
+        "When ticked, the talk page of each deleted page will also be deleted if it exists. Pages that are already talk pages are skipped.";
+      const checksPagedel = document.createElement("div");
+      checksPagedel.className = "tng-checks";
+      checksPagedel.style.paddingLeft = "0";
+      checksPagedel.appendChild(wrapPagedelTalk);
+      bodyPagedel.appendChild(checksPagedel);
       body.appendChild(secPagedel);
 
       // Page protection module injection setup
@@ -2773,17 +2787,12 @@ $(function () {
         false,
       );
       wrapProtectTalk.title =
-        "Applies the same protection level and expiry to the talk page of each protected article. Useful when both the article and its talk page suffer persistent vandalism.";
-      const helpProtectTalk = document.createElement("div");
-      helpProtectTalk.className = "tng-help";
-      helpProtectTalk.textContent =
         "When ticked, each protected page's talk page will also be protected at the same level and expiry. Pages that are already talk pages are skipped.";
       const checksProtect = document.createElement("div");
       checksProtect.className = "tng-checks";
       checksProtect.style.paddingLeft = "0";
       checksProtect.appendChild(wrapProtectTalk);
       bodyProtect.appendChild(checksProtect);
-      bodyProtect.appendChild(helpProtectTalk);
       body.appendChild(secProtect);
 
       const {
@@ -2937,6 +2946,7 @@ $(function () {
           blockMail: chkMail.checked,
           blockHide: chkHidename.checked,
           massdel: chkPagedel.checked,
+          massdelTalk: chkPagedelTalk.checked,
           massdelReason: buildPagedelReason() + suffix,
           protect: chkProtect.checked,
           protectEdit: selProtectEdit.value,
@@ -3268,6 +3278,7 @@ $(function () {
         } else {
           inputPagedelReason.value = pdr;
         }
+        chkPagedelTalk.checked = !!pd.talkdelete;
 
         // Apply fallback resets to page protection state variables
         const pt = pkg.pageprotection || {};
