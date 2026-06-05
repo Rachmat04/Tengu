@@ -1,29 +1,25 @@
-## 1.18.3
+## 1.18.2
 
 ### Changed
 
-* Updated `lockSection()` to hide the section chevron instead of removing it from the DOM
-* Updated the rights resolution workflow to cache API results for later synchronous use
+* Updated the hard-block checkbox label to use clearer, more specific wording
 
 ### Added
 
-* Added `unlockSection()` to reverse section locks and restore normal interaction
-* Added `cachedRights` to retain resolved rights information after the initial API request
-* Added `applyModeLocks(mode)` to centralise Page Mode and User Mode locking behaviour
+* Added automatic temporary-account detection using the pattern `^~\d{4}-\d+-\d+$`
+* Added automatic block-expiry selection for detected temporary accounts
+* Added logic to automatically set the block duration to **3 months** when a matching temporary account is entered
 
 ### Fixed
 
-* Fixed an issue where locked sections could not be properly unlocked because the chevron element had been removed from the DOM
-* Fixed mode switching so rollback, block, and revision deletion sections can be correctly restored when returning from Page Mode
-* Fixed package application ordering so locked sections cannot be re-enabled by package presets when they should remain unavailable for the current mode
-* Fixed lock-state synchronisation during target mode changes
+* Fixed block parameter handling when the hard-block option is enabled
+* Updated block request generation so blocks are not restricted to anonymous users when the hard-block option is selected
 
 ### Improved
 
-* Mode-specific locking and unlocking is now handled through a single dedicated function
-* Rights-based restrictions are automatically re-applied after returning to User Mode when rights data is available
-* Section state transitions are more predictable when switching between page and user targets
-* Preserved existing event-handler references by keeping chevron elements in the DOM
+* Improved handling of temporary account targets by automatically applying an appropriate default block duration
+* Improved consistency between the hard-block UI option and the block parameters sent to the MediaWiki API
+* Ensured the hard-block option applies to logged-in accounts within the affected address range, not only anonymous users
 
 ## 1.18.1
 
