@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 1.17.2
+ * Version 1.18.0
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -1715,11 +1715,12 @@ $(function () {
     };
 
     // ============================================================================
-    // [Section 08] Get user info
+    // [Section 08] Get user info (user mode)
     // Fetches and displays block log entries, access rights changes, and abuse
     // filter log entries for a target user in a read-only dialogue panel.
     // Three collapsible sections are rendered in parallel; each fires its own
     // API request independently so a failure in one does not block the others.
+    // See Section 08b (getPageInfo) for the equivalent panel in page mode.
     // ============================================================================
     const getUserInfo = async function (username) {
       const { overlay, body, footer } = createDialog({
@@ -2126,6 +2127,292 @@ $(function () {
     };
 
     // ============================================================================
+    // [Section 08b] Get page info (page mode)
+    // Fetches and displays abuse filter, protection, deletion, and move log
+    // entries for a target page in a read-only dialogue panel. Four collapsible
+    // sections are rendered in parallel; a failure in one does not block the others.
+    // ============================================================================
+    const getPageInfo = async function (pageName) {
+      const { overlay, body, footer } = createDialog({
+        title: "Page info: " + pageName,
+        icon: "🔍",
+      });
+
+      function fmtTimestamp(ts) {
+        if (!ts) return "Unknown";
+        const d = new Date(ts);
+        return d.toUTCString().replace("GMT", "UTC");
+      }
+
+      function makeEntry(rows) {
+        const entry = document.createElement("div");
+        entry.className = "tng-info-entry";
+        for (const [label, value] of rows) {
+          const line = document.createElement("div");
+          const b = document.createElement("b");
+          b.textContent = label + ": ";
+          line.appendChild(b);
+          line.appendChild(document.createTextNode(value || "—"));
+          entry.appendChild(line);
+        }
+        return entry;
+      }
+
+      function setLoading(container, msg) {
+        container.innerHTML = "";
+        const el = document.createElement("div");
+        el.className = "tng-info-loading";
+        el.textContent = msg || "Loading…";
+        container.appendChild(el);
+      }
+
+      function setEmpty(container, msg) {
+        container.innerHTML = "";
+        const el = document.createElement("div");
+        el.className = "tng-info-empty";
+        el.textContent = msg || "No entries found.";
+        container.appendChild(el);
+      }
+
+      function setError(container, msg) {
+        container.innerHTML = "";
+        const el = document.createElement("div");
+        el.className = "tng-log-err";
+        el.style.padding = "6px 0";
+        el.textContent = "⚠ " + msg;
+        container.appendChild(el);
+      }
+
+      // Build the four display-only collapsible sections
+      const {
+        section: secAbuseLog,
+        sectionBody: bodyAbuseLog,
+        arrow: arrowAbuseLog,
+      } = makeDisplaySection("Abuse filter log", "⚠️");
+      const {
+        section: secProtectLog,
+        sectionBody: bodyProtectLog,
+        arrow: arrowProtectLog,
+      } = makeDisplaySection("Protection log", "🛡️");
+      const {
+        section: secDeleteLog,
+        sectionBody: bodyDeleteLog,
+        arrow: arrowDeleteLog,
+      } = makeDisplaySection("Deletion log", "🗑️");
+      const {
+        section: secMoveLog,
+        sectionBody: bodyMoveLog,
+        arrow: arrowMoveLog,
+      } = makeDisplaySection("Move log", "📦");
+
+      setLoading(bodyAbuseLog, "Loading abuse filter log…");
+      setLoading(bodyProtectLog, "Loading protection log…");
+      setLoading(bodyDeleteLog, "Loading deletion log…");
+      setLoading(bodyMoveLog, "Loading move log…");
+
+      body.appendChild(secAbuseLog);
+      body.appendChild(secProtectLog);
+      body.appendChild(secDeleteLog);
+      body.appendChild(secMoveLog);
+
+      const btnClose = makeBtn("Close", "quiet");
+      btnClose.addEventListener("click", () => overlay.closeHandler());
+      footer.appendChild(btnClose);
+
+      // --- Abuse filter log ---
+      (async function () {
+        try {
+          const data = await apiGet({
+            action: "query",
+            list: "abuselog",
+            afltitle: pageName,
+            afllimit: 50,
+            aflprop: "ids|user|title|action|result|timestamp|filter",
+          });
+          const entries = (data.query && data.query.abuselog) || [];
+          if (!entries.length) {
+            setEmpty(bodyAbuseLog, "No abuse filter log entries found.");
+            return;
+          }
+          // Auto-expand: entries found warrant attention
+          bodyAbuseLog.classList.remove("tng-hidden");
+          arrowAbuseLog.classList.add("tng-arrow-up");
+          bodyAbuseLog.innerHTML = "";
+          for (const e of entries) {
+            const filterLabel = e.filter_id
+              ? "#" + e.filter_id + (e.filter ? " (" + e.filter + ")" : "")
+              : "—";
+            bodyAbuseLog.appendChild(
+              makeEntry([
+                ["Time", fmtTimestamp(e.timestamp)],
+                ["User", e.user || "—"],
+                ["Action", e.action || "—"],
+                ["Filter", filterLabel],
+                ["Result", e.result || "(none)"],
+              ]),
+            );
+          }
+        } catch (err) {
+          setError(
+            bodyAbuseLog,
+            "Failed to load abuse filter log: " + formatApiError(err),
+          );
+        }
+      })();
+
+      // --- Protection log ---
+      (async function () {
+        try {
+          const data = await apiGet({
+            action: "query",
+            list: "logevents",
+            letype: "protect",
+            letitle: pageName,
+            lelimit: 50,
+            leprop: "user|timestamp|comment|details",
+          });
+          const entries = (data.query && data.query.logevents) || [];
+          if (!entries.length) {
+            setEmpty(bodyProtectLog, "No protection log entries found.");
+            return;
+          }
+          // Auto-expand: entries found warrant attention
+          bodyProtectLog.classList.remove("tng-hidden");
+          arrowProtectLog.classList.add("tng-arrow-up");
+          bodyProtectLog.innerHTML = "";
+          for (const e of entries) {
+            // Flatten protection levels and expiries from e.params.details
+            const levels =
+              e.params && e.params.details && e.params.details.length
+                ? e.params.details
+                    .map(function (d) {
+                      const expiry =
+                        d.expiry === "infinity"
+                          ? "indefinite"
+                          : d.expiry
+                            ? fmtTimestamp(d.expiry)
+                            : "—";
+                      return (
+                        d.type +
+                        ": " +
+                        (d.level || "all") +
+                        " (expires " +
+                        expiry +
+                        ")"
+                      );
+                    })
+                    .join("; ")
+                : "—";
+            const cascade = e.params && e.params.cascade ? "Yes" : "No";
+            bodyProtectLog.appendChild(
+              makeEntry([
+                ["Time", fmtTimestamp(e.timestamp)],
+                ["Action", e.action || "protect"],
+                ["Performed by", e.user || "—"],
+                ["Levels", levels],
+                ["Cascading", cascade],
+                ["Reason", e.comment || "(no reason given)"],
+              ]),
+            );
+          }
+        } catch (err) {
+          setError(
+            bodyProtectLog,
+            "Failed to load protection log: " + formatApiError(err),
+          );
+        }
+      })();
+
+      // --- Deletion log ---
+      (async function () {
+        try {
+          const data = await apiGet({
+            action: "query",
+            list: "logevents",
+            letype: "delete",
+            letitle: pageName,
+            lelimit: 50,
+            leprop: "user|timestamp|comment|details",
+          });
+          const entries = (data.query && data.query.logevents) || [];
+          if (!entries.length) {
+            setEmpty(bodyDeleteLog, "No deletion log entries found.");
+            return;
+          }
+          // Auto-expand: entries found warrant attention
+          bodyDeleteLog.classList.remove("tng-hidden");
+          arrowDeleteLog.classList.add("tng-arrow-up");
+          bodyDeleteLog.innerHTML = "";
+          for (const e of entries) {
+            const revCount =
+              e.params && e.params.count !== undefined
+                ? String(e.params.count)
+                : null;
+            const rows = [
+              ["Time", fmtTimestamp(e.timestamp)],
+              ["Action", e.action || "delete"],
+              ["Performed by", e.user || "—"],
+            ];
+            if (revCount !== null) rows.push(["Revisions affected", revCount]);
+            rows.push(["Reason", e.comment || "(no reason given)"]);
+            bodyDeleteLog.appendChild(makeEntry(rows));
+          }
+        } catch (err) {
+          setError(
+            bodyDeleteLog,
+            "Failed to load deletion log: " + formatApiError(err),
+          );
+        }
+      })();
+
+      // --- Move log ---
+      (async function () {
+        try {
+          const data = await apiGet({
+            action: "query",
+            list: "logevents",
+            letype: "move",
+            letitle: pageName,
+            lelimit: 50,
+            leprop: "user|timestamp|comment|details",
+          });
+          const entries = (data.query && data.query.logevents) || [];
+          if (!entries.length) {
+            setEmpty(bodyMoveLog, "No move log entries found.");
+            return;
+          }
+          // Auto-expand: entries found warrant attention
+          bodyMoveLog.classList.remove("tng-hidden");
+          arrowMoveLog.classList.add("tng-arrow-up");
+          bodyMoveLog.innerHTML = "";
+          for (const e of entries) {
+            const targetTitle = (e.params && e.params.target_title) || "—";
+            const suppressedRedirect =
+              e.params && e.params.suppressredirect !== undefined
+                ? e.params.suppressredirect
+                  ? "Yes (no redirect left)"
+                  : "No (redirect left)"
+                : "—";
+            bodyMoveLog.appendChild(
+              makeEntry([
+                ["Time", fmtTimestamp(e.timestamp)],
+                ["Performed by", e.user || "—"],
+                ["Moved to", targetTitle],
+                ["Redirect suppressed", suppressedRedirect],
+                ["Reason", e.comment || "(no reason given)"],
+              ]),
+            );
+          }
+        } catch (err) {
+          setError(
+            bodyMoveLog,
+            "Failed to load move log: " + formatApiError(err),
+          );
+        }
+      })();
+    };
+
+    // ============================================================================
     // [Section 09] Dialogue builder (input config)
     // Generates configuration layout panel structures, parses package parameters,
     // and configures field states. Also fetches the current user's rights to
@@ -2470,24 +2757,26 @@ $(function () {
       );
       fieldTarget.appendChild(inputTarget);
 
-      const btnGetInfo = makeBtn("Get information on this user", "quiet");
+      const btnGetInfo = makeBtn("Get info", "quiet");
       btnGetInfo.className += " tng-btn-sm";
       btnGetInfo.title = isUserMode
         ? "View access rights, block log, rights changes, and abuse filter log for this user"
-        : "Unavailable when targeting a page";
+        : "View abuse filter, protection, deletion, and move logs for this page";
       btnGetInfo.disabled = true;
-      fieldTarget.appendChild(btnGetInfo);
 
       inputTarget.addEventListener("input", function () {
         clearInputError(inputTarget);
-        if (isUserMode) btnGetInfo.disabled = !inputTarget.value.trim();
+        btnGetInfo.disabled = !inputTarget.value.trim();
       });
 
       btnGetInfo.addEventListener("click", function () {
-        if (!isUserMode) return;
-        const username = inputTarget.value.trim();
-        if (!username) return;
-        getUserInfo(username);
+        const target = inputTarget.value.trim();
+        if (!target) return;
+        if (isUserMode) {
+          getUserInfo(target);
+        } else {
+          getPageInfo(target);
+        }
       });
 
       topSection.appendChild(rowTarget);
@@ -2542,8 +2831,14 @@ $(function () {
       fieldSuffix.appendChild(selSuffix);
       topSection.appendChild(rowSuffix);
       if (!isUserMode) {
-        rowEdits.classList.add("tng-hidden");
-        rowPkg.classList.add("tng-hidden");
+        // Show Edits and Package rows but disable their controls — not applicable in page mode
+        selEndtime.disabled = true;
+        inputEndtime.disabled = true;
+        selPackage.disabled = true;
+        rowEdits.style.opacity = "0.5";
+        rowEdits.title = "Not applicable in page mode";
+        rowPkg.style.opacity = "0.5";
+        rowPkg.title = "Not applicable in page mode";
       }
       body.appendChild(topSection);
 
@@ -3401,7 +3696,7 @@ $(function () {
       inputTarget.value =
         mw.config.get("wgRelevantUserName") ||
         mw.config.get("wgPageName").replace(/_/g, " ");
-      if (isUserMode) btnGetInfo.disabled = !inputTarget.value.trim();
+      btnGetInfo.disabled = !inputTarget.value.trim();
       inputTarget.dispatchEvent(new Event("change"));
 
       // Perform initial check on modal framework launch

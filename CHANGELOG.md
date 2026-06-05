@@ -1,3 +1,36 @@
+## 1.18.0
+
+### Changed
+
+* Updated information button behaviour to support both User Mode and Page Mode
+* Revised Page Mode handling for the **Edits** and **Package** controls
+* Replaced Page Mode hiding of unsupported controls with a disabled-state presentation
+
+### Added
+
+* Added `getPageInfo()`, mirroring the existing user information workflow for page targets
+* Added page information retrieval for:
+  * Abuse filter log (`afltitle`)
+  * Protection log
+  * Deletion log
+  * Move log
+* Added independent asynchronous loading for each page log source
+* Added disabled-state tooltips for controls unavailable in Page Mode
+
+### Fixed
+
+* Fixed a UI contradiction where the information button remained labelled **"Get information on this user"** while simultaneously indicating it was unavailable in Page Mode
+* Fixed the information button being unnecessarily disabled when targeting a page
+* Fixed Page Mode preventing access to contextual information about the current page
+
+### Improved
+
+* Information retrieval now adapts to the current target type, supporting both users and pages
+* Failures in one page-log request no longer affect the loading of other page-log sections
+* The **Edits** and **Package** rows remain visible in Page Mode, improving interface consistency and discoverability
+* Disabled controls are visually dimmed and accompanied by explanatory tooltips rather than being removed entirely
+* Improved transparency by showing unavailable options instead of hiding them from the interface
+
 ## 1.17.2
 
 ### Changed
