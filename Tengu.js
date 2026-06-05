@@ -1,7 +1,8 @@
 /**
+/**
  * ============================================================================
  * Tengu — 天狗
- * Version 1.15.0
+ * Version 1.17.0
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -919,6 +920,74 @@ $(function () {
         ],
       },
       {
+        group: "Speedy deletion",
+        items: [
+          {
+            value:
+              "Consisting purely of incoherent text or gibberish with no meaningful content or history",
+            label:
+              "Consisting purely of incoherent text or gibberish with no meaningful content or history",
+          },
+          { value: "Test page", label: "Test page" },
+          { value: "Pure vandalism", label: "Pure vandalism" },
+          { value: "Blatant hoax", label: "Blatant hoax" },
+          {
+            value: "Recreation of material deleted via a deletion discussion",
+            label: "Recreation of material deleted via a deletion discussion",
+          },
+          {
+            value: "Created by a banned or blocked user",
+            label: "Created by a banned or blocked user",
+          },
+          {
+            value: "Created in violation of a general sanction",
+            label: "Created in violation of a general sanction",
+          },
+          { value: "Error", label: "Error" },
+          { value: "Move", label: "Move" },
+          { value: "XfD", label: "XfD" },
+          { value: "AfC move", label: "AfC move" },
+          {
+            value: "Copy-and-paste page move",
+            label: "Copy-and-paste page move",
+          },
+          {
+            value: "Housekeeping and non-controversial cleanup",
+            label: "Housekeeping and non-controversial cleanup",
+          },
+          {
+            value: "Author requests deletion, or author blanked",
+            label: "Author requests deletion, or author blanked",
+          },
+          {
+            value: "Pages dependent on a non-existent or deleted page",
+            label: "Pages dependent on a non-existent or deleted page",
+          },
+          {
+            value: "Subpages with no parent page",
+            label: "Subpages with no parent page",
+          },
+          { value: "Attack page", label: "Attack page" },
+          {
+            value: "Wholly negative, unsourced BLP",
+            label: "Wholly negative, unsourced BLP",
+          },
+          {
+            value: "Unambiguous advertising or promotion",
+            label: "Unambiguous advertising or promotion",
+          },
+          {
+            value: "Unambiguous copyright infringement",
+            label: "Unambiguous copyright infringement",
+          },
+          {
+            value: "Unnecessary disambiguation page",
+            label: "Unnecessary disambiguation page",
+          },
+          { value: "Unreviewed LLM content", label: "Unreviewed LLM content" },
+        ],
+      },
+      {
         group: "Redirect pages",
         items: [
           {
@@ -1135,13 +1204,15 @@ $(function () {
       // Add clear visibility notice that the automated process is currently ongoing
       addLog("⏳ Processing operations... please wait.");
 
+      const targetVal = config.target;
+
       // --- Block ---
-      if (config.block && !isAborted) {
+      if (config.block && config.mode === "user" && !isAborted) {
         let proceedWithBlock = true;
 
         // Show a confirmation dialogue only when the target account matches the current user.
         const isSelfBlock =
-          config.username.toLowerCase() ===
+          targetVal.toLowerCase() ===
           (mw.config.get("wgUserName") || "").toLowerCase();
         if (isSelfBlock) {
           const confirmed = await new Promise((resolve) => {
@@ -1174,7 +1245,7 @@ $(function () {
         if (proceedWithBlock) {
           const data = {
             action: "block",
-            user: config.username,
+            user: targetVal,
             expiry: config.blockDur,
             reason: config.blockReason + toolTag,
           };
@@ -1187,11 +1258,11 @@ $(function () {
 
           try {
             await apiPost(data);
-            addLog(`[Block] Successfully blocked user ${config.username}.`);
+            addLog(`[Block] Successfully blocked user ${targetVal}.`);
             stats.block++;
           } catch (e) {
             addLog(
-              `[Block] Failed to block ${config.username}: ${formatApiError(e)}`,
+              `[Block] Failed to block ${targetVal}: ${formatApiError(e)}`,
               true,
             );
           }
@@ -1199,10 +1270,7 @@ $(function () {
           // Post notification to user talk page (separate from block action above,
           // so a notification failure does not misreport the block as having failed)
           if (stats.block > 0) {
-            const talkTitle = new mw.Title(
-              config.username,
-              3,
-            ).getPrefixedText();
+            const talkTitle = new mw.Title(targetVal, 3).getPrefixedText();
             const blockDurDisplay =
               config.blockDur === "never"
                 ? "indefinitely"
@@ -1211,7 +1279,7 @@ $(function () {
               config.blockDur === "never"
                 ? "This block does not expire automatically and will remain in effect unless modified by an administrator."
                 : "The block is scheduled to remain in effect until it expires, unless modified by an administrator.";
-            const notice = `== Account block notice ==\nThe account "${config.username}" has been blocked ${blockDurDisplay} due to the following reason: ${config.blockReason}.\n\nDuring the block period, the account may be unable to perform some or all actions that normally require editing privileges. ${blockExpiryText}\n\nThis notification was posted automatically. Please direct any questions or concerns to my user talk page. ~~~~`;
+            const notice = `== Account block notice ==\nThe account "${targetVal}" has been blocked ${blockDurDisplay} due to the following reason: ${config.blockReason}.\n\nDuring the block period, the account may be unable to perform some or all actions that normally require editing privileges. ${blockExpiryText}\n\nThis notification was posted automatically. Please direct any questions or concerns to my user talk page. ~~~~`;
             try {
               await apiPost({
                 action: "edit",
@@ -1232,282 +1300,100 @@ $(function () {
         } // end if (proceedWithBlock)
       }
 
-      // --- Fetch user contributions with recursive pagination framework ---
-      let untildate = new Date();
-      if (config.endtime === "inf") {
-        untildate = null;
-      } else {
-        untildate.setSeconds(untildate.getSeconds() - parseInt(config.endtime));
-      }
+      // --- Fetch user contributions OR prepare target page ---
+      const pageEdits = {};
+      const creation = [];
+      const pagesToProtect = new Set();
 
-      const contribParams = {
-        action: "query",
-        list: "usercontribs",
-        ucuser: config.username,
-        uclimit: "max",
-      };
-      if (untildate) contribParams.ucend = untildate.toISOString();
-
-      let contribs = [];
-      let hasMore = true;
-      let continueToken = {};
-
-      while (hasMore && !isAborted) {
-        const params = Object.assign({}, contribParams, continueToken);
-        try {
-          const data = await apiGet(params);
-          if (data.query && data.query.usercontribs) {
-            contribs = contribs.concat(data.query.usercontribs);
-          }
-          if (data.continue) {
-            continueToken = data.continue;
-          } else {
-            hasMore = false;
-          }
-        } catch (e) {
-          addLog(
-            `[Error] Failed to fetch contribution history: ${formatApiError(e)}`,
-            true,
+      if (config.mode === "user") {
+        let untildate = new Date();
+        if (config.endtime === "inf") {
+          untildate = null;
+        } else {
+          untildate.setSeconds(
+            untildate.getSeconds() - parseInt(config.endtime),
           );
-          hasMore = false;
-        }
-      }
-
-      if (!contribs.length && !isAborted) {
-        addLog("[Info] No contributions found within this timeframe.");
-      } else if (!isAborted) {
-        const pageEdits = {};
-        const creation = [];
-        for (const edit of contribs) {
-          if (edit.new === "") {
-            creation.push(edit.title);
-          } else {
-            if (!pageEdits[edit.title]) {
-              pageEdits[edit.title] = {
-                revids: [],
-                latest: edit.revid,
-                oldestParent: edit.parentid,
-              };
-            }
-            pageEdits[edit.title].revids.push(edit.revid);
-            pageEdits[edit.title].oldestParent = edit.parentid;
-          }
         }
 
-        // Aggregate pages for mass protection to avoid duplicates and skip deleted records
-        const pagesToProtect = new Set();
-        if (config.protect) {
-          for (const title of Object.keys(pageEdits)) {
-            pagesToProtect.add(title);
-          }
-          if (!config.massdel) {
-            for (const title of creation) {
-              pagesToProtect.add(title);
-            }
-          }
-        }
+        const contribParams = {
+          action: "query",
+          list: "usercontribs",
+          ucuser: targetVal,
+          uclimit: "max",
+        };
+        if (untildate) contribParams.ucend = untildate.toISOString();
 
-        // Process rollbacks, undos and revision deletions sequentially with a throttling buffer delay
-        for (const [title, info] of Object.entries(pageEdits)) {
-          if (isAborted) break;
+        let contribs = [];
+        let hasMore = true;
+        let continueToken = {};
 
-          const idlist = info.revids;
-
-          if (!config.rollback) {
-            // Only revision delete
-            if (config.rd) {
-              try {
-                await apiPost({
-                  action: "revisiondelete",
-                  type: "revision",
-                  ids: idlist,
-                  hide: config.rdHides,
-                  reason: config.rdReason + toolTag,
-                  suppress: config.os ? "yes" : "nochange",
-                });
-                addLog(
-                  `[Revdel] Hiding ${idlist.length} revisions at: ${title}`,
-                );
-                stats.revdel++;
-              } catch (e) {
-                addLog(
-                  `[Revdel] Failed at ${title}: ${formatApiError(e)}`,
-                  true,
-                );
-              }
-            }
-            await new Promise((resolve) => setTimeout(resolve, 100)); // Rate limit buffer
-            continue;
-          }
-
-          // --- MEDIAINFO / STRUCTURED DATA CHECK ---
-          // Because structured data edits cannot be undone natively via rollback or normal undo,
-          // we independently check if the mediainfo slot was modified in this revision range.
-          let mediainfoNeedsRevert = false;
-          let goodMediaInfo = null;
-          let pageId = null;
-
+        while (hasMore && !isAborted) {
+          const params = Object.assign({}, contribParams, continueToken);
           try {
-            const revidsToFetch = info.oldestParent
-              ? `${info.latest}|${info.oldestParent}`
-              : `${info.latest}`;
-            const compData = await apiGet({
-              action: "query",
-              prop: "revisions",
-              revids: revidsToFetch,
-              rvprop: "ids|content",
-              rvslots: "mediainfo",
-            });
-
-            const pages = compData.query && compData.query.pages;
-            if (pages) {
-              pageId = Object.keys(pages)[0];
-              const revs = pages[pageId].revisions;
-              if (revs && revs.length > 0) {
-                let latestMI = null;
-                let oldestMI = null;
-                for (const r of revs) {
-                  if (r.slots && r.slots.mediainfo) {
-                    if (r.revid === info.latest)
-                      latestMI = r.slots.mediainfo["*"];
-                    if (r.revid === info.oldestParent)
-                      oldestMI = r.slots.mediainfo["*"];
-                  }
-                }
-
-                if (latestMI !== null && latestMI !== oldestMI) {
-                  mediainfoNeedsRevert = true;
-                  goodMediaInfo = oldestMI
-                    ? JSON.parse(oldestMI)
-                    : { statements: {} };
-                }
-              }
+            const data = await apiGet(params);
+            if (data.query && data.query.usercontribs) {
+              contribs = contribs.concat(data.query.usercontribs);
+            }
+            if (data.continue) {
+              continueToken = data.continue;
+            } else {
+              hasMore = false;
             }
           } catch (e) {
-            // Gracefully ignore on wikis without Wikibase/MediaInfo configured,
-            // or on pages/namespaces where the mediainfo slot is fundamentally unavailable.
+            addLog(
+              `[Error] Failed to fetch contribution history: ${formatApiError(e)}`,
+              true,
+            );
+            hasMore = false;
           }
+        }
 
-          let standardRevertSuccess = false;
-          let standardErr = null;
-
-          const undoSummaryStr = config.rollbackReason
-            ? config.rollbackReason + toolTag
-            : "Reverting mass edits by " +
-              (config.rollbackShow ? config.username : "<username hidden>") +
-              toolTag;
-
-          const rbSummaryStr = config.rollbackReason
-            ? config.rollbackReason + toolTag
-            : config.rollbackShow
-              ? ""
-              : "Revert edits by <username hidden>" + toolTag;
-
-          // Execute standard rollback or undo operation sequentially based on settings
-          if (config.rollbackMethod === "undo") {
-            const undoData = {
-              action: "edit",
-              title: title,
-              undo: info.latest,
-              summary: undoSummaryStr,
-            };
-            if (info.oldestParent) undoData.undoafter = info.oldestParent;
-            if (config.rollbackBot) undoData.bot = 1;
-
-            try {
-              await apiPost(undoData);
-              addLog(`[Undo] Successfully reverted edits via undo: ${title}`);
-              standardRevertSuccess = true;
-              stats.rollback++;
-            } catch (e) {
-              standardErr = String(e);
-              if (
-                standardErr.includes("alreadyreverted") ||
-                standardErr.includes("nothingtorevert")
-              ) {
-                if (!mediainfoNeedsRevert) {
-                  addLog(
-                    `[Undo] Skipped: ${title} — page had already been reverted by another user; undo was not applied by this operation.`,
-                    "warn",
-                  );
-                }
-              } else {
-                addLog(`[Undo] Failed at ${title}: ${formatApiError(e)}`, true);
+        if (!contribs.length && !isAborted) {
+          addLog("[Info] No contributions found within this timeframe.");
+        } else if (!isAborted) {
+          for (const edit of contribs) {
+            if (edit.new === "") {
+              creation.push(edit.title);
+            } else {
+              if (!pageEdits[edit.title]) {
+                pageEdits[edit.title] = {
+                  revids: [],
+                  latest: edit.revid,
+                  oldestParent: edit.parentid,
+                };
               }
-            }
-          } else {
-            // Native rollback
-            const rbData = config.rollbackBot ? { markbot: 1 } : {};
-            rbData.summary = rbSummaryStr;
-
-            try {
-              await apiRollback(title, config.username, rbData);
-              addLog(`[Rollback] Successfully reverted: ${title}`);
-              standardRevertSuccess = true;
-              stats.rollback++;
-            } catch (e) {
-              standardErr = String(e);
-              if (
-                standardErr.includes("alreadyreverted") ||
-                standardErr.includes("onlyauthor")
-              ) {
-                if (!mediainfoNeedsRevert) {
-                  addLog(
-                    `[Rollback] Skipped: ${title} — already reverted or user is the only author.`,
-                    "warn",
-                  );
-                }
-              } else {
-                addLog(
-                  `[Rollback] Failed at ${title}: ${formatApiError(e)}`,
-                  true,
-                );
-              }
+              pageEdits[edit.title].revids.push(edit.revid);
+              pageEdits[edit.title].oldestParent = edit.parentid;
             }
           }
 
-          // --- MEDIAINFO / STRUCTURED DATA REVERT EXECUTION ---
-          if (mediainfoNeedsRevert && pageId) {
-            try {
-              let restoredData = Object.assign({}, goodMediaInfo);
-              if (restoredData.statements) {
-                restoredData.claims = restoredData.statements;
-                delete restoredData.statements;
-              } else if (!restoredData.claims) {
-                restoredData.claims = {};
+          // Aggregate pages for mass protection to avoid duplicates and skip deleted records
+          if (config.protect) {
+            for (const title of Object.keys(pageEdits)) {
+              pagesToProtect.add(title);
+            }
+            if (!config.massdel) {
+              for (const title of creation) {
+                pagesToProtect.add(title);
               }
-
-              await apiPost({
-                action: "wbeditentity",
-                id: "M" + pageId,
-                clear: true,
-                data: JSON.stringify(restoredData),
-                summary:
-                  config.rollbackMethod === "undo"
-                    ? undoSummaryStr
-                    : rbSummaryStr || undoSummaryStr,
-                bot: config.rollbackBot ? 1 : 0,
-              });
-              addLog(
-                `[Undo] Successfully reverted structured data at: ${title}`,
-              );
-              if (!standardRevertSuccess) {
-                stats.rollback++;
-              }
-            } catch (e) {
-              addLog(
-                `[Undo] Failed to revert structured data at ${title}: ${formatApiError(e)}`,
-                true,
-              );
             }
           }
+        }
+      } else {
+        // Page mode: Bypass fetching and apply operations directly to the target page
+        if (config.protect) pagesToProtect.add(targetVal);
+        if (config.massdel) creation.push(targetVal);
+      }
 
-          // Trigger revision deletion if either standard or mediainfo revert succeeded, or if we need to revdel anyway.
-          if (
-            config.rd &&
-            !isAborted &&
-            (standardRevertSuccess || mediainfoNeedsRevert)
-          ) {
+      // Process rollbacks, undos and revision deletions sequentially with a throttling buffer delay
+      for (const [title, info] of Object.entries(pageEdits)) {
+        if (isAborted) break;
+
+        const idlist = info.revids;
+
+        if (!config.rollback) {
+          // Only revision delete
+          if (config.rd) {
             try {
               await apiPost({
                 action: "revisiondelete",
@@ -1517,172 +1403,356 @@ $(function () {
                 reason: config.rdReason + toolTag,
                 suppress: config.os ? "yes" : "nochange",
               });
-              addLog(`[Revdel] Hiding revisions at: ${title}`);
+              addLog(`[Revdel] Hiding ${idlist.length} revisions at: ${title}`);
               stats.revdel++;
             } catch (e) {
               addLog(`[Revdel] Failed at ${title}: ${formatApiError(e)}`, true);
             }
           }
-
-          await new Promise((resolve) => setTimeout(resolve, 100)); // Throttling window
+          await new Promise((resolve) => setTimeout(resolve, 100)); // Rate limit buffer
+          continue;
         }
 
-        // Execute sequential page protections if enabled
-        if (config.protect && pagesToProtect.size > 0) {
-          for (const title of pagesToProtect) {
-            if (isAborted) break;
-            try {
-              const protectData = {
-                action: "protect",
-                title: title,
-                protections: `edit=${config.protectEdit}|move=${config.protectMove}`,
-                expiry: config.protectExpiry,
-                reason: config.protectReason + toolTag,
-              };
-              await apiPost(protectData);
-              addLog(`[Protect] Protected page: ${title}`);
-              stats.protect++;
-            } catch (e) {
+        // --- MEDIAINFO / STRUCTURED DATA CHECK ---
+        // Because structured data edits cannot be undone natively via rollback or normal undo,
+        // we independently check if the mediainfo slot was modified in this revision range.
+        let mediainfoNeedsRevert = false;
+        let goodMediaInfo = null;
+        let pageId = null;
+
+        try {
+          const revidsToFetch = info.oldestParent
+            ? `${info.latest}|${info.oldestParent}`
+            : `${info.latest}`;
+          const compData = await apiGet({
+            action: "query",
+            prop: "revisions",
+            revids: revidsToFetch,
+            rvprop: "ids|content",
+            rvslots: "mediainfo",
+          });
+
+          const pages = compData.query && compData.query.pages;
+          if (pages) {
+            pageId = Object.keys(pages)[0];
+            const revs = pages[pageId].revisions;
+            if (revs && revs.length > 0) {
+              let latestMI = null;
+              let oldestMI = null;
+              for (const r of revs) {
+                if (r.slots && r.slots.mediainfo) {
+                  if (r.revid === info.latest)
+                    latestMI = r.slots.mediainfo["*"];
+                  if (r.revid === info.oldestParent)
+                    oldestMI = r.slots.mediainfo["*"];
+                }
+              }
+
+              if (latestMI !== null && latestMI !== oldestMI) {
+                mediainfoNeedsRevert = true;
+                goodMediaInfo = oldestMI
+                  ? JSON.parse(oldestMI)
+                  : { statements: {} };
+              }
+            }
+          }
+        } catch (e) {
+          // Gracefully ignore on wikis without Wikibase/MediaInfo configured,
+          // or on pages/namespaces where the mediainfo slot is fundamentally unavailable.
+        }
+
+        let standardRevertSuccess = false;
+        let standardErr = null;
+
+        const undoSummaryStr = config.rollbackReason
+          ? config.rollbackReason + toolTag
+          : "Reverting mass edits by " +
+            (config.rollbackShow ? targetVal : "<username hidden>") +
+            toolTag;
+
+        const rbSummaryStr = config.rollbackReason
+          ? config.rollbackReason + toolTag
+          : config.rollbackShow
+            ? ""
+            : "Revert edits by <username hidden>" + toolTag;
+
+        // Execute standard rollback or undo operation sequentially based on settings
+        if (config.rollbackMethod === "undo") {
+          const undoData = {
+            action: "edit",
+            title: title,
+            undo: info.latest,
+            summary: undoSummaryStr,
+          };
+          if (info.oldestParent) undoData.undoafter = info.oldestParent;
+          if (config.rollbackBot) undoData.bot = 1;
+
+          try {
+            await apiPost(undoData);
+            addLog(`[Undo] Successfully reverted edits via undo: ${title}`);
+            standardRevertSuccess = true;
+            stats.rollback++;
+          } catch (e) {
+            standardErr = String(e);
+            if (
+              standardErr.includes("alreadyreverted") ||
+              standardErr.includes("nothingtorevert")
+            ) {
+              if (!mediainfoNeedsRevert) {
+                addLog(
+                  `[Undo] Skipped: ${title} — page had already been reverted by another user; undo was not applied by this operation.`,
+                  "warn",
+                );
+              }
+            } else {
+              addLog(`[Undo] Failed at ${title}: ${formatApiError(e)}`, true);
+            }
+          }
+        } else {
+          // Native rollback
+          const rbData = config.rollbackBot ? { markbot: 1 } : {};
+          rbData.summary = rbSummaryStr;
+
+          try {
+            await apiRollback(title, targetVal, rbData);
+            addLog(`[Rollback] Successfully reverted: ${title}`);
+            standardRevertSuccess = true;
+            stats.rollback++;
+          } catch (e) {
+            standardErr = String(e);
+            if (
+              standardErr.includes("alreadyreverted") ||
+              standardErr.includes("onlyauthor")
+            ) {
+              if (!mediainfoNeedsRevert) {
+                addLog(
+                  `[Rollback] Skipped: ${title} — already reverted or user is the only author.`,
+                  "warn",
+                );
+              }
+            } else {
               addLog(
-                `[Protect] Failed to protect ${title}: ${formatApiError(e)}`,
+                `[Rollback] Failed at ${title}: ${formatApiError(e)}`,
                 true,
               );
-              await new Promise((resolve) => setTimeout(resolve, 100));
-              continue;
+            }
+          }
+        }
+
+        // --- MEDIAINFO / STRUCTURED DATA REVERT EXECUTION ---
+        if (mediainfoNeedsRevert && pageId) {
+          try {
+            let restoredData = Object.assign({}, goodMediaInfo);
+            if (restoredData.statements) {
+              restoredData.claims = restoredData.statements;
+              delete restoredData.statements;
+            } else if (!restoredData.claims) {
+              restoredData.claims = {};
             }
 
-            // Also protect the talk page if that option was selected and this
-            // page is not itself a talk page (talk pages have no talk page).
-            if (config.protectTalk) {
-              let talkForProtect = null;
+            await apiPost({
+              action: "wbeditentity",
+              id: "M" + pageId,
+              clear: true,
+              data: JSON.stringify(restoredData),
+              summary:
+                config.rollbackMethod === "undo"
+                  ? undoSummaryStr
+                  : rbSummaryStr || undoSummaryStr,
+              bot: config.rollbackBot ? 1 : 0,
+            });
+            addLog(`[Undo] Successfully reverted structured data at: ${title}`);
+            if (!standardRevertSuccess) {
+              stats.rollback++;
+            }
+          } catch (e) {
+            addLog(
+              `[Undo] Failed to revert structured data at ${title}: ${formatApiError(e)}`,
+              true,
+            );
+          }
+        }
+
+        // Trigger revision deletion if either standard or mediainfo revert succeeded, or if we need to revdel anyway.
+        if (
+          config.rd &&
+          !isAborted &&
+          (standardRevertSuccess || mediainfoNeedsRevert)
+        ) {
+          try {
+            await apiPost({
+              action: "revisiondelete",
+              type: "revision",
+              ids: idlist,
+              hide: config.rdHides,
+              reason: config.rdReason + toolTag,
+              suppress: config.os ? "yes" : "nochange",
+            });
+            addLog(`[Revdel] Hiding revisions at: ${title}`);
+            stats.revdel++;
+          } catch (e) {
+            addLog(`[Revdel] Failed at ${title}: ${formatApiError(e)}`, true);
+          }
+        }
+
+        await new Promise((resolve) => setTimeout(resolve, 100)); // Throttling window
+      }
+
+      // Execute sequential page protections if enabled
+      if (config.protect && pagesToProtect.size > 0) {
+        for (const title of pagesToProtect) {
+          if (isAborted) break;
+          try {
+            const protectData = {
+              action: "protect",
+              title: title,
+              protections: `edit=${config.protectEdit}|move=${config.protectMove}`,
+              expiry: config.protectExpiry,
+              reason: config.protectReason + toolTag,
+            };
+            await apiPost(protectData);
+            addLog(`[Protect] Protected page: ${title}`);
+            stats.protect++;
+          } catch (e) {
+            addLog(
+              `[Protect] Failed to protect ${title}: ${formatApiError(e)}`,
+              true,
+            );
+            await new Promise((resolve) => setTimeout(resolve, 100));
+            continue;
+          }
+
+          // Also protect the talk page if that option was selected and this
+          // page is not itself a talk page (talk pages have no talk page).
+          if (config.protectTalk) {
+            let talkForProtect = null;
+            try {
+              const titleObj = new mw.Title(title);
+              if (!titleObj.isTalkPage()) {
+                talkForProtect = titleObj.getTalkPage().getPrefixedText();
+              }
+            } catch (e) {
+              // Skip if the title cannot be resolved to a talk page.
+            }
+            if (talkForProtect) {
               try {
-                const titleObj = new mw.Title(title);
-                if (!titleObj.isTalkPage()) {
-                  talkForProtect = titleObj.getTalkPage().getPrefixedText();
-                }
+                await apiPost({
+                  action: "protect",
+                  title: talkForProtect,
+                  protections: `edit=${config.protectEdit}|move=${config.protectMove}`,
+                  expiry: config.protectExpiry,
+                  reason: config.protectReason + toolTag,
+                });
+                addLog(`[Protect] Protected talk page: ${talkForProtect}`);
+                stats.protect++;
               } catch (e) {
-                // Skip if the title cannot be resolved to a talk page.
+                addLog(
+                  `[Protect] Failed to protect talk page ${talkForProtect}: ${formatApiError(e)}`,
+                  true,
+                );
               }
-              if (talkForProtect) {
-                try {
-                  await apiPost({
-                    action: "protect",
-                    title: talkForProtect,
-                    protections: `edit=${config.protectEdit}|move=${config.protectMove}`,
-                    expiry: config.protectExpiry,
-                    reason: config.protectReason + toolTag,
-                  });
-                  addLog(`[Protect] Protected talk page: ${talkForProtect}`);
-                  stats.protect++;
-                } catch (e) {
-                  addLog(
-                    `[Protect] Failed to protect talk page ${talkForProtect}: ${formatApiError(e)}`,
-                    true,
-                  );
-                }
-                await new Promise((resolve) => setTimeout(resolve, 100));
-              }
+              await new Promise((resolve) => setTimeout(resolve, 100));
             }
+          }
 
-            // Post notification to talk page (separate from protect action above,
-            // so a notification failure does not misreport the protection as having failed)
+          // Post notification to talk page (separate from protect action above,
+          // so a notification failure does not misreport the protection as having failed)
+          try {
+            const talkTitle = new mw.Title(title)
+              .getTalkPage()
+              .getPrefixedText();
+            const protectExpiryDisplay =
+              config.protectExpiry === "never"
+                ? "indefinitely"
+                : `for ${config.protectExpiry}`;
+            const protectExpiryText =
+              config.protectExpiry === "never"
+                ? "This protection does not expire automatically and will remain in effect unless modified by an administrator."
+                : "The protection is scheduled to remain in effect until it expires, unless modified by an administrator.";
+            const notice = `== Page protection notice ==\nThe page "${title}" has been protected ${protectExpiryDisplay} due to the following reason: ${config.protectReason}.\n\nDuring the protection period, some or all editing actions may be restricted depending on the level of protection applied. ${protectExpiryText}\n\nThis notification was posted automatically. Please direct any questions or concerns to my user talk page. ~~~~`;
+
+            await apiPost({
+              action: "edit",
+              title: talkTitle,
+              appendtext: "\n\n" + notice,
+              summary:
+                "Automated notification: Page protection notice" + toolTag,
+              bot: true,
+            });
+            addLog(`[Notify] Notification posted to: ${talkTitle}`);
+          } catch (e) {
+            addLog(
+              `[Notify] Failed to post protection notification for ${title}: ${formatApiError(e)}`,
+              "warn",
+            );
+          }
+          await new Promise((resolve) => setTimeout(resolve, 100));
+        }
+      }
+
+      // Mass-delete pages sequentially
+      if (config.massdel) {
+        for (const title of creation) {
+          if (isAborted) break;
+
+          // Delete the main page (separate try/catch from talk page below,
+          // so a talk-page failure does not misreport the main deletion as having failed)
+          let mainDeleted = false;
+          try {
+            await apiPost({
+              action: "delete",
+              title: title,
+              reason: config.massdelReason + toolTag,
+            });
+            addLog(`[Delete] Deleted page: ${title}`);
+            stats.delete++;
+            mainDeleted = true;
+          } catch (e) {
+            addLog(
+              `[Delete] Failed to delete ${title}: ${formatApiError(e)}`,
+              true,
+            );
+          }
+
+          // Delete the associated talk page if the main page was deleted
+          // and the user opted into it via the checkbox
+          if (mainDeleted && config.massdelTalk) {
             try {
               const talkTitle = new mw.Title(title)
                 .getTalkPage()
                 .getPrefixedText();
-              const protectExpiryDisplay =
-                config.protectExpiry === "never"
-                  ? "indefinitely"
-                  : `for ${config.protectExpiry}`;
-              const protectExpiryText =
-                config.protectExpiry === "never"
-                  ? "This protection does not expire automatically and will remain in effect unless modified by an administrator."
-                  : "The protection is scheduled to remain in effect until it expires, unless modified by an administrator.";
-              const notice = `== Page protection notice ==\nThe page "${title}" has been protected ${protectExpiryDisplay} due to the following reason: ${config.protectReason}.\n\nDuring the protection period, some or all editing actions may be restricted depending on the level of protection applied. ${protectExpiryText}\n\nThis notification was posted automatically. Please direct any questions or concerns to my user talk page. ~~~~`;
-
-              await apiPost({
-                action: "edit",
-                title: talkTitle,
-                appendtext: "\n\n" + notice,
-                summary:
-                  "Automated notification: Page protection notice" + toolTag,
-                bot: true,
+              // Check if talk page exists before attempting deletion
+              const pageInfo = await apiGet({
+                action: "query",
+                titles: talkTitle,
+                formatversion: 2,
               });
-              addLog(`[Notify] Notification posted to: ${talkTitle}`);
+
+              if (
+                pageInfo.query &&
+                pageInfo.query.pages[0] &&
+                !pageInfo.query.pages[0].missing
+              ) {
+                await apiPost({
+                  action: "delete",
+                  title: talkTitle,
+                  reason:
+                    "Associated talk page of deleted page: " +
+                    config.massdelReason +
+                    toolTag,
+                });
+                addLog(`[Delete] Deleted associated talk page: ${talkTitle}`);
+                stats.delete++;
+              }
             } catch (e) {
               addLog(
-                `[Notify] Failed to post protection notification for ${title}: ${formatApiError(e)}`,
-                "warn",
-              );
-            }
-            await new Promise((resolve) => setTimeout(resolve, 100));
-          }
-        }
-
-        // Mass-delete pages sequentially
-        if (config.massdel) {
-          for (const title of creation) {
-            if (isAborted) break;
-
-            // Delete the main page (separate try/catch from talk page below,
-            // so a talk-page failure does not misreport the main deletion as having failed)
-            let mainDeleted = false;
-            try {
-              await apiPost({
-                action: "delete",
-                title: title,
-                reason: config.massdelReason + toolTag,
-              });
-              addLog(`[Delete] Deleted page: ${title}`);
-              stats.delete++;
-              mainDeleted = true;
-            } catch (e) {
-              addLog(
-                `[Delete] Failed to delete ${title}: ${formatApiError(e)}`,
+                `[Delete] Failed to delete talk page for ${title}: ${formatApiError(e)}`,
                 true,
               );
             }
-
-            // Delete the associated talk page if the main page was deleted
-            // and the user opted into it via the checkbox
-            if (mainDeleted && config.massdelTalk) {
-              try {
-                const talkTitle = new mw.Title(title)
-                  .getTalkPage()
-                  .getPrefixedText();
-                // Check if talk page exists before attempting deletion
-                const pageInfo = await apiGet({
-                  action: "query",
-                  titles: talkTitle,
-                  formatversion: 2,
-                });
-
-                if (
-                  pageInfo.query &&
-                  pageInfo.query.pages[0] &&
-                  !pageInfo.query.pages[0].missing
-                ) {
-                  await apiPost({
-                    action: "delete",
-                    title: talkTitle,
-                    reason:
-                      "Associated talk page of deleted page: " +
-                      config.massdelReason +
-                      toolTag,
-                  });
-                  addLog(`[Delete] Deleted associated talk page: ${talkTitle}`);
-                  stats.delete++;
-                }
-              } catch (e) {
-                addLog(
-                  `[Delete] Failed to delete talk page for ${title}: ${formatApiError(e)}`,
-                  true,
-                );
-              }
-            }
-
-            await new Promise((resolve) => setTimeout(resolve, 100)); // Throttling window
           }
+
+          await new Promise((resolve) => setTimeout(resolve, 100)); // Throttling window
         }
       }
 
@@ -2132,6 +2202,10 @@ $(function () {
         mw.util.addCSS(TNG_CSS);
       }
 
+      // Determine operating context mode: User Mode or Page Mode
+      const isUserMode = !!mw.config.get("wgRelevantUserName");
+      const tenguMode = isUserMode ? "user" : "page";
+
       // Fetch the current user's rights and groups immediately so the result is
       // ready (or very close to ready) by the time the dialogue finishes building.
       const rightsApi = new mw.Api();
@@ -2448,24 +2522,30 @@ $(function () {
 
       const topSection = document.createElement("div");
       topSection.style.cssText = "display:flex;flex-direction:column;gap:10px;";
-      const { row: rowTarget, field: fieldTarget } = makeRow("Target");
-      const inputUsername = makeInput("Username or IP (not a range)");
-      fieldTarget.appendChild(inputUsername);
+      const { row: rowTarget, field: fieldTarget } = makeRow(
+        isUserMode ? "Target user" : "Target page",
+      );
+      const inputTarget = makeInput(
+        isUserMode ? "Username or IP (not a range)" : "Page title",
+      );
+      fieldTarget.appendChild(inputTarget);
 
       const btnGetInfo = makeBtn("Get information on this user", "quiet");
       btnGetInfo.className += " tng-btn-sm";
-      btnGetInfo.title =
-        "View access rights, block log, rights changes, and abuse filter log for this user";
+      btnGetInfo.title = isUserMode
+        ? "View access rights, block log, rights changes, and abuse filter log for this user"
+        : "Unavailable when targeting a page";
       btnGetInfo.disabled = true;
       fieldTarget.appendChild(btnGetInfo);
 
-      inputUsername.addEventListener("input", function () {
-        clearInputError(inputUsername);
-        btnGetInfo.disabled = !inputUsername.value.trim();
+      inputTarget.addEventListener("input", function () {
+        clearInputError(inputTarget);
+        if (isUserMode) btnGetInfo.disabled = !inputTarget.value.trim();
       });
 
       btnGetInfo.addEventListener("click", function () {
-        const username = inputUsername.value.trim();
+        if (!isUserMode) return;
+        const username = inputTarget.value.trim();
         if (!username) return;
         getUserInfo(username);
       });
@@ -2521,6 +2601,10 @@ $(function () {
       );
       fieldSuffix.appendChild(selSuffix);
       topSection.appendChild(rowSuffix);
+      if (!isUserMode) {
+        rowEdits.classList.add("tng-hidden");
+        rowPkg.classList.add("tng-hidden");
+      }
       body.appendChild(topSection);
 
       const {
@@ -2856,6 +2940,48 @@ $(function () {
       bodyRevdel.appendChild(rowRevdelReason);
       body.appendChild(secRevdel);
 
+      // Lock a section: uncheck and disable its toggle, collapse its body,
+      // remove the chevron (section cannot be opened), and append a lock
+      // indicator to the header so the restriction is visible.
+      function lockSection(sec, secBody, chk, reason) {
+        if (chk.disabled) return; // Prevent duplicating the lock icon
+        chk.checked = false;
+        chk.disabled = true;
+        sec.classList.add("tng-disabled");
+        secBody.classList.add("tng-hidden");
+        const arrow = sec.querySelector(".tng-section-arrow");
+        if (arrow) arrow.remove();
+        const hdr = sec.querySelector(".tng-section-header");
+        hdr.title = "Unavailable: " + reason;
+        const lockBadge = document.createElement("span");
+        lockBadge.className = "tng-rights-lock";
+        lockBadge.textContent = "🔒";
+        lockBadge.title = "Unavailable: " + reason;
+        hdr.appendChild(lockBadge);
+      }
+
+      // Automatically lock User Mode features if executed in Page Mode
+      if (!isUserMode) {
+        lockSection(
+          secRollback,
+          bodyRollback,
+          chkRollback,
+          "Tengu is targeting a page, not a user.",
+        );
+        lockSection(
+          secBlock,
+          bodyBlock,
+          chkBlock,
+          "Tengu is targeting a page, not a user.",
+        );
+        lockSection(
+          secRevdel,
+          bodyRevdel,
+          chkRevdel,
+          "Tengu is targeting a page, not a user.",
+        );
+      }
+
       const btnCancel = makeBtn("Cancel", "quiet");
       btnCancel.addEventListener("click", function () {
         overlay.closeHandler();
@@ -2883,17 +3009,22 @@ $(function () {
 
       // Inside the btnStart event listener
       btnStart.addEventListener("click", function () {
-        const username = inputUsername.value.trim();
+        const targetVal = inputTarget.value.trim();
 
-        clearInputError(inputUsername);
+        clearInputError(inputTarget);
 
-        if (!username) {
-          showNotification(fieldTarget, "Please enter a target username.");
-          inputUsername.focus();
+        if (!targetVal) {
+          showNotification(
+            fieldTarget,
+            isUserMode
+              ? "Please enter a target username."
+              : "Please enter a target page title.",
+          );
+          inputTarget.focus();
           return;
         }
         const suffix = selSuffix.value;
-        const isIP = mw.util.isIPAddress(username);
+        const isIP = mw.util.isIPAddress(targetVal);
         let endtime = selEndtime.value;
         if (endtime === "other") endtime = inputEndtime.value.trim() || "3600";
 
@@ -2924,7 +3055,8 @@ $(function () {
         if (chkRdUsername.checked) rdHides += "user|";
 
         config = {
-          username: username,
+          mode: tenguMode,
+          target: targetVal,
           suffix: suffix,
           isIP: isIP,
           endtime: endtime,
@@ -3103,26 +3235,7 @@ $(function () {
             "tng-rights-badge tng-rights-" + (isSteward ? "have" : "lack");
           badgeSteward.textContent = (isSteward ? "✔️  " : "❌  ") + "Steward";
 
-          // Lock a section: uncheck and disable its toggle, collapse its body,
-          // remove the chevron (section cannot be opened), and append a lock
-          // indicator to the header so the restriction is visible.
-          function lockSection(sec, secBody, chk, reason) {
-            chk.checked = false;
-            chk.disabled = true;
-            sec.classList.add("tng-disabled");
-            secBody.classList.add("tng-hidden");
-            const arrow = sec.querySelector(".tng-section-arrow");
-            if (arrow) arrow.remove();
-            const hdr = sec.querySelector(".tng-section-header");
-            hdr.title = "Unavailable: " + reason;
-            const lockBadge = document.createElement("span");
-            lockBadge.className = "tng-rights-lock";
-            lockBadge.textContent = "🔒";
-            lockBadge.title = "Unavailable: " + reason;
-            hdr.appendChild(lockBadge);
-          }
-
-          if (!hasBlock)
+          if (!hasBlock && isUserMode)
             lockSection(
               secBlock,
               bodyBlock,
@@ -3143,7 +3256,7 @@ $(function () {
               chkProtect,
               "you do not have the protect right on this wiki",
             );
-          if (!hasRevdel)
+          if (!hasRevdel && isUserMode)
             lockSection(
               secRevdel,
               bodyRevdel,
@@ -3158,7 +3271,7 @@ $(function () {
 
       function applyPackage(pkgName) {
         const pkg = packages[pkgName] || defaultPackage;
-        const isIP = mw.util.isIPAddress(inputUsername.value.trim());
+        const isIP = mw.util.isIPAddress(inputTarget.value.trim());
 
         const trac = pkg.tracingedits || {};
         if (trac.indefregistered && !isIP) {
@@ -3181,12 +3294,14 @@ $(function () {
         }
 
         const rb = pkg.rollback || {};
-        chkRollback.checked = rb.enabled !== false;
-        secRollback.classList.toggle("tng-disabled", !chkRollback.checked);
-        bodyRollback.classList.toggle("tng-hidden", !chkRollback.checked);
-        secRollback
-          .querySelector(".tng-section-arrow")
-          .classList.toggle("tng-arrow-up", chkRollback.checked);
+        if (!chkRollback.disabled) {
+          chkRollback.checked = rb.enabled !== false;
+          secRollback.classList.toggle("tng-disabled", !chkRollback.checked);
+          bodyRollback.classList.toggle("tng-hidden", !chkRollback.checked);
+          secRollback
+            .querySelector(".tng-section-arrow")
+            .classList.toggle("tng-arrow-up", chkRollback.checked);
+        }
         chkBot.checked = !!rb.bot;
         chkShow.checked = rb.showname !== false;
         chkUndo.checked = false; // Reset to default rollback method when switching packages
@@ -3328,9 +3443,9 @@ $(function () {
         updateStartBtn();
       }
 
-      inputUsername.addEventListener("change", function () {
+      inputTarget.addEventListener("change", function () {
         applyPackage(selPackage.value);
-        const isIP = mw.util.isIPAddress(inputUsername.value.trim());
+        const isIP = mw.util.isIPAddress(inputTarget.value.trim());
         wrapHardblock.style.display = isIP ? "" : "none";
         wrapAutoblock.style.display = isIP ? "none" : "";
       });
@@ -3343,13 +3458,15 @@ $(function () {
           : "Default";
       selPackage.value = defaultPkgName;
       applyPackage(defaultPkgName);
-      inputUsername.value = mw.config.get("wgRelevantUserName") || "";
-      btnGetInfo.disabled = !inputUsername.value.trim();
-      inputUsername.dispatchEvent(new Event("change"));
+      inputTarget.value =
+        mw.config.get("wgRelevantUserName") ||
+        mw.config.get("wgPageName").replace(/_/g, " ");
+      if (isUserMode) btnGetInfo.disabled = !inputTarget.value.trim();
+      inputTarget.dispatchEvent(new Event("change"));
 
       // Perform initial check on modal framework launch
       updateStartBtn();
-      inputUsername.focus();
+      inputTarget.focus();
     };
 
     // ============================================================================

@@ -1,3 +1,46 @@
+## 1.17.0
+
+### Changed
+
+* Added target-context detection based on `wgRelevantUserName`
+* Updated the primary input field to dynamically display either **Target user** or **Target page**
+* Updated input placeholders to match the detected target type
+* Replaced the previous **General** page deletion reasons group with a new **Speedy deletion** group
+* Removed criterion prefixes (e.g. G1, G2, G3) from deletion reason labels and values
+* Updated deletion reason wording to use sentence case and en-GB spelling conventions
+
+### Added
+
+* Added `tenguMode` to distinguish between user-centric and page-centric workflows
+* Added automatic Page Mode support for page protection and page deletion operations
+* Added explanatory tooltips for features unavailable in Page Mode
+* Added a comprehensive set of speedy deletion reasons
+
+### Improved
+
+* Tengu now adapts its interface automatically based on the current page context
+* Page Mode bypasses user-contribution lookups and feeds the target page directly into existing protection and deletion workflows
+* Reused existing protection and deletion processing logic without requiring separate execution paths
+* Simplified deletion reason selection by presenting clean, descriptive labels without criterion codes
+* Improved consistency and readability of page deletion options
+* Better aligned deletion reasons with common speedy deletion workflows
+* Standardised newly added interface text using sentence case and en-GB spelling conventions
+
+### Fixed
+
+* Locked the Rollback, Block, and Revision deletion sections when operating in Page Mode
+* Added visual lock indicators and disabled unavailable user-based actions in Page Mode
+* Prevented execution of user-centric workflows when the target is a page rather than a user
+* Hid the **Edits** selector when operating in Page Mode
+* Hid the **Package** preset selector when operating in Page Mode
+* Prevented user-specific controls from being displayed when the target context is a page
+* Improved contextual relevance of the interface by only displaying controls applicable to the current mode
+
+### Notes
+
+* In Page Mode, page protection and page deletion continue to use the existing processing loops and configuration options.
+* The **Edits** and **Package** controls remain available in User Mode and are only hidden when Tengu is operating on a page target.
+
 ## 1.15.0
 
 ### Changed
