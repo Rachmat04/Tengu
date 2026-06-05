@@ -1,8 +1,7 @@
 /**
-/**
  * ============================================================================
  * Tengu — 天狗
- * Version 1.17.1
+ * Version 1.17.2
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -845,80 +844,6 @@ $(function () {
       },
     ];
     const PAGE_DELETE_REASONS = [
-      {
-        group: "General",
-        items: [
-          {
-            value: "Patent nonsense, meaningless, or incomprehensible",
-            label: "Patent nonsense, meaningless, or incomprehensible",
-          },
-          { value: "Test page", label: "Test page" },
-          { value: "Vandalism", label: "Vandalism" },
-          { value: "Blatant hoax", label: "Blatant hoax" },
-          {
-            value: "Recreation of a page deleted per a deletion discussion",
-            label: "Recreation of a page deleted per a deletion discussion",
-          },
-          {
-            value:
-              "Creation by a banned or blocked user in violation of ban or block",
-            label:
-              "Creation by a banned or blocked user in violation of ban or block",
-          },
-          {
-            value: "Enforcement of general sanctions",
-            label: "Enforcement of general sanctions",
-          },
-          {
-            value: "Technical deletion (uncontroversial maintenance)",
-            label: "Technical deletion (uncontroversial maintenance)",
-          },
-          {
-            value: "Deletion to make way for a page move",
-            label: "Deletion to make way for a page move",
-          },
-          {
-            value:
-              "Unambiguously created in error or in the incorrect namespace",
-            label:
-              "Unambiguously created in error or in the incorrect namespace",
-          },
-          {
-            value: "One author who has requested deletion or blanked the page",
-            label: "One author who has requested deletion or blanked the page",
-          },
-          {
-            value: "Page dependent on a deleted or nonexistent page",
-            label: "Page dependent on a deleted or nonexistent page",
-          },
-          {
-            value: "Attack page or negative unsourced BLP",
-            label: "Attack page or negative unsourced BLP",
-          },
-          {
-            value: "Unambiguous advertising or promotion",
-            label: "Unambiguous advertising or promotion",
-          },
-          {
-            value: "Unambiguous copyright infringement",
-            label: "Unambiguous copyright infringement",
-          },
-          {
-            value: "Abandoned draft or Articles for creation submission",
-            label: "Abandoned draft or Articles for creation submission",
-          },
-          {
-            value: "Unnecessary disambiguation page",
-            label: "Unnecessary disambiguation page",
-          },
-          {
-            value:
-              "LLM-generated content that has not been adequately reviewed",
-            label:
-              "LLM-generated content that has not been adequately reviewed",
-          },
-        ],
-      },
       {
         group: "Speedy deletion",
         items: [

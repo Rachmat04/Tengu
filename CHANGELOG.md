@@ -1,3 +1,9 @@
+## 1.17.2
+
+### Changed
+
+* Remove entries in the `General` group under `PAGE_DELETE_REASONS` as they are similar to the ones under `Speedy deletion` group
+
 ## 1.17.1
 
 ### Changed
