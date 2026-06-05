@@ -1,3 +1,9 @@
+## 1.18.1
+
+### Fixed
+
+* Fixed the **Get info** button not appearing in the dialogue by appending `btnGetInfo` to `fieldTarget` after its event listeners were initialised
+
 ## 1.18.0
 
 ### Changed
