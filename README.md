@@ -67,7 +67,7 @@ This script is designed for MediaWiki user scripts.
 ## Usage
 
 1. Open the Tengu interface.
-2. Enter the target username or IP address.
+2. Enter the target username or IP address, if it is not populated automatically
 3. Select the moderation action:
    - Rollback
    - Block
@@ -101,8 +101,10 @@ Use this method if you want Tengu on one wiki only.
 ```
 User:<username>/common.js
 ```
-2. Add the script code to the page.
-- Paste the full Tengu script.
+2. Add this code to the page:
+```
+mw.loader.load('//id.wikipedia.org/w/index.php?title=Pengguna:Rachmat04/Tengu.js&action=raw&ctype=text/javascript');
+```
 3. Save the page.
 4. Clear your browser cache or perform a hard refresh.
 5. Reload the wiki page to activate the tool.
@@ -111,15 +113,17 @@ User:<username>/common.js
 
 Use this method if your wiki account supports global scripts (e.g. via Global Preferences or a global.js setup).
 
-1. Open your global JavaScript page:
+1. Open your global JavaScript page on Meta-Wiki:
 ```
 User:<username>/global.js
 ```
-2. Paste the full Tengu script into the file.
+2. Add this code to the page:
+```
+mw.loader.load('//id.wikipedia.org/w/index.php?title=Pengguna:Rachmat04/Tengu.js&action=raw&ctype=text/javascript');
+```
 3. Save the page.
-4. Ensure global scripts are enabled in your preferences (if required by your wiki setup).
-5. Refresh all open wiki tabs or restart your browser session.
-6. The tool should now load on all supported wikis.
+4. Clear your browser cache or perform a hard refresh.
+5. Reload the wiki page to activate the tool.
 
 ---
 
