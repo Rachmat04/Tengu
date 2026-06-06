@@ -1,3 +1,25 @@
+## 1.18.8
+
+### Changed
+
+* Reused the existing blue notice palette already used by `.tng-rights-badge-group`, avoiding the introduction of new colour tokens
+* Hoisted `updateModeNotice()` as a named function declaration so it can be called from `applyModeRestrictions()` regardless of source order
+
+### Added
+
+* Added a mode-status notice to provide contextual feedback about the current operating mode
+
+### Improved
+
+* The mode-status notice updates automatically when switching between User Mode and Page Mode
+* In page-only mode, where no mode toggle is available, the notice is rendered once and remains static as intended
+* Improved visibility of the current operating context without introducing additional interaction or workflow changes
+* Maintained visual consistency by reusing existing interface colours and styling patterns
+
+### Notes
+
+* This release introduces a UI-only enhancement and does not modify operational logic or processing behaviour.
+
 ## 1.18.7
 
 ### Fixed

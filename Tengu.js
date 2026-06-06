@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 1.18.7
+ * Version 1.18.8
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -201,6 +201,15 @@ $(function () {
         }
 
         .tng-help { font-size: 0.82em; color: #72777d; margin-top: 2px; }
+
+        /* --- Mode notice --- */
+.tng-mode-notice {
+    font-size: 0.85em; padding: 7px 11px;
+    border-radius: 4px; border: 1px solid #a8c4e8;
+    background: #dce8f8; color: #1a4a8a;
+    line-height: 1.5;
+}
+
         .tng-hidden { display: none !important; }
         .tng-optgroup-label {
             font-weight: 700; color: #54595d; font-size: 0.85em;
@@ -424,6 +433,9 @@ $(function () {
             .tng-mode-toggle { border-color: #54595d; }
             .tng-mode-btn { color: #a2a9b1; }
             .tng-mode-btn:hover:not(.tng-mode-btn-active) { background: #2a2a35; }
+
+            /* Dark mode for mode notice */
+            .tng-mode-notice { background: #1a3060; color: #80aaff; border-color: #2a5090; }
         }
     `;
 
@@ -2836,6 +2848,20 @@ $(function () {
         fieldMode.appendChild(modeToggle);
         topSection.appendChild(rowMode);
       }
+
+      // Mode notice — informs users how deletion and protection behave in the
+      // current mode. Shown in both user mode (toggle available) and page mode
+      // (no toggle). Updated by applyModeRestrictions() when the mode changes.
+      const divModeNotice = document.createElement("div");
+      divModeNotice.className = "tng-mode-notice";
+      function updateModeNotice(isUser) {
+        divModeNotice.innerHTML = isUser
+          ? "<b>User mode</b> — deletion and protection apply to all pages recently edited by the target user, not a single page. To target one specific page instead, switch to page mode."
+          : "<b>Page mode</b> — deletion and protection apply only to the target page entered above. Rollback, block, and revision deletion are not available in this mode.";
+      }
+      updateModeNotice(isUserMode);
+      topSection.appendChild(divModeNotice);
+
       const { row: rowTarget, field: fieldTarget } = makeRow(
         isUserMode ? "Target user" : "Target page",
       );
@@ -3347,6 +3373,7 @@ $(function () {
       // Updates all mode-sensitive UI when the user switches modes via the toggle.
       function applyModeRestrictions(isUserModeNow) {
         tenguMode = isUserModeNow ? "user" : "page";
+        updateModeNotice(isUserModeNow);
 
         // Update target row label, placeholder, and Get info tooltip
         rowTarget.querySelector(".tng-label").textContent = isUserModeNow
