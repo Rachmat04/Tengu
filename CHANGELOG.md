@@ -1,3 +1,39 @@
+## 1.18.5
+
+### Added
+
+* Added an early-exit guard at the start of the `mw.loader.using` callback to detect Special pages (`wgNamespaceNumber === -1`)
+
+### Fixed
+
+* Prevented Tengu from initialising on Special pages
+* Prevented portlet link registration on Special pages
+* Prevented CSS injection on Special pages
+* Prevented dialogue construction on Special pages
+* Prevented feature execution on Special pages
+
+### Improved
+
+* Reduced unnecessary processing on pages where the gadget is not intended to operate
+* Uses `wgNamespaceNumber === -1`, a stable MediaWiki namespace identifier for Special pages
+
+## 1.18.4
+
+### Changed
+
+* Updated page deletion reason handling to fully support the **Other:** option as a first-class preset value
+* Updated package application behaviour so a preset with `reason: ""` correctly selects **Other:** rather than falling back to the custom-reason field
+
+### Fixed
+
+* Fixed package restoration for custom page deletion reasons represented by an empty-string preset value
+* Ensured the **Other:** deletion reason option is correctly restored when applying saved package configurations
+
+### Improved
+
+* Confirmed that custom page deletion reasons continue to resolve correctly through `buildPagedelReason()`
+* Improved consistency between package configuration values and page deletion reason selection behaviour
+
 ## 1.18.3
 
 ### Changed

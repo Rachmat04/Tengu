@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 1.18.3
+ * Version 1.18.5
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -15,6 +15,10 @@
 // <nowiki>
 $(function () {
   mw.loader.using(["mediawiki.util", "mediawiki.api"], function () {
+    // Special pages cannot be acted on in any way. Abort entirely — no portlet
+    // link is registered, no CSS is injected, and no features are initialised.
+    if (mw.config.get("wgNamespaceNumber") === -1) return;
+    
     // ============================================================================
     // [Section 00] State
     // Stores runtime configurations and dialogue initialisation flags.
@@ -863,14 +867,15 @@ $(function () {
       },
     ];
     const PAGE_DELETE_REASONS = [
+      { value: "", label: "Other:" },
       {
         group: "Speedy deletion",
         items: [
           {
             value:
-              "Consisting purely of incoherent text or gibberish with no meaningful content or history",
+              "Ambiguous text or gibberish lacking meaningful content or context",
             label:
-              "Consisting purely of incoherent text or gibberish with no meaningful content or history",
+              "Ambiguous text or gibberish lacking meaningful content or context",
           },
           { value: "Test page", label: "Test page" },
           { value: "Pure vandalism", label: "Pure vandalism" },
@@ -2515,7 +2520,7 @@ $(function () {
           mail: false,
           hidename: false,
         },
-        pagedelete: { enabled: false, reason: "Vandalism" },
+        pagedelete: { enabled: false, reason: "Pure vandalism" },
         pageprotection: {
           enabled: false,
           edit: "all",
