@@ -1,3 +1,25 @@
+## 1.18.11
+
+### Changed
+
+* Updated block interface to include a new Abuse Filter log option within the Block section
+* Integrated the new checkbox into existing block option layout using the standard checkbox helper for consistent styling
+
+### Added
+
+* Added `chkAbuseFilter` checkbox labelled **"See also the abuse filter log for this user"**
+* Added support for including abuse filter log awareness in block reason construction
+* Added conditional formatting logic in `buildBlockReason()` for abuse filter log references
+
+### Improved
+
+* Improved block reason generation to dynamically include abuse filter log context when selected
+* Improved sentence case handling so appended notices adapt to context:
+  * Appended in lowercase parenthetical form when a primary reason exists
+  * Used as a standalone capitalised sentence when no primary reason is provided
+* Improved consistency of block-related UI elements by reusing existing checkbox styling system
+* Improved integration of abuse filter awareness into existing moderation workflow without affecting other block logic
+
 ## 1.18.10
 
 ### Added

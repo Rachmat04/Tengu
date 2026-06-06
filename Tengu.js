@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 1.18.10
+ * Version 1.18.11
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -3138,6 +3138,10 @@ $(function () {
         "Hide username from logs",
         false,
       );
+      const { wrap: wrapAbuseFilter, chk: chkAbuseFilter } = makeCheckbox(
+        "See also the abuse filter log for this user",
+        false,
+      );
       wrapHardblock.title = "Apply block to logged-in users from this IP";
       wrapAutoblock.title =
         "Auto-block the IP used by this account for 24 hours";
@@ -3151,6 +3155,7 @@ $(function () {
       checksBlock.appendChild(wrapTalk);
       checksBlock.appendChild(wrapMail);
       checksBlock.appendChild(wrapHidename);
+      checksBlock.appendChild(wrapAbuseFilter);
       bodyBlock.appendChild(checksBlock);
       body.appendChild(secBlock);
 
@@ -3592,8 +3597,24 @@ $(function () {
         function buildBlockReason() {
           const sel = selBlockReason.value;
           const inp = inputBlockReason.value.trim();
-          if (sel && inp) return sel + ": " + inp;
-          return sel || inp;
+          let reason = "";
+
+          if (sel && inp) {
+            reason = sel + ": " + inp;
+          } else {
+            reason = sel || inp;
+          }
+
+          // Append the abuse filter log notice if the tickbox is selected
+          if (chkAbuseFilter.checked) {
+            if (reason) {
+              reason += " (see also the abuse filter log for this user)";
+            } else {
+              reason = "See also the abuse filter log for this user";
+            }
+          }
+
+          return reason;
         }
         function buildPagedelReason() {
           return inputPagedelReason.value.trim() || selPagedelReason.value;
