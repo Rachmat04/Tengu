@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 1.19.0
+ * Version 1.19.1
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -235,7 +235,7 @@ $(function () {
         /* --- Progress log (optimised height) --- */
         .tng-log-box {
             height: 160px; overflow-y: auto; font-family: monospace;
-            font-size: 0.85em; padding: 10px; border: 1px solid #a2a9b1;
+            font-size: 0.9em; padding: 10px; border: 1px solid #a2a9b1;
             border-radius: 4px; background: #f8f9fa; color: #202122;
         }
         .tng-log-err  { color: #b00020; font-weight: bold; }
@@ -1180,9 +1180,11 @@ $(function () {
 
       // Helper function to append log entries.
       // isErr: true = error (red), "warn" = warning (amber), omit/false = success (green).
+      let logCount = 0;
       const addLog = (msg, isErr) => {
         const d = document.createElement("div");
-        d.textContent = msg;
+        logCount++;
+        d.textContent = logCount + ". " + msg;
         if (isErr === "warn") {
           d.className = "tng-log-warn";
         } else if (isErr) {
@@ -3247,7 +3249,7 @@ $(function () {
         false,
       );
       const { wrap: wrapAbuseFilter, chk: chkAbuseFilter } = makeCheckbox(
-        "See also the abuse filter log for this user",
+        'Append "See also the abuse filter log" to the edit summary',
         false,
       );
       wrapHardblock.title = "Apply block to logged-in users from this IP";

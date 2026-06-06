@@ -1,3 +1,21 @@
+## 1.19.1
+
+### Changed
+
+* Updated the Abuse Filter checkbox label from **"See also the abuse filter log for this user"** to **`Append "See also the abuse filter log" to the edit summary`**
+* Increased `.tng-log-box` font size from `0.85em` to `0.9em` for improved readability
+
+### Added
+
+* Added sequential numbering to log entries
+* Added a `logCount` counter to track and prefix log messages
+
+### Improved
+
+* Log output is easier to follow during long-running operations thanks to numbered entries
+* Increased log text size improves readability without altering layout or functionality
+* The Abuse Filter checkbox label now more clearly describes its actual behaviour by explaining that it appends text to the edit summary
+
 ## 1.19.0
 
 ### Changed
