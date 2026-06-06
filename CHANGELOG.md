@@ -1,3 +1,25 @@
+## 1.19.0
+
+### Changed
+
+* Added `unlink` tracking to the operation statistics object
+* Updated the final operation summary to include the number of successful unlink actions
+* Updated page deletion package handling to restore the unlink option from package configuration data
+* Removed the User Mode restriction on `deletedTitles` collection so deleted pages are tracked consistently across modes
+
+### Added
+
+* Added an **"Also unlink backlinks"** checkbox to the Page Deletion section
+* Added `massdelUnlink` to the configuration object
+* Added package support for page deletion unlink preferences via `pagedelete.unlink`
+* Added unlink counts to the end-of-run statistics summary
+
+### Improved
+
+* Page deletion configuration options now support backlink-unlinking preferences alongside talk-page deletion preferences
+* Deletion tracking is now collected consistently regardless of operating mode
+* Final status reporting provides better visibility into deletion-related maintenance actions
+
 ## 1.18.11
 
 ### Changed

@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 1.18.11
+ * Version 1.19.0
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -203,12 +203,12 @@ $(function () {
         .tng-help { font-size: 0.82em; color: #72777d; margin-top: 2px; }
 
         /* --- Mode notice --- */
-.tng-mode-notice {
-    font-size: 0.85em; padding: 7px 11px;
-    border-radius: 4px; border: 1px solid #a8c4e8;
-    background: #dce8f8; color: #1a4a8a;
-    line-height: 1.5;
-}
+        .tng-mode-notice {
+        font-size: 0.85em; padding: 7px 11px;
+        border-radius: 4px; border: 1px solid #a8c4e8;
+        background: #dce8f8; color: #1a4a8a;
+        line-height: 1.5;
+        }
 
         .tng-hidden { display: none !important; }
         .tng-optgroup-label {
@@ -1134,6 +1134,7 @@ $(function () {
         revdel: 0,
         delete: 0,
         protect: 0,
+        unlink: 0,
         error: 0,
       };
       const toolTag = " — ⛩️ [[w:id:Pengguna:Rachmat04/Tengu.js|Tengu]]";
@@ -1733,7 +1734,7 @@ $(function () {
             addLog(`[Delete] Deleted page: ${title}`);
             stats.delete++;
             mainDeleted = true;
-            if (config.mode === "user") deletedTitles.push(title);
+            deletedTitles.push(title);
           } catch (e) {
             addLog(
               `[Delete] Failed to delete ${title}: ${formatApiError(e)}`,
@@ -1816,6 +1817,113 @@ $(function () {
         }
       }
 
+      // Remove wikilinks to deleted pages from articles in the main namespace.
+      // Skips all namespaces other than NS0. Runs for each successfully deleted
+      // page. Each matching article is fetched, its wikilinks replaced with
+      // plain text, and saved with a labelled edit summary.
+      if (config.massdelUnlink && deletedTitles.length > 0) {
+        for (const delTitle of deletedTitles) {
+          if (isAborted) break;
+          addLog(`[Unlink] Searching for links to: ${delTitle}…`);
+
+          // Escape the title for use in a regular expression.
+          // Spaces and underscores are treated as equivalent in wikilinks.
+          const escapedTitle = delTitle
+            .replace(/[.*+?^${}()|[\]\\]/g, "\\$&")
+            .replace(/[ _]/g, "[ _]");
+
+          // Match [[Title]], [[Title|text]], [[Title#section]], [[Title#section|text]].
+          // Capture group 1: display text after | (undefined if absent).
+          // When no display text is present, the replacement is the base page title.
+          const linkRe = new RegExp(
+            "\\[\\[" + escapedTitle + "(?:#[^|\\]]*)?(?:\\|([^\\]]*?))?\\]\\]",
+            "g",
+          );
+
+          let blcontinue;
+          do {
+            if (isAborted) break;
+            try {
+              const blParams = {
+                action: "query",
+                list: "backlinks",
+                bltitle: delTitle,
+                blnamespace: 0, // Main namespace only
+                bllimit: 50,
+              };
+              if (blcontinue) blParams.blcontinue = blcontinue;
+              const blData = await apiGet(blParams);
+              blcontinue = blData.continue && blData.continue.blcontinue;
+              const links = (blData.query && blData.query.backlinks) || [];
+
+              for (const link of links) {
+                if (isAborted) break;
+                const linkTitle = link.title;
+                try {
+                  // Fetch the current wikitext of the linking article.
+                  const revData = await apiGet({
+                    action: "query",
+                    prop: "revisions",
+                    titles: linkTitle,
+                    rvprop: "content",
+                    rvslots: "main",
+                    formatversion: 2,
+                  });
+                  const page =
+                    revData.query &&
+                    revData.query.pages &&
+                    revData.query.pages[0];
+                  if (!page || page.missing) continue;
+                  const slot =
+                    page.revisions &&
+                    page.revisions[0] &&
+                    page.revisions[0].slots &&
+                    page.revisions[0].slots.main;
+                  if (!slot) continue;
+                  const wikitext = slot.content;
+
+                  // Replace each matching wikilink with its display text,
+                  // or with the base page title if no display text is present.
+                  const newWikitext = wikitext.replace(
+                    linkRe,
+                    function (match, displayText) {
+                      return displayText !== undefined ? displayText : delTitle;
+                    },
+                  );
+
+                  if (newWikitext === wikitext) continue; // No matching links found in content
+
+                  await apiPost({
+                    action: "edit",
+                    title: linkTitle,
+                    text: newWikitext,
+                    summary:
+                      "Removing links to deleted page: " + delTitle + toolTag,
+                    bot: true,
+                  });
+                  addLog(
+                    `[Unlink] Removed links to "${delTitle}" in: ${linkTitle}`,
+                  );
+                  stats.unlink++;
+                } catch (e) {
+                  addLog(
+                    `[Unlink] Failed to edit ${linkTitle}: ${formatApiError(e)}`,
+                    true,
+                  );
+                }
+                await new Promise((resolve) => setTimeout(resolve, 100));
+              }
+            } catch (e) {
+              addLog(
+                `[Unlink] Failed to fetch backlinks for "${delTitle}": ${formatApiError(e)}`,
+                true,
+              );
+              break;
+            }
+          } while (blcontinue && !isAborted);
+        }
+      }
+
       // Termination and interface cleanup operations
       btnAbort.style.display = "none";
       const methodTxt =
@@ -1823,7 +1931,7 @@ $(function () {
       const statusPrefix = isAborted
         ? "<b>Status: Aborted!</b><br/>"
         : "<b>Status: Completed!</b><br/>";
-      const finalStatus = `${statusPrefix}Summary: <b>${stats.rollback}</b> ${methodTxt} | <b>${stats.delete}</b> deleted | <b>${stats.protect}</b> protected | <b>${stats.revdel}</b> hidden | <b>${stats.error}</b> errors.`;
+      const finalStatus = `${statusPrefix}Summary: <b>${stats.rollback}</b> ${methodTxt} | <b>${stats.delete}</b> deleted | <b>${stats.unlink}</b> unlinked | <b>${stats.protect}</b> protected | <b>${stats.revdel}</b> hidden | <b>${stats.error}</b> errors.`;
       statusLbl.innerHTML = finalStatus;
 
       if (isAborted) {
@@ -3206,6 +3314,13 @@ $(function () {
       checksPagedel.className = "tng-checks";
       checksPagedel.style.paddingLeft = "0";
       checksPagedel.appendChild(wrapPagedelTalk);
+      const { wrap: wrapPagedelUnlink, chk: chkPagedelUnlink } = makeCheckbox(
+        "Remove links to deleted page (article namespace only)",
+        false,
+      );
+      wrapPagedelUnlink.title =
+        "When ticked, wikilinks pointing to each deleted page are removed from articles in the main namespace. Talk pages, user pages, and other namespaces are not modified.";
+      checksPagedel.appendChild(wrapPagedelUnlink);
       bodyPagedel.appendChild(checksPagedel);
       body.appendChild(secPagedel);
 
@@ -3655,6 +3770,7 @@ $(function () {
           blockHide: chkHidename.checked,
           massdel: chkPagedel.checked,
           massdelTalk: chkPagedelTalk.checked,
+          massdelUnlink: chkPagedelUnlink.checked,
           massdelReason: buildPagedelReason() + suffix,
           protect: chkProtect.checked,
           protectEdit: selProtectEdit.value,
@@ -3979,7 +4095,7 @@ $(function () {
         } else {
           inputPagedelReason.value = pdr;
         }
-        chkPagedelTalk.checked = !!pd.talkdelete;
+        chkPagedelUnlink.checked = !!pd.unlink;
 
         // Apply fallback resets to page protection state variables
         const pt = pkg.pageprotection || {};
