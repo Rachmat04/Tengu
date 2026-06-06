@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 1.18.5
+ * Version 1.18.6
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -15,10 +15,6 @@
 // <nowiki>
 $(function () {
   mw.loader.using(["mediawiki.util", "mediawiki.api"], function () {
-    // Special pages cannot be acted on in any way. Abort entirely — no portlet
-    // link is registered, no CSS is injected, and no features are initialised.
-    if (mw.config.get("wgNamespaceNumber") === -1) return;
-    
     // ============================================================================
     // [Section 00] State
     // Stores runtime configurations and dialogue initialisation flags.
@@ -211,6 +207,22 @@ $(function () {
             padding: 4px 0 2px; pointer-events: none;
         }
 
+        /* --- Section status notes (block, deletion, protection) --- */
+        .tng-status-note {
+            font-size: 0.83em; padding: 5px 9px;
+            border-radius: 4px; border: 1px solid transparent;
+            line-height: 1.45; margin-bottom: 2px;
+        }
+        .tng-status-note-active {
+            background: #fef3cd; color: #6b4c11; border-color: #f5c542;
+        }
+        .tng-status-note-inactive {
+            background: #e8f5e9; color: #1b5e20; border-color: #a5d6a7;
+        }
+        .tng-status-note-loading {
+            background: #f8f9fa; color: #72777d; border-color: #eaecf0; font-style: italic;
+        }
+
         /* --- Progress log (optimised height) --- */
         .tng-log-box {
             height: 160px; overflow-y: auto; font-family: monospace;
@@ -386,6 +398,11 @@ $(function () {
             /* Dark mode for inline field error */
             .tng-input-error { border-color: #ff6b6b !important; box-shadow: 0 0 0 2px rgba(255,107,107,.22) !important; }
             .tng-input-error::placeholder { color: #ff6b6b; }
+
+            /* Dark mode for section status notes */
+            .tng-status-note-active  { background: #3d2b00; color: #ffe082; border-color: #8a6900; }
+            .tng-status-note-inactive { background: #1a3a1f; color: #a5d6a7; border-color: #2e7d32; }
+            .tng-status-note-loading  { background: #2a2a2a; color: #8a8a8a; border-color: #3a3a3a; }
 
             /* Dark mode for user info panel entries */
             .tng-info-entry { background: #252525; border-color: #3a3a3a; }
@@ -2957,6 +2974,12 @@ $(function () {
         enableChk: chkBlock,
       } = makeSection("Block", "🚫", false);
 
+      // Block status note — populated by updateSectionStatus() when the target changes
+      const divBlockStatus = document.createElement("div");
+      divBlockStatus.className = "tng-status-note tng-status-note-loading";
+      divBlockStatus.textContent = "Enter a target to see block status.";
+      bodyBlock.appendChild(divBlockStatus);
+
       const { row: rowBlockDur, field: fieldBlockDur } = makeRow("Expiry");
       const selBlockDur = makeSelect([
         { value: "1 day", label: "1 day" },
@@ -3044,6 +3067,13 @@ $(function () {
         sectionBody: bodyPagedel,
         enableChk: chkPagedel,
       } = makeSection("Page deletion", "🗑️", false);
+
+      // Page deletion status note — populated by updateSectionStatus() when the target changes
+      const divPagedelStatus = document.createElement("div");
+      divPagedelStatus.className = "tng-status-note tng-status-note-loading";
+      divPagedelStatus.textContent = "Enter a target to see deletion history.";
+      bodyPagedel.appendChild(divPagedelStatus);
+
       const { row: rowPagedelReason, field: fieldPagedelReason } =
         makeRow("Reason");
       const selPagedelReason = makeSelect(PAGE_DELETE_REASONS);
@@ -3088,6 +3118,12 @@ $(function () {
         sectionBody: bodyProtect,
         enableChk: chkProtect,
       } = makeSection("Page protection", "🛡️", false);
+
+      // Page protection status note — populated by updateSectionStatus() when the target changes
+      const divProtectStatus = document.createElement("div");
+      divProtectStatus.className = "tng-status-note tng-status-note-loading";
+      divProtectStatus.textContent = "Enter a target to see protection status.";
+      bodyProtect.appendChild(divProtectStatus);
 
       const { row: rowProtectEdit, field: fieldProtectEdit } =
         makeRow("Edit restriction");
@@ -3377,6 +3413,7 @@ $(function () {
         }
 
         updateStartBtn();
+        updateSectionStatus();
       }
 
       // Automatically lock User Mode features if executed in Page Mode
@@ -3872,23 +3909,263 @@ $(function () {
         updateStartBtn();
       }
 
+      // Fetches and renders a brief status note for the block, page deletion,
+      // and page protection sections based on the current target and mode.
+      // Called on target change and when mode is toggled.
+      function updateSectionStatus() {
+        const target = inputTarget.value.trim();
+
+        function fmtStatusDate(ts) {
+          if (!ts) return "unknown";
+          return new Date(ts).toUTCString().replace("GMT", "UTC");
+        }
+
+        function setNote(el, cls, text) {
+          el.className = "tng-status-note tng-status-note-" + cls;
+          el.textContent = text;
+        }
+
+        if (!target) {
+          setNote(
+            divBlockStatus,
+            "loading",
+            "Enter a target to see block status.",
+          );
+          setNote(
+            divPagedelStatus,
+            "loading",
+            "Enter a target to see deletion history.",
+          );
+          setNote(
+            divProtectStatus,
+            "loading",
+            "Enter a target to see protection status.",
+          );
+          return;
+        }
+
+        if (tenguMode === "user") {
+          setNote(divPagedelStatus, "loading", "Not applicable in user mode.");
+          setNote(divProtectStatus, "loading", "Not applicable in user mode.");
+
+          // --- Block status ---
+          setNote(divBlockStatus, "loading", "Loading block status…");
+          (async function () {
+            try {
+              const data = await apiGet({
+                action: "query",
+                list: "users",
+                usprop: "blockinfo",
+                ususers: target,
+              });
+              const user =
+                data.query && data.query.users && data.query.users[0];
+              if (user && user.blockedby) {
+                const expiry =
+                  user.blockexpiry === "infinity"
+                    ? "indefinite"
+                    : fmtStatusDate(user.blockexpiry);
+                setNote(
+                  divBlockStatus,
+                  "active",
+                  "Currently blocked · Blocked by: " +
+                    user.blockedby +
+                    " · Expires: " +
+                    expiry +
+                    " · Reason: " +
+                    (user.blockreason || "(no reason given)"),
+                );
+              } else {
+                // Not currently blocked — check most recent block log entry
+                try {
+                  const logData = await apiGet({
+                    action: "query",
+                    list: "logevents",
+                    letype: "block",
+                    letitle: "User:" + target,
+                    lelimit: 1,
+                    leprop: "user|timestamp|comment",
+                  });
+                  const entries =
+                    (logData.query && logData.query.logevents) || [];
+                  if (entries.length) {
+                    const e = entries[0];
+                    setNote(
+                      divBlockStatus,
+                      "inactive",
+                      "Not currently blocked. Last block action: " +
+                        fmtStatusDate(e.timestamp) +
+                        " by " +
+                        (e.user || "—") +
+                        " · Reason: " +
+                        (e.comment || "(no reason given)"),
+                    );
+                  } else {
+                    setNote(
+                      divBlockStatus,
+                      "inactive",
+                      "Not currently blocked. No block history found.",
+                    );
+                  }
+                } catch (e2) {
+                  setNote(
+                    divBlockStatus,
+                    "inactive",
+                    "Not currently blocked. (Block history unavailable.)",
+                  );
+                }
+              }
+            } catch (e) {
+              setNote(
+                divBlockStatus,
+                "loading",
+                "Could not load block status.",
+              );
+            }
+          })();
+        } else {
+          // Page mode
+          setNote(divBlockStatus, "loading", "Not applicable in page mode.");
+
+          // --- Deletion history ---
+          setNote(divPagedelStatus, "loading", "Loading deletion history…");
+          (async function () {
+            try {
+              const logData = await apiGet({
+                action: "query",
+                list: "logevents",
+                letype: "delete",
+                letitle: target,
+                lelimit: 1,
+                leprop: "user|timestamp|comment",
+              });
+              const entries = (logData.query && logData.query.logevents) || [];
+              if (entries.length) {
+                const e = entries[0];
+                setNote(
+                  divPagedelStatus,
+                  "active",
+                  "Previously deleted. Most recent action: " +
+                    (e.action || "delete") +
+                    " on " +
+                    fmtStatusDate(e.timestamp) +
+                    " by " +
+                    (e.user || "—") +
+                    " · Reason: " +
+                    (e.comment || "(no reason given)"),
+                );
+              } else {
+                setNote(
+                  divPagedelStatus,
+                  "inactive",
+                  "No prior deletion history found.",
+                );
+              }
+            } catch (e) {
+              setNote(
+                divPagedelStatus,
+                "loading",
+                "Could not load deletion history.",
+              );
+            }
+          })();
+
+          // --- Protection status ---
+          setNote(divProtectStatus, "loading", "Loading protection status…");
+          (async function () {
+            try {
+              const data = await apiGet({
+                action: "query",
+                prop: "info",
+                inprop: "protection",
+                titles: target,
+                formatversion: 2,
+              });
+              const pages = data.query && data.query.pages;
+              const page = pages && pages[0];
+              const protection = (page && page.protection) || [];
+              // Entries with level "all" indicate an explicitly unprotected type; exclude them.
+              const active = protection.filter(function (p) {
+                return p.level && p.level !== "all";
+              });
+
+              if (active.length) {
+                const parts = active.map(function (p) {
+                  const expiry =
+                    !p.expiry || p.expiry === "infinity"
+                      ? "indefinite"
+                      : fmtStatusDate(p.expiry);
+                  return p.type + ": " + p.level + " (expires " + expiry + ")";
+                });
+                setNote(
+                  divProtectStatus,
+                  "active",
+                  "Currently protected · " + parts.join(" · "),
+                );
+              } else {
+                // Not currently protected — check most recent protection log entry
+                try {
+                  const logData = await apiGet({
+                    action: "query",
+                    list: "logevents",
+                    letype: "protect",
+                    letitle: target,
+                    lelimit: 1,
+                    leprop: "user|timestamp|comment",
+                  });
+                  const entries =
+                    (logData.query && logData.query.logevents) || [];
+                  if (entries.length) {
+                    const e = entries[0];
+                    setNote(
+                      divProtectStatus,
+                      "inactive",
+                      "Not currently protected. Last protection action: " +
+                        fmtStatusDate(e.timestamp) +
+                        " by " +
+                        (e.user || "—") +
+                        ".",
+                    );
+                  } else {
+                    setNote(
+                      divProtectStatus,
+                      "inactive",
+                      "Not currently protected. No prior protection history found.",
+                    );
+                  }
+                } catch (e2) {
+                  setNote(
+                    divProtectStatus,
+                    "inactive",
+                    "Not currently protected. (Protection history unavailable.)",
+                  );
+                }
+              }
+            } catch (e) {
+              setNote(
+                divProtectStatus,
+                "loading",
+                "Could not load protection status.",
+              );
+            }
+          })();
+        }
+      }
+
       inputTarget.addEventListener("change", function () {
         applyPackage(selPackage.value);
         const targetVal = inputTarget.value.trim();
         const isIP = mw.util.isIPAddress(targetVal);
-
-        // Check if user is a temporary account formatted as '~2026-33436-86'
         const isTempAccount = /^~\d{4}-\d+-\d+$/.test(targetVal);
-
         wrapHardblock.style.display = isIP ? "" : "none";
         wrapAutoblock.style.display = isIP ? "none" : "";
-
-        // If temporary account, set default block expiry duration to 3 months
         if (isTempAccount) {
           selBlockDur.value = "3 months";
           inputBlockDur.classList.add("tng-hidden");
         }
+        updateSectionStatus();
       });
+
       selPackage.addEventListener("change", function () {
         applyPackage(selPackage.value);
       });

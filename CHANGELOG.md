@@ -1,3 +1,25 @@
+## 1.18.6
+
+### Added
+
+* Added `.tng-status-note` styling and corresponding dark-mode variants
+* Added status note placeholders to the:
+  * Block section
+  * Page deletion section
+  * Page protection section
+* Added `updateSectionStatus()` to manage contextual section status messaging
+
+### Fixed
+
+* Removed early-exit guard at the start of the `mw.loader.using` callback to detect Special pages (`wgNamespaceNumber === -1`)
+
+### Improved
+
+* Section status messages now update automatically when the target input changes
+* Section status messages now refresh when mode restrictions are applied or removed
+* Provides clearer feedback about section availability and applicability based on the current target and mode
+* Improves visibility of contextual state without requiring users to inspect disabled controls or tooltips
+
 ## 1.18.5
 
 ### Added
