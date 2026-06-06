@@ -1,3 +1,30 @@
+## 1.18.3
+
+### Changed
+
+* Updated mode-lock handling to track mode-managed locks separately from permission-based locks
+* Updated mode toggle behaviour to populate the target field with the appropriate default value for the selected mode
+
+### Added
+
+* Added `modeLocked` (`Set`) to track sections locked specifically by mode restrictions
+* Added safeguards preventing mode-based locking from modifying sections already locked by user-rights restrictions
+* Added redundant-click guards to the mode toggle buttons
+
+### Fixed
+
+* Fixed interaction conflicts between mode-based locks and rights-based locks
+* Fixed an edge case where rights restrictions could be skipped if the rights promise resolved while a section was temporarily disabled by mode restrictions
+* Fixed restoration of rights-based restrictions when returning from Page Mode after rights data had already been resolved
+* Fixed target field synchronisation when switching between User Mode and Page Mode
+
+### Improved
+
+* User Mode automatically restores the target field to `wgRelevantUserName`
+* Page Mode automatically restores the target field to `wgPageName`
+* Mode switching is more predictable and avoids unnecessary processing when the selected mode is already active
+* Rights-based and mode-based locking mechanisms now operate independently without overriding each other
+
 ## 1.18.2
 
 ### Changed

@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 1.18.2
+ * Version 1.18.3
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -329,6 +329,20 @@ $(function () {
             top: 2px;
         }
 
+        /* --- Mode toggle (User/Page switch, User namespace only) --- */
+        .tng-mode-toggle {
+            display: inline-flex; border: 1px solid #a2a9b1; border-radius: 4px;
+            overflow: hidden; flex-shrink: 0;
+        }
+        .tng-mode-btn {
+            padding: 4px 14px; font-size: 0.88em; font-weight: 600;
+            background: none; border: none; cursor: pointer; color: #54595d;
+            font-family: inherit; transition: background .12s, color .12s;
+            white-space: nowrap;
+        }
+        .tng-mode-btn:hover:not(.tng-mode-btn-active) { background: #f0f2f5; }
+        .tng-mode-btn.tng-mode-btn-active { background: #3366cc; color: #fff; }
+
         /* --- Animations --- */
         @media (prefers-reduced-motion: no-preference) {
             @keyframes tng-fadein  { from { opacity: 0 } to { opacity: 1 } }
@@ -384,6 +398,11 @@ $(function () {
 
             /* Dark mode for section arrow */
             .tng-section-arrow { border-color: #a2a9b1; }
+
+            /* Dark mode for mode toggle */
+            .tng-mode-toggle { border-color: #54595d; }
+            .tng-mode-btn { color: #a2a9b1; }
+            .tng-mode-btn:hover:not(.tng-mode-btn-active) { background: #2a2a35; }
         }
     `;
 
@@ -2438,7 +2457,10 @@ $(function () {
 
       // Determine operating context mode: User Mode or Page Mode
       const isUserMode = !!mw.config.get("wgRelevantUserName");
-      const tenguMode = isUserMode ? "user" : "page";
+      let tenguMode = isUserMode ? "user" : "page";
+      // Set when the rights Promise settles; used by applyModeRestrictions() to
+      // re-apply rights-based locks when switching from page mode back to user mode.
+      let resolvedRights = null;
 
       // Fetch the current user's rights and groups immediately so the result is
       // ready (or very close to ready) by the time the dialogue finishes building.
@@ -2756,6 +2778,36 @@ $(function () {
 
       const topSection = document.createElement("div");
       topSection.style.cssText = "display:flex;flex-direction:column;gap:10px;";
+      // Mode toggle row — shown only when opened in the User namespace.
+      // Lets the user switch to page mode to protect the current user page
+      // specifically, rather than acting on all pages edited by the user.
+      if (isUserMode) {
+        const { row: rowMode, field: fieldMode } = makeRow("Mode");
+        const modeToggle = document.createElement("div");
+        modeToggle.className = "tng-mode-toggle";
+        const btnModeUser = document.createElement("button");
+        btnModeUser.className = "tng-mode-btn tng-mode-btn-active";
+        btnModeUser.textContent = "👤 User mode";
+        const btnModePage = document.createElement("button");
+        btnModePage.className = "tng-mode-btn";
+        btnModePage.textContent = "📄 Page mode";
+        btnModeUser.addEventListener("click", function () {
+          if (tenguMode === "user") return;
+          btnModeUser.classList.add("tng-mode-btn-active");
+          btnModePage.classList.remove("tng-mode-btn-active");
+          applyModeRestrictions(true);
+        });
+        btnModePage.addEventListener("click", function () {
+          if (tenguMode === "page") return;
+          btnModePage.classList.add("tng-mode-btn-active");
+          btnModeUser.classList.remove("tng-mode-btn-active");
+          applyModeRestrictions(false);
+        });
+        modeToggle.appendChild(btnModeUser);
+        modeToggle.appendChild(btnModePage);
+        fieldMode.appendChild(modeToggle);
+        topSection.appendChild(rowMode);
+      }
       const { row: rowTarget, field: fieldTarget } = makeRow(
         isUserMode ? "Target user" : "Target page",
       );
@@ -2779,7 +2831,7 @@ $(function () {
       btnGetInfo.addEventListener("click", function () {
         const target = inputTarget.value.trim();
         if (!target) return;
-        if (isUserMode) {
+        if (tenguMode === "user") {
           getUserInfo(target);
         } else {
           getPageInfo(target);
@@ -3203,6 +3255,125 @@ $(function () {
         hdr.appendChild(lockBadge);
       }
 
+      // Reversible section lock for the mode toggle. Unlike lockSection(), which is
+      // permanent (used for rights), this can be undone when switching back to user mode.
+      // Skips any section already rights-locked (chk.disabled set by lockSection()).
+      const modeLocked = new Set();
+      function applyModeLock(sec, secBody, chk, lock, reason) {
+        if (lock) {
+          if (chk.disabled) return; // already rights-locked; leave it alone
+          modeLocked.add(chk);
+          chk.checked = false;
+          chk.disabled = true;
+          sec.classList.add("tng-disabled");
+          secBody.classList.add("tng-hidden");
+          const arrow = sec.querySelector(".tng-section-arrow");
+          if (arrow) arrow.classList.add("tng-hidden");
+          const hdr = sec.querySelector(".tng-section-header");
+          hdr.title = "Unavailable: " + reason;
+          const badge = document.createElement("span");
+          badge.className = "tng-rights-lock tng-mode-lock-badge";
+          badge.textContent = "🔒";
+          badge.title = "Unavailable: " + reason;
+          hdr.appendChild(badge);
+        } else {
+          if (!modeLocked.has(chk)) return; // not mode-locked; leave it alone
+          modeLocked.delete(chk);
+          chk.disabled = false;
+          sec.classList.toggle("tng-disabled", !chk.checked);
+          const arrow = sec.querySelector(".tng-section-arrow");
+          if (arrow) arrow.classList.remove("tng-hidden");
+          const hdr = sec.querySelector(".tng-section-header");
+          hdr.title = "";
+          const badge = hdr.querySelector(".tng-mode-lock-badge");
+          if (badge) badge.remove();
+          updateStartBtn();
+        }
+      }
+
+      // Updates all mode-sensitive UI when the user switches modes via the toggle.
+      function applyModeRestrictions(isUserModeNow) {
+        tenguMode = isUserModeNow ? "user" : "page";
+
+        // Update target row label, placeholder, and Get info tooltip
+        rowTarget.querySelector(".tng-label").textContent = isUserModeNow
+          ? "Target user"
+          : "Target page";
+        inputTarget.placeholder = isUserModeNow
+          ? "Username or IP (not a range)"
+          : "Page title";
+        btnGetInfo.title = isUserModeNow
+          ? "View access rights, block log, rights changes, and abuse filter log for this user"
+          : "View abuse filter, protection, deletion, and move logs for this page";
+
+        // Pre-fill target with the appropriate default for the selected mode
+        inputTarget.value = isUserModeNow
+          ? mw.config.get("wgRelevantUserName") || ""
+          : mw.config.get("wgPageName").replace(/_/g, " ");
+        clearInputError(inputTarget);
+        btnGetInfo.disabled = !inputTarget.value.trim();
+
+        // Edits and Package rows: only applicable in user mode
+        selEndtime.disabled = !isUserModeNow;
+        inputEndtime.disabled = !isUserModeNow;
+        selPackage.disabled = !isUserModeNow;
+        rowEdits.style.opacity = isUserModeNow ? "" : "0.5";
+        rowEdits.title = isUserModeNow ? "" : "Not applicable in page mode";
+        rowPkg.style.opacity = isUserModeNow ? "" : "0.5";
+        rowPkg.title = isUserModeNow ? "" : "Not applicable in page mode";
+
+        // Lock or unlock user-mode-only sections
+        if (!isUserModeNow) {
+          applyModeLock(
+            secRollback,
+            bodyRollback,
+            chkRollback,
+            true,
+            "Tengu is targeting a page, not a user.",
+          );
+          applyModeLock(
+            secBlock,
+            bodyBlock,
+            chkBlock,
+            true,
+            "Tengu is targeting a page, not a user.",
+          );
+          applyModeLock(
+            secRevdel,
+            bodyRevdel,
+            chkRevdel,
+            true,
+            "Tengu is targeting a page, not a user.",
+          );
+        } else {
+          applyModeLock(secRollback, bodyRollback, chkRollback, false);
+          applyModeLock(secBlock, bodyBlock, chkBlock, false);
+          applyModeLock(secRevdel, bodyRevdel, chkRevdel, false);
+          // Re-apply rights-based locks if the rights Promise already resolved
+          // while mode locks were blocking the lockSection() calls.
+          if (resolvedRights) {
+            if (!resolvedRights.hasBlock) {
+              lockSection(
+                secBlock,
+                bodyBlock,
+                chkBlock,
+                "you do not have the block right on this wiki",
+              );
+            }
+            if (!resolvedRights.hasRevdel) {
+              lockSection(
+                secRevdel,
+                bodyRevdel,
+                chkRevdel,
+                "you do not have the deleterevision right on this wiki",
+              );
+            }
+          }
+        }
+
+        updateStartBtn();
+      }
+
       // Automatically lock User Mode features if executed in Page Mode
       if (!isUserMode) {
         lockSection(
@@ -3259,7 +3430,7 @@ $(function () {
         if (!targetVal) {
           showNotification(
             fieldTarget,
-            isUserMode
+            tenguMode === "user"
               ? "Please enter a target username."
               : "Please enter a target page title.",
           );
@@ -3477,6 +3648,16 @@ $(function () {
           badgeSteward.className =
             "tng-rights-badge tng-rights-" + (isSteward ? "have" : "lack");
           badgeSteward.textContent = (isSteward ? "✔️  " : "❌  ") + "Steward";
+
+          // Store resolved rights so applyModeRestrictions() can re-apply
+          // rights-based locks if they fired while page mode was active.
+          resolvedRights = {
+            hasRollback,
+            hasBlock,
+            hasDelete,
+            hasProtect,
+            hasRevdel,
+          };
 
           if (!hasBlock && isUserMode)
             lockSection(
