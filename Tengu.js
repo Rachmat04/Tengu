@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 1.18.6
+ * Version 1.18.7
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -1779,7 +1779,10 @@ $(function () {
       // Format an ISO timestamp as a human-readable UTC string.
       function fmtTimestamp(ts) {
         if (!ts) return "Unknown";
+        if (ts === "infinity" || ts === "infinite" || ts === "never")
+          return "Indefinite";
         const d = new Date(ts);
+        if (isNaN(d.getTime())) return "Indefinite";
         return d.toUTCString().replace("GMT", "UTC");
       }
 
@@ -2188,7 +2191,10 @@ $(function () {
 
       function fmtTimestamp(ts) {
         if (!ts) return "Unknown";
+        if (ts === "infinity" || ts === "infinite" || ts === "never")
+          return "Indefinite";
         const d = new Date(ts);
+        if (isNaN(d.getTime())) return "Indefinite";
         return d.toUTCString().replace("GMT", "UTC");
       }
 
@@ -3323,7 +3329,13 @@ $(function () {
           chk.disabled = false;
           sec.classList.toggle("tng-disabled", !chk.checked);
           const arrow = sec.querySelector(".tng-section-arrow");
-          if (arrow) arrow.classList.remove("tng-hidden");
+          if (arrow) {
+            arrow.classList.remove("tng-hidden");
+            arrow.classList.toggle(
+              "tng-arrow-up",
+              !secBody.classList.contains("tng-hidden"),
+            );
+          }
           const hdr = sec.querySelector(".tng-section-header");
           hdr.title = "";
           const badge = hdr.querySelector(".tng-mode-lock-badge");
@@ -3917,7 +3929,11 @@ $(function () {
 
         function fmtStatusDate(ts) {
           if (!ts) return "unknown";
-          return new Date(ts).toUTCString().replace("GMT", "UTC");
+          if (ts === "infinity" || ts === "infinite" || ts === "never")
+            return "Indefinite";
+          const d = new Date(ts);
+          if (isNaN(d.getTime())) return "Indefinite";
+          return d.toUTCString().replace("GMT", "UTC");
         }
 
         function setNote(el, cls, text) {

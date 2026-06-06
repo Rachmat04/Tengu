@@ -1,3 +1,19 @@
+## 1.18.7
+
+### Fixed
+
+* Fixed indefinite expiry values displaying as **"Invalid Date"** in status displays and information panels
+* Added internal guards in all date-formatting helpers to handle MediaWiki's indefinite expiry values (`infinity` and `infinite`) before attempting date parsing
+* Added fallback handling for unparseable date values to prevent invalid timestamps from being rendered
+* Fixed section chevrons occasionally displaying an upward-pointing state after a mode lock was removed
+* Fixed arrow-state synchronisation when unlocking sections after switching between Page Mode and User Mode
+
+### Improved
+
+* Date formatting is now resilient regardless of whether expiry values are validated at the call site
+* Chevron direction now consistently reflects the actual expanded or collapsed state of the section body
+* Improved consistency between visual section state and internal mode-lock behaviour
+
 ## 1.18.6
 
 ### Added
