@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 1.18.8
+ * Version 1.18.10
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -1598,6 +1598,8 @@ $(function () {
         await new Promise((resolve) => setTimeout(resolve, 100)); // Throttling window
       }
 
+      const notifyQueue = new Map();
+
       // Execute sequential page protections if enabled
       if (config.protect && pagesToProtect.size > 0) {
         for (const title of pagesToProtect) {
@@ -1655,22 +1657,44 @@ $(function () {
             }
           }
 
-          // Post notification to talk page (separate from protect action above,
-          // so a notification failure does not misreport the protection as having failed)
+          // Queue this page for notification. Dispatched after the protection
+          // loop so pages sharing a talk page receive a single combined notice.
           try {
             const talkTitle = new mw.Title(title)
               .getTalkPage()
               .getPrefixedText();
-            const protectExpiryDisplay =
-              config.protectExpiry === "never"
-                ? "indefinitely"
-                : `for ${config.protectExpiry}`;
-            const protectExpiryText =
-              config.protectExpiry === "never"
-                ? "This protection does not expire automatically and will remain in effect unless modified by an administrator."
-                : "The protection is scheduled to remain in effect until it expires, unless modified by an administrator.";
-            const notice = `== Page protection notice ==\nThe page "${title}" has been protected ${protectExpiryDisplay} due to the following reason: ${config.protectReason}.\n\nDuring the protection period, some or all editing actions may be restricted depending on the level of protection applied. ${protectExpiryText}\n\nThis notification was posted automatically. Please direct any questions or concerns to my user talk page. ~~~~`;
+            if (!notifyQueue.has(talkTitle)) notifyQueue.set(talkTitle, []);
+            notifyQueue.get(talkTitle).push(title);
+          } catch (e) {
+            // Title has no talk page (e.g. it is itself a talk page); skip.
+          }
+          await new Promise((resolve) => setTimeout(resolve, 100));
+        }
+      }
 
+      // Dispatch protection notifications. If two or more protected pages resolve
+      // to the same talk page, a single consolidated notice is posted instead of
+      // one per page, whilst still listing every affected page by name.
+      if (notifyQueue.size > 0) {
+        const protectExpiryDisplay =
+          config.protectExpiry === "never"
+            ? "indefinitely"
+            : `for ${config.protectExpiry}`;
+        const protectExpiryText =
+          config.protectExpiry === "never"
+            ? "This protection does not expire automatically and will remain in effect unless modified by an administrator."
+            : "The protection is scheduled to remain in effect until it expires, unless modified by an administrator.";
+
+        for (const [talkTitle, titles] of notifyQueue) {
+          if (isAborted) break;
+          try {
+            let notice;
+            if (titles.length === 1) {
+              notice = `== Page protection notice ==\nThe page "${titles[0]}" has been protected ${protectExpiryDisplay} due to the following reason: ${config.protectReason}.\n\nDuring the protection period, some or all editing actions may be restricted depending on the level of protection applied. ${protectExpiryText}\n\nThis notification was posted automatically. Please direct any questions or concerns to my user talk page. ~~~~`;
+            } else {
+              const listed = titles.map((t) => `"${t}"`).join(" and ");
+              notice = `== Page protection notice ==\nThe following pages have been protected ${protectExpiryDisplay} due to the following reason: ${config.protectReason}.\n\n${listed}\n\nDuring the protection period, some or all editing actions on these pages may be restricted depending on the level of protection applied. ${protectExpiryText}\n\nThis notification was posted automatically. Please direct any questions or concerns to my user talk page. ~~~~`;
+            }
             await apiPost({
               action: "edit",
               title: talkTitle,
@@ -1682,13 +1706,15 @@ $(function () {
             addLog(`[Notify] Notification posted to: ${talkTitle}`);
           } catch (e) {
             addLog(
-              `[Notify] Failed to post protection notification for ${title}: ${formatApiError(e)}`,
+              `[Notify] Failed to post protection notification to ${talkTitle}: ${formatApiError(e)}`,
               "warn",
             );
           }
           await new Promise((resolve) => setTimeout(resolve, 100));
         }
       }
+
+      const deletedTitles = [];
 
       // Mass-delete pages sequentially
       if (config.massdel) {
@@ -1707,6 +1733,7 @@ $(function () {
             addLog(`[Delete] Deleted page: ${title}`);
             stats.delete++;
             mainDeleted = true;
+            if (config.mode === "user") deletedTitles.push(title);
           } catch (e) {
             addLog(
               `[Delete] Failed to delete ${title}: ${formatApiError(e)}`,
@@ -1753,6 +1780,39 @@ $(function () {
           }
 
           await new Promise((resolve) => setTimeout(resolve, 100)); // Throttling window
+        }
+      }
+
+      // Post deletion notification to the target user's talk page (user mode only).
+      // All deleted pages were created by the same user, so a single notice is
+      // posted regardless of how many pages were deleted.
+      if (
+        config.massdel &&
+        config.mode === "user" &&
+        deletedTitles.length > 0
+      ) {
+        const talkTitle = new mw.Title(targetVal, 3).getPrefixedText();
+        try {
+          let notice;
+          if (deletedTitles.length === 1) {
+            notice = `== Page deletion notice ==\nThe page "${deletedTitles[0]}" you created has been deleted due to the following reason: ${config.massdelReason}.\n\nDeleted pages are no longer publicly accessible. If you believe this deletion was in error, please raise the matter on my user talk page or follow your wiki's undeletion process.\n\nThis notification was posted automatically. Please direct any questions or concerns to my user talk page. ~~~~`;
+          } else {
+            const listed = deletedTitles.map((t) => `* "${t}"`).join("\n");
+            notice = `== Page deletion notice ==\nThe following pages you created have been deleted due to the following reason: ${config.massdelReason}.\n\n${listed}\n\nDeleted pages are no longer publicly accessible. If you believe any of these deletions were in error, please raise the matter on my user talk page or follow your wiki's undeletion process.\n\nThis notification was posted automatically. Please direct any questions or concerns to my user talk page. ~~~~`;
+          }
+          await apiPost({
+            action: "edit",
+            title: talkTitle,
+            appendtext: "\n\n" + notice,
+            summary: "Automated notification: Page deletion notice" + toolTag,
+            bot: true,
+          });
+          addLog(`[Notify] Deletion notification posted to: ${talkTitle}`);
+        } catch (e) {
+          addLog(
+            `[Notify] Failed to post deletion notification to ${talkTitle}: ${formatApiError(e)}`,
+            "warn",
+          );
         }
       }
 

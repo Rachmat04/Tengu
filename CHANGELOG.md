@@ -1,3 +1,46 @@
+## 1.18.10
+
+### Added
+
+* Added `deletedTitles` collection tracking for successfully deleted pages in User Mode
+* Added post-processing deletion notifications for mass-deletion operations in User Mode
+* Added single-page and multi-page deletion notification variants
+* Added automatic notification delivery to `User talk:<targetVal>` after successful mass-deletion operations
+
+### Fixed
+
+* Fixed missing notifications for page deletions performed in User Mode
+
+### Improved
+
+* Users now receive a single consolidated notification covering all successfully deleted pages
+* Notification delivery occurs after deletion processing completes, avoiding fragmented messages
+* Deletion notifications reuse the known target user from the contribution query, eliminating the need for additional creator lookups
+
+## 1.18.9
+
+### Changed
+
+* Refactored protection notifications to separate notification collection from notification dispatch
+
+### Added
+
+* Added `notifyQueue` (`Map`) to collect protection notification targets during processing
+* Added a dedicated notification dispatch phase after the protection loop completes
+* Added support for consolidated protection notifications when multiple protected pages resolve to the same talk page
+* Added single-page and multi-page notification variants for protection notices
+
+### Fixed
+
+* Fixed duplicate protection notifications being posted when both a page and its talk page were protected in the same operation
+* Fixed cases where multiple protected pages could generate multiple notices on a single talk page
+
+### Improved
+
+* Protection notifications are now grouped by destination talk page
+* Affected pages are combined into a single notice when appropriate, reducing notification clutter
+* Notification delivery is now handled independently from protection processing
+
 ## 1.18.8
 
 ### Changed
