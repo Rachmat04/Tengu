@@ -1,3 +1,9 @@
+## 1.19.2
+
+### Changed
+
+* Updated the `mw.util.addPortletLink()` call from positional parameters to the config object syntax.
+
 ## 1.19.1
 
 ### Changed

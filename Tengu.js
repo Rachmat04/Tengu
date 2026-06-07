@@ -4432,7 +4432,7 @@ $(function () {
     // [Section 10] Portlet link
     // Registers the execution menu item anchor inside the site actions portal drop list.
     // ============================================================================
-    $(mw.util.addPortletLink("p-cactions", "#", "⛩️ Tengu", "ca-tengu")).on(
+    $(mw.util.addPortletLink("p-cactions", { href: "#", text: "⛩️ Tengu", id: "ca-tengu" })).on(
       "click",
       function (e) {
         e.preventDefault();
