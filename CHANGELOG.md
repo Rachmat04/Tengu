@@ -1,3 +1,22 @@
+## v1.20.2
+
+### Added
+
+* Added cross-wiki compatibility by using `wgCanonicalSpecialPageName` for context detection instead of localised special page titles
+* Added native support for operation on `Special:Contributions`, allowing the interface to initialise both User mode and Page mode components when launched from contribution pages
+* Added automatic Page mode defaulting on contribution pages to streamline page-based administrative workflows
+
+### Changed
+
+* Audited and updated interface comments and notice properties to use consistent British English spelling
+* Improved mode-switching behaviour by replacing permanent rights-based UI locks with reversible state-based visibility handling
+
+### Fixed
+
+* Fixed a mode-switching issue that could leave User mode functionality unavailable after changing modes
+* Fixed restoration of User mode controls, ensuring block, rollback, and revision deletion actions become fully available again when switching back from Page mode
+* Fixed layout handling on contribution pages to ensure both operational modes can coexist without breaking interface state
+
 ## v1.20.0
 
 ### Added

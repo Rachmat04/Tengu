@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 1.20.0
+ * Version 1.20.2
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -2706,10 +2706,14 @@ $(function () {
       // Determine operating context mode: User mode or page mode
       const isUserMode = !!mw.config.get("wgRelevantUserName");
       const currentNamespace = mw.config.get("wgNamespaceNumber");
-      // Check if page execution is explicitly targeting the user or user talk namespace (NS2/NS3)
-      const isUserNamespace = currentNamespace === 2 || currentNamespace === 3;
+      const isContributionsPage =
+        mw.config.get("wgCanonicalSpecialPageName") === "Contributions";
+      // Check if page execution is explicitly targeting the user/user talk namespace (NS2/NS3) or the contributions page
+      const isUserNamespace =
+        currentNamespace === 2 || currentNamespace === 3 || isContributionsPage;
 
-      let tenguMode = isUserMode ? "user" : "page";
+      // Default cleanly to page mode if on the contributions page or outside a user namespace
+      let tenguMode = isUserMode && !isContributionsPage ? "user" : "page";
       // Set when the rights Promise settles; used by applyModeRestrictions() to
       // re-apply rights-based locks when switching from page mode back to user mode.
       let resolvedRights = null;
@@ -3045,21 +3049,19 @@ $(function () {
       btnModePage.textContent = "📄 Page mode";
 
       // Dynamically map default execution target indicators on activation context
-      if (isUserNamespace && isUserMode) {
+      if (tenguMode === "user") {
         btnModeUser.classList.add("tng-mode-btn-active");
-        tenguMode = "user";
       } else {
         btnModePage.classList.add("tng-mode-btn-active");
-        tenguMode = "page";
       }
 
-      // Restrict user mode selection if current workspace context sits outside NS2 or NS3
+      // Restrict user mode selection if current workspace context sits outside standard user profile areas
       if (!isUserNamespace) {
         btnModeUser.disabled = true;
         btnModeUser.style.opacity = "0.4";
         btnModeUser.style.cursor = "not-allowed";
         btnModeUser.title =
-          "User mode is only available when Tengu is launched from a user namespace page.";
+          "User mode is only available when Tengu is launched from a user profile or contribution space.";
       } else {
         btnModeUser.addEventListener("click", function () {
           if (tenguMode === "user") return;
@@ -3668,11 +3670,12 @@ $(function () {
             "Tengu is targeting a page, not a user.",
           );
         } else {
+          // Remove mode locks first to enable features
           applyModeLock(secRollback, bodyRollback, chkRollback, false);
           applyModeLock(secBlock, bodyBlock, chkBlock, false);
           applyModeLock(secRevdel, bodyRevdel, chkRevdel, false);
-          // Re-apply rights-based locks if the rights Promise already resolved
-          // while mode locks were blocking the lockSection() calls.
+
+          // Re-evaluate and apply strict rights-based permanent locks if permissions are missing
           if (resolvedRights) {
             if (!resolvedRights.hasBlock) {
               lockSection(
@@ -3699,22 +3702,25 @@ $(function () {
 
       // Automatically lock user mode features if executed in page mode due to page namespace context
       if (tenguMode === "page") {
-        lockSection(
+        applyModeLock(
           secRollback,
           bodyRollback,
           chkRollback,
+          true,
           "Tengu is targeting a page, not a user.",
         );
-        lockSection(
+        applyModeLock(
           secBlock,
           bodyBlock,
           chkBlock,
+          true,
           "Tengu is targeting a page, not a user.",
         );
-        lockSection(
+        applyModeLock(
           secRevdel,
           bodyRevdel,
           chkRevdel,
+          true,
           "Tengu is targeting a page, not a user.",
         );
       }
