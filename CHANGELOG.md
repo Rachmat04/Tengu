@@ -1,3 +1,27 @@
+## v2.1.1
+
+### Changed
+
+* Updated contributions page detection so `Special:IPContributions` is treated the same as other contributions pages when determining mode availability
+
+### Fixed
+
+* Fixed an issue where user mode could be unavailable on `Special:IPContributions`
+* Fixed mode toggle behavior by ensuring contributions pages associated with IP addresses are recognized as valid user-context pages
+* Restored correct user mode activation and target pre-fill behavior on `Special:IPContributions`
+
+### Improved
+
+* Improved consistency between `Special:Contributions` and `Special:IPContributions`
+* Improved mode selection logic by correctly deriving `isUserNamespace` from the updated contributions page detection
+* Improved usability by allowing the user mode button to function normally instead of being disabled in IP contributions contexts
+
+### Notes
+
+* This change relies on existing mode-handling logic and does not introduce any new user mode behavior
+* Once `Special:IPContributions` is recognized as a contributions page, `isUserNamespace` is derived automatically and the existing user mode workflow operates as intended
+* `wgRelevantUserName` was already available on `Special:IPContributions`, so no additional target population changes were required
+
 ## v2.1.0
 
 ### Added

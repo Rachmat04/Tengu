@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.1.0
+ * Version 2.1.1
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -2580,7 +2580,8 @@ $(function () {
       const isUserMode = !!mw.config.get("wgRelevantUserName");
       const currentNamespace = mw.config.get("wgNamespaceNumber");
       const isContributionsPage =
-        mw.config.get("wgCanonicalSpecialPageName") === "Contributions";
+        mw.config.get("wgCanonicalSpecialPageName") === "Contributions" ||
+        mw.config.get("wgCanonicalSpecialPageName") === "IPContributions";
       // Check if page execution is explicitly targeting the user/user talk namespace (NS2/NS3) or the contributions page
       const isUserNamespace =
         currentNamespace === 2 || currentNamespace === 3 || isContributionsPage;
