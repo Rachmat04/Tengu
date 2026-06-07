@@ -1,3 +1,20 @@
+## v1.20.0
+
+### Added
+
+* Added namespace detection using `mw.config.get("wgNamespaceNumber")` to determine whether user-mode functionality is available
+* Added handling to automatically fall back to Page mode when the gadget is loaded outside the user and user talk namespaces
+
+### Changed
+
+* Updated the page mode notice text, replacing "entered above" with "entered below"
+* Initialised the User mode and Page mode toggle buttons globally so they remain visible regardless of the namespace where the gadget is loaded
+
+### Fixed
+
+* Disabled the User mode button when the gadget is loaded outside Namespace 2 (User) and Namespace 3 (User talk)
+* Added visual feedback for the disabled User mode button using reduced opacity and a `not-allowed` cursor, preventing unavailable functionality from appearing active
+
 ## 1.19.4
 
 ### Fixed

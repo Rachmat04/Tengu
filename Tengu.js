@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 1.19.3
+ * Version 1.20.0
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -494,10 +494,10 @@ $(function () {
           "keydown",
           function (e) {
             if (e.key === "Escape" || e.keyCode === 27) {
+              e.preventDefault();
+              e.stopPropagation();
               const top = overlayStack[overlayStack.length - 1];
               if (top) {
-                e.preventDefault();
-                e.stopPropagation();
                 top.closeHandler();
               }
             }
@@ -1177,7 +1177,7 @@ $(function () {
       };
       const toolTag = " — ⛩️ [[w:id:Pengguna:Rachmat04/Tengu.js|Tengu]]";
 
-      // Build Progress UI
+      // Build progress UI
       const { overlay, body, footer } = createDialog({
         title: "Processing Tengu tasks",
         icon: "⛩️",
@@ -2703,8 +2703,12 @@ $(function () {
         mw.util.addCSS(TNG_CSS);
       }
 
-      // Determine operating context mode: User Mode or Page Mode
+      // Determine operating context mode: User mode or page mode
       const isUserMode = !!mw.config.get("wgRelevantUserName");
+      const currentNamespace = mw.config.get("wgNamespaceNumber");
+      // Check if page execution is explicitly targeting the user or user talk namespace (NS2/NS3)
+      const isUserNamespace = currentNamespace === 2 || currentNamespace === 3;
+
       let tenguMode = isUserMode ? "user" : "page";
       // Set when the rights Promise settles; used by applyModeRestrictions() to
       // re-apply rights-based locks when switching from page mode back to user mode.
@@ -3026,63 +3030,82 @@ $(function () {
 
       const topSection = document.createElement("div");
       topSection.style.cssText = "display:flex;flex-direction:column;gap:10px;";
-      // Mode toggle row — shown only when opened in the User namespace.
-      // Lets the user switch to page mode to protect the current user page
-      // specifically, rather than acting on all pages edited by the user.
-      if (isUserMode) {
-        const { row: rowMode, field: fieldMode } = makeRow("Mode");
-        const modeToggle = document.createElement("div");
-        modeToggle.className = "tng-mode-toggle";
-        const btnModeUser = document.createElement("button");
-        btnModeUser.className = "tng-mode-btn tng-mode-btn-active";
-        btnModeUser.textContent = "👤 User mode";
-        const btnModePage = document.createElement("button");
-        btnModePage.className = "tng-mode-btn";
-        btnModePage.textContent = "📄 Page mode";
+
+      // Mode toggle row — Rendered globally across all namespace layers
+      const { row: rowMode, field: fieldMode } = makeRow("Mode");
+      const modeToggle = document.createElement("div");
+      modeToggle.className = "tng-mode-toggle";
+
+      const btnModeUser = document.createElement("button");
+      btnModeUser.className = "tng-mode-btn";
+      btnModeUser.textContent = "👤 User mode";
+
+      const btnModePage = document.createElement("button");
+      btnModePage.className = "tng-mode-btn";
+      btnModePage.textContent = "📄 Page mode";
+
+      // Dynamically map default execution target indicators on activation context
+      if (isUserNamespace && isUserMode) {
+        btnModeUser.classList.add("tng-mode-btn-active");
+        tenguMode = "user";
+      } else {
+        btnModePage.classList.add("tng-mode-btn-active");
+        tenguMode = "page";
+      }
+
+      // Restrict user mode selection if current workspace context sits outside NS2 or NS3
+      if (!isUserNamespace) {
+        btnModeUser.disabled = true;
+        btnModeUser.style.opacity = "0.4";
+        btnModeUser.style.cursor = "not-allowed";
+        btnModeUser.title =
+          "User mode is only available when Tengu is launched from a user namespace page.";
+      } else {
         btnModeUser.addEventListener("click", function () {
           if (tenguMode === "user") return;
           btnModeUser.classList.add("tng-mode-btn-active");
           btnModePage.classList.remove("tng-mode-btn-active");
           applyModeRestrictions(true);
         });
-        btnModePage.addEventListener("click", function () {
-          if (tenguMode === "page") return;
-          btnModePage.classList.add("tng-mode-btn-active");
-          btnModeUser.classList.remove("tng-mode-btn-active");
-          applyModeRestrictions(false);
-        });
-        modeToggle.appendChild(btnModeUser);
-        modeToggle.appendChild(btnModePage);
-        fieldMode.appendChild(modeToggle);
-        topSection.appendChild(rowMode);
       }
 
-      // Mode notice — informs users how deletion and protection behave in the
-      // current mode. Shown in both user mode (toggle available) and page mode
-      // (no toggle). Updated by applyModeRestrictions() when the mode changes.
+      btnModePage.addEventListener("click", function () {
+        if (tenguMode === "page") return;
+        btnModePage.classList.add("tng-mode-btn-active");
+        btnModeUser.classList.remove("tng-mode-btn-active");
+        applyModeRestrictions(false);
+      });
+
+      modeToggle.appendChild(btnModeUser);
+      modeToggle.appendChild(btnModePage);
+      fieldMode.appendChild(modeToggle);
+      topSection.appendChild(rowMode);
+
+      // Mode notice — Informs users how deletion and protection behave in the current mode
       const divModeNotice = document.createElement("div");
       divModeNotice.className = "tng-mode-notice";
       function updateModeNotice(isUser) {
         divModeNotice.innerHTML = isUser
           ? "<b>User mode</b> — deletion and protection apply to all pages recently edited by the target user, not a single page. To target one specific page instead, switch to page mode."
-          : "<b>Page mode</b> — deletion and protection apply only to the target page entered above. Rollback, block, and revision deletion are not available in this mode.";
+          : "<b>Page mode</b> — deletion and protection apply only to the target page entered below. Rollback, block, and revision deletion are not available in this mode.";
       }
-      updateModeNotice(isUserMode);
+      updateModeNotice(tenguMode === "user");
       topSection.appendChild(divModeNotice);
 
       const { row: rowTarget, field: fieldTarget } = makeRow(
-        isUserMode ? "Target user" : "Target page",
+        tenguMode === "user" ? "Target user" : "Target page",
       );
       const inputTarget = makeInput(
-        isUserMode ? "Username or IP (not a range)" : "Page title",
+        tenguMode === "user" ? "Username or IP (not a range)" : "Page title",
       );
       fieldTarget.appendChild(inputTarget);
 
       const btnGetInfo = makeBtn("ℹ️ Get info", "quiet");
       btnGetInfo.className += " tng-btn-sm";
-      btnGetInfo.title = isUserMode
-        ? "View access rights, block log, rights changes, and abuse filter log for this user"
-        : "View abuse filter, protection, deletion, and move logs for this page";
+      btnGetInfo.title =
+        tenguMode === "user"
+          ? "View access rights, block log, rights changes, and abuse filter log for this user"
+          : "View abuse filter, protection, deletion, and move logs for this page";
       btnGetInfo.disabled = true;
 
       inputTarget.addEventListener("input", function () {
@@ -3151,8 +3174,9 @@ $(function () {
       );
       fieldSuffix.appendChild(wrapSelect(selSuffix));
       topSection.appendChild(rowSuffix);
-      if (!isUserMode) {
-        // Show Edits and Package rows but disable their controls — not applicable in page mode
+
+      if (tenguMode === "page") {
+        // Show edits and package rows but disable their controls — not applicable in page mode
         selEndtime.disabled = true;
         inputEndtime.disabled = true;
         selPackage.disabled = true;
@@ -3288,9 +3312,10 @@ $(function () {
         'Append "See also the abuse filter log" to the edit summary',
         false,
       );
-      wrapHardblock.title = "Apply block to logged-in users from this IP";
+      wrapHardblock.title =
+        "Apply block to logged-in users from this IP address";
       wrapAutoblock.title =
-        "Auto-block the IP used by this account for 24 hours";
+        "Auto-block the IP address used by this account for 24 hours";
       wrapHidename.title = 'Requires "hideuser" right';
       const checksBlock = document.createElement("div");
       checksBlock.className = "tng-checks";
@@ -3551,7 +3576,7 @@ $(function () {
       const modeLocked = new Set();
       function applyModeLock(sec, secBody, chk, lock, reason) {
         if (lock) {
-          if (chk.disabled) return; // already rights-locked; leave it alone
+          if (chk.disabled) return; // Already rights-locked; leave it alone
           modeLocked.add(chk);
           chk.checked = false;
           chk.disabled = true;
@@ -3567,7 +3592,7 @@ $(function () {
           badge.title = "Unavailable: " + reason;
           hdr.appendChild(badge);
         } else {
-          if (!modeLocked.has(chk)) return; // not mode-locked; leave it alone
+          if (!modeLocked.has(chk)) return; // Not mode-locked; leave it alone
           modeLocked.delete(chk);
           chk.disabled = false;
           sec.classList.toggle("tng-disabled", !chk.checked);
@@ -3592,7 +3617,7 @@ $(function () {
         tenguMode = isUserModeNow ? "user" : "page";
         updateModeNotice(isUserModeNow);
 
-        // Update target row label, placeholder, and Get info tooltip
+        // Update target row label, placeholder, and get info tooltip
         rowTarget.querySelector(".tng-label").textContent = isUserModeNow
           ? "Target user"
           : "Target page";
@@ -3610,7 +3635,7 @@ $(function () {
         clearInputError(inputTarget);
         btnGetInfo.disabled = !inputTarget.value.trim();
 
-        // Edits and Package rows: only applicable in user mode
+        // Edits and package rows: only applicable in user mode
         selEndtime.disabled = !isUserModeNow;
         inputEndtime.disabled = !isUserModeNow;
         selPackage.disabled = !isUserModeNow;
@@ -3672,8 +3697,8 @@ $(function () {
         updateSectionStatus();
       }
 
-      // Automatically lock User Mode features if executed in Page Mode
-      if (!isUserMode) {
+      // Automatically lock user mode features if executed in page mode due to page namespace context
+      if (tenguMode === "page") {
         lockSection(
           secRollback,
           bodyRollback,
@@ -3719,7 +3744,6 @@ $(function () {
       chkProtect.addEventListener("change", updateStartBtn);
       chkRevdel.addEventListener("change", updateStartBtn);
 
-      // Inside the btnStart event listener
       btnStart.addEventListener("click", function () {
         const targetVal = inputTarget.value.trim();
 
@@ -3974,7 +3998,7 @@ $(function () {
             hasRevdel,
           };
 
-          if (!hasBlock && isUserMode)
+          if (!hasBlock && tenguMode === "user")
             lockSection(
               secBlock,
               bodyBlock,
@@ -3995,7 +4019,7 @@ $(function () {
               chkProtect,
               "you do not have the protect right on this wiki",
             );
-          if (!hasRevdel && isUserMode)
+          if (!hasRevdel && tenguMode === "user")
             lockSection(
               secRevdel,
               bodyRevdel,
@@ -4003,7 +4027,7 @@ $(function () {
               "you do not have the deleterevision right on this wiki",
             );
 
-          // Re-evaluate the Start button in case locks changed the checked state
+          // Re-evaluate the start button in case locks changed the checked state
           updateStartBtn();
         },
       );
@@ -4453,8 +4477,9 @@ $(function () {
       selPackage.value = defaultPkgName;
       applyPackage(defaultPkgName);
       inputTarget.value =
-        mw.config.get("wgRelevantUserName") ||
-        mw.config.get("wgPageName").replace(/_/g, " ");
+        tenguMode === "user"
+          ? mw.config.get("wgRelevantUserName") || ""
+          : mw.config.get("wgPageName").replace(/_/g, " ");
       btnGetInfo.disabled = !inputTarget.value.trim();
       inputTarget.dispatchEvent(new Event("change"));
 
