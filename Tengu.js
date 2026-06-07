@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 1.21.0
+ * Version 1.22.0
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -2317,6 +2317,28 @@ $(function () {
       globalRow.appendChild(globalRightsListEl);
       rightsCardBody.appendChild(globalRow);
 
+      // Divider and global lock / block status row
+      const globalLockHr = document.createElement("hr");
+      globalLockHr.className = "tng-user-rights-divider";
+      rightsCardBody.appendChild(globalLockHr);
+
+      const globalLockRow = document.createElement("div");
+      globalLockRow.className = "tng-user-rights-row";
+      const globalLockScope = document.createElement("div");
+      globalLockScope.className = "tng-user-rights-scope";
+      globalLockScope.textContent = isTargetIP ? "Global block" : "Global lock";
+      globalLockRow.appendChild(globalLockScope);
+      const globalLockBadgesEl = document.createElement("div");
+      globalLockBadgesEl.className = "tng-user-rights-badges";
+      const globalLockLoadingEl = document.createElement("span");
+      globalLockLoadingEl.className = isTargetIP
+        ? "tng-info-loading"
+        : "tng-info-loading";
+      globalLockLoadingEl.textContent = "Loading…";
+      globalLockBadgesEl.appendChild(globalLockLoadingEl);
+      globalLockRow.appendChild(globalLockBadgesEl);
+      rightsCardBody.appendChild(globalLockRow);
+
       body.appendChild(rightsCard);
 
       // Helper: populates a badges container and a rights text block.
@@ -2425,6 +2447,83 @@ $(function () {
           }
         })();
       }
+
+      // --- Global lock / block status ---
+      (async function () {
+        try {
+          if (isTargetIP) {
+            // Check global block for IP addresses
+            const data = await apiGet({
+              action: "query",
+              list: "globalblocks",
+              bgip: username,
+              bglimit: 1,
+              bgprop: "address|expiry|reason|by",
+            });
+            const blocks = (data.query && data.query.globalblocks) || [];
+            globalLockBadgesEl.innerHTML = "";
+            if (blocks.length) {
+              const b = blocks[0];
+              const fmtExpiry = function (ts) {
+                if (!ts || ts === "infinity") return "indefinite";
+                const d = new Date(ts);
+                return isNaN(d.getTime())
+                  ? "indefinite"
+                  : d.toUTCString().replace("GMT", "UTC");
+              };
+              const badge = document.createElement("span");
+              badge.className = "tng-rights-badge tng-rights-lack";
+              badge.textContent = "Globally blocked";
+              badge.title =
+                "Blocked by: " +
+                (b.by || "—") +
+                " · Expires: " +
+                fmtExpiry(b.expiry) +
+                " · Reason: " +
+                (b.reason || "(no reason given)");
+              globalLockBadgesEl.appendChild(badge);
+            } else {
+              const badge = document.createElement("span");
+              badge.className = "tng-rights-badge tng-rights-have";
+              badge.textContent = "Not globally blocked";
+              globalLockBadgesEl.appendChild(badge);
+            }
+          } else {
+            // Check global lock for registered accounts
+            const data = await apiGet({
+              action: "query",
+              meta: "globaluserinfo",
+              guiuser: username,
+            });
+            const gui = data.query && data.query.globaluserinfo;
+            globalLockBadgesEl.innerHTML = "";
+            if (!gui || gui.missing !== undefined) {
+              const msg = document.createElement("span");
+              msg.className = "tng-info-empty";
+              msg.textContent = "No global account found.";
+              globalLockBadgesEl.appendChild(msg);
+            } else if (Object.prototype.hasOwnProperty.call(gui, "locked")) {
+              const badge = document.createElement("span");
+              badge.className = "tng-rights-badge tng-rights-lack";
+              badge.textContent = "Globally locked";
+              globalLockBadgesEl.appendChild(badge);
+            } else {
+              const badge = document.createElement("span");
+              badge.className = "tng-rights-badge tng-rights-have";
+              badge.textContent = "Not globally locked";
+              globalLockBadgesEl.appendChild(badge);
+            }
+          }
+        } catch (err) {
+          globalLockBadgesEl.innerHTML = "";
+          const msg = document.createElement("span");
+          msg.className = "tng-info-empty";
+          msg.textContent = isTargetIP
+            ? "Could not load global block status."
+            : "Could not load global lock status.";
+          globalLockBadgesEl.appendChild(msg);
+        }
+      })();
 
       body.appendChild(secBlockLog);
       body.appendChild(secRights);
@@ -3417,6 +3516,12 @@ $(function () {
       divBlockStatus.className = "tng-status-note tng-status-note-loading";
       divBlockStatus.textContent = "Enter a target to see block status.";
       bodyBlock.appendChild(divBlockStatus);
+
+      // Global lock / block status note — populated by updateSectionStatus() when the target changes
+      const divGlobalStatus = document.createElement("div");
+      divGlobalStatus.className = "tng-status-note tng-status-note-loading";
+      divGlobalStatus.textContent = "Enter a target to see global status.";
+      bodyBlock.appendChild(divGlobalStatus);
 
       const { row: rowBlockDur, field: fieldBlockDur } = makeRow("Expiry");
       const selBlockDur = makeSelect([
@@ -4412,6 +4517,11 @@ $(function () {
             "Enter a target to see block status.",
           );
           setNote(
+            divGlobalStatus,
+            "loading",
+            "Enter a target to see global status.",
+          );
+          setNote(
             divPagedelStatus,
             "loading",
             "Enter a target to see deletion history.",
@@ -4425,6 +4535,7 @@ $(function () {
         }
 
         if (tenguMode === "user") {
+          const isTargetIP = mw.util.isIPAddress(target);
           setNote(divPagedelStatus, "loading", "Not applicable in user mode.");
           setNote(divProtectStatus, "loading", "Not applicable in user mode.");
 
@@ -4503,9 +4614,94 @@ $(function () {
               );
             }
           })();
+
+          // --- Global lock / block status ---
+          setNote(
+            divGlobalStatus,
+            "loading",
+            isTargetIP
+              ? "Loading global block status…"
+              : "Loading global lock status…",
+          );
+          (async function () {
+            try {
+              if (isTargetIP) {
+                // Check global block for IP addresses
+                const data = await apiGet({
+                  action: "query",
+                  list: "globalblocks",
+                  bgip: target,
+                  bglimit: 1,
+                  bgprop: "address|expiry|reason|by",
+                });
+                const blocks = (data.query && data.query.globalblocks) || [];
+                if (blocks.length) {
+                  const b = blocks[0];
+                  const expiry =
+                    !b.expiry || b.expiry === "infinity"
+                      ? "indefinite"
+                      : fmtStatusDate(b.expiry);
+                  setNote(
+                    divGlobalStatus,
+                    "active",
+                    "Globally blocked · Blocked by: " +
+                      (b.by || "—") +
+                      " · Expires: " +
+                      expiry +
+                      " · Reason: " +
+                      (b.reason || "(no reason given)"),
+                  );
+                } else {
+                  setNote(
+                    divGlobalStatus,
+                    "inactive",
+                    "No active global block.",
+                  );
+                }
+              } else {
+                // Check global lock for registered accounts
+                const data = await apiGet({
+                  action: "query",
+                  meta: "globaluserinfo",
+                  guiuser: target,
+                });
+                const gui = data.query && data.query.globaluserinfo;
+                if (!gui || gui.missing !== undefined) {
+                  setNote(
+                    divGlobalStatus,
+                    "loading",
+                    "No global account found.",
+                  );
+                } else if (
+                  Object.prototype.hasOwnProperty.call(gui, "locked")
+                ) {
+                  setNote(
+                    divGlobalStatus,
+                    "active",
+                    "Account is globally locked.",
+                  );
+                } else {
+                  setNote(
+                    divGlobalStatus,
+                    "inactive",
+                    "Account is not globally locked.",
+                  );
+                }
+              }
+            } catch (e) {
+              setNote(
+                divGlobalStatus,
+                "loading",
+                isTargetIP
+                  ? "Could not load global block status."
+                  : "Could not load global lock status.",
+              );
+            }
+          })();
         } else {
           // Page mode
           setNote(divBlockStatus, "loading", "Not applicable in page mode.");
+          setNote(divGlobalStatus, "loading", "Not applicable in page mode.");
 
           // --- Deletion history ---
           setNote(divPagedelStatus, "loading", "Loading deletion history…");
@@ -4671,14 +4867,19 @@ $(function () {
     // [Section 10] Portlet link
     // Registers the execution menu item anchor inside the site actions portal drop list.
     // ============================================================================
-    $(mw.util.addPortletLink("p-cactions", "#", "⛩️ Tengu", "ca-tengu", "Open Tengu, all-in-one moderation tool")).on(
-      "click",
-      function (e) {
-        e.preventDefault();
-        inited = false;
-        init();
-      },
-    );
+    $(
+      mw.util.addPortletLink(
+        "p-cactions",
+        "#",
+        "⛩️ Tengu",
+        "ca-tengu",
+        "Open Tengu, all-in-one moderation tool",
+      ),
+    ).on("click", function (e) {
+      e.preventDefault();
+      inited = false;
+      init();
+    });
   });
 });
 // </nowiki>

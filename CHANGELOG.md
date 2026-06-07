@@ -1,3 +1,30 @@
+## v1.22.0
+
+### Added
+
+* Added a new global status notice (`divGlobalStatus`) below the existing local block status notice in the main dialog
+* Added global lock status detection for registered accounts
+* Added global block status detection for IP addresses, including blocker, expiry, and reason details
+* Added global lock/block indicators to the **Access rights** section of the **Get info** dialog in user mode
+* Added tooltips for globally blocked IPs to display block details
+
+### Changed
+
+* Global status information is now refreshed automatically whenever the target changes
+* The **Access rights** card now displays global account status information beneath the CentralAuth global rights row, separated by a divider
+
+### Improved
+
+* Improved visibility of cross-wiki enforcement actions by exposing global lock and global block status directly within Tengu
+* Improved user information reporting by consolidating CentralAuth rights and global account status in the same section
+* Improved page mode feedback by displaying **"Not applicable in page mode."** when global account checks cannot be performed
+
+### Notes
+
+* Registered account status is retrieved using the `meta=globaluserinfo` API, where the `locked` property indicates whether the account is globally locked
+* IP global block information is retrieved using the `list=globalblocks` API, which returns active global blocks affecting the target IP address
+* If no CentralAuth account exists for a registered username, the **Get info** dialog displays **"No global account found"**
+
 ## v1.21.0
 
 ### Added
