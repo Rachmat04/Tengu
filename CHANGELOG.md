@@ -1,20 +1,3 @@
-## v2.1.1
-
-### Changed
-
-* Updated target field pre-fill logic to exclude CIDR ranges when determining whether to auto-populate the **Target user** field
-
-### Fixed
-
-* Fixed an issue in `applyModeRestrictions()` where switching back to user mode could automatically populate the **Target user** field with `wgRelevantUserName` when the value was a CIDR range
-* Fixed an issue during initial dialog opening where the **Target user** field could be pre-filled with a CIDR range
-* The field is now left blank in both cases when `wgRelevantUserName` contains a CIDR range
-
-### Improved
-
-* Improved consistency between initial dialog loading and mode-switch behavior by applying the same CIDR validation guard in both code paths
-* Improved target selection behavior by preventing invalid automatic user-field population
-
 ## v2.1.0
 
 ### Added

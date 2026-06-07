@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.1.1
+ * Version 2.1.0
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -3509,19 +3509,9 @@ $(function () {
           ? "View access rights, block log, rights changes, and abuse filter log for this user"
           : "View abuse filter, protection, deletion, and move logs for this page";
 
-        // Pre-fill target with the appropriate default for the selected mode.
-        // Do not populate with an IP range (CIDR notation); ranges are not valid
-        // single-target block subjects and the field placeholder explicitly
-        // says "not a range".
-        const relevantUser = mw.config.get("wgRelevantUserName") || "";
-        const relevantUserIsRange =
-          !!relevantUser &&
-          mw.util.isIPAddress(relevantUser, true) &&
-          !mw.util.isIPAddress(relevantUser);
+        // Pre-fill target with the appropriate default for the selected mode
         inputTarget.value = isUserModeNow
-          ? relevantUserIsRange
-            ? ""
-            : relevantUser
+          ? mw.config.get("wgRelevantUserName") || ""
           : mw.config.get("wgPageName").replace(/_/g, " ");
         clearInputError(inputTarget);
         btnGetInfo.disabled = !inputTarget.value.trim();
@@ -4508,16 +4498,9 @@ $(function () {
           : "Default";
       selPackage.value = defaultPkgName;
       applyPackage(defaultPkgName);
-      const initialRelevantUser = mw.config.get("wgRelevantUserName") || "";
-      const initialUserIsRange =
-        !!initialRelevantUser &&
-        mw.util.isIPAddress(initialRelevantUser, true) &&
-        !mw.util.isIPAddress(initialRelevantUser);
       inputTarget.value =
         tenguMode === "user"
-          ? initialUserIsRange
-            ? ""
-            : initialRelevantUser
+          ? mw.config.get("wgRelevantUserName") || ""
           : mw.config.get("wgPageName").replace(/_/g, " ");
       btnGetInfo.disabled = !inputTarget.value.trim();
       inputTarget.dispatchEvent(new Event("change"));
