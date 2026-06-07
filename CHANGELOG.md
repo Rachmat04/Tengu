@@ -1,3 +1,57 @@
+## v2.1.1
+
+### Changed
+
+* Updated target field pre-fill logic to exclude CIDR ranges when determining whether to auto-populate the **Target user** field
+
+### Fixed
+
+* Fixed an issue in `applyModeRestrictions()` where switching back to user mode could automatically populate the **Target user** field with `wgRelevantUserName` when the value was a CIDR range
+* Fixed an issue during initial dialog opening where the **Target user** field could be pre-filled with a CIDR range
+* The field is now left blank in both cases when `wgRelevantUserName` contains a CIDR range
+
+### Improved
+
+* Improved consistency between initial dialog loading and mode-switch behavior by applying the same CIDR validation guard in both code paths
+* Improved target selection behavior by preventing invalid automatic user-field population
+
+## v2.1.0
+
+### Added
+
+* Added global block checks for registered accounts alongside existing global lock checks
+* Added support for displaying separate global lock and global block badges in the **Access rights** card when both states are present
+* Added expanded status reporting in the block section to distinguish between:
+  * Globally locked and blocked
+  * Globally locked only
+  * Globally blocked only
+  * Neither locked nor blocked
+
+### Changed
+
+* Renamed the **Access rights** row label from **"Global lock"** to **"Global lock / block"**
+* Updated registered account status checks to query both `meta=globaluserinfo` and `list=globalblocks` (`bgtargets`) in parallel using `Promise.all`
+* Updated loading messages to refer to both global locks and global blocks
+* Updated fallback error messages to refer to both global locks and global blocks
+* Hoisted `fmtExpiry` so it can be shared by both registered account and IP status handlers
+
+### Fixed
+
+* Fixed registered account status reporting to detect global blocks in addition to global locks
+* Removed a redundant no-op ternary expression associated with the loading element class
+
+### Improved
+
+* Improved accuracy of global account status reporting by covering both lock and block mechanisms
+* Improved performance by executing global lock and global block API requests concurrently
+* Improved consistency between the **Access rights** card and the block section status note by using the same lock/block evaluation logic
+* Improved status visibility by rendering separate badges for each applicable enforcement state
+
+### Notes
+
+* Registered account status checks now combine results from `meta=globaluserinfo` and `list=globalblocks`
+* When neither a global lock nor a global block exists, Tengu displays a single **"Not globally locked or blocked"** indicator
+
 ## v2.0.0
 
 ### Added

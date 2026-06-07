@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.0.0
+ * Version 2.1.1
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -1894,14 +1894,14 @@ $(function () {
       globalLockRow.className = "tng-user-rights-row";
       const globalLockScope = document.createElement("div");
       globalLockScope.className = "tng-user-rights-scope";
-      globalLockScope.textContent = isTargetIP ? "Global block" : "Global lock";
+      globalLockScope.textContent = isTargetIP
+        ? "Global block"
+        : "Global lock / block";
       globalLockRow.appendChild(globalLockScope);
       const globalLockBadgesEl = document.createElement("div");
       globalLockBadgesEl.className = "tng-user-rights-badges";
       const globalLockLoadingEl = document.createElement("span");
-      globalLockLoadingEl.className = isTargetIP
-        ? "tng-info-loading"
-        : "tng-info-loading";
+      globalLockLoadingEl.className = "tng-info-loading";
       globalLockLoadingEl.textContent = "Loading…";
       globalLockBadgesEl.appendChild(globalLockLoadingEl);
       globalLockRow.appendChild(globalLockBadgesEl);
@@ -2018,27 +2018,28 @@ $(function () {
 
       // --- Global lock / block status ---
       (async function () {
+        // Shared expiry formatter for both IP and registered account paths
+        const fmtExpiry = function (ts) {
+          if (!ts || ts === "infinity") return "indefinite";
+          const d = new Date(ts);
+          return isNaN(d.getTime())
+            ? "indefinite"
+            : d.toUTCString().replace("GMT", "UTC");
+        };
         try {
           if (isTargetIP) {
-            // Check global block for IP addresses
+            // IP addresses — global block check only (bgip also catches active range blocks)
             const data = await apiGet({
               action: "query",
               list: "globalblocks",
               bgip: username,
               bglimit: 1,
-              bgprop: "address|expiry|reason|by",
+              bgprop: "address|by|expiry|reason",
             });
             const blocks = (data.query && data.query.globalblocks) || [];
             globalLockBadgesEl.innerHTML = "";
             if (blocks.length) {
               const b = blocks[0];
-              const fmtExpiry = function (ts) {
-                if (!ts || ts === "infinity") return "indefinite";
-                const d = new Date(ts);
-                return isNaN(d.getTime())
-                  ? "indefinite"
-                  : d.toUTCString().replace("GMT", "UTC");
-              };
               const badge = document.createElement("span");
               badge.className = "tng-rights-badge tng-rights-lack";
               badge.textContent = "Globally blocked";
@@ -2057,29 +2058,62 @@ $(function () {
               globalLockBadgesEl.appendChild(badge);
             }
           } else {
-            // Check global lock for registered accounts
-            const data = await apiGet({
-              action: "query",
-              meta: "globaluserinfo",
-              guiuser: username,
-            });
-            const gui = data.query && data.query.globaluserinfo;
+            // Registered accounts — check global lock and global block in parallel
+            const [lockData, blockData] = await Promise.all([
+              apiGet({
+                action: "query",
+                meta: "globaluserinfo",
+                guiuser: username,
+              }),
+              apiGet({
+                action: "query",
+                list: "globalblocks",
+                bgtargets: username,
+                bglimit: 1,
+                bgprop: "address|by|expiry|reason",
+              }),
+            ]);
+            const gui = lockData.query && lockData.query.globaluserinfo;
+            const blocks =
+              (blockData.query && blockData.query.globalblocks) || [];
+            const isLocked =
+              gui &&
+              gui.missing === undefined &&
+              Object.prototype.hasOwnProperty.call(gui, "locked");
+            const isGlobalBlocked = blocks.length > 0;
             globalLockBadgesEl.innerHTML = "";
             if (!gui || gui.missing !== undefined) {
               const msg = document.createElement("span");
               msg.className = "tng-info-empty";
               msg.textContent = "No global account found.";
               globalLockBadgesEl.appendChild(msg);
-            } else if (Object.prototype.hasOwnProperty.call(gui, "locked")) {
-              const badge = document.createElement("span");
-              badge.className = "tng-rights-badge tng-rights-lack";
-              badge.textContent = "Globally locked";
-              globalLockBadgesEl.appendChild(badge);
             } else {
-              const badge = document.createElement("span");
-              badge.className = "tng-rights-badge tng-rights-have";
-              badge.textContent = "Not globally locked";
-              globalLockBadgesEl.appendChild(badge);
+              if (isLocked) {
+                const badge = document.createElement("span");
+                badge.className = "tng-rights-badge tng-rights-lack";
+                badge.textContent = "Globally locked";
+                globalLockBadgesEl.appendChild(badge);
+              }
+              if (isGlobalBlocked) {
+                const b = blocks[0];
+                const badge = document.createElement("span");
+                badge.className = "tng-rights-badge tng-rights-lack";
+                badge.textContent = "Globally blocked";
+                badge.title =
+                  "Blocked by: " +
+                  (b.by || "—") +
+                  " · Expires: " +
+                  fmtExpiry(b.expiry) +
+                  " · Reason: " +
+                  (b.reason || "(no reason given)");
+                globalLockBadgesEl.appendChild(badge);
+              }
+              if (!isLocked && !isGlobalBlocked) {
+                const badge = document.createElement("span");
+                badge.className = "tng-rights-badge tng-rights-have";
+                badge.textContent = "Not globally locked or blocked";
+                globalLockBadgesEl.appendChild(badge);
+              }
             }
           }
         } catch (err) {
@@ -2088,7 +2122,7 @@ $(function () {
           msg.className = "tng-info-empty";
           msg.textContent = isTargetIP
             ? "Could not load global block status."
-            : "Could not load global lock status.";
+            : "Could not load global lock / block status.";
           globalLockBadgesEl.appendChild(msg);
         }
       })();
@@ -3475,9 +3509,19 @@ $(function () {
           ? "View access rights, block log, rights changes, and abuse filter log for this user"
           : "View abuse filter, protection, deletion, and move logs for this page";
 
-        // Pre-fill target with the appropriate default for the selected mode
+        // Pre-fill target with the appropriate default for the selected mode.
+        // Do not populate with an IP range (CIDR notation); ranges are not valid
+        // single-target block subjects and the field placeholder explicitly
+        // says "not a range".
+        const relevantUser = mw.config.get("wgRelevantUserName") || "";
+        const relevantUserIsRange =
+          !!relevantUser &&
+          mw.util.isIPAddress(relevantUser, true) &&
+          !mw.util.isIPAddress(relevantUser);
         inputTarget.value = isUserModeNow
-          ? mw.config.get("wgRelevantUserName") || ""
+          ? relevantUserIsRange
+            ? ""
+            : relevantUser
           : mw.config.get("wgPageName").replace(/_/g, " ");
         clearInputError(inputTarget);
         btnGetInfo.disabled = !inputTarget.value.trim();
@@ -4188,18 +4232,18 @@ $(function () {
             "loading",
             isTargetIP
               ? "Loading global block status…"
-              : "Loading global lock status…",
+              : "Loading global lock / block status…",
           );
           (async function () {
             try {
               if (isTargetIP) {
-                // Check global block for IP addresses
+                // IP addresses — global block check only (bgip also catches active range blocks)
                 const data = await apiGet({
                   action: "query",
                   list: "globalblocks",
                   bgip: target,
                   bglimit: 1,
-                  bgprop: "address|expiry|reason|by",
+                  bgprop: "address|by|expiry|reason",
                 });
                 const blocks = (data.query && data.query.globalblocks) || [];
                 if (blocks.length) {
@@ -4226,32 +4270,78 @@ $(function () {
                   );
                 }
               } else {
-                // Check global lock for registered accounts
-                const data = await apiGet({
-                  action: "query",
-                  meta: "globaluserinfo",
-                  guiuser: target,
-                });
-                const gui = data.query && data.query.globaluserinfo;
+                // Registered accounts — check global lock and global block in parallel
+                const [lockData, blockData] = await Promise.all([
+                  apiGet({
+                    action: "query",
+                    meta: "globaluserinfo",
+                    guiuser: target,
+                  }),
+                  apiGet({
+                    action: "query",
+                    list: "globalblocks",
+                    bgtargets: target,
+                    bglimit: 1,
+                    bgprop: "address|by|expiry|reason",
+                  }),
+                ]);
+                const gui = lockData.query && lockData.query.globaluserinfo;
+                const blocks =
+                  (blockData.query && blockData.query.globalblocks) || [];
+                const isLocked =
+                  gui &&
+                  gui.missing === undefined &&
+                  Object.prototype.hasOwnProperty.call(gui, "locked");
+                const isGlobalBlocked = blocks.length > 0;
                 if (!gui || gui.missing !== undefined) {
                   setNote(
                     divGlobalStatus,
                     "loading",
                     "No global account found.",
                   );
-                } else if (
-                  Object.prototype.hasOwnProperty.call(gui, "locked")
-                ) {
+                } else if (isLocked && isGlobalBlocked) {
+                  const b = blocks[0];
+                  const expiry =
+                    !b.expiry || b.expiry === "infinity"
+                      ? "indefinite"
+                      : fmtStatusDate(b.expiry);
+                  setNote(
+                    divGlobalStatus,
+                    "active",
+                    "Globally locked and globally blocked · Blocked by: " +
+                      (b.by || "—") +
+                      " · Expires: " +
+                      expiry +
+                      " · Reason: " +
+                      (b.reason || "(no reason given)"),
+                  );
+                } else if (isLocked) {
                   setNote(
                     divGlobalStatus,
                     "active",
                     "Account is globally locked.",
                   );
+                } else if (isGlobalBlocked) {
+                  const b = blocks[0];
+                  const expiry =
+                    !b.expiry || b.expiry === "infinity"
+                      ? "indefinite"
+                      : fmtStatusDate(b.expiry);
+                  setNote(
+                    divGlobalStatus,
+                    "active",
+                    "Globally blocked · Blocked by: " +
+                      (b.by || "—") +
+                      " · Expires: " +
+                      expiry +
+                      " · Reason: " +
+                      (b.reason || "(no reason given)"),
+                  );
                 } else {
                   setNote(
                     divGlobalStatus,
                     "inactive",
-                    "Account is not globally locked.",
+                    "No global lock or global block.",
                   );
                 }
               }
@@ -4261,7 +4351,7 @@ $(function () {
                 "loading",
                 isTargetIP
                   ? "Could not load global block status."
-                  : "Could not load global lock status.",
+                  : "Could not load global lock / block status.",
               );
             }
           })();
@@ -4418,9 +4508,16 @@ $(function () {
           : "Default";
       selPackage.value = defaultPkgName;
       applyPackage(defaultPkgName);
+      const initialRelevantUser = mw.config.get("wgRelevantUserName") || "";
+      const initialUserIsRange =
+        !!initialRelevantUser &&
+        mw.util.isIPAddress(initialRelevantUser, true) &&
+        !mw.util.isIPAddress(initialRelevantUser);
       inputTarget.value =
         tenguMode === "user"
-          ? mw.config.get("wgRelevantUserName") || ""
+          ? initialUserIsRange
+            ? ""
+            : initialRelevantUser
           : mw.config.get("wgPageName").replace(/_/g, " ");
       btnGetInfo.disabled = !inputTarget.value.trim();
       inputTarget.dispatchEvent(new Event("change"));
