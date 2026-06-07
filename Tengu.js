@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 1.20.2
+ * Version 1.21.0
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -1426,6 +1426,20 @@ $(function () {
         if (config.massdel) creation.push(targetVal);
       }
 
+      // Pages scheduled for both deletion and protection must be deleted first,
+      // then protected against recreation. Protecting before deletion causes the
+      // protection to be lost when the page is removed. Identify the overlap now
+      // and defer those pages to a second protect pass that runs after deletion.
+      const creationSet = new Set(creation);
+      const pagesToProtectAfterDel = new Set(
+        [...pagesToProtect].filter(function (t) {
+          return creationSet.has(t);
+        }),
+      );
+      for (const t of pagesToProtectAfterDel) {
+        pagesToProtect.delete(t);
+      }
+
       // Process rollbacks, undos and revision deletions sequentially with a throttling buffer delay
       for (const [title, info] of Object.entries(pageEdits)) {
         if (isAborted) break;
@@ -1857,6 +1871,126 @@ $(function () {
         }
       }
 
+      // Second protect pass: protect pages that were deferred until after deletion.
+      // Only pages that were actually deleted are protected here.
+      if (config.protect && pagesToProtectAfterDel.size > 0) {
+        const notifyQueueDeferred = new Map();
+        for (const title of pagesToProtectAfterDel) {
+          if (isAborted) break;
+          if (!deletedTitles.includes(title)) {
+            addLog(
+              `[Protect] Skipped deferred protection for ${title}: page was not deleted.`,
+              "warn",
+            );
+            continue;
+          }
+          try {
+            await apiPost({
+              action: "protect",
+              title: title,
+              protections: `edit=${config.protectEdit}|move=${config.protectMove}`,
+              expiry: config.protectExpiry,
+              reason: config.protectReason + toolTag,
+            });
+            addLog(
+              `[Protect] Protected deleted page against recreation: ${title}`,
+            );
+            stats.protect++;
+          } catch (e) {
+            addLog(
+              `[Protect] Failed to protect ${title}: ${formatApiError(e)}`,
+              true,
+            );
+            await new Promise((resolve) => setTimeout(resolve, 100));
+            continue;
+          }
+
+          // Also protect the talk page if that option was selected
+          if (config.protectTalk) {
+            let talkForProtect = null;
+            try {
+              const titleObj = new mw.Title(title);
+              if (!titleObj.isTalkPage()) {
+                talkForProtect = titleObj.getTalkPage().getPrefixedText();
+              }
+            } catch (e) {
+              // Skip if the title cannot be resolved to a talk page.
+            }
+            if (talkForProtect) {
+              try {
+                await apiPost({
+                  action: "protect",
+                  title: talkForProtect,
+                  protections: `edit=${config.protectEdit}|move=${config.protectMove}`,
+                  expiry: config.protectExpiry,
+                  reason: config.protectReason + toolTag,
+                });
+                addLog(`[Protect] Protected talk page: ${talkForProtect}`);
+                stats.protect++;
+              } catch (e) {
+                addLog(
+                  `[Protect] Failed to protect talk page ${talkForProtect}: ${formatApiError(e)}`,
+                  true,
+                );
+              }
+              await new Promise((resolve) => setTimeout(resolve, 100));
+            }
+          }
+
+          // Queue for notification
+          try {
+            const talkTitle = new mw.Title(title)
+              .getTalkPage()
+              .getPrefixedText();
+            if (!notifyQueueDeferred.has(talkTitle))
+              notifyQueueDeferred.set(talkTitle, []);
+            notifyQueueDeferred.get(talkTitle).push(title);
+          } catch (e) {
+            // Title has no talk page; skip.
+          }
+          await new Promise((resolve) => setTimeout(resolve, 100));
+        }
+
+        // Dispatch notifications for the deferred protect pass
+        if (notifyQueueDeferred.size > 0) {
+          const protectExpiryDisplay =
+            config.protectExpiry === "never"
+              ? "indefinitely"
+              : `for ${config.protectExpiry}`;
+          const protectExpiryText =
+            config.protectExpiry === "never"
+              ? "This protection does not expire automatically and will remain in effect unless modified by an administrator."
+              : "The protection is scheduled to remain in effect until it expires, unless modified by an administrator.";
+          for (const [talkTitle, titles] of notifyQueueDeferred) {
+            if (isAborted) break;
+            try {
+              let notice;
+              if (titles.length === 1) {
+                notice = `== Page protection notice ==\nThe page "${titles[0]}" has been protected ${protectExpiryDisplay} due to the following reason: ${config.protectReason}.\n\nDuring the protection period, some or all editing actions may be restricted depending on the level of protection applied. ${protectExpiryText}\n\nThis notification was posted automatically. Please direct any questions or concerns to my user talk page. ~~~~`;
+              } else {
+                const listed = titles.map((t) => `"${t}"`).join(" and ");
+                notice = `== Page protection notice ==\nThe following pages have been protected ${protectExpiryDisplay} due to the following reason: ${config.protectReason}.\n\n${listed}\n\nDuring the protection period, some or all editing actions on these pages may be restricted depending on the level of protection applied. ${protectExpiryText}\n\nThis notification was posted automatically. Please direct any questions or concerns to my user talk page. ~~~~`;
+              }
+              await apiPost({
+                action: "edit",
+                title: talkTitle,
+                appendtext: "\n\n" + notice,
+                summary:
+                  "Automated notification: Page protection notice" + toolTag,
+                bot: true,
+              });
+              addLog(`[Notify] Notification posted to: ${talkTitle}`);
+            } catch (e) {
+              addLog(
+                `[Notify] Failed to post protection notification to ${talkTitle}: ${formatApiError(e)}`,
+                "warn",
+              );
+            }
+            await new Promise((resolve) => setTimeout(resolve, 100));
+          }
+        }
+      }
+
       // Remove wikilinks to deleted pages from articles in the main namespace.
       // Skips all namespaces other than NS0. Runs for each successfully deleted
       // page. Each matching article is fetched, its wikilinks replaced with
@@ -1966,6 +2100,7 @@ $(function () {
 
       // Termination and interface cleanup operations
       btnAbort.style.display = "none";
+
       const methodTxt =
         config.rollbackMethod === "undo" ? "undone" : "reverted";
       const statusPrefix = isAborted
@@ -1980,6 +2115,44 @@ $(function () {
         addLog("✅ All operations have been completed successfully.");
       }
       btnClose.disabled = false;
+
+      // Insert "Copy this log" button once all operations are complete
+      const btnCopyLog = makeBtn("Copy this log", "quiet");
+      btnCopyLog.addEventListener("click", function () {
+        const lines = Array.from(logBox.children)
+          .map(function (el) {
+            return el.textContent;
+          })
+          .join("\n");
+        navigator.clipboard
+          .writeText(lines)
+          .then(function () {
+            const orig = btnCopyLog.textContent;
+            btnCopyLog.textContent = "✔ Copied!";
+            setTimeout(function () {
+              btnCopyLog.textContent = orig;
+            }, 2000);
+          })
+          .catch(function () {
+            // Fallback for environments where navigator.clipboard is unavailable
+            const ta = document.createElement("textarea");
+            ta.value = lines;
+            document.body.appendChild(ta);
+            ta.select();
+            try {
+              document.execCommand("copy");
+            } catch (e) {
+              /* ignore */
+            }
+            document.body.removeChild(ta);
+            const orig = btnCopyLog.textContent;
+            btnCopyLog.textContent = "✔ Copied!";
+            setTimeout(function () {
+              btnCopyLog.textContent = orig;
+            }, 2000);
+          });
+      });
+      footer.insertBefore(btnCopyLog, btnClose);
     };
 
     // ============================================================================
@@ -2712,8 +2885,8 @@ $(function () {
       const isUserNamespace =
         currentNamespace === 2 || currentNamespace === 3 || isContributionsPage;
 
-      // Default cleanly to page mode if on the contributions page or outside a user namespace
-      let tenguMode = isUserMode && !isContributionsPage ? "user" : "page";
+      // Default to user mode when a relevant username is available (including on the contributions page), otherwise page mode
+      let tenguMode = isUserMode ? "user" : "page";
       // Set when the rights Promise settles; used by applyModeRestrictions() to
       // re-apply rights-based locks when switching from page mode back to user mode.
       let resolvedRights = null;
@@ -4498,7 +4671,7 @@ $(function () {
     // [Section 10] Portlet link
     // Registers the execution menu item anchor inside the site actions portal drop list.
     // ============================================================================
-    $(mw.util.addPortletLink("p-cactions", "#", "⛩️ Tengu", "ca-tengu")).on(
+    $(mw.util.addPortletLink("p-cactions", "#", "⛩️ Tengu", "ca-tengu", "Open Tengu, all-in-one moderation tool")).on(
       "click",
       function (e) {
         e.preventDefault();

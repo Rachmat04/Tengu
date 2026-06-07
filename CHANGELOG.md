@@ -1,3 +1,33 @@
+## v1.21.0
+
+### Added
+
+* Added a **"Copy this log"** button to the log dialog footer
+* The button copies the complete log output to the clipboard for auditing and record-keeping purposes
+* Implemented clipboard support using `navigator.clipboard` with an `execCommand` fallback for broader compatibility
+* Added tooltip to the portlet link: `Open Tengu, all-in-one moderation tool`
+
+### Changed
+
+* User mode is now automatically enabled when Tengu is opened from a user's contributions page, as the page context always refers to a specific user
+* Delete and protect operations are now executed in a safer order when both actions target the same page
+
+### Fixed
+
+* Fixed an issue where page protection could be lost when a page was scheduled for both deletion and protection. Protection is now applied after deletion instead of before it.
+* Fixed operation ordering in both page mode and applicable user mode edge cases where the same page could appear in both deletion and protection workflows
+
+### Improved
+
+* Improved workflow consistency on contribution pages by selecting the most relevant mode automatically
+* Improved reliability of combined deletion and protection actions
+* Improved post-operation auditing by allowing logs to be copied directly from the dialog
+
+### Notes
+
+* Pages that are only protected and not deleted are unaffected by the delete–protect operation ordering change
+* The protection-order fix applies to page mode and to user mode scenarios where the same page is both created and edited by the targeted user
+
 ## v1.20.2
 
 ### Added
