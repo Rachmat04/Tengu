@@ -1,3 +1,36 @@
+## v2.0.0
+
+### Added
+
+* Added a standalone `Tengu.css` stylesheet containing all Tengu interface styling, layout rules, animations, and dark mode compatibility
+* Added structured documentation headers to `Tengu.css`, aligned with the metadata and repository information used in `Tengu.js`
+* Added asynchronous stylesheet loading through `mw.loader.load()`
+
+### Changed
+
+* Refactored Tengu into a modular architecture by separating presentation and application logic
+* Moved all CSS definitions from `Tengu.js` into the new `Tengu.css` file
+* Updated the initialization workflow so styles are loaded externally before the application interface is rendered
+* Reduced the scope of `Tengu.js` to MediaWiki interaction logic, UI construction, API operations, token management, and event handling
+
+### Removed
+
+* Removed the embedded `TNG_CSS` stylesheet constant from `Tengu.js`
+* Removed the legacy `mw.util.addCSS(TNG_CSS)` injection method from `init()`
+
+### Improved
+
+* Improved maintainability by separating styling and application logic into dedicated files
+* Improved readability and long-term development by reducing the size and complexity of `Tengu.js`
+* Improved stylesheet organization through dedicated documentation and sectioned structure
+* Improved flexibility for future UI updates without requiring changes to the core script logic
+
+### Notes
+
+* This release introduces a structural change and may require deployment updates
+* The URL used by `mw.loader.load()` must be updated to point to the wiki page containing `Tengu.css`
+* Failure to update the stylesheet URL may result in Tengu loading without its intended interface styling
+
 ## v1.22.0
 
 ### Added

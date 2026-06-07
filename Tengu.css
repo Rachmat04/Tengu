@@ -1,0 +1,841 @@
+/**
+ * ============================================================================
+ * Tengu — 天狗
+ * Version 2.0.0
+ * All-in-one wiki moderation tool — Stylesheet
+ * ============================================================================
+ * PURPOSE:
+ * Contains all CSS layouts, user interface stylings, responsive components,
+ * and dark mode overrides for the Tengu.js moderation script.
+ *
+ * REPOSITORY:
+ * https://github.com/Rachmat04/Tengu
+ * ============================================================================
+ */
+/* --- Overlay --- */
+.tng-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.52);
+  z-index: 100000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 12px;
+  animation: tng-fadein 0.15s ease-out;
+}
+
+/* --- Dialogue container --- */
+.tng-dialog {
+  background: #fff;
+  color: #202122;
+  border: 1px solid #a2a9b1;
+  border-radius: 8px;
+  width: min(850px, 96%);
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.32);
+  font-family:
+    system-ui,
+    -apple-system,
+    sans-serif;
+  font-size: 0.94em;
+  overflow: hidden;
+  animation: tng-slidein 0.15s ease-out;
+}
+
+/* Error state applied directly to the input field */
+.tng-input-error {
+  border-color: #d33 !important;
+  box-shadow: 0 0 0 2px rgba(211, 51, 51, 0.18) !important;
+}
+.tng-input-error::placeholder {
+  color: #b32424;
+  opacity: 1;
+}
+
+/* --- Dialogue header --- */
+.tng-dialog-header {
+  padding: 11px 16px;
+  background: #f8f9fa;
+  border-bottom: 1px solid #eaecf0;
+  font-weight: 700;
+  font-size: 1.05em;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-shrink: 0;
+}
+.tng-dialog-header-left {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+.tng-dialog-close {
+  background: none;
+  border: none;
+  font-size: 1.2em;
+  cursor: pointer;
+  color: #54595d;
+  padding: 0 2px;
+  line-height: 1;
+}
+.tng-dialog-close:hover {
+  color: #000;
+}
+
+/* --- Dialogue body --- */
+.tng-dialog-body {
+  padding: 16px;
+  overflow-y: auto;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* --- Dialogue footer --- */
+.tng-dialog-footer {
+  padding: 10px 14px;
+  background: #f8f9fa;
+  border-top: 1px solid #eaecf0;
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+/* --- Section blocks (rollback, block, etc.) --- */
+.tng-section {
+  border: 1px solid #a2a9b1;
+  border-radius: 6px;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+/* When a section is disabled but still open, dim and disable only the body */
+.tng-section.tng-disabled .tng-section-body {
+  opacity: 0.45;
+  pointer-events: none;
+  user-select: none;
+  transition: opacity 0.25s;
+}
+
+.tng-section-header {
+  padding: 8px 12px;
+  background: #f0f2f5;
+  border-bottom: 1px solid #eaecf0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 700;
+  cursor: pointer;
+  user-select: none;
+}
+.tng-section-header:hover {
+  background: #e6e8eb;
+}
+
+.tng-section-body {
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-height: 250px;
+  overflow-y: auto;
+}
+
+/* --- Form rows --- */
+.tng-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  flex-wrap: wrap;
+  width: 100%;
+}
+.tng-row label.tng-label {
+  width: 180px;
+  flex-shrink: 0;
+  font-size: 0.88em;
+  color: #54595d;
+  padding-top: 4px;
+}
+.tng-row .tng-field {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+/* --- Checkbox rows --- */
+.tng-checkrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.88em;
+  margin-right: 12px;
+  margin-bottom: 4px;
+  cursor: pointer;
+}
+.tng-checkrow input[type="checkbox"] {
+  cursor: pointer;
+}
+
+.tng-checks {
+  display: flex;
+  flex-wrap: wrap;
+  padding-left: 190px;
+}
+
+/* --- Inputs and selects --- */
+.tng-input,
+.tng-select {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 4px 8px;
+  border: 1px solid #a2a9b1;
+  border-radius: 4px;
+  font-size: 0.9em;
+  background: #fff;
+  color: #202122;
+  font-family: inherit;
+}
+.tng-input:focus,
+.tng-select:focus {
+  outline: none;
+  border-color: #3366cc;
+  box-shadow: 0 0 0 2px rgba(51, 102, 204, 0.18);
+}
+.tng-select {
+  cursor: pointer;
+  appearance: none;
+  -webkit-appearance: none;
+  padding-right: 2em;
+  text-overflow: ellipsis;
+}
+
+/* --- Custom select wrapper (positions chevron arrow) --- */
+.tng-select-wrap {
+  position: relative;
+  display: block;
+  min-width: 0;
+  width: 100%;
+}
+.tng-select-wrap::after {
+  content: "";
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  width: 5px;
+  height: 5px;
+  border-right: 2px solid #54595d;
+  border-bottom: 2px solid #54595d;
+  transform: translateY(-50%) rotate(45deg);
+  margin-top: -2px;
+  pointer-events: none;
+}
+
+/* --- Grouped select + input --- */
+.tng-reason-wrap {
+  display: flex;
+  gap: 6px;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+  width: 100%;
+}
+.tng-reason-top {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  width: 100%;
+}
+.tng-reason-top .tng-select-wrap {
+  flex: 1;
+  min-width: 0;
+}
+.tng-dual {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+/* --- Buttons --- */
+.tng-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 5px 14px;
+  border-radius: 4px;
+  font-size: 0.9em;
+  font-weight: 600;
+  cursor: pointer;
+  border: 1px solid transparent;
+  font-family: inherit;
+  transition:
+    background 0.12s,
+    border-color 0.12s;
+  white-space: nowrap;
+}
+.tng-btn-primary {
+  background: #3366cc;
+  color: #fff;
+  border-color: #3366cc;
+}
+.tng-btn-primary:hover {
+  background: #2a4b9e;
+  border-color: #2a4b9e;
+}
+.tng-btn-primary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.tng-btn-quiet {
+  background: none;
+  color: #202122;
+  border-color: #a2a9b1;
+}
+.tng-btn-quiet:hover {
+  background: #f0f2f5;
+}
+.tng-btn-destructive {
+  background: #b00020;
+  color: #fff;
+  border-color: #b00020;
+}
+.tng-btn-destructive:hover {
+  background: #8a0018;
+  border-color: #8a0018;
+}
+.tng-btn-destructive:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.tng-btn-sm {
+  padding: 3px 9px;
+  font-size: 0.84em;
+}
+
+/* --- Top info block --- */
+.tng-top-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+@media (max-width: 480px) {
+  .tng-top-grid {
+    grid-template-columns: 1fr;
+  }
+  .tng-checks {
+    padding-left: 0;
+  }
+  .tng-row label.tng-label {
+    width: 100%;
+    padding-top: 0;
+  }
+}
+
+.tng-help {
+  font-size: 0.82em;
+  color: #72777d;
+  margin-top: 2px;
+}
+
+/* --- Mode notice --- */
+.tng-mode-notice {
+  font-size: 0.85em;
+  padding: 7px 11px;
+  border-radius: 4px;
+  border: 1px solid #a8c4e8;
+  background: #dce8f8;
+  color: #1a4a8a;
+  line-height: 1.5;
+}
+
+.tng-hidden {
+  display: none !important;
+}
+.tng-optgroup-label {
+  font-weight: 700;
+  color: #54595d;
+  font-size: 0.85em;
+  padding: 4px 0 2px;
+  pointer-events: none;
+}
+
+/* --- Section status notes (block, deletion, protection) --- */
+.tng-status-note {
+  font-size: 0.83em;
+  padding: 5px 9px;
+  border-radius: 4px;
+  border: 1px solid transparent;
+  line-height: 1.45;
+  margin-bottom: 2px;
+}
+.tng-status-note-active {
+  background: #fef3cd;
+  color: #6b4c11;
+  border-color: #f5c542;
+}
+.tng-status-note-inactive {
+  background: #e8f5e9;
+  color: #1b5e20;
+  border-color: #a5d6a7;
+}
+.tng-status-note-loading {
+  background: #f8f9fa;
+  color: #72777d;
+  border-color: #eaecf0;
+  font-style: italic;
+}
+
+/* --- Progress log (optimised height) --- */
+.tng-log-box {
+  height: 160px;
+  overflow-y: auto;
+  font-family: monospace;
+  font-size: 0.9em;
+  padding: 10px;
+  border: 1px solid #a2a9b1;
+  border-radius: 4px;
+  background: #f8f9fa;
+  color: #202122;
+}
+.tng-log-err {
+  color: #b00020;
+  font-weight: bold;
+}
+.tng-log-warn {
+  color: #ac6600;
+  font-weight: bold;
+}
+.tng-log-succ {
+  color: #14866d;
+}
+
+/* --- User rights panel (footer, bottom-left) --- */
+.tng-rights-panel {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  flex-wrap: wrap;
+  margin-right: auto;
+  padding: 5px 10px;
+  border: 1px solid #a2a9b1;
+  border-radius: 6px;
+  background: #f0f2f5;
+}
+.tng-rights-title {
+  font-size: 0.78em;
+  color: #54595d;
+  font-weight: 700;
+  white-space: nowrap;
+  margin-right: 2px;
+}
+.tng-rights-subtitle {
+  font-size: 0.75em;
+  color: #72777d;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.tng-rights-sep {
+  width: 1px;
+  height: 14px;
+  background: #c8ccd1;
+  flex-shrink: 0;
+  align-self: center;
+  margin: 0 2px;
+}
+.tng-rights-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 2px 9px;
+  border-radius: 10px;
+  font-size: 0.78em;
+  font-weight: 600;
+  white-space: nowrap;
+  border: 1px solid transparent;
+}
+.tng-rights-have {
+  background: #d4edda;
+  color: #155724;
+  border-color: #b7dfbb;
+}
+.tng-rights-lack {
+  background: #f8d7da;
+  color: #721c24;
+  border-color: #f1b0b7;
+}
+.tng-rights-loading {
+  background: #e9ecef;
+  color: #6c757d;
+  border-color: #ced4da;
+  font-style: italic;
+}
+.tng-rights-lock {
+  margin-left: auto;
+  font-size: 0.85em;
+  opacity: 0.65;
+  pointer-events: none;
+}
+
+/* --- User info panel entries --- */
+.tng-info-entry {
+  padding: 8px 10px;
+  border: 1px solid #eaecf0;
+  border-radius: 4px;
+  background: #fff;
+  font-size: 0.87em;
+  line-height: 1.6;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+.tng-info-entry + .tng-info-entry {
+  margin-top: 6px;
+}
+.tng-info-loading,
+.tng-info-empty {
+  color: #72777d;
+  font-style: italic;
+  font-size: 0.88em;
+  padding: 4px 0;
+}
+
+/* --- Target user rights card (user info dialogue) --- */
+.tng-user-rights-card {
+  border: 1px solid #a2a9b1;
+  border-radius: 6px;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+.tng-user-rights-header {
+  padding: 8px 12px;
+  background: #f0f2f5;
+  border-bottom: 1px solid #eaecf0;
+  font-weight: 700;
+  font-size: 0.9em;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  user-select: none;
+}
+.tng-user-rights-body {
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.tng-user-rights-row {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+.tng-user-rights-scope {
+  font-size: 0.79em;
+  font-weight: 700;
+  color: #54595d;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.tng-user-rights-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+.tng-rights-badge-group {
+  background: #dce8f8;
+  color: #1a4a8a;
+  border-color: #a8c4e8;
+}
+.tng-rights-badge-none {
+  background: #f0f2f5;
+  color: #72777d;
+  border-color: #c8ccd1;
+  font-style: italic;
+}
+.tng-user-rights-divider {
+  border: none;
+  border-top: 1px solid #eaecf0;
+  margin: 2px 0;
+}
+.tng-user-rights-list {
+  font-size: 0.79em;
+  color: #54595d;
+  line-height: 1.55;
+  padding: 4px 7px;
+  background: #f8f9fa;
+  border-radius: 3px;
+  border: 1px solid #eaecf0;
+  word-break: break-word;
+}
+
+/* --- Collapsible section arrow --- */
+.tng-section-arrow {
+  margin-left: auto;
+  flex-shrink: 0;
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  border-right: 2px solid #54595d;
+  border-bottom: 2px solid #54595d;
+  transform: rotate(45deg);
+  transition: transform 0.18s ease;
+  pointer-events: none;
+  position: relative;
+  top: -2px;
+}
+.tng-section-arrow.tng-arrow-up {
+  transform: rotate(225deg);
+  top: 2px;
+}
+
+/* --- Mode toggle (User/Page switch, User namespace only) --- */
+.tng-mode-toggle {
+  display: inline-flex;
+  border: 1px solid #a2a9b1;
+  border-radius: 4px;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+.tng-mode-btn {
+  padding: 4px 14px;
+  font-size: 0.88em;
+  font-weight: 600;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #54595d;
+  font-family: inherit;
+  transition:
+    background 0.12s,
+    color 0.12s;
+  white-space: nowrap;
+}
+.tng-mode-btn:hover:not(.tng-mode-btn-active) {
+  background: #f0f2f5;
+}
+.tng-mode-btn.tng-mode-btn-active {
+  background: #3366cc;
+  color: #fff;
+}
+
+/* --- Animations --- */
+@media (prefers-reduced-motion: no-preference) {
+  @keyframes tng-fadein {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+  @keyframes tng-slidein {
+    from {
+      opacity: 0;
+      transform: translateY(-8px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+}
+
+/* --- Dark mode --- */
+@media (prefers-color-scheme: dark) {
+  .tng-dialog {
+    background: #1e1e1e;
+    color: #eaecf0;
+    border-color: #54595d;
+  }
+  .tng-dialog-header,
+  .tng-dialog-footer {
+    background: #2a2a2a;
+    border-color: #3a3a3a;
+  }
+  .tng-dialog-close {
+    color: #a2a9b1;
+  }
+  .tng-dialog-close:hover {
+    color: #eaecf0;
+  }
+  .tng-section {
+    border-color: #3a3a3a;
+  }
+  .tng-section-header {
+    background: #252525;
+    border-color: #3a3a3a;
+  }
+  .tng-section-header:hover {
+    background: #2e2e2e;
+  }
+  .tng-row label.tng-label,
+  .tng-help,
+  .tng-optgroup-label {
+    color: #a2a9b1;
+  }
+  .tng-input,
+  .tng-select {
+    background: #2a2a2a;
+    color: #eaecf0;
+    border-color: #54595d;
+  }
+  .tng-input:focus,
+  .tng-select:focus {
+    border-color: #6699ff;
+  }
+  .tng-btn-quiet {
+    color: #eaecf0;
+    border-color: #54595d;
+  }
+  .tng-btn-quiet:hover {
+    background: #2a2a35;
+  }
+
+  /* Dark mode for rights panel */
+  .tng-rights-panel {
+    background: #252525;
+    border-color: #3a3a3a;
+  }
+  .tng-rights-title {
+    color: #a2a9b1;
+  }
+  .tng-rights-subtitle {
+    color: #6a6a6a;
+  }
+  .tng-rights-sep {
+    background: #4a4a4a;
+  }
+  .tng-rights-have {
+    background: #1a3a24;
+    color: #75c987;
+    border-color: #2d6a3f;
+  }
+  .tng-rights-lack {
+    background: #3a1a1e;
+    color: #f08080;
+    border-color: #6a2d33;
+  }
+  .tng-rights-loading {
+    background: #2a2a2a;
+    color: #8a8a8a;
+    border-color: #3a3a3a;
+  }
+
+  /* Dark mode for progress log */
+  .tng-log-box {
+    background: #2a2a2a;
+    border-color: #54595d;
+    color: #eaecf0;
+  }
+  .tng-log-err {
+    color: #ff6b6b;
+  }
+  .tng-log-warn {
+    color: #e8a04d;
+  }
+  .tng-log-succ {
+    color: #00af89;
+  }
+
+  /* Dark mode for inline field error */
+  .tng-input-error {
+    border-color: #ff6b6b !important;
+    box-shadow: 0 0 0 2px rgba(255, 107, 107, 0.22) !important;
+  }
+  .tng-input-error::placeholder {
+    color: #ff6b6b;
+  }
+
+  /* Dark mode for section status notes */
+  .tng-status-note-active {
+    background: #3d2b00;
+    color: #ffe082;
+    border-color: #8a6900;
+  }
+  .tng-status-note-inactive {
+    background: #1a3a1f;
+    color: #a5d6a7;
+    border-color: #2e7d32;
+  }
+  .tng-status-note-loading {
+    background: #2a2a2a;
+    color: #8a8a8a;
+    border-color: #3a3a3a;
+  }
+
+  /* Dark mode for user info panel entries */
+  .tng-info-entry {
+    background: #252525;
+    border-color: #3a3a3a;
+  }
+  .tng-info-loading,
+  .tng-info-empty {
+    color: #8a8a8a;
+  }
+
+  /* Dark mode for target user rights card */
+  .tng-user-rights-card {
+    border-color: #3a3a3a;
+  }
+  .tng-user-rights-header {
+    background: #252525;
+    border-color: #3a3a3a;
+  }
+  .tng-user-rights-scope {
+    color: #a2a9b1;
+  }
+  .tng-user-rights-divider {
+    border-color: #3a3a3a;
+  }
+  .tng-rights-badge-group {
+    background: #1a3060;
+    color: #80aaff;
+    border-color: #2a5090;
+  }
+  .tng-rights-badge-none {
+    background: #2a2a2a;
+    color: #8a8a8a;
+    border-color: #3a3a3a;
+  }
+  .tng-user-rights-list {
+    background: #2a2a2a;
+    color: #a2a9b1;
+    border-color: #3a3a3a;
+  }
+
+  /* Dark mode for section arrow */
+  .tng-section-arrow {
+    border-color: #a2a9b1;
+  }
+
+  /* Dark mode for custom select chevron */
+  .tng-select-wrap::after {
+    border-color: #a2a9b1;
+  }
+
+  /* Dark mode for mode toggle */
+  .tng-mode-toggle {
+    border-color: #54595d;
+  }
+  .tng-mode-btn {
+    color: #a2a9b1;
+  }
+  .tng-mode-btn:hover:not(.tng-mode-btn-active) {
+    background: #2a2a35;
+  }
+
+  /* Dark mode for mode notice */
+  .tng-mode-notice {
+    background: #1a3060;
+    color: #80aaff;
+    border-color: #2a5090;
+  }
+}
