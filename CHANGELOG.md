@@ -1,3 +1,25 @@
+## 1.19.4
+
+### Fixed
+
+* Fixed the `mw.util.addPortletLink()` call by replacing the object literal with the previous positional parameter form: `"#"`, `"⛩️ Tengu"`, `"ca-tengu"`
+
+## 1.19.3
+
+### Added
+
+* Added `wrapSelect()` helper to wrap select elements with a custom container
+* Added `.tng-select-wrap` styling and custom chevron indicator via the `::after` pseudo-element
+* Added dark-mode support for `.tng-select-wrap::after`
+
+### Changed
+
+* Extended `.tng-select` styling to remove the native dropdown arrow and improve text handling with right-side padding and ellipsis
+* Retargeted `.tng-reason-top .tng-select` styles to `.tng-reason-top .tng-select-wrap`
+* Updated the "Get info" button label to "ℹ️ Get info"
+* Wrapped all select elements using `wrapSelect()` instead of appending them directly
+* Removed redundant `.style.flex = "1"` assignments from select elements, as flex behavior is now handled by the wrapper
+
 ## 1.19.2
 
 ### Changed

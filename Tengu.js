@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 1.19.1
+ * Version 1.19.3
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -155,7 +155,32 @@ $(function () {
             outline: none; border-color: #3366cc;
             box-shadow: 0 0 0 2px rgba(51,102,204,.18);
         }
-        .tng-select { cursor: pointer; }
+        .tng-select {
+            cursor: pointer;
+            appearance: none; -webkit-appearance: none;
+            padding-right: 2em;
+            text-overflow: ellipsis;
+        }
+
+        /* --- Custom select wrapper (positions chevron arrow) --- */
+        .tng-select-wrap {
+            position: relative;
+            display: block;
+            min-width: 0;
+            width: 100%;
+        }
+        .tng-select-wrap::after {
+            content: '';
+            position: absolute;
+            right: 10px;
+            top: 50%;
+            width: 5px; height: 5px;
+            border-right: 2px solid #54595d;
+            border-bottom: 2px solid #54595d;
+            transform: translateY(-50%) rotate(45deg);
+            margin-top: -2px;
+            pointer-events: none;
+        }
 
         /* --- Grouped select + input --- */
         .tng-reason-wrap {
@@ -164,7 +189,7 @@ $(function () {
         .tng-reason-top {
             display: flex; gap: 6px; align-items: center; width: 100%;
         }
-        .tng-reason-top .tng-select {
+        .tng-reason-top .tng-select-wrap {
             flex: 1; min-width: 0;
         }
         .tng-dual {
@@ -429,6 +454,9 @@ $(function () {
             /* Dark mode for section arrow */
             .tng-section-arrow { border-color: #a2a9b1; }
 
+            /* Dark mode for custom select chevron */
+            .tng-select-wrap::after { border-color: #a2a9b1; }
+
             /* Dark mode for mode toggle */
             .tng-mode-toggle { border-color: #54595d; }
             .tng-mode-btn { color: #a2a9b1; }
@@ -566,6 +594,16 @@ $(function () {
         }
       }
       return sel;
+    }
+    // Wraps a <select> in a .tng-select-wrap container that provides the custom
+    // chevron arrow via ::after. Pass a CSS flex value to apply it to the wrapper
+    // when the wrapper itself is a flex item (e.g. in a flex row alongside an input).
+    function wrapSelect(sel, flex) {
+      const wrap = document.createElement("div");
+      wrap.className = "tng-select-wrap";
+      if (flex) wrap.style.flex = flex;
+      wrap.appendChild(sel);
+      return wrap;
     }
     function makeInput(placeholder, cls) {
       const inp = document.createElement("input");
@@ -3040,7 +3078,7 @@ $(function () {
       );
       fieldTarget.appendChild(inputTarget);
 
-      const btnGetInfo = makeBtn("Get info", "quiet");
+      const btnGetInfo = makeBtn("ℹ️ Get info", "quiet");
       btnGetInfo.className += " tng-btn-sm";
       btnGetInfo.title = isUserMode
         ? "View access rights, block log, rights changes, and abuse filter log for this user"
@@ -3092,9 +3130,8 @@ $(function () {
       });
       const editGroup = document.createElement("div");
       editGroup.style.cssText = "display: flex; gap: 6px; width: 100%;";
-      selEndtime.style.flex = "1";
       inputEndtime.style.flex = "1";
-      editGroup.appendChild(selEndtime);
+      editGroup.appendChild(wrapSelect(selEndtime, "1"));
       editGroup.appendChild(inputEndtime);
       fieldEdits.appendChild(editGroup);
       topSection.appendChild(rowEdits);
@@ -3104,7 +3141,7 @@ $(function () {
           return { value: k, label: k };
         }),
       );
-      fieldPkg.appendChild(selPackage);
+      fieldPkg.appendChild(wrapSelect(selPackage));
       topSection.appendChild(rowPkg);
       const { row: rowSuffix, field: fieldSuffix } = makeRow("Suffix");
       const selSuffix = makeSelect(
@@ -3112,7 +3149,7 @@ $(function () {
           return { value: s, label: s || "<No suffix>" };
         }),
       );
-      fieldSuffix.appendChild(selSuffix);
+      fieldSuffix.appendChild(wrapSelect(selSuffix));
       topSection.appendChild(rowSuffix);
       if (!isUserMode) {
         // Show Edits and Package rows but disable their controls — not applicable in page mode
@@ -3157,7 +3194,7 @@ $(function () {
 
       const reasonWrapRollback = document.createElement("div");
       reasonWrapRollback.className = "tng-reason-wrap";
-      reasonWrapRollback.appendChild(selRbReason);
+      reasonWrapRollback.appendChild(wrapSelect(selRbReason));
       reasonWrapRollback.appendChild(inputRbReason);
 
       const helpRbReason = document.createElement("div");
@@ -3208,9 +3245,8 @@ $(function () {
       });
       const durGroup = document.createElement("div");
       durGroup.style.cssText = "display: flex; gap: 6px; width: 100%;";
-      selBlockDur.style.flex = "1";
       inputBlockDur.style.flex = "1";
-      durGroup.appendChild(selBlockDur);
+      durGroup.appendChild(wrapSelect(selBlockDur, "1"));
       durGroup.appendChild(inputBlockDur);
       fieldBlockDur.appendChild(durGroup);
       bodyBlock.appendChild(rowBlockDur);
@@ -3220,7 +3256,7 @@ $(function () {
       const inputBlockReason = makeInput("Additional reason");
       const reasonWrapBlock = document.createElement("div");
       reasonWrapBlock.className = "tng-reason-wrap";
-      reasonWrapBlock.appendChild(selBlockReason);
+      reasonWrapBlock.appendChild(wrapSelect(selBlockReason));
       reasonWrapBlock.appendChild(inputBlockReason);
       fieldBlockReason.appendChild(reasonWrapBlock);
       bodyBlock.appendChild(rowBlockReason);
@@ -3298,7 +3334,7 @@ $(function () {
       reasonWrapPagedel.className = "tng-reason-wrap";
       const reasonTopPagedel = document.createElement("div");
       reasonTopPagedel.className = "tng-reason-top";
-      reasonTopPagedel.appendChild(selPagedelReason);
+      reasonTopPagedel.appendChild(wrapSelect(selPagedelReason));
       reasonTopPagedel.appendChild(btnPagedelAppend);
       reasonWrapPagedel.appendChild(reasonTopPagedel);
       reasonWrapPagedel.appendChild(inputPagedelReason);
@@ -3346,7 +3382,7 @@ $(function () {
         { value: "autoconfirmed", label: "Autoconfirmed users" },
         { value: "sysop", label: "Administrators only" },
       ]);
-      fieldProtectEdit.appendChild(selProtectEdit);
+      fieldProtectEdit.appendChild(wrapSelect(selProtectEdit));
       bodyProtect.appendChild(rowProtectEdit);
 
       const { row: rowProtectMove, field: fieldProtectMove } =
@@ -3356,7 +3392,7 @@ $(function () {
         { value: "autoconfirmed", label: "Autoconfirmed users" },
         { value: "sysop", label: "Administrators only" },
       ]);
-      fieldProtectMove.appendChild(selProtectMove);
+      fieldProtectMove.appendChild(wrapSelect(selProtectMove));
       bodyProtect.appendChild(rowProtectMove);
 
       const { row: rowProtectExpiry, field: fieldProtectExpiry } =
@@ -3384,9 +3420,8 @@ $(function () {
       const protectExpiryGroup = document.createElement("div");
       protectExpiryGroup.style.cssText =
         "display: flex; gap: 6px; width: 100%;";
-      selProtectExpiry.style.flex = "1";
       inputProtectExpiry.style.flex = "1";
-      protectExpiryGroup.appendChild(selProtectExpiry);
+      protectExpiryGroup.appendChild(wrapSelect(selProtectExpiry, "1"));
       protectExpiryGroup.appendChild(inputProtectExpiry);
       fieldProtectExpiry.appendChild(protectExpiryGroup);
       bodyProtect.appendChild(rowProtectExpiry);
@@ -3408,7 +3443,7 @@ $(function () {
       reasonWrapProtect.className = "tng-reason-wrap";
       const reasonTopProtect = document.createElement("div");
       reasonTopProtect.className = "tng-reason-top";
-      reasonTopProtect.appendChild(selProtectReason);
+      reasonTopProtect.appendChild(wrapSelect(selProtectReason));
       reasonTopProtect.appendChild(btnProtectAppend);
       reasonWrapProtect.appendChild(reasonTopProtect);
       reasonWrapProtect.appendChild(inputProtectReason);
@@ -3482,7 +3517,7 @@ $(function () {
       reasonWrapRevdel.className = "tng-reason-wrap";
       const reasonTopRevdel = document.createElement("div");
       reasonTopRevdel.className = "tng-reason-top";
-      reasonTopRevdel.appendChild(selRevdelReason);
+      reasonTopRevdel.appendChild(wrapSelect(selRevdelReason));
       reasonTopRevdel.appendChild(btnRevdelAppend);
       reasonWrapRevdel.appendChild(reasonTopRevdel);
       reasonWrapRevdel.appendChild(inputRevdelReason);
@@ -4432,7 +4467,7 @@ $(function () {
     // [Section 10] Portlet link
     // Registers the execution menu item anchor inside the site actions portal drop list.
     // ============================================================================
-    $(mw.util.addPortletLink("p-cactions", { href: "#", text: "⛩️ Tengu", id: "ca-tengu" })).on(
+    $(mw.util.addPortletLink("p-cactions", "#", "⛩️ Tengu", "ca-tengu")).on(
       "click",
       function (e) {
         e.preventDefault();
