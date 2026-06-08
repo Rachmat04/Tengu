@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.2.0
+ * Version 2.3.0
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -2588,6 +2588,9 @@ $(function () {
       const isUserNamespace =
         currentNamespace === 2 || currentNamespace === 3 || isContributionsPage;
 
+      // Special pages (NS -1) cannot be deleted or protected; used to gate those sections in page mode
+      const isSpecialPage = currentNamespace === -1;
+
       // Default to user mode when a relevant username is available (including on the contributions page), otherwise page mode
       let tenguMode = isUserMode ? "user" : "page";
       // Set when the rights Promise settles; used by applyModeRestrictions() to
@@ -2962,10 +2965,18 @@ $(function () {
       // Mode notice — Informs users how deletion and protection behave in the current mode
       const divModeNotice = document.createElement("div");
       divModeNotice.className = "tng-mode-notice";
-      function updateModeNotice(isUser) {
-        divModeNotice.innerHTML = isUser
-          ? "<b>User mode</b> — deletion and protection apply to all pages recently edited by the target user, not a single page. To target one specific page instead, switch to page mode."
-          : "<b>Page mode</b> — deletion and protection apply only to the target page entered below. Rollback, block, and revision deletion are not available in this mode.";
+      // isSpecialTarget: true when in page mode and the target resolves to a special page
+      function updateModeNotice(isUser, isSpecialTarget) {
+        if (isUser) {
+          divModeNotice.innerHTML =
+            "<b>User mode</b> — deletion and protection apply to all pages recently edited by the target user, not a single page. To target one specific page instead, switch to page mode.";
+        } else if (isSpecialTarget) {
+          divModeNotice.innerHTML =
+            "<b>Page mode</b> — the target is a special page. Page deletion and protection are not available for special pages.";
+        } else {
+          divModeNotice.innerHTML =
+            "<b>Page mode</b> — deletion and protection apply only to the target page entered below. Rollback, block, and revision deletion are not available in this mode.";
+        }
       }
       updateModeNotice(tenguMode === "user");
       topSection.appendChild(divModeNotice);
@@ -3523,10 +3534,48 @@ $(function () {
         }
       }
 
+      // Returns true when in page mode and the current target input resolves to a special page (NS -1).
+      function isTargetSpecialPage() {
+        if (tenguMode !== "page") return false;
+        const title = inputTarget.value.trim();
+        if (!title) return false;
+        try {
+          return new mw.Title(title).getNamespaceId() === -1;
+        } catch (e) {
+          return /^special:/i.test(title);
+        }
+      }
+
+      // Applies or removes reversible mode locks on page deletion and protection
+      // when the target is a special page. Delegates to applyModeLock() so locks
+      // are cleared automatically when the target changes or mode is switched.
+      function applySpecialPageLocks(lock) {
+        if (lock) {
+          applyModeLock(
+            secPagedel,
+            bodyPagedel,
+            chkPagedel,
+            true,
+            "special pages cannot be deleted",
+          );
+          applyModeLock(
+            secProtect,
+            bodyProtect,
+            chkProtect,
+            true,
+            "special pages cannot be protected",
+          );
+        } else {
+          applyModeLock(secPagedel, bodyPagedel, chkPagedel, false);
+          applyModeLock(secProtect, bodyProtect, chkProtect, false);
+        }
+      }
+
       // Updates all mode-sensitive UI when the user switches modes via the toggle.
       function applyModeRestrictions(isUserModeNow) {
         tenguMode = isUserModeNow ? "user" : "page";
-        updateModeNotice(isUserModeNow);
+        const targetIsSpecial = !isUserModeNow && isTargetSpecialPage();
+        updateModeNotice(isUserModeNow, targetIsSpecial);
 
         // Update target row label, placeholder, and get info tooltip
         rowTarget.querySelector(".tng-label").textContent = isUserModeNow
@@ -3583,6 +3632,8 @@ $(function () {
           applyModeLock(secRollback, bodyRollback, chkRollback, false);
           applyModeLock(secBlock, bodyBlock, chkBlock, false);
           applyModeLock(secRevdel, bodyRevdel, chkRevdel, false);
+          // Remove any special page locks that were active while in page mode
+          applySpecialPageLocks(false);
 
           // Re-evaluate and apply strict rights-based permanent locks if permissions are missing
           if (resolvedRights) {
@@ -3604,6 +3655,9 @@ $(function () {
             }
           }
         }
+
+        // Apply or remove special page locks when switching to page mode
+        if (!isUserModeNow) applySpecialPageLocks(targetIsSpecial);
 
         updateStartBtn();
         updateSectionStatus();
@@ -3632,6 +3686,11 @@ $(function () {
           true,
           "Tengu is targeting a page, not a user.",
         );
+        // Lock deletion and protection on initial load when the current page is a special page
+        if (isSpecialPage) {
+          applySpecialPageLocks(true);
+          updateModeNotice(false, true);
+        }
       }
 
       const btnCancel = makeBtn("Cancel", "quiet");
@@ -4388,6 +4447,21 @@ $(function () {
           setNote(divBlockStatus, "loading", "Not applicable in page mode.");
           setNote(divGlobalStatus, "loading", "Not applicable in page mode.");
 
+          // Special pages have no deletion or protection history worth querying
+          if (isTargetSpecialPage()) {
+            setNote(
+              divPagedelStatus,
+              "loading",
+              "Not applicable — special pages cannot be deleted.",
+            );
+            setNote(
+              divProtectStatus,
+              "loading",
+              "Not applicable — special pages cannot be protected.",
+            );
+            return;
+          }
+
           // --- Deletion history ---
           setNote(divPagedelStatus, "loading", "Loading deletion history…");
           (async function () {
@@ -4523,6 +4597,12 @@ $(function () {
         if (isTempAccount) {
           selBlockDur.value = "3 months";
           inputBlockDur.classList.add("tng-hidden");
+        }
+        // Re-evaluate special page restriction when the target changes in page mode
+        if (tenguMode === "page") {
+          const targetIsSpecial = isTargetSpecialPage();
+          applySpecialPageLocks(targetIsSpecial);
+          updateModeNotice(false, targetIsSpecial);
         }
         updateSectionStatus();
       });

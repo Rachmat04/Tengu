@@ -1,3 +1,38 @@
+## v2.3.0
+
+### Added
+
+* Added an `isSpecialPage` context flag to identify Special pages in page mode
+* Added an `isSpecialTarget` parameter to `updateModeNotice()` for Special page-specific notices
+* Added an `isTargetSpecialPage()` helper function to detect Special page targets
+* Added `applySpecialPageLocks()` to enforce restrictions when targeting a Special page
+* Added dedicated notices for Special page targets where page-based actions or checks are not applicable
+
+### Changed
+
+* Updated `applyModeRestrictions()` to incorporate Special page detection and restriction handling
+* Updated mode notices to reflect when the selected target is a Special page
+* Updated target-change handling so Special page restrictions are re-evaluated whenever the page target changes
+* Updated page mode logic to distinguish between regular pages and Special pages when determining available actions
+
+### Fixed
+
+* Fixed restriction handling for Special page targets by ensuring locks are applied consistently during both initialisation and subsequent target changes
+* Fixed page-mode status handling to avoid unnecessary processing when targeting a Special page
+
+### Improved
+
+* Improved consistency by applying Special page restrictions immediately when the dialogue opens in page mode
+* Improved responsiveness by re-evaluating Special page restrictions whenever the target field changes
+* Improved user feedback by displaying explanatory notices instead of attempting unsupported checks on Special pages
+* Improved efficiency by skipping unnecessary API requests when the selected target is a Special page
+
+### Notes
+
+* Special page restrictions are evaluated both during initial page-mode setup and whenever the target page changes.
+* The block section now displays an appropriate notice instead of performing status lookups when page mode is targeting a Special page.
+* No changes were made to user mode behaviour.
+
 ## v2.2.0
 
 ### Added
