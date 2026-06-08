@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.1.1
+ * Version 2.1.2
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -3194,6 +3194,10 @@ $(function () {
         'Append "See also the abuse filter log" to the edit summary',
         false,
       );
+      const { wrap: wrapDeletedContribs, chk: chkDeletedContribs } = makeCheckbox(
+        'Append "See also deleted contributions" to the edit summary',
+        false,
+      );
       wrapHardblock.title =
         "Apply block to logged-in users from this IP address";
       wrapAutoblock.title =
@@ -3209,6 +3213,7 @@ $(function () {
       checksBlock.appendChild(wrapMail);
       checksBlock.appendChild(wrapHidename);
       checksBlock.appendChild(wrapAbuseFilter);
+      checksBlock.appendChild(wrapDeletedContribs);
       bodyBlock.appendChild(checksBlock);
       body.appendChild(secBlock);
 
@@ -3667,12 +3672,16 @@ $(function () {
             reason = sel || inp;
           }
 
-          // Append the abuse filter log notice if the tickbox is selected
-          if (chkAbuseFilter.checked) {
+          // Build "see also" suffix from selected append-to-summary options
+          const seeAlsoParts = [];
+          if (chkAbuseFilter.checked) seeAlsoParts.push("the abuse filter log for this user");
+          if (chkDeletedContribs.checked) seeAlsoParts.push("deleted contributions");
+          if (seeAlsoParts.length) {
+            const seeAlso = "see also " + seeAlsoParts.join(" and ");
             if (reason) {
-              reason += " (see also the abuse filter log for this user)";
+              reason += " (" + seeAlso + ")";
             } else {
-              reason = "See also the abuse filter log for this user";
+              reason = seeAlso.charAt(0).toUpperCase() + seeAlso.slice(1);
             }
           }
 

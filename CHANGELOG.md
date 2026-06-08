@@ -1,3 +1,20 @@
+## v2.1.2
+
+### Added
+
+* Added a new block-section checkbox: **"Append 'See also deleted contributions' to the edit summary"**
+* Added support for including a deleted contributions reference in automatically generated block summaries
+
+### Changed
+
+* Updated `buildBlockReason()` to use a unified `seeAlsoParts` array when constructing edit summary suffixes
+* Edit summary generation now combines references from multiple optional checkboxes into a single adaptive **"See also ..."** suffix when applicable
+
+### Improved
+
+* Improved edit summary formatting by consolidating multiple optional references into a single, grammatically consistent suffix
+* Improved extensibility of block summary generation, making it easier to add future "See also" references
+
 ## v2.1.1
 
 ### Changed
