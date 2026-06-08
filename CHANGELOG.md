@@ -1,3 +1,60 @@
+## v2.5.0
+
+### Added
+
+* Added a new `Tengu-reasons.js` configuration file containing all predefined reason lists used by Tengu
+* Added a global `window.TenguReasons` object to store rollback, block, deletion, and protection reasons
+* Added asynchronous loading of reason configuration data using `mw.loader.getScript()`
+
+### Changed
+
+* Refactored reason-list management by moving all reason definitions out of `Tengu.js` and into a dedicated configuration file
+* Updated Tengu initialisation to load reason data from the external configuration source
+* Simplified the main script structure by separating configuration data from application logic
+
+### Removed
+
+* Removed the large embedded reason arrays from **Section 06** of `Tengu.js`
+
+### Improved
+
+* Improved maintainability by isolating editable reason lists from the core script logic
+* Improved code organisation through a clearer separation of configuration and functionality
+* Improved performance perception by loading reason data asynchronously, allowing the portlet to appear immediately without waiting for configuration data to be parsed
+* Improved safety of future updates, as reason-list changes can now be made independently of the main application logic
+
+### Notes
+
+* All rollback, block, deletion, and protection reasons are now maintained in `Tengu-reasons.js`
+* Future modifications to predefined reason lists should be made in `Tengu-reasons.js` rather than `Tengu.js`
+* This release continues the modularisation effort introduced in previous versions by further separating configuration data from core functionality
+
+## v2.4.0
+
+### Added
+
+* Added `applyActiveBlockSettings()` to automatically apply settings based on an existing active block
+* Added `applyActiveProtectionSettings()` to automatically apply settings based on an existing active page protection
+* Added automatic invocation of both functions during status updates when relevant active restrictions are detected
+
+### Changed
+
+* Updated log entry formatting to include numbering alongside timestamps, improving log readability and traceability
+* Updated status-handling workflows so active block and protection information can influence the corresponding dialogue settings automatically
+
+### Improved
+
+* Improved workflow efficiency by pre-populating block settings from existing active blocks
+* Improved workflow efficiency by pre-populating protection settings from existing active protections
+* Improved consistency between detected restriction status and the values presented in the interface
+* Improved auditability through numbered log entries
+
+### Notes
+
+* `applyActiveBlockSettings()` is triggered when an active block is detected in user mode
+* `applyActiveProtectionSettings()` is triggered when an active protection is detected in page mode
+* Log entries now include a sequential counter before the message text
+
 ## v2.3.0
 
 ### Added
