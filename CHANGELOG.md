@@ -1,3 +1,35 @@
+## v2.2.0
+
+### Added
+
+* Added a new **"Protect pages included in this page (cascading protection)"** checkbox to the protection section
+* Added dynamic cascade protection availability handling through `updateCascadeAvailability()`
+* Added contextual tooltip messaging that reflects whether cascading protection is currently available
+
+### Changed
+
+* Protection packages now automatically update cascade protection availability after applying preset edit restriction levels
+* The protection configuration object now includes a `protectCascade` property derived from the cascade protection checkbox state
+* Tooltip text now changes dynamically based on the selected edit protection level
+
+### Fixed
+
+* Fixed package application behavior so protection presets that set a non-administrator edit restriction immediately disable cascading protection
+* Fixed consistency between manual protection settings and package-applied settings by using the same cascade availability logic
+
+### Improved
+
+* Improved usability by preventing cascade protection from being selected when the edit restriction level does not support it
+* Improved guidance through context-sensitive tooltips explaining why the option is unavailable
+* Improved API integration by conditionally adding the MediaWiki `cascade` flag only when cascading protection is enabled and valid
+* Improved consistency across both immediate and deferred protection workflows by supporting cascading protection in both API execution paths
+
+### Notes
+
+* Cascading protection is only available when edit protection is set to administrators only
+* The `cascade` parameter is conditionally added to protection API requests using MediaWiki's standard boolean flag pattern (`cascade: ""`)
+* Both the primary protection pass and deferred protection pass support cascading protection when enabled
+
 ## v2.1.2
 
 ### Added

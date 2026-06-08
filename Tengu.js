@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.1.2
+ * Version 2.2.0
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -1234,6 +1234,7 @@ $(function () {
               protections: `edit=${config.protectEdit}|move=${config.protectMove}`,
               expiry: config.protectExpiry,
               reason: config.protectReason + toolTag,
+              ...(config.protectCascade ? { cascade: "" } : {}),
             };
             await apiPost(protectData);
             addLog(`[Protect] Protected page: ${title}`);
@@ -1459,6 +1460,7 @@ $(function () {
               protections: `edit=${config.protectEdit}|move=${config.protectMove}`,
               expiry: config.protectExpiry,
               reason: config.protectReason + toolTag,
+              ...(config.protectCascade ? { cascade: "" } : {}),
             });
             addLog(
               `[Protect] Protected deleted page against recreation: ${title}`,
@@ -3194,10 +3196,11 @@ $(function () {
         'Append "See also the abuse filter log" to the edit summary',
         false,
       );
-      const { wrap: wrapDeletedContribs, chk: chkDeletedContribs } = makeCheckbox(
-        'Append "See also deleted contributions" to the edit summary',
-        false,
-      );
+      const { wrap: wrapDeletedContribs, chk: chkDeletedContribs } =
+        makeCheckbox(
+          'Append "See also deleted contributions" to the edit summary',
+          false,
+        );
       wrapHardblock.title =
         "Apply block to logged-in users from this IP address";
       wrapAutoblock.title =
@@ -3373,7 +3376,28 @@ $(function () {
       checksProtect.className = "tng-checks";
       checksProtect.style.paddingLeft = "0";
       checksProtect.appendChild(wrapProtectTalk);
+      const { wrap: wrapProtectCascade, chk: chkProtectCascade } = makeCheckbox(
+        "Protect pages included in this page (cascading protection)",
+        false,
+      );
+      wrapProtectCascade.title =
+        "Only available when edit restriction is set to administrators only.";
+      checksProtect.appendChild(wrapProtectCascade);
       bodyProtect.appendChild(checksProtect);
+
+      // Cascade protection requires sysop-level edit restriction.
+      // Disable and uncheck the cascade checkbox whenever the edit level drops below sysop.
+      function updateCascadeAvailability() {
+        const isSysop = selProtectEdit.value === "sysop";
+        chkProtectCascade.disabled = !isSysop;
+        wrapProtectCascade.title = isSysop
+          ? "When ticked, pages transcluded into this page are also protected at the same level."
+          : "Only available when edit restriction is set to administrators only.";
+        if (!isSysop) chkProtectCascade.checked = false;
+      }
+      selProtectEdit.addEventListener("change", updateCascadeAvailability);
+      updateCascadeAvailability();
+
       body.appendChild(secProtect);
 
       const {
@@ -3674,8 +3698,10 @@ $(function () {
 
           // Build "see also" suffix from selected append-to-summary options
           const seeAlsoParts = [];
-          if (chkAbuseFilter.checked) seeAlsoParts.push("the abuse filter log for this user");
-          if (chkDeletedContribs.checked) seeAlsoParts.push("deleted contributions");
+          if (chkAbuseFilter.checked)
+            seeAlsoParts.push("the abuse filter log for this user");
+          if (chkDeletedContribs.checked)
+            seeAlsoParts.push("deleted contributions");
           if (seeAlsoParts.length) {
             const seeAlso = "see also " + seeAlsoParts.join(" and ");
             if (reason) {
@@ -3737,6 +3763,7 @@ $(function () {
               : selProtectExpiry.value,
           protectReason: buildProtectReason() + suffix,
           protectTalk: chkProtectTalk.checked,
+          protectCascade: chkProtectCascade.checked,
           rd: chkRevdel.checked,
           rdHides: rdHides,
           rdReason: buildRevdelReason() + suffix,
@@ -4064,6 +4091,7 @@ $(function () {
             .classList.toggle("tng-arrow-up", chkProtect.checked);
         }
         selProtectEdit.value = pt.edit || "all";
+        updateCascadeAvailability();
         selProtectMove.value = pt.move || "all";
         selProtectExpiry.value = pt.expiry || "1 day";
         inputProtectExpiry.value = "";
