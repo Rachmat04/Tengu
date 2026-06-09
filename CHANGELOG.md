@@ -1,3 +1,58 @@
+## v2.5.1
+
+### Added
+
+* Added dedicated speedy deletion sub-groups within `PAGE_DELETE_REASONS`:
+  * General
+  * Articles
+  * Redirects
+  * Files
+  * Categories
+  * Templates
+  * User pages
+* Added article-specific speedy deletion criteria covering the A-series criteria
+* Added redirect-specific speedy deletion criteria
+* Added file-specific speedy deletion criteria, including en-GB licence terminology
+* Added category-, template-, and user-page-specific speedy deletion criteria
+* Added **"Office actions"** to the General speedy deletion group
+
+### Changed
+
+* Reorganised the speedy deletion reason list into structured criterion-based groups
+* Updated speedy deletion wording to align with the current G-, A-, F-, and related CSD criteria descriptions while omitting criterion prefixes
+* Updated redirect deletion reason wording to match the reorganised criterion structure
+* Standardised references to the `"File:"` namespace with consistent quotation formatting
+* Updated the copyright deletion reason to use the full page name: **"Wikipedia:Copyright problems"**
+* Removed `(PROD)` and `(BLPPROD)` suffixes from the corresponding deletion reasons
+
+### Fixed
+
+* Improved consistency between deletion reasons and the underlying speedy deletion criteria they represent
+* Corrected terminology and formatting inconsistencies within the deletion reason lists
+
+### Removed
+
+* Removed the following legacy speedy deletion entries:
+  * Deletion to make way for an Articles for Creation move
+  * Deletion to rectify a copy-and-paste page move
+  * Subpages with no parent page
+  * Housekeeping and non-controversial cleanup
+  * Wholly negative, unsourced biography of a living person
+* Merged the former **"Wholly negative, unsourced biography of a living person"** entry into **"Attack page or negative unsourced BLP"**
+
+### Improved
+
+* Improved organisation and discoverability of deletion reasons by grouping them according to criterion type
+* Improved maintainability of the deletion reason configuration through a clearer structure
+* Improved alignment with Wikipedia speedy deletion terminology and workflows
+* Improved consistency across namespace-specific deletion criteria
+
+### Notes
+
+* This release affects only the `PAGE_DELETE_REASONS` configuration data
+* No changes were made to deletion workflows, API interactions, or user interface behaviour
+* The restructuring is intended to make deletion reasons easier to locate and maintain while more closely reflecting the underlying speedy deletion criteria
+
 ## v2.5.0
 
 ### Added

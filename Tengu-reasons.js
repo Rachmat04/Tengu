@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.5.0
+ * Version 2.5.1
  * All-in-one wiki moderation tool — Pre-populated reason sets
  * ============================================================================
  * PURPOSE:
@@ -148,69 +148,55 @@ window.TenguReasons = {
   PAGE_DELETE_REASONS: [
     { value: "", label: "Other:" },
     {
-      group: "Speedy deletion",
+      group: "Speedy deletion – General",
       items: [
         {
-          value:
-            "Ambiguous text or gibberish lacking meaningful content or context",
-          label:
-            "Ambiguous text or gibberish lacking meaningful content or context",
+          value: "Patent nonsense, meaningless, or incomprehensible",
+          label: "Patent nonsense, meaningless, or incomprehensible",
         },
         { value: "Test page", label: "Test page" },
-        { value: "Pure vandalism", label: "Pure vandalism" },
+        { value: "Vandalism", label: "Vandalism" },
         { value: "Blatant hoax", label: "Blatant hoax" },
         {
-          value: "Recreation of material deleted via a deletion discussion",
-          label: "Recreation of material deleted via a deletion discussion",
+          value:
+            "Recreation of a page that was deleted per a deletion discussion",
+          label:
+            "Recreation of a page that was deleted per a deletion discussion",
         },
         {
-          value: "Created by a banned or blocked user",
-          label: "Created by a banned or blocked user",
+          value:
+            "Creation by a banned or blocked user in violation of ban or block",
+          label:
+            "Creation by a banned or blocked user in violation of ban or block",
         },
         {
-          value: "Created in violation of a general sanction",
-          label: "Created in violation of a general sanction",
+          value: "Enforcement of general sanctions",
+          label: "Enforcement of general sanctions",
         },
         {
-          value: "Unambiguously created in error",
-          label: "Unambiguously created in error",
+          value: "Technical deletion (uncontroversial maintenance)",
+          label: "Technical deletion (uncontroversial maintenance)",
         },
         {
           value: "Deletion to make way for a page move",
           label: "Deletion to make way for a page move",
         },
         {
-          value: "Technical deletion resulting from a deletion discussion",
-          label: "Technical deletion resulting from a deletion discussion",
+          value: "Unambiguously created in error or in the incorrect namespace",
+          label: "Unambiguously created in error or in the incorrect namespace",
         },
         {
-          value: "Deletion to make way for an Articles for creation move",
-          label: "Deletion to make way for an Articles for creation move",
+          value: "One author who has requested deletion or blanked the page",
+          label: "One author who has requested deletion or blanked the page",
         },
         {
-          value: "Deletion to rectify a copy-and-paste page move",
-          label: "Deletion to rectify a copy-and-paste page move",
+          value: "Page dependent on a deleted or nonexistent page",
+          label: "Page dependent on a deleted or nonexistent page",
         },
+        { value: "Office actions", label: "Office actions" },
         {
-          value: "Housekeeping and non-controversial cleanup",
-          label: "Housekeeping and non-controversial cleanup",
-        },
-        {
-          value: "Author requests deletion, or author blanked",
-          label: "Author requests deletion, or author blanked",
-        },
-        {
-          value: "Pages dependent on a non-existent or deleted page",
-          label: "Pages dependent on a non-existent or deleted page",
-        },
-        {
-          value: "Subpages with no parent page",
-          label: "Subpages with no parent page",
-        },
-        { value: "Attack page", label: "Attack page" },
-        {
-          value: "Wholly negative, unsourced biography of a living person",
-          label: "Wholly negative, unsourced biography of a living person",
+          value: "Attack page or negative unsourced BLP",
+          label: "Attack page or negative unsourced BLP",
         },
         {
           value: "Unambiguous advertising or promotion",
@@ -221,12 +207,141 @@ window.TenguReasons = {
           label: "Unambiguous copyright infringement",
         },
         {
+          value: "Abandoned draft or Articles for Creation submission",
+          label: "Abandoned draft or Articles for Creation submission",
+        },
+        {
           value: "Unnecessary disambiguation page",
           label: "Unnecessary disambiguation page",
         },
         {
-          value: "Unreviewed content generated by a large language model",
-          label: "Unreviewed content generated by a large language model",
+          value: "LLM-generated content that has not been adequately reviewed",
+          label: "LLM-generated content that has not been adequately reviewed",
+        },
+      ],
+    },
+    {
+      group: "Speedy deletion – Articles",
+      items: [
+        { value: "No context", label: "No context" },
+        {
+          value:
+            "Foreign-language articles that exist on another Wikimedia project",
+          label:
+            "Foreign-language articles that exist on another Wikimedia project",
+        },
+        { value: "No content", label: "No content" },
+        {
+          value:
+            "No indication of importance (people, animals, organisations, web content, events)",
+          label:
+            "No indication of importance (people, animals, organisations, web content, events)",
+        },
+        {
+          value: "No indication of importance (musical recordings)",
+          label: "No indication of importance (musical recordings)",
+        },
+        {
+          value: "Recently created article duplicating an existing topic",
+          label: "Recently created article duplicating an existing topic",
+        },
+        { value: "Obviously invented", label: "Obviously invented" },
+      ],
+    },
+    {
+      group: "Speedy deletion – Redirects",
+      items: [
+        {
+          value: "Cross-namespace redirects",
+          label: "Cross-namespace redirects",
+        },
+        {
+          value: "Recently created implausible typos",
+          label: "Recently created implausible typos",
+        },
+        {
+          value: "File namespace redirects matching Wikimedia Commons files",
+          label: "File namespace redirects matching Wikimedia Commons files",
+        },
+      ],
+    },
+    {
+      group: "Speedy deletion – Files",
+      items: [
+        { value: "Redundant files", label: "Redundant files" },
+        {
+          value: "Corrupt, missing, or empty files",
+          label: "Corrupt, missing, or empty files",
+        },
+        { value: "Improper licence", label: "Improper licence" },
+        {
+          value: "Lack of licensing information",
+          label: "Lack of licensing information",
+        },
+        {
+          value: "Orphaned non-free use files",
+          label: "Orphaned non-free use files",
+        },
+        {
+          value: "Missing non-free use rationale",
+          label: "Missing non-free use rationale",
+        },
+        {
+          value: "Invalid non-free use claim",
+          label: "Invalid non-free use claim",
+        },
+        {
+          value: "Files available as identical copies on Wikimedia Commons",
+          label: "Files available as identical copies on Wikimedia Commons",
+        },
+        {
+          value: "Unambiguous copyright infringement",
+          label: "Unambiguous copyright infringement",
+        },
+        {
+          value: "No evidence of permission",
+          label: "No evidence of permission",
+        },
+      ],
+    },
+    {
+      group: "Speedy deletion – Categories",
+      items: [
+        {
+          value: "Unpopulated categories",
+          label: "Unpopulated categories",
+        },
+        {
+          value: "Speedy renaming and merging",
+          label: "Speedy renaming and merging",
+        },
+        {
+          value: "Unused maintenance categories",
+          label: "Unused maintenance categories",
+        },
+      ],
+    },
+    {
+      group: "Speedy deletion – Templates",
+      items: [
+        {
+          value: "Unused template subpages",
+          label: "Unused template subpages",
+        },
+      ],
+    },
+    {
+      group: "Speedy deletion – User pages",
+      items: [
+        { value: "User request", label: "User request" },
+        { value: "Non-existent user", label: "Non-existent user" },
+        {
+          value: "Abandoned user subpages of non-contributors",
+          label: "Abandoned user subpages of non-contributors",
+        },
+        {
+          value: "Excessively unrelated non-draft subpages by non-contributors",
+          label: "Excessively unrelated non-draft subpages by non-contributors",
         },
       ],
     },
@@ -243,9 +358,9 @@ window.TenguReasons = {
         },
         {
           value:
-            "Redirect in the File namespace with the same name as a file or redirect at Wikimedia Commons",
+            'Redirect in the "File:" namespace with the same name as a file or redirect at Wikimedia Commons',
           label:
-            "Redirect in the File namespace with the same name as a file or redirect at Wikimedia Commons",
+            'Redirect in the "File:" namespace with the same name as a file or redirect at Wikimedia Commons',
         },
         {
           value:
@@ -263,8 +378,8 @@ window.TenguReasons = {
       group: "Other criteria",
       items: [
         {
-          value: "Listed at copyright problems for over seven days",
-          label: "Listed at copyright problems for over seven days",
+          value: "Listed at Wikipedia:Copyright problems for over seven days",
+          label: "Listed at Wikipedia:Copyright problems for over seven days",
         },
         {
           value:
@@ -273,14 +388,14 @@ window.TenguReasons = {
             "Page created by contributor with extensive history of copyright violations",
         },
         {
-          value: "Nominated for seven days with no objection (PROD)",
-          label: "Nominated for seven days with no objection (PROD)",
+          value: "Nominated for seven days with no objection",
+          label: "Nominated for seven days with no objection",
         },
         {
           value:
-            "Nominated for seven days with no reliable sources present in the article (BLPPROD)",
+            "Nominated for seven days with no reliable sources present in the article",
           label:
-            "Nominated for seven days with no reliable sources present in the article (BLPPROD)",
+            "Nominated for seven days with no reliable sources present in the article",
         },
       ],
     },
