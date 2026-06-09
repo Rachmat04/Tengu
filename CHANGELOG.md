@@ -1,3 +1,29 @@
+## v2.7.0
+
+### Changed
+
+* Updated the deferred protection notification workflow to use the same `useIndonesian` localisation logic as the other notification paths
+* Updated deferred protection notices to generate Indonesian text on supported Indonesian-language wikis
+* Updated deferred protection edit summaries to match the language of the generated notice
+
+### Fixed
+
+* Fixed an issue where deferred protection notifications were always generated in English, regardless of the target wiki language
+* Fixed an issue where deferred protection edit summaries remained in English on Indonesian-language wikis
+* Fixed localisation inconsistency between the deferred protection workflow and the other notification workflows
+
+### Improved
+
+* Improved localisation consistency across all notification paths
+* Improved user-facing messaging by ensuring recreation-protection notices use the appropriate language automatically
+* Improved maintainability by bringing the deferred protection workflow into alignment with the existing localisation pattern used elsewhere in the script
+
+### Notes
+
+* This change affects only the deferred protection pass used to protect deleted pages against recreation
+* The Indonesian wording now matches the wording already used by the primary protection notification workflow
+* No changes were made to protection logic, API requests, or protection behaviour
+
 ## v2.6.0
 
 ### Added
