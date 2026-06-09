@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.5.1
+ * Version 2.6.0
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -397,6 +397,16 @@ $(function () {
           };
           const toolTag = " — ⛩️ [[w:id:Pengguna:Rachmat04/Tengu.js|Tengu]]";
 
+          // Wikis whose content language is Indonesian or a regional language
+          // of Indonesia. Notices are posted in Indonesian on these wikis.
+          const INDONESIAN_LANGS = new Set([
+            'id', 'ace', 'ban', 'bjn', 'map-bms', 'bbc', 'bew', 'bug',
+            'gor', 'jv', 'kge', 'mad', 'btm', 'min', 'nia', 'su',
+          ]);
+          const useIndonesian = INDONESIAN_LANGS.has(
+            mw.config.get('wgContentLanguage'),
+          );
+
           // Build progress UI
           const { overlay, body, footer } = createDialog({
             title: "Processing Tengu tasks",
@@ -546,22 +556,23 @@ $(function () {
               // so a notification failure does not misreport the block as having failed)
               if (stats.block > 0) {
                 const talkTitle = new mw.Title(targetVal, 3).getPrefixedText();
-                const blockDurDisplay =
-                  config.blockDur === "never"
-                    ? "indefinitely"
-                    : `for ${config.blockDur}`;
-                const blockExpiryText =
-                  config.blockDur === "never"
-                    ? "This block does not expire automatically and will remain in effect unless modified by an administrator."
-                    : "The block is scheduled to remain in effect until it expires, unless modified by an administrator.";
-                const notice = `== Account block notice ==\nThe account "${targetVal}" has been blocked ${blockDurDisplay} due to the following reason: ${config.blockReason}.\n\nDuring the block period, the account may be unable to perform some or all actions that normally require editing privileges. ${blockExpiryText}\n\nThis notification was posted automatically. Please direct any questions or concerns to my user talk page. ~~~~`;
+                const isBlockIndef = config.blockDur === "never";
+                const notice = useIndonesian
+                  ? (isBlockIndef
+                      ? `== Pemberitahuan pemblokiran akun ==\nAkun "${targetVal}" telah diblokir secara tidak terbatas dengan alasan berikut: ${config.blockReason}.\n\nSelama masa pemblokiran, akun ini mungkin tidak dapat melakukan sebagian atau seluruh tindakan yang biasanya memerlukan hak penyuntingan. Pemblokiran ini tidak berakhir secara otomatis dan akan tetap berlaku kecuali diubah oleh pengurus.\n\nPemberitahuan ini dikirimkan secara otomatis. Silakan sampaikan pertanyaan atau keberatan ke halaman pembicaraan saya. ~~~~`
+                      : `== Pemberitahuan pemblokiran akun ==\nAkun "${targetVal}" telah diblokir selama ${config.blockDur} dengan alasan berikut: ${config.blockReason}.\n\nSelama masa pemblokiran, akun ini mungkin tidak dapat melakukan sebagian atau seluruh tindakan yang biasanya memerlukan hak penyuntingan. Pemblokiran dijadwalkan berakhir pada waktunya, kecuali diubah oleh pengurus.\n\nPemberitahuan ini dikirimkan secara otomatis. Silakan sampaikan pertanyaan atau keberatan ke halaman pembicaraan saya. ~~~~`)
+                  : (isBlockIndef
+                      ? `== Account block notice ==\nThe account "${targetVal}" has been blocked indefinitely due to the following reason: ${config.blockReason}.\n\nDuring the block period, the account may be unable to perform some or all actions that normally require editing privileges. This block does not expire automatically and will remain in effect unless modified by an administrator.\n\nThis notification was posted automatically. Please direct any questions or concerns to my user talk page. ~~~~`
+                      : `== Account block notice ==\nThe account "${targetVal}" has been blocked for ${config.blockDur} due to the following reason: ${config.blockReason}.\n\nDuring the block period, the account may be unable to perform some or all actions that normally require editing privileges. The block is scheduled to remain in effect until it expires, unless modified by an administrator.\n\nThis notification was posted automatically. Please direct any questions or concerns to my user talk page. ~~~~`);
                 try {
                   await apiPost({
                     action: "edit",
                     title: talkTitle,
                     appendtext: "\n\n" + notice,
                     summary:
-                      "Automated notification: Account block notice" + toolTag,
+                      (useIndonesian
+                        ? "Pemberitahuan otomatis: Pemberitahuan pemblokiran akun"
+                        : "Automated notification: Account block notice") + toolTag,
                     bot: true,
                   });
                   addLog(`[Notify] Notification posted to: ${talkTitle}`);
@@ -992,18 +1003,30 @@ $(function () {
               if (isAborted) break;
               try {
                 let notice;
+                const isProtectIndef = config.protectExpiry === "never";
                 if (titles.length === 1) {
-                  notice = `== Page protection notice ==\nThe page "${titles[0]}" has been protected ${protectExpiryDisplay} due to the following reason: ${config.protectReason}.\n\nDuring the protection period, some or all editing actions may be restricted depending on the level of protection applied. ${protectExpiryText}\n\nThis notification was posted automatically. Please direct any questions or concerns to my user talk page. ~~~~`;
+                  notice = useIndonesian
+                    ? (isProtectIndef
+                        ? `== Pemberitahuan perlindungan halaman ==\nHalaman "${titles[0]}" telah dilindungi secara tidak terbatas dengan alasan berikut: ${config.protectReason}.\n\nSelama masa perlindungan, sebagian atau seluruh tindakan penyuntingan mungkin dibatasi bergantung pada tingkat perlindungan yang diterapkan. Perlindungan ini tidak berakhir secara otomatis dan akan tetap berlaku kecuali diubah oleh pengurus.\n\nPemberitahuan ini dikirimkan secara otomatis. Silakan sampaikan pertanyaan atau keberatan ke halaman pembicaraan saya. ~~~~`
+                        : `== Pemberitahuan perlindungan halaman ==\nHalaman "${titles[0]}" telah dilindungi selama ${config.protectExpiry} dengan alasan berikut: ${config.protectReason}.\n\nSelama masa perlindungan, sebagian atau seluruh tindakan penyuntingan mungkin dibatasi bergantung pada tingkat perlindungan yang diterapkan. Perlindungan dijadwalkan berakhir pada waktunya, kecuali diubah oleh pengurus.\n\nPemberitahuan ini dikirimkan secara otomatis. Silakan sampaikan pertanyaan atau keberatan ke halaman pembicaraan saya. ~~~~`)
+                    : `== Page protection notice ==\nThe page "${titles[0]}" has been protected ${protectExpiryDisplay} due to the following reason: ${config.protectReason}.\n\nDuring the protection period, some or all editing actions may be restricted depending on the level of protection applied. ${protectExpiryText}\n\nThis notification was posted automatically. Please direct any questions or concerns to my user talk page. ~~~~`;
                 } else {
                   const listed = titles.map((t) => `"${t}"`).join(" and ");
-                  notice = `== Page protection notice ==\nThe following pages have been protected ${protectExpiryDisplay} due to the following reason: ${config.protectReason}.\n\n${listed}\n\nDuring the protection period, some or all editing actions on these pages may be restricted depending on the level of protection applied. ${protectExpiryText}\n\nThis notification was posted automatically. Please direct any questions or concerns to my user talk page. ~~~~`;
+                  const listedId = titles.map((t) => `"${t}"`).join(" dan ");
+                  notice = useIndonesian
+                    ? (isProtectIndef
+                        ? `== Pemberitahuan perlindungan halaman ==\nHalaman-halaman berikut telah dilindungi secara tidak terbatas dengan alasan berikut: ${config.protectReason}.\n\n${listedId}\n\nSelama masa perlindungan, sebagian atau seluruh tindakan penyuntingan pada halaman-halaman ini mungkin dibatasi bergantung pada tingkat perlindungan yang diterapkan. Perlindungan ini tidak berakhir secara otomatis dan akan tetap berlaku kecuali diubah oleh pengurus.\n\nPemberitahuan ini dikirimkan secara otomatis. Silakan sampaikan pertanyaan atau keberatan ke halaman pembicaraan saya. ~~~~`
+                        : `== Pemberitahuan perlindungan halaman ==\nHalaman-halaman berikut telah dilindungi selama ${config.protectExpiry} dengan alasan berikut: ${config.protectReason}.\n\n${listedId}\n\nSelama masa perlindungan, sebagian atau seluruh tindakan penyuntingan pada halaman-halaman ini mungkin dibatasi bergantung pada tingkat perlindungan yang diterapkan. Perlindungan dijadwalkan berakhir pada waktunya, kecuali diubah oleh pengurus.\n\nPemberitahuan ini dikirimkan secara otomatis. Silakan sampaikan pertanyaan atau keberatan ke halaman pembicaraan saya. ~~~~`)
+                    : `== Page protection notice ==\nThe following pages have been protected ${protectExpiryDisplay} due to the following reason: ${config.protectReason}.\n\n${listed}\n\nDuring the protection period, some or all editing actions on these pages may be restricted depending on the level of protection applied. ${protectExpiryText}\n\nThis notification was posted automatically. Please direct any questions or concerns to my user talk page. ~~~~`;
                 }
                 await apiPost({
                   action: "edit",
                   title: talkTitle,
                   appendtext: "\n\n" + notice,
                   summary:
-                    "Automated notification: Page protection notice" + toolTag,
+                      (useIndonesian
+                        ? "Pemberitahuan otomatis: Pemberitahuan perlindungan halaman"
+                        : "Automated notification: Page protection notice") + toolTag,
                   bot: true,
                 });
                 addLog(`[Notify] Notification posted to: ${talkTitle}`);
@@ -1100,17 +1123,23 @@ $(function () {
             try {
               let notice;
               if (deletedTitles.length === 1) {
-                notice = `== Page deletion notice ==\nThe page "${deletedTitles[0]}" you created has been deleted due to the following reason: ${config.massdelReason}.\n\nDeleted pages are no longer publicly accessible. If you believe this deletion was in error, please raise the matter on my user talk page or follow your wiki's undeletion process.\n\nThis notification was posted automatically. Please direct any questions or concerns to my user talk page. ~~~~`;
+                notice = useIndonesian
+                  ? `== Pemberitahuan penghapusan halaman ==\nHalaman "${deletedTitles[0]}" yang Anda buat telah dihapus dengan alasan berikut: ${config.massdelReason}.\n\nHalaman yang dihapus tidak lagi dapat diakses secara publik. Jika Anda yakin penghapusan ini keliru, silakan sampaikan di halaman pembicaraan saya atau ikuti prosedur pemulihan halaman wiki ini.\n\nPemberitahuan ini dikirimkan secara otomatis. Silakan sampaikan pertanyaan atau keberatan ke halaman pembicaraan saya. ~~~~`
+                  : `== Page deletion notice ==\nThe page "${deletedTitles[0]}" you created has been deleted due to the following reason: ${config.massdelReason}.\n\nDeleted pages are no longer publicly accessible. If you believe this deletion was in error, please raise the matter on my user talk page or follow your wiki's undeletion process.\n\nThis notification was posted automatically. Please direct any questions or concerns to my user talk page. ~~~~`;
               } else {
                 const listed = deletedTitles.map((t) => `* "${t}"`).join("\n");
-                notice = `== Page deletion notice ==\nThe following pages you created have been deleted due to the following reason: ${config.massdelReason}.\n\n${listed}\n\nDeleted pages are no longer publicly accessible. If you believe any of these deletions were in error, please raise the matter on my user talk page or follow your wiki's undeletion process.\n\nThis notification was posted automatically. Please direct any questions or concerns to my user talk page. ~~~~`;
+                notice = useIndonesian
+                  ? `== Pemberitahuan penghapusan halaman ==\nHalaman-halaman berikut yang Anda buat telah dihapus dengan alasan berikut: ${config.massdelReason}.\n\n${listed}\n\nHalaman yang dihapus tidak lagi dapat diakses secara publik. Jika Anda yakin ada penghapusan yang keliru, silakan sampaikan di halaman pembicaraan saya atau ikuti prosedur pemulihan halaman wiki ini.\n\nPemberitahuan ini dikirimkan secara otomatis. Silakan sampaikan pertanyaan atau keberatan ke halaman pembicaraan saya. ~~~~`
+                  : `== Page deletion notice ==\nThe following pages you created have been deleted due to the following reason: ${config.massdelReason}.\n\n${listed}\n\nDeleted pages are no longer publicly accessible. If you believe any of these deletions were in error, please raise the matter on my user talk page or follow your wiki's undeletion process.\n\nThis notification was posted automatically. Please direct any questions or concerns to my user talk page. ~~~~`;
               }
               await apiPost({
                 action: "edit",
                 title: talkTitle,
                 appendtext: "\n\n" + notice,
                 summary:
-                  "Automated notification: Page deletion notice" + toolTag,
+                  (useIndonesian
+                    ? "Pemberitahuan otomatis: Pemberitahuan penghapusan halaman"
+                    : "Automated notification: Page deletion notice") + toolTag,
                 bot: true,
               });
               addLog(`[Notify] Deletion notification posted to: ${talkTitle}`);

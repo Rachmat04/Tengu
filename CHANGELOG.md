@@ -1,3 +1,40 @@
+## v2.6.0
+
+### Added
+
+* Added automatic language detection based on `wgContentLanguage`
+* Added a predefined set of Indonesian-region language codes used to determine whether Indonesian or English notice text should be generated
+* Added language-aware edit summary generation for block, protection, and deletion notices
+
+### Changed
+
+* Updated block notice generation to select notice text dynamically based on the target wiki language and block duration
+* Updated protection notice generation in both immediate and deferred workflows to select notice text dynamically based on the target wiki language and protection expiry
+* Updated deletion notice generation to display either Indonesian or English text depending on the target wiki language
+* Updated multi-page protection notices to use Indonesian **"dan"** instead of English **"and"** when Indonesian notice text is selected
+* Updated edit summaries for block, protection, and deletion notices so they match the language of the generated notice
+
+### Fixed
+
+* Removed redundant block notice helper variables (`blockDurDisplay` and `blockExpiryText`) by incorporating the expiry logic directly into notice generation
+* Improved consistency between notice content and associated edit summaries across supported languages
+
+### Removed
+
+* Removed the standalone `blockDurDisplay` and `blockExpiryText` helper variables
+
+### Improved
+
+* Improved localisation support by automatically generating notices in Indonesian on supported Wikimedia projects
+* Improved consistency by applying the same language-selection logic across block, protection, and deletion notices
+* Improved maintainability by centralising language selection through a single `useIndonesian` flag
+
+### Notes
+
+* English notice text remains unchanged and is used whenever the wiki content language is not included in the Indonesian language set
+* Both immediate and deferred protection notice workflows now use identical localisation logic
+* No functional changes were made to blocking, protection, deletion, or notification workflows beyond notice and edit summary localisation
+
 ## v2.5.1
 
 ### Added
