@@ -1,3 +1,29 @@
+## v2.7.2
+
+### Changed
+
+* Updated the duration-matching regular expression used by `translateDurationId()` to prioritise plural units before singular units
+
+### Fixed
+
+* Fixed an issue where plural MediaWiki duration strings could be matched incorrectly due to regex alternation order
+* Fixed incorrect Indonesian translations such as:
+  * `1 months` → `1 bulans` (incorrect)
+  * `3 weeks` → `3 minggus` (incorrect)
+* Fixed partial matches where singular units (`month`, `week`, `day`, etc.) were matched before their plural equivalents, leaving the trailing `s` outside the captured unit
+
+### Improved
+
+* Improved reliability of Indonesian duration translations for plural MediaWiki expiry strings
+* Improved regex accuracy by ensuring the most specific unit forms are matched first
+* Improved localisation consistency across block and protection notifications that display finite durations
+
+### Notes
+
+* The issue was caused by alternation order within a case-insensitive regular expression
+* Plural forms (`months`, `weeks`, `days`, etc.) are now evaluated before singular forms (`month`, `week`, `day`, etc.)
+* This release affects only Indonesian duration translation behaviour and does not change notification logic or wording outside the translated duration values
+
 ## v2.7.1
 
 ### Added

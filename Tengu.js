@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.7.1
+ * Version 2.7.2
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -319,7 +319,7 @@ $(function () {
             years: "tahun",
           };
           return duration.replace(
-            /(\d+)\s*(second|seconds|minute|minutes|hour|hours|day|days|week|weeks|month|months|year|years)/gi,
+            /(\d+)\s*(seconds|second|minutes|minute|hours|hour|days|day|weeks|week|months|month|years|year)/gi,
             function (_, n, unit) {
               return n + " " + (units[unit.toLowerCase()] || unit);
             },
