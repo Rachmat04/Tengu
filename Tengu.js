@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.9.0
+ * Version 2.10.0
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -459,8 +459,16 @@ $(function () {
             },
           });
 
+          // Helper function to update status dynamically
+          const updateStatusDisplay = () => {
+            const statusText = isAborted ? "Aborted." : "Processing...";
+            const summaryLine = `<b>Status:</b> ${statusText}<br/>Summary: <b>${stats.rollback}</b> reverted | <b>${stats.delete}</b> deleted | <b>${stats.unlink}</b> unlinked | <b>${stats.protect}</b> protected | <b>${stats.revdel}</b> hidden | <b>${stats.error}</b> errors.`;
+            statusLbl.innerHTML = summaryLine;
+          };
+
           const statusLbl = document.createElement("div");
-          statusLbl.innerHTML = "<b>Status:</b> Starting actions...";
+          statusLbl.innerHTML =
+            "<b>Status:</b> Processing...<br/>Summary: <b>0</b> reverted | <b>0</b> deleted | <b>0</b> unlinked | <b>0</b> protected | <b>0</b> hidden | <b>0</b> errors.";
           statusLbl.style.marginBottom = "8px";
 
           const logBox = document.createElement("div");
@@ -515,6 +523,7 @@ $(function () {
             } else if (isErr) {
               d.className = "tng-log-err";
               stats.error++;
+              updateStatusDisplay();
             } else {
               d.className = "tng-log-succ";
             }
@@ -751,6 +760,7 @@ $(function () {
                     `[Revdel] Hiding ${idlist.length} revisions at: ${title}`,
                   );
                   stats.revdel++;
+                  updateStatusDisplay();
                 } catch (e) {
                   addLog(
                     `[Revdel] Failed at ${title}: ${formatApiError(e)}`,
@@ -841,6 +851,7 @@ $(function () {
                 addLog(`[Undo] Successfully reverted edits via undo: ${title}`);
                 standardRevertSuccess = true;
                 stats.rollback++;
+                updateStatusDisplay();
               } catch (e) {
                 standardErr = String(e);
                 if (
@@ -870,6 +881,7 @@ $(function () {
                 addLog(`[Rollback] Successfully reverted: ${title}`);
                 standardRevertSuccess = true;
                 stats.rollback++;
+                updateStatusDisplay();
               } catch (e) {
                 standardErr = String(e);
                 if (
@@ -918,6 +930,7 @@ $(function () {
                 );
                 if (!standardRevertSuccess) {
                   stats.rollback++;
+                  updateStatusDisplay();
                 }
               } catch (e) {
                 addLog(
@@ -944,6 +957,7 @@ $(function () {
                 });
                 addLog(`[Revdel] Hiding revisions at: ${title}`);
                 stats.revdel++;
+                updateStatusDisplay();
               } catch (e) {
                 addLog(
                   `[Revdel] Failed at ${title}: ${formatApiError(e)}`,
@@ -973,6 +987,7 @@ $(function () {
                 await apiPost(protectData);
                 addLog(`[Protect] Protected page: ${title}`);
                 stats.protect++;
+                updateStatusDisplay();
               } catch (e) {
                 addLog(
                   `[Protect] Failed to protect ${title}: ${formatApiError(e)}`,
@@ -1005,6 +1020,7 @@ $(function () {
                     });
                     addLog(`[Protect] Protected talk page: ${talkForProtect}`);
                     stats.protect++;
+                    updateStatusDisplay();
                   } catch (e) {
                     addLog(
                       `[Protect] Failed to protect talk page ${talkForProtect}: ${formatApiError(e)}`,
@@ -1103,6 +1119,7 @@ $(function () {
                 });
                 addLog(`[Delete] Deleted page: ${title}`);
                 stats.delete++;
+                updateStatusDisplay();
                 mainDeleted = true;
                 deletedTitles.push(title);
               } catch (e) {
@@ -1143,6 +1160,7 @@ $(function () {
                       `[Delete] Deleted associated talk page: ${talkTitle}`,
                     );
                     stats.delete++;
+                    updateStatusDisplay();
                   }
                 } catch (e) {
                   addLog(
@@ -1222,6 +1240,7 @@ $(function () {
                   `[Protect] Protected deleted page against recreation: ${title}`,
                 );
                 stats.protect++;
+                updateStatusDisplay();
               } catch (e) {
                 addLog(
                   `[Protect] Failed to protect ${title}: ${formatApiError(e)}`,
@@ -1253,6 +1272,7 @@ $(function () {
                     });
                     addLog(`[Protect] Protected talk page: ${talkForProtect}`);
                     stats.protect++;
+                    updateStatusDisplay();
                   } catch (e) {
                     addLog(
                       `[Protect] Failed to protect talk page ${talkForProtect}: ${formatApiError(e)}`,
@@ -1425,6 +1445,7 @@ $(function () {
                         `[Unlink] Removed links to "${delTitle}" in: ${linkTitle}`,
                       );
                       stats.unlink++;
+                      updateStatusDisplay();
                     } catch (e) {
                       addLog(
                         `[Unlink] Failed to edit ${linkTitle}: ${formatApiError(e)}`,
@@ -1449,11 +1470,11 @@ $(function () {
 
           const methodTxt =
             config.rollbackMethod === "undo" ? "undone" : "reverted";
-          const statusPrefix = isAborted
-            ? "<b>Status: Aborted!</b><br/>"
-            : "<b>Status: Completed!</b><br/>";
+          const statusWord = isAborted ? "Aborted." : "Completed.";
+          const statusPrefix = `<b>Status: ${statusWord}</b><br/>`;
           const finalStatus = `${statusPrefix}Summary: <b>${stats.rollback}</b> ${methodTxt} | <b>${stats.delete}</b> deleted | <b>${stats.unlink}</b> unlinked | <b>${stats.protect}</b> protected | <b>${stats.revdel}</b> hidden | <b>${stats.error}</b> errors.`;
           statusLbl.innerHTML = finalStatus;
+          isAborted = false;
 
           if (isAborted) {
             addLog("⛔ Operations aborted by user.");

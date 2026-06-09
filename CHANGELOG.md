@@ -1,3 +1,38 @@
+## v2.10.2
+
+### Added
+
+* Added an `updateStatusDisplay()` helper function to centralise status and summary updates within the progress dialogue
+* Added a live summary display that appears immediately when processing begins
+* Added real-time counter updates for completed operations as actions are processed
+
+### Changed
+
+* Updated the initial status label from **"Status: Starting actions..."** to **"Status: Processing..."**
+* Updated the completion status label from **"Status: Completed!"** to **"Status: Completed."**
+* Updated the abort status label from **"Status: Aborted!"** to **"Status: Aborted."**
+* Updated summary handling so the summary line is displayed from the start of the operation rather than only at completion
+* Updated operation handlers to refresh the status display immediately after each statistics counter is incremented
+
+### Fixed
+
+* Improved progress visibility by ensuring operation counts are reflected in the dialogue as actions complete
+* Improved consistency between displayed progress information and the underlying operation statistics
+
+### Improved
+
+* Improved user feedback through real-time progress reporting
+* Improved visibility of long-running operations by continuously updating action counters
+* Improved readability through clearer status wording and consistent sentence-case formatting
+* Improved language consistency by standardising status messages using en-GB punctuation and style conventions
+* Improved maintainability by consolidating status updates into a dedicated helper function
+
+### Notes
+
+* The summary line now appears with zero values when processing begins and updates dynamically throughout execution
+* Summary values are refreshed after each completed operation, including reversions, deletions, unlinking actions, protections, suppressions, and errors
+* This release focuses on user interface feedback and progress reporting; no operational workflows or API behaviour were changed
+
 ## v2.9.0
 
 ### Changed
