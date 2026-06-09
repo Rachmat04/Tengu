@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.7.2
+ * Version 2.9.0
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -24,10 +24,33 @@ $(function () {
         "https://id.wikipedia.org/w/index.php?title=Pengguna:Rachmat04/Tengu-reasons.js&action=raw&ctype=text/javascript",
       )
       .then(function () {
-        const ROLLBACK_REASONS = window.TenguReasons.ROLLBACK_REASONS;
-        const BLOCK_REASONS = window.TenguReasons.BLOCK_REASONS;
-        const PAGE_DELETE_REASONS = window.TenguReasons.PAGE_DELETE_REASONS;
-        const PROTECTION_REASONS = window.TenguReasons.PROTECTION_REASONS;
+        const INDONESIAN_LANGS = new Set([
+          "id",
+          "ace",
+          "ban",
+          "bjn",
+          "map-bms",
+          "bbc",
+          "bew",
+          "bug",
+          "gor",
+          "jv",
+          "kge",
+          "mad",
+          "btm",
+          "min",
+          "nia",
+          "su",
+        ]);
+        const useIndonesian = INDONESIAN_LANGS.has(
+          mw.config.get("wgContentLanguage"),
+        );
+
+        const tenguReasonsObj = window.TenguReasons.get(useIndonesian);
+        const ROLLBACK_REASONS = tenguReasonsObj.ROLLBACK_REASONS;
+        const BLOCK_REASONS = tenguReasonsObj.BLOCK_REASONS;
+        const PAGE_DELETE_REASONS = tenguReasonsObj.PAGE_DELETE_REASONS;
+        const PROTECTION_REASONS = tenguReasonsObj.PROTECTION_REASONS;
 
         // ============================================================================
         // [Section 00] State
@@ -425,31 +448,7 @@ $(function () {
             unlink: 0,
             error: 0,
           };
-          const toolTag = " — ⛩️ [[w:id:Pengguna:Rachmat04/Tengu.js|Tengu]]";
-
-          // Wikis whose content language is Indonesian or a regional language
-          // of Indonesia. Notices are posted in Indonesian on these wikis.
-          const INDONESIAN_LANGS = new Set([
-            "id",
-            "ace",
-            "ban",
-            "bjn",
-            "map-bms",
-            "bbc",
-            "bew",
-            "bug",
-            "gor",
-            "jv",
-            "kge",
-            "mad",
-            "btm",
-            "min",
-            "nia",
-            "su",
-          ]);
-          const useIndonesian = INDONESIAN_LANGS.has(
-            mw.config.get("wgContentLanguage"),
-          );
+          const toolTag = " — [[w:id:Pengguna:Rachmat04/Tengu.js|⛩️]]";
 
           // Build progress UI
           const { overlay, body, footer } = createDialog({
@@ -2433,7 +2432,7 @@ $(function () {
               enabled: false,
               duration: "1 day",
               indefregistered: true,
-              reason: "Vandalism",
+              reason: "",
               autoblock: true,
               hardblock: false,
               create: true,
@@ -2441,7 +2440,7 @@ $(function () {
               mail: false,
               hidename: false,
             },
-            pagedelete: { enabled: false, reason: "Pure vandalism" },
+            pagedelete: { enabled: false, reason: "" },
             pageprotection: {
               enabled: false,
               edit: "all",
@@ -2454,7 +2453,7 @@ $(function () {
               content: true,
               summary: true,
               username: false,
-              reason: "Grossly insulting, degrading, or offensive material",
+              reason: "",
               oversight: false,
             },
           };
@@ -2492,7 +2491,7 @@ $(function () {
                 enabled: true,
                 bot: false,
                 showname: true,
-                reason: "Repeated vandalism",
+                reason: "Vandalism",
               },
               block: {
                 enabled: true,
@@ -2519,7 +2518,7 @@ $(function () {
                 enabled: true,
                 bot: true,
                 showname: true,
-                reason: "Reverting mass bot attack or automated spam",
+                reason: "Vandalism",
               },
               block: {
                 enabled: true,
@@ -2546,14 +2545,13 @@ $(function () {
                 enabled: true,
                 bot: false,
                 showname: false,
-                reason: "Privacy violation or personal information",
+                reason: "Vandalism",
               },
               block: {
                 enabled: true,
                 duration: "never",
                 indefregistered: true,
-                reason:
-                  "Personal attacks or violations of the harassment policy",
+                reason: "Personal attacks or harassment policy violations",
                 autoblock: true,
                 hardblock: false,
                 create: true,
@@ -2581,7 +2579,8 @@ $(function () {
                 enabled: true,
                 bot: false,
                 showname: true,
-                reason: "Cleaning up promotional spam",
+                reason:
+                  "Promotional editing or editing with a conflict of interest",
               },
               block: {
                 enabled: true,
@@ -2597,7 +2596,7 @@ $(function () {
               },
               pagedelete: {
                 enabled: true,
-                reason: "Unambiguous advertising or promotion",
+                reason: "Purely promotional content",
               },
               pageprotection: { enabled: false },
               revisiondelete: { enabled: false },
@@ -2611,7 +2610,7 @@ $(function () {
                 enabled: true,
                 bot: false,
                 showname: true,
-                reason: "Reverting edit warring or content consensus violation",
+                reason: "Edit warring prevention",
               },
               block: {
                 enabled: true,
@@ -2638,7 +2637,7 @@ $(function () {
                 enabled: true,
                 bot: false,
                 showname: true,
-                reason: "Removing text matching copyrighted sources",
+                reason: "Copyright violations",
               },
               block: {
                 enabled: true,
@@ -2654,7 +2653,7 @@ $(function () {
               },
               pagedelete: {
                 enabled: true,
-                reason: "Unambiguous copyright infringement",
+                reason: "Clear copyright infringement",
               },
               pageprotection: { enabled: false },
               revisiondelete: {
@@ -2675,7 +2674,7 @@ $(function () {
                 enabled: true,
                 bot: false,
                 showname: true,
-                reason: "Reverting edits by a blocked or banned user",
+                reason: "Block evasion or use of sockpuppet accounts",
               },
               block: {
                 enabled: true,

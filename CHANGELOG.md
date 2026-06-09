@@ -1,3 +1,73 @@
+## v2.9.0
+
+### Changed
+
+* Updated package reason mappings to use reason values that exactly match the options available in `Tengu-reasons.js`
+* Updated the **Severe vandalism** package
+* Updated the **Bot attack or automated spam** package
+* Updated the **Severe privacy violation or doxxing** package
+* Updated the **Mass page creation or spam** package
+* Updated the **Edit warring or 3RR violation** package
+* Updated the **Mass copyright infringement** package
+* Updated the **Sockpuppetry or block evasion** package
+
+### Fixed
+
+* Fixed package-to-reason mappings that referenced values not present in the current `Tengu-reasons.js` configuration
+* Fixed package selections so predefined actions consistently map to valid reason list entries
+
+### Improved
+
+* Improved compatibility between package presets and the centralised reason management system
+* Improved reliability of automatic reason selection when applying predefined packages
+* Improved maintainability by ensuring package definitions use canonical reason values from `Tengu-reasons.js`
+* Improved consistency across rollback, block, and page deletion workflows
+
+### Notes
+
+* This release updates only package reason mappings
+* No user interface, workflow, API, or behavioural changes were introduced
+* All changes are intended to keep package presets aligned with the current reason definitions provided by `Tengu-reasons.js`
+
+## v2.8.0
+
+### Added
+
+* Added a dynamic `get(useIndonesian)` interface to `Tengu-reasons.js`
+* Added localisation-aware reason loading, allowing reason lists to be generated according to the active language context
+* Added support for returning all reason collections through a single structured object containing rollback, block, deletion, and protection reasons
+
+### Changed
+
+* Refactored `Tengu-reasons.js` from a static property-based structure to a dynamic getter-based architecture
+* Updated reason retrieval in `Tengu.js` to use the new `get()` interface instead of direct property access
+* Moved `INDONESIAN_LANGS` and `useIndonesian` initialisation into the `.then()` loading block
+* Updated reason initialisation flow to retrieve language-specific reason data after configuration loading
+* Reorganised localisation-related code to improve variable scope and dependency handling
+
+### Fixed
+
+* Removed duplicate localisation variable declarations previously present in the `work()` function
+* Improved consistency of localisation state usage throughout the reason-loading workflow
+
+### Removed
+
+* Removed direct access to static reason properties from `Tengu-reasons.js`
+* Removed redundant localisation definitions from the main execution path
+
+### Improved
+
+* Improved localisation support by allowing reason data to be generated dynamically based on the active language
+* Improved maintainability through a cleaner separation between configuration data and application logic
+* Improved code organisation by consolidating language detection and reason initialisation into a single loading workflow
+* Improved extensibility for future language-specific reason sets and configuration options
+
+### Notes
+
+* The new `get(useIndonesian)` method returns an object containing all reason collections required by Tengu
+* Existing functionality remains unchanged from a user perspective
+* This release focuses on internal architecture and localisation infrastructure rather than new user-facing features
+
 ## v2.7.2
 
 ### Changed
