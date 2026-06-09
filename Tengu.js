@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.7.0
+ * Version 2.7.1
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -296,6 +296,36 @@ $(function () {
           }
           return e;
         }
+
+        // Translates a MediaWiki duration string into Indonesian for use in
+        // Indonesian-language notifications. Returns the original string unchanged
+        // if no mapping is found.
+        function translateDurationId(duration) {
+          if (!duration) return duration;
+          const units = {
+            second: "detik",
+            seconds: "detik",
+            minute: "menit",
+            minutes: "menit",
+            hour: "jam",
+            hours: "jam",
+            day: "hari",
+            days: "hari",
+            week: "minggu",
+            weeks: "minggu",
+            month: "bulan",
+            months: "bulan",
+            year: "tahun",
+            years: "tahun",
+          };
+          return duration.replace(
+            /(\d+)\s*(second|seconds|minute|minutes|hour|hours|day|days|week|weeks|month|months|year|years)/gi,
+            function (_, n, unit) {
+              return n + " " + (units[unit.toLowerCase()] || unit);
+            },
+          );
+        }
+
         // Creates a read-only collapsible section without an enable/disable checkbox.
         // Used by the user info panel to display log entries in an expandable container.
         function makeDisplaySection(title, icon) {
@@ -574,7 +604,7 @@ $(function () {
                 const notice = useIndonesian
                   ? isBlockIndef
                     ? `== Pemberitahuan pemblokiran akun ==\nAkun "${targetVal}" telah diblokir secara tidak terbatas dengan alasan berikut: ${config.blockReason}.\n\nSelama masa pemblokiran, akun ini mungkin tidak dapat melakukan sebagian atau seluruh tindakan yang biasanya memerlukan hak penyuntingan. Pemblokiran ini tidak berakhir secara otomatis dan akan tetap berlaku kecuali diubah oleh pengurus.\n\nPemberitahuan ini dikirimkan secara otomatis. Silakan sampaikan pertanyaan atau keberatan ke halaman pembicaraan saya. ~~~~`
-                    : `== Pemberitahuan pemblokiran akun ==\nAkun "${targetVal}" telah diblokir selama ${config.blockDur} dengan alasan berikut: ${config.blockReason}.\n\nSelama masa pemblokiran, akun ini mungkin tidak dapat melakukan sebagian atau seluruh tindakan yang biasanya memerlukan hak penyuntingan. Pemblokiran dijadwalkan berakhir pada waktunya, kecuali diubah oleh pengurus.\n\nPemberitahuan ini dikirimkan secara otomatis. Silakan sampaikan pertanyaan atau keberatan ke halaman pembicaraan saya. ~~~~`
+                    : `== Pemberitahuan pemblokiran akun ==\nAkun "${targetVal}" telah diblokir selama ${translateDurationId(config.blockDur)} dengan alasan berikut: ${config.blockReason}.\n\nSelama masa pemblokiran, akun ini mungkin tidak dapat melakukan sebagian atau seluruh tindakan yang biasanya memerlukan hak penyuntingan. Pemblokiran dijadwalkan berakhir pada waktunya, kecuali diubah oleh pengurus.\n\nPemberitahuan ini dikirimkan secara otomatis. Silakan sampaikan pertanyaan atau keberatan ke halaman pembicaraan saya. ~~~~`
                   : isBlockIndef
                     ? `== Account block notice ==\nThe account "${targetVal}" has been blocked indefinitely due to the following reason: ${config.blockReason}.\n\nDuring the block period, the account may be unable to perform some or all actions that normally require editing privileges. This block does not expire automatically and will remain in effect unless modified by an administrator.\n\nThis notification was posted automatically. Please direct any questions or concerns to my user talk page. ~~~~`
                     : `== Account block notice ==\nThe account "${targetVal}" has been blocked for ${config.blockDur} due to the following reason: ${config.blockReason}.\n\nDuring the block period, the account may be unable to perform some or all actions that normally require editing privileges. The block is scheduled to remain in effect until it expires, unless modified by an administrator.\n\nThis notification was posted automatically. Please direct any questions or concerns to my user talk page. ~~~~`;
@@ -1023,7 +1053,7 @@ $(function () {
                   notice = useIndonesian
                     ? isProtectIndef
                       ? `== Pemberitahuan perlindungan halaman ==\nHalaman "${titles[0]}" telah dilindungi secara tidak terbatas dengan alasan berikut: ${config.protectReason}.\n\nSelama masa perlindungan, sebagian atau seluruh tindakan penyuntingan mungkin dibatasi bergantung pada tingkat perlindungan yang diterapkan. Perlindungan ini tidak berakhir secara otomatis dan akan tetap berlaku kecuali diubah oleh pengurus.\n\nPemberitahuan ini dikirimkan secara otomatis. Silakan sampaikan pertanyaan atau keberatan ke halaman pembicaraan saya. ~~~~`
-                      : `== Pemberitahuan perlindungan halaman ==\nHalaman "${titles[0]}" telah dilindungi selama ${config.protectExpiry} dengan alasan berikut: ${config.protectReason}.\n\nSelama masa perlindungan, sebagian atau seluruh tindakan penyuntingan mungkin dibatasi bergantung pada tingkat perlindungan yang diterapkan. Perlindungan dijadwalkan berakhir pada waktunya, kecuali diubah oleh pengurus.\n\nPemberitahuan ini dikirimkan secara otomatis. Silakan sampaikan pertanyaan atau keberatan ke halaman pembicaraan saya. ~~~~`
+                      : `== Pemberitahuan perlindungan halaman ==\nHalaman "${titles[0]}" telah dilindungi selama ${translateDurationId(config.protectExpiry)} dengan alasan berikut: ${config.protectReason}.\n\nSelama masa perlindungan, sebagian atau seluruh tindakan penyuntingan mungkin dibatasi bergantung pada tingkat perlindungan yang diterapkan. Perlindungan dijadwalkan berakhir pada waktunya, kecuali diubah oleh pengurus.\n\nPemberitahuan ini dikirimkan secara otomatis. Silakan sampaikan pertanyaan atau keberatan ke halaman pembicaraan saya. ~~~~`
                     : `== Page protection notice ==\nThe page "${titles[0]}" has been protected ${protectExpiryDisplay} due to the following reason: ${config.protectReason}.\n\nDuring the protection period, some or all editing actions may be restricted depending on the level of protection applied. ${protectExpiryText}\n\nThis notification was posted automatically. Please direct any questions or concerns to my user talk page. ~~~~`;
                 } else {
                   const listed = titles.map((t) => `"${t}"`).join(" and ");
@@ -1031,7 +1061,7 @@ $(function () {
                   notice = useIndonesian
                     ? isProtectIndef
                       ? `== Pemberitahuan perlindungan halaman ==\nHalaman-halaman berikut telah dilindungi secara tidak terbatas dengan alasan berikut: ${config.protectReason}.\n\n${listedId}\n\nSelama masa perlindungan, sebagian atau seluruh tindakan penyuntingan pada halaman-halaman ini mungkin dibatasi bergantung pada tingkat perlindungan yang diterapkan. Perlindungan ini tidak berakhir secara otomatis dan akan tetap berlaku kecuali diubah oleh pengurus.\n\nPemberitahuan ini dikirimkan secara otomatis. Silakan sampaikan pertanyaan atau keberatan ke halaman pembicaraan saya. ~~~~`
-                      : `== Pemberitahuan perlindungan halaman ==\nHalaman-halaman berikut telah dilindungi selama ${config.protectExpiry} dengan alasan berikut: ${config.protectReason}.\n\n${listedId}\n\nSelama masa perlindungan, sebagian atau seluruh tindakan penyuntingan pada halaman-halaman ini mungkin dibatasi bergantung pada tingkat perlindungan yang diterapkan. Perlindungan dijadwalkan berakhir pada waktunya, kecuali diubah oleh pengurus.\n\nPemberitahuan ini dikirimkan secara otomatis. Silakan sampaikan pertanyaan atau keberatan ke halaman pembicaraan saya. ~~~~`
+                      : `== Pemberitahuan perlindungan halaman ==\nHalaman-halaman berikut telah dilindungi selama ${translateDurationId(config.protectExpiry)} dengan alasan berikut: ${config.protectReason}.\n\n${listedId}\n\nSelama masa perlindungan, sebagian atau seluruh tindakan penyuntingan pada halaman-halaman ini mungkin dibatasi bergantung pada tingkat perlindungan yang diterapkan. Perlindungan dijadwalkan berakhir pada waktunya, kecuali diubah oleh pengurus.\n\nPemberitahuan ini dikirimkan secara otomatis. Silakan sampaikan pertanyaan atau keberatan ke halaman pembicaraan saya. ~~~~`
                     : `== Page protection notice ==\nThe following pages have been protected ${protectExpiryDisplay} due to the following reason: ${config.protectReason}.\n\n${listed}\n\nDuring the protection period, some or all editing actions on these pages may be restricted depending on the level of protection applied. ${protectExpiryText}\n\nThis notification was posted automatically. Please direct any questions or concerns to my user talk page. ~~~~`;
                 }
                 await apiPost({
@@ -1268,7 +1298,7 @@ $(function () {
                     notice = useIndonesian
                       ? isProtectIndefDeferred
                         ? `== Pemberitahuan perlindungan halaman ==\nHalaman "${titles[0]}" telah dilindungi secara tidak terbatas dengan alasan berikut: ${config.protectReason}.\n\nSelama masa perlindungan, sebagian atau seluruh tindakan penyuntingan mungkin dibatasi bergantung pada tingkat perlindungan yang diterapkan. Perlindungan ini tidak berakhir secara otomatis dan akan tetap berlaku kecuali diubah oleh pengurus.\n\nPemberitahuan ini dikirimkan secara otomatis. Silakan sampaikan pertanyaan atau keberatan ke halaman pembicaraan saya. ~~~~`
-                        : `== Pemberitahuan perlindungan halaman ==\nHalaman "${titles[0]}" telah dilindungi selama ${config.protectExpiry} dengan alasan berikut: ${config.protectReason}.\n\nSelama masa perlindungan, sebagian atau seluruh tindakan penyuntingan mungkin dibatasi bergantung pada tingkat perlindungan yang diterapkan. Perlindungan dijadwalkan berakhir pada waktunya, kecuali diubah oleh pengurus.\n\nPemberitahuan ini dikirimkan secara otomatis. Silakan sampaikan pertanyaan atau keberatan ke halaman pembicaraan saya. ~~~~`
+                        : `== Pemberitahuan perlindungan halaman ==\nHalaman "${titles[0]}" telah dilindungi selama ${translateDurationId(config.protectExpiry)} dengan alasan berikut: ${config.protectReason}.\n\nSelama masa perlindungan, sebagian atau seluruh tindakan penyuntingan mungkin dibatasi bergantung pada tingkat perlindungan yang diterapkan. Perlindungan dijadwalkan berakhir pada waktunya, kecuali diubah oleh pengurus.\n\nPemberitahuan ini dikirimkan secara otomatis. Silakan sampaikan pertanyaan atau keberatan ke halaman pembicaraan saya. ~~~~`
                       : `== Page protection notice ==\nThe page "${titles[0]}" has been protected ${protectExpiryDisplay} due to the following reason: ${config.protectReason}.\n\nDuring the protection period, some or all editing actions may be restricted depending on the level of protection applied. ${protectExpiryText}\n\nThis notification was posted automatically. Please direct any questions or concerns to my user talk page. ~~~~`;
                   } else {
                     const listed = titles.map((t) => `"${t}"`).join(" and ");
@@ -1276,7 +1306,7 @@ $(function () {
                     notice = useIndonesian
                       ? isProtectIndefDeferred
                         ? `== Pemberitahuan perlindungan halaman ==\nHalaman-halaman berikut telah dilindungi secara tidak terbatas dengan alasan berikut: ${config.protectReason}.\n\n${listedId}\n\nSelama masa perlindungan, sebagian atau seluruh tindakan penyuntingan pada halaman-halaman ini mungkin dibatasi bergantung pada tingkat perlindungan yang diterapkan. Perlindungan ini tidak berakhir secara otomatis dan akan tetap berlaku kecuali diubah oleh pengurus.\n\nPemberitahuan ini dikirimkan secara otomatis. Silakan sampaikan pertanyaan atau keberatan ke halaman pembicaraan saya. ~~~~`
-                        : `== Pemberitahuan perlindungan halaman ==\nHalaman-halaman berikut telah dilindungi selama ${config.protectExpiry} dengan alasan berikut: ${config.protectReason}.\n\n${listedId}\n\nSelama masa perlindungan, sebagian atau seluruh tindakan penyuntingan pada halaman-halaman ini mungkin dibatasi bergantung pada tingkat perlindungan yang diterapkan. Perlindungan dijadwalkan berakhir pada waktunya, kecuali diubah oleh pengurus.\n\nPemberitahuan ini dikirimkan secara otomatis. Silakan sampaikan pertanyaan atau keberatan ke halaman pembicaraan saya. ~~~~`
+                        : `== Pemberitahuan perlindungan halaman ==\nHalaman-halaman berikut telah dilindungi selama ${translateDurationId(config.protectExpiry)} dengan alasan berikut: ${config.protectReason}.\n\n${listedId}\n\nSelama masa perlindungan, sebagian atau seluruh tindakan penyuntingan pada halaman-halaman ini mungkin dibatasi bergantung pada tingkat perlindungan yang diterapkan. Perlindungan dijadwalkan berakhir pada waktunya, kecuali diubah oleh pengurus.\n\nPemberitahuan ini dikirimkan secara otomatis. Silakan sampaikan pertanyaan atau keberatan ke halaman pembicaraan saya. ~~~~`
                       : `== Page protection notice ==\nThe following pages have been protected ${protectExpiryDisplay} due to the following reason: ${config.protectReason}.\n\n${listed}\n\nDuring the protection period, some or all editing actions on these pages may be restricted depending on the level of protection applied. ${protectExpiryText}\n\nThis notification was posted automatically. Please direct any questions or concerns to my user talk page. ~~~~`;
                   }
                   await apiPost({
