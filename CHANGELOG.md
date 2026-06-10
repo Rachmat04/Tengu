@@ -1,3 +1,38 @@
+## v2.12.0
+
+### Added
+
+* Added `creatorMap`, a `Map<creatorUsername, string[]>` used to track deleted pages by their original creator during page mode operations
+* Added creator lookups prior to page deletion using the MediaWiki API (`prop=revisions`, `rvdir=newer`, `rvlimit=1`, `rvprop=user`)
+* Added page mode deletion notifications for page creators
+* Added support for grouping multiple deleted pages into a single notification per creator
+
+### Changed
+
+* Updated the page deletion workflow to retrieve creator information before attempting deletion
+* Updated notification handling so page mode can notify creators of deleted pages after all deletion operations have completed
+* Updated page mode deletion reporting to aggregate deleted pages by creator rather than sending individual notifications per page
+
+### Fixed
+
+* Improved notification accuracy by ensuring only successfully deleted pages are included in creator notifications
+* Improved resilience by allowing deletion operations to continue even if creator lookup requests fail
+
+### Improved
+
+* Improved efficiency by sending a single notification to each affected creator, even when multiple pages created by that user are deleted
+* Improved user communication by providing page creators with deletion notifications in page mode, matching existing notification behaviour elsewhere in the workflow
+* Improved localisation consistency by supporting both Indonesian and English notification messages
+* Improved error handling by treating creator lookup failures as warnings rather than blocking deletion actions
+
+### Notes
+
+* Creator information is retrieved before the deletion request is submitted
+* Pages are added to `creatorMap` only after a successful deletion
+* Pages that fail to delete are not included in creator notifications
+* Notification formatting matches the existing user mode deletion notification format, including language selection and single-page versus multi-page variants
+* Creator notifications are generated after all deletion operations have finished
+
 ## v2.11.0
 
 ### Changed

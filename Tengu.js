@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.11.0
+ * Version 2.12.0
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -1094,11 +1094,51 @@ $(function () {
           }
 
           const deletedTitles = [];
+          // Maps creator username → deleted page titles, for page mode notifications.
+          // Populated during the deletion loop (after each successful delete) so only
+          // confirmed deletions are included. Lookup must occur before deletion because
+          // the standard query API cannot return revision data for deleted pages.
+          const creatorMap = new Map();
 
           // Mass-delete pages sequentially
           if (config.massdel) {
             for (const title of creation) {
               if (isAborted) break;
+
+              // In page mode, fetch the page creator before deleting.
+              // The result is needed for the post-deletion notification.
+              // This must happen before the delete call: once a page is gone the
+              // standard query API no longer returns its revision history.
+              let pageCreator = null;
+              if (config.mode === "page") {
+                try {
+                  const creatorData = await apiGet({
+                    action: "query",
+                    prop: "revisions",
+                    titles: title,
+                    rvdir: "newer",
+                    rvlimit: 1,
+                    rvprop: "user",
+                    formatversion: 2,
+                  });
+                  const cp =
+                    creatorData.query &&
+                    creatorData.query.pages &&
+                    creatorData.query.pages[0];
+                  pageCreator =
+                    (cp &&
+                      !cp.missing &&
+                      cp.revisions &&
+                      cp.revisions[0] &&
+                      cp.revisions[0].user) ||
+                    null;
+                } catch (e) {
+                  addLog(
+                    `[Notify] Could not look up creator for ${title}: ${formatApiError(e)}`,
+                    "warn",
+                  );
+                }
+              }
 
               // Delete the main page (separate try/catch from talk page below,
               // so a talk-page failure does not misreport the main deletion as having failed)
@@ -1114,6 +1154,12 @@ $(function () {
                 updateStatusDisplay();
                 mainDeleted = true;
                 deletedTitles.push(title);
+                // Record the creator mapping now that deletion is confirmed.
+                if (config.mode === "page" && pageCreator) {
+                  if (!creatorMap.has(pageCreator))
+                    creatorMap.set(pageCreator, []);
+                  creatorMap.get(pageCreator).push(title);
+                }
               } catch (e) {
                 addLog(
                   `[Delete] Failed to delete ${title}: ${formatApiError(e)}`,
@@ -1166,7 +1212,7 @@ $(function () {
             }
           }
 
-          // Post deletion notification to the target user's talk page (user mode only).
+          // Post deletion notification to the target user's talk page (user mode).
           // All deleted pages were created by the same user, so a single notice is
           // posted regardless of how many pages were deleted.
           if (
@@ -1200,6 +1246,44 @@ $(function () {
                 `[Notify] Failed to post deletion notification to ${talkTitle}: ${formatApiError(e)}`,
                 "warn",
               );
+            }
+          }
+
+          // Post deletion notifications in page mode, grouped by creator.
+          // Each unique creator receives one consolidated notice listing all pages
+          // deleted during this session that they created. The creatorMap was populated
+          // during the deletion loop; entries are only present for confirmed deletions.
+          if (config.massdel && config.mode === "page" && creatorMap.size > 0) {
+            for (const [creator, titles] of creatorMap) {
+              if (isAborted) break;
+              const talkTitle = new mw.Title(creator, 3).getPrefixedText();
+              try {
+                let notice;
+                if (titles.length === 1) {
+                  notice = useIndonesian
+                    ? `== Pemberitahuan penghapusan halaman ==\nHalaman "${titles[0]}" yang Anda buat telah dihapus dengan alasan berikut: ${config.massdelReason}.\n\nHalaman yang dihapus tidak lagi dapat diakses secara publik. Jika Anda yakin penghapusan ini keliru, silakan sampaikan di halaman pembicaraan saya atau ikuti prosedur pemulihan halaman wiki ini.\n\nPemberitahuan ini dikirimkan secara otomatis. Silakan sampaikan pertanyaan atau keberatan ke halaman pembicaraan saya. ~~~~`
+                    : `== Page deletion notice ==\nThe page "${titles[0]}" you created has been deleted due to the following reason: ${config.massdelReason}.\n\nDeleted pages are no longer publicly accessible. If you believe this deletion was in error, please raise the matter on my user talk page or follow your wiki's undeletion process.\n\nThis notification was posted automatically. Please direct any questions or concerns to my user talk page. ~~~~`;
+                } else {
+                  const listed = titles.map((t) => `* "${t}"`).join("\n");
+                  notice = useIndonesian
+                    ? `== Pemberitahuan penghapusan halaman ==\nHalaman-halaman berikut yang Anda buat telah dihapus dengan alasan berikut: ${config.massdelReason}.\n\n${listed}\n\nHalaman yang dihapus tidak lagi dapat diakses secara publik. Jika Anda yakin ada penghapusan yang keliru, silakan sampaikan di halaman pembicaraan saya atau ikuti prosedur pemulihan halaman wiki ini.\n\nPemberitahuan ini dikirimkan secara otomatis. Silakan sampaikan pertanyaan atau keberatan ke halaman pembicaraan saya. ~~~~`
+                    : `== Page deletion notice ==\nThe following pages you created have been deleted due to the following reason: ${config.massdelReason}.\n\n${listed}\n\nDeleted pages are no longer publicly accessible. If you believe any of these deletions were in error, please raise the matter on my user talk page or follow your wiki's undeletion process.\n\nThis notification was posted automatically. Please direct any questions or concerns to my user talk page. ~~~~`;
+                }
+                await apiPost({
+                  action: "edit",
+                  title: talkTitle,
+                  appendtext: "\n\n" + notice,
+                  summary: config.massdelReason + toolTag,
+                  bot: true,
+                });
+                addLog(`[Notify] Deletion notification posted to: ${talkTitle}`);
+              } catch (e) {
+                addLog(
+                  `[Notify] Failed to post deletion notification to ${talkTitle}: ${formatApiError(e)}`,
+                  "warn",
+                );
+              }
+              await new Promise((resolve) => setTimeout(resolve, 100));
             }
           }
 
