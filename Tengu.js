@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.12.0
+ * Version 2.13.0
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -821,15 +821,15 @@ $(function () {
 
             const undoSummaryStr = config.rollbackReason
               ? config.rollbackReason + toolTag
-              : "Reverting mass edits by " +
-                (config.rollbackShow ? targetVal : "<username hidden>") +
-                toolTag;
+              : config.rollbackShow
+                ? "Reverting mass edits by " + targetVal + toolTag
+                : "Revert edits" + toolTag;
 
             const rbSummaryStr = config.rollbackReason
               ? config.rollbackReason + toolTag
               : config.rollbackShow
                 ? ""
-                : "Revert edits by <username hidden>" + toolTag;
+                : "Revert edits" + toolTag;
 
             // Execute standard rollback or undo operation sequentially based on settings
             if (config.rollbackMethod === "undo") {
@@ -3000,7 +3000,7 @@ $(function () {
           const helpRbReason = document.createElement("div");
           helpRbReason.className = "tng-help";
           helpRbReason.textContent =
-            'If set, this overrides the default rollback summary. Uncheck "Show username" to hide the username regardless.';
+            'If set, this overrides the default rollback summary. When "Show username in summary" is unchecked and no reason is given, the summary will read "Revert edits".';
           reasonWrapRollback.appendChild(helpRbReason);
 
           fieldRbReason.appendChild(reasonWrapRollback);

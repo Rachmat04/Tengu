@@ -1,3 +1,27 @@
+## v2.13.0
+
+### Changed
+
+* Updated Undo edit summary generation when username display is disabled
+* Updated Rollback edit summary generation when username display is disabled
+
+### Fixed
+
+* Fixed Undo summaries so they no longer include a username placeholder when username display is disabled. The summary now uses **"Revert edits"**
+* Fixed Rollback summaries so they no longer generate **"Revert edits by <username hidden>"** when username display is disabled. The summary now uses **"Revert edits"**
+* Preserved existing Rollback behaviour when username display is enabled and no reason is provided, allowing MediaWiki to generate its default summary
+
+### Removed
+
+* Removed the `<username hidden>` placeholder from Undo summaries
+* Removed the `<username hidden>` placeholder from Rollback summaries
+
+### Improved
+
+* Improved edit summary clarity by avoiding unnecessary placeholder text
+* Improved consistency between Undo and Rollback summary generation when username display is disabled
+* Improved integration with MediaWiki's native rollback summary behaviour
+
 ## v2.12.0
 
 ### Added
