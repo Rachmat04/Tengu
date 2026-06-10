@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.13.0
+ * Version 2.14.0
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -3652,11 +3652,11 @@ $(function () {
               // Build "see also" suffix from selected append-to-summary options
               const seeAlsoParts = [];
               if (chkAbuseFilter.checked)
-                seeAlsoParts.push("the abuse filter log for this user");
+                seeAlsoParts.push(useIndonesian ? "log penyaring penyalahgunaan untuk pengguna ini" : "the abuse filter log for this user");
               if (chkDeletedContribs.checked)
-                seeAlsoParts.push("deleted contributions");
+                seeAlsoParts.push(useIndonesian ? "kontribusi yang dihapus" : "deleted contributions");
               if (seeAlsoParts.length) {
-                const seeAlso = "see also " + seeAlsoParts.join(" and ");
+                const seeAlso = (useIndonesian ? "lihat juga " : "see also ") + seeAlsoParts.join(useIndonesian ? " dan " : " and ");
                 if (reason) {
                   reason += " (" + seeAlso + ")";
                 } else {

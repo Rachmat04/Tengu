@@ -1,3 +1,21 @@
+## v2.14.0
+
+### Changed
+
+* Updated `buildBlockReason()` to localise automatically generated **"see also"** references based on the value of `useIndonesian`
+* Updated the abuse filter reference text
+
+### Fixed
+
+* Fixed mixed-language block reasons on Indonesian-language wikis where automatically generated **"see also"** references remained in English
+* Fixed localisation consistency for abuse filter and deleted contributions references appended to block reasons
+
+### Improved
+
+* Improved localisation support for automatically generated block reason suffixes
+* Improved consistency between user-supplied Indonesian block reasons and generated helper text
+* Improved readability of block summaries on Indonesian-language wikis by ensuring all generated components use the same language
+
 ## v2.13.0
 
 ### Changed

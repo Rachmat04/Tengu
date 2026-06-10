@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.13.0
+ * Version 2.14.0
  * All-in-one wiki moderation tool — Pre-populated reason sets
  * ============================================================================
  * PURPOSE:
@@ -21,22 +21,24 @@ window.TenguReasons = {
    * Returns localised reason sets.
    * @param {boolean} useIndonesian - True if the wiki uses Indonesian or a regional language of Indonesia.
    */
-  get: function (useIndonesian) {
-    const v = function (en, id) {
+  get: function(useIndonesian) {
+    const v = function(en, id) {
       return useIndonesian ? id : en;
     };
 
     return {
-      ROLLBACK_REASONS: [
-        { value: "", label: "Other:" },
+      ROLLBACK_REASONS: [{
+          value: "",
+          label: "Other:"
+        },
         {
           value: v("Vandalism", "Vandalisme"),
           label: "Vandalism",
         },
         {
           value: v(
-            "Inaccurate or unsourced information",
-            "Informasi tidak akurat atau tidak didukung sumber",
+            "Inaccurate or poorly sourced information",
+            "Informasi tidak akurat atau didukung sumber yang tidak memadai",
           ),
           label: "Inaccurate or unsourced information",
         },
@@ -53,15 +55,15 @@ window.TenguReasons = {
         },
         {
           value: v(
-            "Promotional editing or editing with a conflict of interest",
-            "Penyuntingan promosi atau yang mengandung konflik kepentingan",
+            "Promotional editing or conflict-of-interest editing",
+            "Penyuntingan promosi atau penyuntingan dengan konflik kepentingan",
           ),
           label: "Promotional editing or editing with a conflict of interest",
         },
         {
           value: v(
-            "Technical disruption or formatting issues",
-            "Gangguan teknis atau masalah pemformatan",
+            "Technical issues or formatting problems",
+            "Masalah teknis atau pemformatan",
           ),
           label: "Technical disruption or formatting issues",
         },
@@ -74,8 +76,8 @@ window.TenguReasons = {
         },
         {
           value: v(
-            "Changes contrary to established consensus",
-            "Perubahan yang bertentangan dengan konsensus yang telah disepakati",
+            "Changes contrary to consensus",
+            "Perubahan yang bertentangan dengan konsensus",
           ),
           label: "Changes contrary to established consensus",
         },
@@ -85,19 +87,20 @@ window.TenguReasons = {
         },
         {
           value: v(
-            "Block evasion or use of sockpuppet accounts",
+            "Block evasion or sockpuppetry",
             "Penghindaran blokir atau penggunaan akun boneka",
           ),
           label: "Block evasion or use of sockpuppet accounts",
         },
       ],
 
-      BLOCK_REASONS: [
-        { value: "", label: "Other:" },
+      BLOCK_REASONS: [{
+          value: "",
+          label: "Other:"
+        },
         {
           group: "Common block reasons",
-          items: [
-            {
+          items: [{
               value: v("Vandalism", "Vandalisme"),
               label: "Vandalism",
             },
@@ -106,7 +109,10 @@ window.TenguReasons = {
               label: "Copyright infringement",
             },
             {
-              value: v("Creating attack pages", "Membuat halaman serangan"),
+              value: v(
+                "Creating attack pages or content",
+                "Membuat halaman atau konten serangan",
+              ),
               label: "Creating attack pages",
             },
             {
@@ -125,15 +131,15 @@ window.TenguReasons = {
             },
             {
               value: v(
-                "Creating nonsense or other inappropriate pages",
-                "Membuat halaman omong kosong atau halaman lain yang tidak pantas",
+                "Creating nonsense or inappropriate pages",
+                "Membuat halaman omong kosong atau halaman yang tidak pantas",
               ),
               label: "Creating nonsense or other inappropriate pages",
             },
             {
               value: v(
-                "Using Wikipedia for promotion or advertising purposes",
-                "Menggunakan Wikipedia untuk tujuan promosi atau iklan",
+                "Using Wikipedia for promotion or advertising",
+                "Menggunakan Wikipedia untuk promosi atau iklan",
               ),
               label: "Using Wikipedia for promotion or advertising purposes",
             },
@@ -154,8 +160,8 @@ window.TenguReasons = {
             },
             {
               value: v(
-                "Personal attacks or harassment policy violations",
-                "Serangan pribadi atau pelanggaran kebijakan antipelecehan",
+                "Personal attacks or harassment",
+                "Serangan pribadi atau pelecehan",
               ),
               label: "Personal attacks or harassment policy violations",
             },
@@ -176,14 +182,14 @@ window.TenguReasons = {
             },
             {
               value: v(
-                "Abusing multiple accounts",
+                "Misuse of multiple accounts",
                 "Penyalahgunaan akun ganda",
               ),
               label: "Abusing multiple accounts",
             },
             {
               value: v(
-                "Repeatedly triggering the edit filter",
+                "Repeatedly triggering edit filters",
                 "Berulang kali memicu filter suntingan",
               ),
               label: "Repeatedly triggering the edit filter",
@@ -197,13 +203,12 @@ window.TenguReasons = {
                 "Revoking talk page access: Inappropriate use of user talk page whilst blocked",
                 "Mencabut akses halaman pembicaraan: Penggunaan halaman pembicaraan pengguna yang tidak semestinya saat diblokir",
               ),
-              label:
-                "Revoking talk page access: Inappropriate use of user talk page whilst blocked",
+              label: "Revoking talk page access: Inappropriate use of user talk page whilst blocked",
             },
             {
               value: v(
-                "Account used solely for vandalism",
-                "Akun semata-mata digunakan untuk vandalisme",
+                "Account used only for vandalism",
+                "Akun yang hanya digunakan untuk vandalisme",
               ),
               label: "Account used solely for vandalism",
             },
@@ -211,8 +216,7 @@ window.TenguReasons = {
         },
         {
           group: "Username policy violations",
-          items: [
-            {
+          items: [{
               value: v(
                 "Username violates the username policy",
                 "Nama pengguna melanggar kebijakan nama pengguna",
@@ -221,14 +225,14 @@ window.TenguReasons = {
             },
             {
               value: v(
-                "Username indicates use of a bot without authorisation",
-                "Nama pengguna mengindikasikan penggunaan bot tanpa otorisasi",
+                "Username suggests unauthorised bot use",
+                "Nama pengguna menunjukkan penggunaan bot tanpa izin",
               ),
               label: "Username indicates use of a bot without authorisation",
             },
             {
               value: v(
-                "Username is promotional or advertising in nature",
+                "Username is promotional or advertising",
                 "Nama pengguna bersifat promosi atau iklan",
               ),
               label: "Username is promotional or advertising in nature",
@@ -249,8 +253,8 @@ window.TenguReasons = {
             },
             {
               value: v(
-                "Username impersonates a famous figure",
-                "Nama pengguna meniru tokoh terkenal",
+                "Username impersonates a public figure",
+                "Nama pengguna meniru tokoh publik",
               ),
               label: "Username impersonates a famous figure",
             },
@@ -265,15 +269,16 @@ window.TenguReasons = {
         },
       ],
 
-      PAGE_DELETE_REASONS: [
-        { value: "", label: "Other:" },
+      PAGE_DELETE_REASONS: [{
+          value: "",
+          label: "Other:"
+        },
         {
           group: "Speedy deletion – General",
-          items: [
-            {
+          items: [{
               value: v(
-                "Patent nonsense, meaningless, or unintelligible content",
-                "Konten omong kosong, tidak bermakna, atau tidak dapat dipahami",
+                "Patent nonsense or unintelligible content",
+                "Konten omong kosong atau tidak dapat dipahami",
               ),
               label: "Patent nonsense, meaningless, or unintelligible content",
             },
@@ -291,19 +296,17 @@ window.TenguReasons = {
             },
             {
               value: v(
-                "Recreation of a page that was deleted per a deletion discussion",
-                "Pembuatan ulang halaman yang dihapus berdasarkan diskusi penghapusan",
+                "Recreation of a page deleted following a deletion discussion",
+                "Pembuatan ulang halaman yang dihapus berdasarkan hasil diskusi penghapusan",
               ),
-              label:
-                "Recreation of a page that was deleted per a deletion discussion",
+              label: "Recreation of a page that was deleted per a deletion discussion",
             },
             {
               value: v(
-                "Creation by a banned or blocked user in violation of ban or block",
-                "Dibuat oleh pengguna yang dilarang atau diblokir sebagai pelanggaran larangan atau blokir",
+                "Created in violation of a ban or block",
+                "Dibuat sebagai pelanggaran larangan atau blokir",
               ),
-              label:
-                "Creation by a banned or blocked user in violation of ban or block",
+              label: "Creation by a banned or blocked user in violation of ban or block",
             },
             {
               value: v(
@@ -314,14 +317,14 @@ window.TenguReasons = {
             },
             {
               value: v(
-                "Technical deletion (uncontroversial maintenance)",
-                "Penghapusan teknis (perawatan yang tidak kontroversial)",
+                "Technical deletion (routine maintenance)",
+                "Penghapusan teknis (pemeliharaan rutin)",
               ),
               label: "Technical deletion (uncontroversial maintenance)",
             },
             {
               value: v(
-                "Deletion to facilitate a page move",
+                "Deletion to make way for a page move",
                 "Penghapusan untuk memudahkan pemindahan halaman",
               ),
               label: "Deletion to facilitate a page move",
@@ -331,16 +334,14 @@ window.TenguReasons = {
                 "Unambiguously created in error or in the incorrect namespace",
                 "Jelas dibuat secara keliru atau di ruang nama yang salah",
               ),
-              label:
-                "Unambiguously created in error or in the incorrect namespace",
+              label: "Unambiguously created in error or in the incorrect namespace",
             },
             {
               value: v(
-                "One author who has requested deletion or blanked the page",
-                "Pengguna yang telah meminta penghapusan atau mengosongkan halaman",
+                "Deletion requested by the sole contributor",
+                "Penghapusan diminta oleh satu-satunya kontributor",
               ),
-              label:
-                "One author who has requested deletion or blanked the page",
+              label: "One author who has requested deletion or blanked the page",
             },
             {
               value: v(
@@ -355,15 +356,15 @@ window.TenguReasons = {
             },
             {
               value: v(
-                "Attack page or negative unsourced BLP",
-                "Halaman serangan atau biografi tokoh masih hidup yang bernada negatif atau tanpa sumber",
+                "Attack page or unsourced negative biography of a living person",
+                "Halaman serangan atau biografi tokoh yang masih hidup bernada negatif tanpa sumber",
               ),
               label: "Attack page or negative unsourced BLP",
             },
             {
               value: v(
-                "Purely promotional content",
-                "Konten yang jelas bersifat promosi",
+                "Purely promotional material",
+                "Materi yang semata-mata bersifat promosi",
               ),
               label: "Purely promotional content",
             },
@@ -393,15 +394,13 @@ window.TenguReasons = {
                 "LLM-generated content that has not been adequately reviewed",
                 "Konten yang dihasilkan oleh model bahasa besar dan belum ditinjau secara memadai",
               ),
-              label:
-                "LLM-generated content that has not been adequately reviewed",
+              label: "LLM-generated content that has not been adequately reviewed",
             },
           ],
         },
         {
           group: "Speedy deletion – Articles",
-          items: [
-            {
+          items: [{
               value: v("No context", "Tanpa konteks"),
               label: "No context",
             },
@@ -410,8 +409,7 @@ window.TenguReasons = {
                 "Foreign-language articles that exist on another Wikimedia project",
                 "Artikel berbahasa asing yang ada di proyek Wikimedia lain",
               ),
-              label:
-                "Foreign-language articles that exist on another Wikimedia project",
+              label: "Foreign-language articles that exist on another Wikimedia project",
             },
             {
               value: v("No content", "Tanpa konten"),
@@ -422,8 +420,7 @@ window.TenguReasons = {
                 "No indication of significance (people, animals, organisations, web content, events)",
                 "Tidak ada indikasi kelayakan (orang, hewan, organisasi, konten web, acara)",
               ),
-              label:
-                "No indication of significance (people, animals, organisations, web content, events)",
+              label: "No indication of significance (people, animals, organisations, web content, events)",
             },
             {
               value: v(
@@ -440,15 +437,17 @@ window.TenguReasons = {
               label: "Recently created article duplicating an existing subject",
             },
             {
-              value: v("Clearly fabricated", "Jelas merupakan karangan"),
+              value: v(
+                "Clearly fabricated content",
+                "Konten yang jelas dibuat-buat",
+              ),
               label: "Clearly fabricated",
             },
           ],
         },
         {
           group: "Speedy deletion – Redirects",
-          items: [
-            {
+          items: [{
               value: v(
                 "Cross-namespace redirects",
                 "Pengalihan lintas ruang nama",
@@ -457,8 +456,8 @@ window.TenguReasons = {
             },
             {
               value: v(
-                "Recently created implausible typos",
-                "Kesalahan ketik tidak masuk akal yang baru dibuat",
+                "Recently created implausible typo redirects",
+                "Pengalihan dari salah ketik yang tidak masuk akal dan baru dibuat",
               ),
               label: "Recently created implausible typos",
             },
@@ -467,15 +466,13 @@ window.TenguReasons = {
                 "File namespace redirects matching Wikimedia Commons files",
                 "Pengalihan ruang nama berkas yang cocok dengan berkas Wikimedia Commons",
               ),
-              label:
-                "File namespace redirects matching Wikimedia Commons files",
+              label: "File namespace redirects matching Wikimedia Commons files",
             },
           ],
         },
         {
           group: "Speedy deletion – Files",
-          items: [
-            {
+          items: [{
               value: v("Redundant files", "Berkas yang redundan"),
               label: "Redundant files",
             },
@@ -487,13 +484,16 @@ window.TenguReasons = {
               label: "Corrupt, missing, or empty files",
             },
             {
-              value: v("Improper licence", "Lisensi yang tidak tepat"),
+              value: v(
+                "Invalid or improper licence",
+                "Lisensi tidak sah atau tidak tepat",
+              ),
               label: "Improper licence",
             },
             {
               value: v(
-                "Lack of licensing information",
-                "Kurangnya informasi lisensi",
+                "Missing licensing information",
+                "Informasi lisensi tidak tersedia",
               ),
               label: "Lack of licensing information",
             },
@@ -533,22 +533,27 @@ window.TenguReasons = {
               label: "Clear copyright infringement",
             },
             {
-              value: v("No evidence of permission", "Tidak ada bukti izin"),
+              value: v(
+                "No evidence of permission provided",
+                "Tidak ada bukti izin penggunaan",
+              ),
               label: "No evidence of permission",
             },
           ],
         },
         {
           group: "Speedy deletion – Categories",
-          items: [
-            {
-              value: v("Unpopulated categories", "Kategori kosong"),
+          items: [{
+              value: v(
+                "Empty categories",
+                "Kategori kosong",
+              ),
               label: "Unpopulated categories",
             },
             {
               value: v(
-                "Speedy renaming and merging",
-                "Penggantian nama dan penggabungan cepat",
+                "Speedy category renaming or merging",
+                "Penggantian nama atau penggabungan kategori secara cepat",
               ),
               label: "Speedy renaming and merging",
             },
@@ -563,25 +568,25 @@ window.TenguReasons = {
         },
         {
           group: "Speedy deletion – Templates",
-          items: [
-            {
-              value: v(
-                "Unused template subpages",
-                "Subhalaman templat yang tidak digunakan",
-              ),
-              label: "Unused template subpages",
-            },
-          ],
+          items: [{
+            value: v(
+              "Unused template subpages",
+              "Subhalaman templat yang tidak digunakan",
+            ),
+            label: "Unused template subpages",
+          }, ],
         },
         {
           group: "Speedy deletion – User pages",
-          items: [
-            {
+          items: [{
               value: v("User request", "Permintaan pengguna"),
               label: "User request",
             },
             {
-              value: v("Non-existent user", "Pengguna yang tidak ada"),
+              value: v(
+                "Non-existent user account",
+                "Akun pengguna yang tidak ada",
+              ),
               label: "Non-existent user",
             },
             {
@@ -593,18 +598,16 @@ window.TenguReasons = {
             },
             {
               value: v(
-                "Excessively unrelated non-draft subpages by non-contributors",
-                "Subhalaman nondraf yang tidak berkaitan dibuat oleh nonkontributor",
+                "Excessively unrelated non-draft subpages created by non-contributors",
+                "Subhalaman nondraf yang tidak berkaitan dan dibuat oleh nonkontributor",
               ),
-              label:
-                "Excessively unrelated non-draft subpages by non-contributors",
+              label: "Excessively unrelated non-draft subpages by non-contributors",
             },
           ],
         },
         {
           group: "Redirect pages",
-          items: [
-            {
+          items: [{
               value: v(
                 "Cross-namespace redirect from mainspace",
                 "Pengalihan lintas ruang nama dari ruang nama utama",
@@ -623,16 +626,14 @@ window.TenguReasons = {
                 'Redirect in the "File:" namespace with the same name as a file or redirect at Wikimedia Commons',
                 'Pengalihan di ruang nama "Berkas:" dengan nama yang sama dengan berkas atau pengalihan di Wikimedia Commons',
               ),
-              label:
-                'Redirect in the "File:" namespace with the same name as a file or redirect at Wikimedia Commons',
+              label: 'Redirect in the "File:" namespace with the same name as a file or redirect at Wikimedia Commons',
             },
             {
               value: v(
                 "Redirect created by moving away from a title that was obviously unintended",
                 "Pengalihan yang dibuat dengan memindahkan dari judul yang jelas tidak dimaksudkan",
               ),
-              label:
-                "Redirect created by moving away from a title that was obviously unintended",
+              label: "Redirect created by moving away from a title that was obviously unintended",
             },
             {
               value: v(
@@ -645,22 +646,19 @@ window.TenguReasons = {
         },
         {
           group: "Other criteria",
-          items: [
-            {
+          items: [{
               value: v(
                 "Listed at Wikipedia:Copyright problems for over seven days",
                 "Terdaftar di Wikipedia:Masalah hak cipta selama lebih dari tujuh hari",
               ),
-              label:
-                "Listed at Wikipedia:Copyright problems for over seven days",
+              label: "Listed at Wikipedia:Copyright problems for over seven days",
             },
             {
               value: v(
                 "Page created by contributor with extensive history of copyright violations",
                 "Halaman dibuat oleh kontributor dengan riwayat pelanggaran hak cipta yang ekstensif",
               ),
-              label:
-                "Page created by contributor with extensive history of copyright violations",
+              label: "Page created by contributor with extensive history of copyright violations",
             },
             {
               value: v(
@@ -674,19 +672,19 @@ window.TenguReasons = {
                 "Nominated for seven days with no reliable sources present in the article",
                 "Dicalonkan selama tujuh hari tanpa sumber tepercaya dalam artikel",
               ),
-              label:
-                "Nominated for seven days with no reliable sources present in the article",
+              label: "Nominated for seven days with no reliable sources present in the article",
             },
           ],
         },
       ],
 
-      PROTECTION_REASONS: [
-        { value: "", label: "Other:" },
+      PROTECTION_REASONS: [{
+          value: "",
+          label: "Other:"
+        },
         {
           group: "Edit protection",
-          items: [
-            {
+          items: [{
               value: v("Persistent vandalism", "Vandalisme yang terus-menerus"),
               label: "Persistent vandalism",
             },
@@ -703,8 +701,8 @@ window.TenguReasons = {
             },
             {
               value: v(
-                "Persistent disruptive editing",
-                "Pengeditan mengganggu yang terus-menerus",
+                "Persistent disruptive editing behaviour",
+                "Penyuntingan yang terus-menerus mengganggu",
               ),
               label: "Persistent disruptive editing",
             },
@@ -724,17 +722,17 @@ window.TenguReasons = {
             },
             {
               value: v(
-                "Addition of unsourced or poorly sourced content",
-                "Penambahan konten tanpa sumber atau dengan sumber yang buruk",
+                "Repeated addition of unsourced or poorly sourced content",
+                "Penambahan berulang konten tanpa sumber atau dengan sumber yang tidak memadai",
               ),
               label: "Addition of unsourced or poorly sourced content",
             },
             {
               value: v(
-                "Edit warring / content dispute",
-                "Perang suntingan / perselisihan konten",
+                "Edit warring or content dispute",
+                "Perang suntingan atau perselisihan konten",
               ),
-              label: "Edit warring / content dispute",
+              label: "Edit warring or content dispute",
             },
             {
               value: v("Arbitration enforcement", "Penegakan arbitrase"),
@@ -756,7 +754,7 @@ window.TenguReasons = {
             },
             {
               value: v(
-                "User request in their own user space",
+                "User request in their own userspace",
                 "Permintaan pengguna di ruang penggunanya sendiri",
               ),
               label: "User request in their own user space",
@@ -779,8 +777,7 @@ window.TenguReasons = {
         },
         {
           group: "Move protection",
-          items: [
-            {
+          items: [{
               value: v("Page-move vandalism", "Vandalisme pemindahan halaman"),
               label: "Page-move vandalism",
             },
@@ -799,23 +796,20 @@ window.TenguReasons = {
         },
         {
           group: "Images",
-          items: [
-            {
-              value: v(
-                "Image about to be featured on the Main Page",
-                "Gambar yang akan ditampilkan di Halaman Utama",
-              ),
-              label: "Image about to be featured on the Main Page",
-            },
-          ],
+          items: [{
+            value: v(
+              "Image about to be featured on the Main Page",
+              "Gambar yang akan ditampilkan di Halaman Utama",
+            ),
+            label: "Image about to be featured on the Main Page",
+          }, ],
         },
         {
           group: "Unprotection",
-          items: [
-            {
+          items: [{
               value: v(
-                "Testing whether long-term protection is still needed",
-                "Menguji apakah perlindungan jangka panjang masih diperlukan",
+                "Testing whether protection is still needed",
+                "Menguji apakah perlindungan masih diperlukan",
               ),
               label: "Testing whether long-term protection is still needed",
             },
