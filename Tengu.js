@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.14.0
+ * Version 2.15.0
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -536,6 +536,16 @@ $(function () {
 
           const targetVal = config.target;
 
+          const notifySummaryBlock = (useIndonesian
+            ? "Notifikasi: Pemberitahuan pemblokiran akun"
+            : "Notification: Account block notice") + toolTag;
+          const notifySummaryDelete = (useIndonesian
+            ? "Notifikasi: Pemberitahuan penghapusan halaman"
+            : "Notification: Page deletion notice") + toolTag;
+          const notifySummaryProtect = (useIndonesian
+            ? "Notifikasi: Pemberitahuan perlindungan halaman"
+            : "Notification: Page protection notice") + toolTag;
+
           // --- Block ---
           if (config.block && config.mode === "user" && !isAborted) {
             let proceedWithBlock = true;
@@ -621,7 +631,7 @@ $(function () {
                     action: "edit",
                     title: talkTitle,
                     appendtext: "\n\n" + notice,
-                    summary: config.blockReason + toolTag,
+                    summary: notifySummaryBlock,
                     bot: true,
                   });
                   addLog(`[Notify] Notification posted to: ${talkTitle}`);
@@ -1079,7 +1089,7 @@ $(function () {
                   action: "edit",
                   title: talkTitle,
                   appendtext: "\n\n" + notice,
-                  summary: config.protectReason + toolTag,
+                  summary: notifySummaryProtect,
                   bot: true,
                 });
                 addLog(`[Notify] Notification posted to: ${talkTitle}`);
@@ -1237,7 +1247,7 @@ $(function () {
                 action: "edit",
                 title: talkTitle,
                 appendtext: "\n\n" + notice,
-                summary: config.massdelReason + toolTag,
+                summary: notifySummaryDelete,
                 bot: true,
               });
               addLog(`[Notify] Deletion notification posted to: ${talkTitle}`);
@@ -1273,7 +1283,7 @@ $(function () {
                   action: "edit",
                   title: talkTitle,
                   appendtext: "\n\n" + notice,
-                  summary: config.massdelReason + toolTag,
+                  summary: notifySummaryDelete,
                   bot: true,
                 });
                 addLog(`[Notify] Deletion notification posted to: ${talkTitle}`);
@@ -1405,7 +1415,7 @@ $(function () {
                     action: "edit",
                     title: talkTitle,
                     appendtext: "\n\n" + notice,
-                    summary: config.protectReason + toolTag,
+                    summary: notifySummaryProtect,
                     bot: true,
                   });
                   addLog(`[Notify] Notification posted to: ${talkTitle}`);

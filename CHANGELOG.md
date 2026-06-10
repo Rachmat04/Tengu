@@ -1,3 +1,39 @@
+## v2.15.0
+
+### Added
+
+* Added `notifySummaryBlock`, a localised notification summary constant for block notifications
+* Added `notifySummaryDelete`, a localised notification summary constant for deletion notifications
+* Added `notifySummaryProtect`, a localised notification summary constant for protection notifications
+* Added centralised language-aware notification summary generation based on the active wiki language
+
+### Changed
+
+* Updated block notification posts to use `notifySummaryBlock` instead of deriving the edit summary from `config.blockReason`
+* Updated deletion notification posts in both user mode and page mode to use `notifySummaryDelete`
+* Updated protection notification posts in both the primary and deferred protection workflows to use `notifySummaryProtect`
+* Replaced notification-specific `summary: config.*Reason + toolTag` assignments with predefined localised notification summary constants
+
+### Fixed
+
+* Improved consistency of notification edit summaries across block, deletion, and protection workflows
+* Fixed notification summary generation so notification edits use dedicated notification summaries rather than action reasons
+
+### Removed
+
+* Removed the direct dependency on:
+  * `config.blockReason`
+  * `config.massdelReason`
+  * `config.protectReason`
+  for notification edit summary generation.
+
+### Improved
+
+* Improved localisation consistency by centralising notification summary wording in a single set of language-aware constants
+* Improved maintainability by eliminating duplicated notification summary logic across multiple notification workflows
+* Improved separation between action reasons and notification summaries, allowing each to serve its intended purpose independently
+* Improved consistency between user mode and page mode notification behaviour
+
 ## v2.14.0
 
 ### Changed
