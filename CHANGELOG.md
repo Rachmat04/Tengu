@@ -1,3 +1,31 @@
+## v2.11.0
+
+### Changed
+
+* Updated notification edit summaries to use the user-supplied reason from the active configuration instead of predefined localised summary text
+* Updated block notification summaries to use `config.blockReason`
+* Updated deletion notification summaries to use `config.massdelReason`
+* Updated protection notification summaries in both the primary and deferred protection workflows to use `config.protectReason`
+
+### Fixed
+
+* Improved consistency between the action reason selected by the user and the edit summary used when posting notifications
+* Fixed notification workflows that previously ignored the configured reason and always used hardcoded summary text
+
+### Removed
+
+* Removed hardcoded localised edit summary strings from:
+  * Block notifications
+  * Deletion notifications
+  * Primary protection notifications
+  * Deferred protection notifications
+
+### Improved
+
+* Improved flexibility by allowing notification edit summaries to reflect the exact reason provided by the user
+* Improved consistency across notification workflows by using the same configured reason values already used elsewhere in the action process
+* Improved customisation for administrators who use project-specific or situational reasons
+
 ## v2.10.2
 
 ### Added

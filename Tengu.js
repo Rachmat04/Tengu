@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.10.0
+ * Version 2.11.0
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -621,11 +621,7 @@ $(function () {
                     action: "edit",
                     title: talkTitle,
                     appendtext: "\n\n" + notice,
-                    summary:
-                      (useIndonesian
-                        ? "Pemberitahuan otomatis: Pemberitahuan pemblokiran akun"
-                        : "Automated notification: Account block notice") +
-                      toolTag,
+                    summary: config.blockReason + toolTag,
                     bot: true,
                   });
                   addLog(`[Notify] Notification posted to: ${talkTitle}`);
@@ -1083,11 +1079,7 @@ $(function () {
                   action: "edit",
                   title: talkTitle,
                   appendtext: "\n\n" + notice,
-                  summary:
-                    (useIndonesian
-                      ? "Pemberitahuan otomatis: Pemberitahuan perlindungan halaman"
-                      : "Automated notification: Page protection notice") +
-                    toolTag,
+                  summary: config.protectReason + toolTag,
                   bot: true,
                 });
                 addLog(`[Notify] Notification posted to: ${talkTitle}`);
@@ -1199,10 +1191,7 @@ $(function () {
                 action: "edit",
                 title: talkTitle,
                 appendtext: "\n\n" + notice,
-                summary:
-                  (useIndonesian
-                    ? "Pemberitahuan otomatis: Pemberitahuan penghapusan halaman"
-                    : "Automated notification: Page deletion notice") + toolTag,
+                summary: config.massdelReason + toolTag,
                 bot: true,
               });
               addLog(`[Notify] Deletion notification posted to: ${talkTitle}`);
@@ -1332,11 +1321,7 @@ $(function () {
                     action: "edit",
                     title: talkTitle,
                     appendtext: "\n\n" + notice,
-                    summary:
-                      (useIndonesian
-                        ? "Pemberitahuan otomatis: Pemberitahuan perlindungan halaman"
-                        : "Automated notification: Page protection notice") +
-                      toolTag,
+                    summary: config.protectReason + toolTag,
                     bot: true,
                   });
                   addLog(`[Notify] Notification posted to: ${talkTitle}`);

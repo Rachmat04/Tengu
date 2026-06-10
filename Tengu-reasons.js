@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.9.0
+ * Version 2.11.0
  * All-in-one wiki moderation tool — Pre-populated reason sets
  * ============================================================================
  * PURPOSE:
@@ -149,7 +149,7 @@ window.TenguReasons = {
               label: "Violation of the three-revert rule",
             },
             {
-              value: v("Disruptive editing", "Pengeditan yang mengganggu"),
+              value: v("Disruptive editing", "Penyuntingan yang mengganggu"),
               label: "Disruptive editing",
             },
             {
@@ -257,7 +257,7 @@ window.TenguReasons = {
             {
               value: v(
                 "Username impersonates a (non-)profit organisation",
-                "Nama pengguna meniru organisasi (non-)profit",
+                "Nama pengguna meniru organisasi (non)profit",
               ),
               label: "Username impersonates a (non-)profit organisation",
             },
@@ -337,7 +337,7 @@ window.TenguReasons = {
             {
               value: v(
                 "One author who has requested deletion or blanked the page",
-                "Satu penulis yang telah meminta penghapusan atau mengosongkan halaman",
+                "Pengguna yang telah meminta penghapusan atau mengosongkan halaman",
               ),
               label:
                 "One author who has requested deletion or blanked the page",
@@ -356,7 +356,7 @@ window.TenguReasons = {
             {
               value: v(
                 "Attack page or negative unsourced BLP",
-                "Halaman serangan atau BLP negatif tanpa sumber",
+                "Halaman serangan atau biografi tokoh masih hidup yang bernada negatif atau tanpa sumber",
               ),
               label: "Attack page or negative unsourced BLP",
             },
@@ -391,7 +391,7 @@ window.TenguReasons = {
             {
               value: v(
                 "LLM-generated content that has not been adequately reviewed",
-                "Konten yang dihasilkan LLM dan belum ditinjau secara memadai",
+                "Konten yang dihasilkan oleh model bahasa besar dan belum ditinjau secara memadai",
               ),
               label:
                 "LLM-generated content that has not been adequately reviewed",
@@ -500,21 +500,21 @@ window.TenguReasons = {
             {
               value: v(
                 "Orphaned non-free use files",
-                "Berkas penggunaan non-bebas yang tidak tertaut",
+                "Berkas penggunaan nonbebas yang tidak tertaut",
               ),
               label: "Orphaned non-free use files",
             },
             {
               value: v(
                 "Missing non-free use rationale",
-                "Rasional penggunaan non-bebas yang hilang",
+                "Rasional penggunaan nonbebas yang hilang",
               ),
               label: "Missing non-free use rationale",
             },
             {
               value: v(
                 "Invalid non-free use claim",
-                "Klaim penggunaan non-bebas yang tidak valid",
+                "Klaim penggunaan nonbebas yang tidak valid",
               ),
               label: "Invalid non-free use claim",
             },
@@ -587,14 +587,14 @@ window.TenguReasons = {
             {
               value: v(
                 "Abandoned user subpages of non-contributors",
-                "Subhalaman pengguna yang terbengkalai dari non-kontributor",
+                "Subhalaman pengguna yang terbengkalai dari nonkontributor",
               ),
               label: "Abandoned user subpages of non-contributors",
             },
             {
               value: v(
                 "Excessively unrelated non-draft subpages by non-contributors",
-                "Subhalaman non-draf yang tidak berkaitan oleh non-kontributor",
+                "Subhalaman nondraf yang tidak berkaitan dibuat oleh nonkontributor",
               ),
               label:
                 "Excessively unrelated non-draft subpages by non-contributors",
