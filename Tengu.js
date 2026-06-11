@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.16.0
+ * Version 2.17.1
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -1185,6 +1185,7 @@ $(function () {
                       title: title,
                       protections:
                         "create=" + config.massdelProtectRecreationLevel,
+                      expiry: config.massdelProtectRecreationExpiry,
                       reason: config.massdelReason + toolTag,
                     });
                     addLog(
@@ -3272,7 +3273,8 @@ $(function () {
             "When ticked, wikilinks pointing to each deleted page are removed from articles in the main namespace. Talk pages, user pages, and other namespaces are not modified.";
           checksPagedel.appendChild(wrapPagedelUnlink);
 
-          // 'Protect from recreation after deletion' option
+          // 'Protect from recreation after deletion' — inline row; dropdowns are
+          // always visible but disabled until the checkbox is ticked.
           const {
             wrap: wrapPagedelProtectRecreation,
             chk: chkPagedelProtectRecreation,
@@ -3285,21 +3287,66 @@ $(function () {
             { value: "sysop", label: "Administrators only" },
           ]);
           selPagedelProtectRecreationLevel.value = "sysop";
+          selPagedelProtectRecreationLevel.disabled = true;
 
-          const wrapRecreationLevel = wrapSelect(
-            selPagedelProtectRecreationLevel,
+          const selPagedelProtectRecreationExpiry = makeSelect([
+            { value: "1 day", label: "1 day" },
+            { value: "3 days", label: "3 days" },
+            { value: "1 week", label: "1 week" },
+            { value: "2 weeks", label: "2 weeks" },
+            { value: "1 month", label: "1 month" },
+            { value: "3 months", label: "3 months" },
+            { value: "6 months", label: "6 months" },
+            { value: "1 year", label: "1 year" },
+            { value: "never", label: "Indefinite" },
+            { value: "other", label: "Other:" },
+          ]);
+          selPagedelProtectRecreationExpiry.disabled = true;
+          const inputPagedelProtectRecreationExpiry = makeInput(
+            "e.g. 6 months, 2099-01-01",
           );
-          wrapRecreationLevel.style.display = "none";
-          wrapRecreationLevel.style.marginTop = "4px";
-          wrapRecreationLevel.style.marginLeft = "20px";
+          inputPagedelProtectRecreationExpiry.classList.add("tng-hidden");
+          inputPagedelProtectRecreationExpiry.disabled = true;
+          selPagedelProtectRecreationExpiry.addEventListener(
+            "change",
+            function () {
+              inputPagedelProtectRecreationExpiry.classList.toggle(
+                "tng-hidden",
+                selPagedelProtectRecreationExpiry.value !== "other",
+              );
+            },
+          );
+
+          // Expiry group: dropdown + optional custom input, side by side.
+          const recreationExpiryGroup = document.createElement("div");
+          recreationExpiryGroup.style.cssText =
+            "display: flex; gap: 6px; flex: 1;";
+          inputPagedelProtectRecreationExpiry.style.flex = "1";
+          recreationExpiryGroup.appendChild(
+            wrapSelect(selPagedelProtectRecreationExpiry, "1"),
+          );
+          recreationExpiryGroup.appendChild(
+            inputPagedelProtectRecreationExpiry,
+          );
+
+          // Inline row: checkbox at the left, level and expiry dropdowns on the same line.
+          const wrapRecreationRow = document.createElement("div");
+          wrapRecreationRow.style.cssText =
+            "display: flex; align-items: center; gap: 6px; flex-wrap: wrap;";
+          wrapRecreationRow.appendChild(wrapPagedelProtectRecreation);
+          wrapRecreationRow.appendChild(
+            wrapSelect(selPagedelProtectRecreationLevel, "0 0 auto"),
+          );
+          wrapRecreationRow.appendChild(recreationExpiryGroup);
 
           chkPagedelProtectRecreation.addEventListener("change", function () {
-            wrapRecreationLevel.style.display =
-              chkPagedelProtectRecreation.checked ? "" : "none";
+            const enabled = chkPagedelProtectRecreation.checked;
+            selPagedelProtectRecreationLevel.disabled = !enabled;
+            selPagedelProtectRecreationExpiry.disabled = !enabled;
+            inputPagedelProtectRecreationExpiry.disabled = !enabled;
           });
 
-          checksPagedel.appendChild(wrapPagedelProtectRecreation);
-          checksPagedel.appendChild(wrapRecreationLevel);
+          checksPagedel.appendChild(wrapRecreationRow);
           bodyPagedel.appendChild(checksPagedel);
           body.appendChild(secPagedel);
 
@@ -3844,6 +3891,10 @@ $(function () {
               massdelProtectRecreation: chkPagedelProtectRecreation.checked,
               massdelProtectRecreationLevel:
                 selPagedelProtectRecreationLevel.value,
+              massdelProtectRecreationExpiry:
+                selPagedelProtectRecreationExpiry.value === "other"
+                  ? inputPagedelProtectRecreationExpiry.value.trim() || "never"
+                  : selPagedelProtectRecreationExpiry.value,
               massdelReason: buildPagedelReason() + suffix,
               protect: chkProtect.checked,
               protectEdit: selProtectEdit.value,

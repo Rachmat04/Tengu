@@ -1,3 +1,89 @@
+## v2.17.1
+
+### Changed
+
+* Updated the recreation protection controls layout from a hidden vertical container to a single inline row
+* Replaced `wrapRecreationControls` with `wrapRecreationRow`, which contains:
+  * The recreation protection checkbox
+  * The protection level selector
+  * The protection expiry selector
+* Updated control visibility behaviour to use input enable/disable states rather than showing and hiding an entire container
+* Updated the recreation protection change listener to toggle the `disabled` state of the associated controls instead of modifying layout visibility
+* Updated the deletion section assembly to append a single combined recreation protection row
+
+### Fixed
+
+* Improved initial control state by ensuring:
+  * `selPagedelProtectRecreationLevel`
+  * `selPagedelProtectRecreationExpiry`
+  * `inputPagedelProtectRecreationExpiry`
+  are disabled when the dialogue is first opened
+* Fixed recreation protection controls so they remain visible and discoverable even when the feature is not enabled
+
+### Removed
+
+* Removed the hidden indented `wrapRecreationControls` container previously used to show and hide recreation protection options
+* Removed display-based toggling logic for recreation protection controls
+
+### Improved
+
+* Improved usability by keeping recreation protection options visible at all times
+* Improved discoverability by presenting all recreation protection settings alongside the enabling checkbox
+* Improved interface consistency through a compact single-row layout
+* Improved accessibility by using disabled controls to indicate availability instead of hiding configuration options
+* Improved maintainability by simplifying the recreation protection UI structure and event handling logic
+
+### Notes
+
+* Recreation protection controls are now always visible but remain disabled until the recreation protection checkbox is enabled
+* No functional changes were made to recreation protection behaviour, expiry handling, API requests, or configuration processing
+* This release focuses exclusively on user interface layout and control-state management
+
+## v2.17.0
+
+### Added
+
+* Added a recreation protection expiry selector to the deletion section
+* Added support for custom recreation protection expiries through an **"Other"** option and accompanying text input
+* Added `massdelProtectRecreationExpiry` configuration support for recreation protection actions
+* Added a dedicated recreation protection controls container (`wrapRecreationControls`) that groups all recreation protection settings in a single interface block
+
+### Changed
+
+* Replaced the standalone recreation protection level wrapper with a unified controls container containing:
+  * Protection level selection
+  * Protection expiry selection
+  * Custom expiry input (when applicable)
+* Updated the recreation protection interface to use a vertical flex layout consistent with the main protection section
+* Updated recreation protection configuration handling to pass an expiry value to the `action=protect` API request
+* Updated custom expiry handling so the text input is shown only when **"Other"** is selected
+* Updated recreation protection workflows to support finite expiry periods in addition to indefinite protection
+
+### Fixed
+
+* Fixed recreation protection expiry handling by supplying an explicit expiry value to the MediaWiki protection API when required
+* Fixed custom expiry handling so a blank **"Other"** value falls back to **"never"** instead of producing an invalid expiry
+
+### Removed
+
+* Removed the dedicated wrapper previously used solely for the recreation protection level selector
+
+### Improved
+
+* Improved usability by allowing recreation protection duration to be configured directly from the deletion interface
+* Improved interface consistency by matching the layout and behaviour of the main protection controls
+* Improved flexibility by supporting both predefined and custom recreation protection durations
+* Improved safety by requiring users to make an explicit expiry selection rather than defaulting to indefinite protection
+* Improved API compatibility by ensuring recreation protection requests include the expiry information required for non-permanent protections
+
+### Notes
+
+* Recreation protection controls are displayed only when recreation protection is enabled
+* The expiry selector initially uses its first available duration option and does not default to indefinite protection
+* Custom expiry values use the same behaviour and validation pattern as the main protection expiry field
+* If a custom expiry is selected but no value is entered, the protection falls back to **"never"**
+* Recreation protection expiry values are passed directly to the `action=protect` API call
+
 ## v2.16.0
 
 ### Added
