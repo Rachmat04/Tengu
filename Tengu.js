@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.15.0
+ * Version 2.16.0
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -536,15 +536,18 @@ $(function () {
 
           const targetVal = config.target;
 
-          const notifySummaryBlock = (useIndonesian
-            ? "Notifikasi: Pemberitahuan pemblokiran akun"
-            : "Notification: Account block notice") + toolTag;
-          const notifySummaryDelete = (useIndonesian
-            ? "Notifikasi: Pemberitahuan penghapusan halaman"
-            : "Notification: Page deletion notice") + toolTag;
-          const notifySummaryProtect = (useIndonesian
-            ? "Notifikasi: Pemberitahuan perlindungan halaman"
-            : "Notification: Page protection notice") + toolTag;
+          const notifySummaryBlock =
+            (useIndonesian
+              ? "Notifikasi: Pemberitahuan pemblokiran akun"
+              : "Notification: Account block notice") + toolTag;
+          const notifySummaryDelete =
+            (useIndonesian
+              ? "Notifikasi: Pemberitahuan penghapusan halaman"
+              : "Notification: Page deletion notice") + toolTag;
+          const notifySummaryProtect =
+            (useIndonesian
+              ? "Notifikasi: Pemberitahuan perlindungan halaman"
+              : "Notification: Page protection notice") + toolTag;
 
           // --- Block ---
           if (config.block && config.mode === "user" && !isAborted) {
@@ -1023,6 +1026,7 @@ $(function () {
                       protections: `edit=${config.protectEdit}|move=${config.protectMove}`,
                       expiry: config.protectExpiry,
                       reason: config.protectReason + toolTag,
+                      ...(config.protectCascade ? { cascade: "" } : {}),
                     });
                     addLog(`[Protect] Protected talk page: ${talkForProtect}`);
                     stats.protect++;
@@ -1170,6 +1174,32 @@ $(function () {
                     creatorMap.set(pageCreator, []);
                   creatorMap.get(pageCreator).push(title);
                 }
+
+                // Protect the deleted page against recreation if that option was selected.
+                // Must run here, after deletion, because MediaWiki only accepts create-level
+                // protection for non-existent titles.
+                if (config.massdelProtectRecreation) {
+                  try {
+                    await apiPost({
+                      action: "protect",
+                      title: title,
+                      protections:
+                        "create=" + config.massdelProtectRecreationLevel,
+                      reason: config.massdelReason + toolTag,
+                    });
+                    addLog(
+                      `[Protect] Protected deleted page against recreation: ${title}`,
+                    );
+                    stats.protect++;
+                    updateStatusDisplay();
+                  } catch (e) {
+                    addLog(
+                      `[Protect] Failed to protect ${title} against recreation: ${formatApiError(e)}`,
+                      true,
+                    );
+                  }
+                  await new Promise((resolve) => setTimeout(resolve, 100));
+                }
               } catch (e) {
                 addLog(
                   `[Delete] Failed to delete ${title}: ${formatApiError(e)}`,
@@ -1286,7 +1316,9 @@ $(function () {
                   summary: notifySummaryDelete,
                   bot: true,
                 });
-                addLog(`[Notify] Deletion notification posted to: ${talkTitle}`);
+                addLog(
+                  `[Notify] Deletion notification posted to: ${talkTitle}`,
+                );
               } catch (e) {
                 addLog(
                   `[Notify] Failed to post deletion notification to ${talkTitle}: ${formatApiError(e)}`,
@@ -1311,13 +1343,15 @@ $(function () {
                 continue;
               }
               try {
+                // Deleted pages only accept create-level protection.
+                // The edit-restriction level is reused as the create-protection level.
+                // Cascade is not applicable for create-only protection and is omitted.
                 await apiPost({
                   action: "protect",
                   title: title,
-                  protections: `edit=${config.protectEdit}|move=${config.protectMove}`,
+                  protections: `create=${config.protectEdit}`,
                   expiry: config.protectExpiry,
                   reason: config.protectReason + toolTag,
-                  ...(config.protectCascade ? { cascade: "" } : {}),
                 });
                 addLog(
                   `[Protect] Protected deleted page against recreation: ${title}`,
@@ -1346,13 +1380,34 @@ $(function () {
                 }
                 if (talkForProtect) {
                   try {
-                    await apiPost({
+                    // The talk page may have been deleted if 'Also delete the talk page'
+                    // was selected. Check existence first and use the appropriate
+                    // protection type: create= for a deleted page, edit=|move= for an
+                    // existing one.
+                    const talkExistCheck = await apiGet({
+                      action: "query",
+                      titles: talkForProtect,
+                      formatversion: 2,
+                    });
+                    const talkExists =
+                      talkExistCheck.query &&
+                      talkExistCheck.query.pages &&
+                      !talkExistCheck.query.pages[0].missing;
+                    const talkProtections = talkExists
+                      ? `edit=${config.protectEdit}|move=${config.protectMove}`
+                      : `create=${config.protectEdit}`;
+                    const talkProtectParams = {
                       action: "protect",
                       title: talkForProtect,
-                      protections: `edit=${config.protectEdit}|move=${config.protectMove}`,
-                      expiry: config.protectExpiry,
+                      protections: talkProtections,
                       reason: config.protectReason + toolTag,
-                    });
+                    };
+                    // Expiry and cascade only apply when the page exists.
+                    if (talkExists) {
+                      talkProtectParams.expiry = config.protectExpiry;
+                      if (config.protectCascade) talkProtectParams.cascade = "";
+                    }
+                    await apiPost(talkProtectParams);
                     addLog(`[Protect] Protected talk page: ${talkForProtect}`);
                     stats.protect++;
                     updateStatusDisplay();
@@ -1392,6 +1447,37 @@ $(function () {
                   : "The protection is scheduled to remain in effect until it expires, unless modified by an administrator.";
               for (const [talkTitle, titles] of notifyQueueDeferred) {
                 if (isAborted) break;
+
+                // Skip notification if the talk page no longer exists.
+                // This can happen when 'Also delete the talk page' was selected,
+                // in which case posting would recreate a deleted page.
+                try {
+                  const talkExistCheck = await apiGet({
+                    action: "query",
+                    titles: talkTitle,
+                    formatversion: 2,
+                  });
+                  const talkExists =
+                    talkExistCheck.query &&
+                    talkExistCheck.query.pages &&
+                    !talkExistCheck.query.pages[0].missing;
+                  if (!talkExists) {
+                    addLog(
+                      `[Notify] Skipped protection notification for ${talkTitle}: talk page no longer exists.`,
+                      "warn",
+                    );
+                    await new Promise((resolve) => setTimeout(resolve, 100));
+                    continue;
+                  }
+                } catch (e) {
+                  addLog(
+                    `[Notify] Could not check talk page existence for ${talkTitle}: ${formatApiError(e)}`,
+                    "warn",
+                  );
+                  await new Promise((resolve) => setTimeout(resolve, 100));
+                  continue;
+                }
+
                 try {
                   let notice;
                   const isProtectIndefDeferred =
@@ -3185,6 +3271,35 @@ $(function () {
           wrapPagedelUnlink.title =
             "When ticked, wikilinks pointing to each deleted page are removed from articles in the main namespace. Talk pages, user pages, and other namespaces are not modified.";
           checksPagedel.appendChild(wrapPagedelUnlink);
+
+          // 'Protect from recreation after deletion' option
+          const {
+            wrap: wrapPagedelProtectRecreation,
+            chk: chkPagedelProtectRecreation,
+          } = makeCheckbox("Protect from recreation after deletion", false);
+          wrapPagedelProtectRecreation.title =
+            "When ticked, each successfully deleted page will be protected against recreation using create-level protection. Only applies to non-existent pages.";
+
+          const selPagedelProtectRecreationLevel = makeSelect([
+            { value: "autoconfirmed", label: "Autoconfirmed users" },
+            { value: "sysop", label: "Administrators only" },
+          ]);
+          selPagedelProtectRecreationLevel.value = "sysop";
+
+          const wrapRecreationLevel = wrapSelect(
+            selPagedelProtectRecreationLevel,
+          );
+          wrapRecreationLevel.style.display = "none";
+          wrapRecreationLevel.style.marginTop = "4px";
+          wrapRecreationLevel.style.marginLeft = "20px";
+
+          chkPagedelProtectRecreation.addEventListener("change", function () {
+            wrapRecreationLevel.style.display =
+              chkPagedelProtectRecreation.checked ? "" : "none";
+          });
+
+          checksPagedel.appendChild(wrapPagedelProtectRecreation);
+          checksPagedel.appendChild(wrapRecreationLevel);
           bodyPagedel.appendChild(checksPagedel);
           body.appendChild(secPagedel);
 
@@ -3662,11 +3777,21 @@ $(function () {
               // Build "see also" suffix from selected append-to-summary options
               const seeAlsoParts = [];
               if (chkAbuseFilter.checked)
-                seeAlsoParts.push(useIndonesian ? "log penyaring penyalahgunaan untuk pengguna ini" : "the abuse filter log for this user");
+                seeAlsoParts.push(
+                  useIndonesian
+                    ? "log penyaring penyalahgunaan untuk pengguna ini"
+                    : "the abuse filter log for this user",
+                );
               if (chkDeletedContribs.checked)
-                seeAlsoParts.push(useIndonesian ? "kontribusi yang dihapus" : "deleted contributions");
+                seeAlsoParts.push(
+                  useIndonesian
+                    ? "kontribusi yang dihapus"
+                    : "deleted contributions",
+                );
               if (seeAlsoParts.length) {
-                const seeAlso = (useIndonesian ? "lihat juga " : "see also ") + seeAlsoParts.join(useIndonesian ? " dan " : " and ");
+                const seeAlso =
+                  (useIndonesian ? "lihat juga " : "see also ") +
+                  seeAlsoParts.join(useIndonesian ? " dan " : " and ");
                 if (reason) {
                   reason += " (" + seeAlso + ")";
                 } else {
@@ -3716,13 +3841,16 @@ $(function () {
               massdel: chkPagedel.checked,
               massdelTalk: chkPagedelTalk.checked,
               massdelUnlink: chkPagedelUnlink.checked,
+              massdelProtectRecreation: chkPagedelProtectRecreation.checked,
+              massdelProtectRecreationLevel:
+                selPagedelProtectRecreationLevel.value,
               massdelReason: buildPagedelReason() + suffix,
               protect: chkProtect.checked,
               protectEdit: selProtectEdit.value,
               protectMove: selProtectMove.value,
               protectExpiry:
                 selProtectExpiry.value === "other"
-                  ? inputProtectExpiry.value.trim()
+                  ? inputProtectExpiry.value.trim() || "never"
                   : selProtectExpiry.value,
               protectReason: buildProtectReason() + suffix,
               protectTalk: chkProtectTalk.checked,

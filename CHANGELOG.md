@@ -1,3 +1,54 @@
+## v2.16.0
+
+### Added
+
+* Added a new deletion-section option to automatically protect deleted pages against recreation
+* Added a configurable protection level selector for recreation protection, with **administrator-only** protection selected by default
+* Added `massdelProtectRecreation` and `massdelProtectRecreationLevel` to the configuration object
+* Added automatic recreation protection immediately after successful page deletions when the new option is enabled
+* Added existence checks for talk pages during deferred protection processing
+* Added existence checks before posting deferred protection notifications to talk pages
+
+### Changed
+
+* Updated the deletion workflow to optionally apply creation protection immediately after a successful deletion
+* Updated deferred recreation protection for deleted pages to use `create=` protection instead of `edit=` and `move=` restrictions
+* Updated deferred protection handling to preserve the configured protection expiry when applying recreation protection
+* Updated talk-page protection logic to select the appropriate protection type based on page existence:
+  * `create=` for non-existent talk pages
+  * `edit=` and `move=` for existing talk pages
+* Updated deferred notification handling to skip notification delivery when the target talk page no longer exists
+
+### Fixed
+
+* Fixed deferred recreation protection incorrectly using `edit=` and `move=` restrictions for deleted pages instead of `create=` protection
+* Fixed a regression where protection expiry could be omitted during deferred recreation protection processing
+* Fixed talk-page protection handling by distinguishing between existing and non-existent talk pages
+* Fixed deferred notification posting attempts to non-existent talk pages
+* Fixed cascade protection not being applied to talk pages during the primary protection pass
+* Fixed a blank custom expiry value being passed to the API when **"Other"** was selected but no expiry value was entered. The expiry now falls back to **"never"**
+
+### Removed
+
+* Removed the use of `edit=` and `move=` protection restrictions when protecting deleted pages against recreation
+
+### Improved
+
+* Improved deletion workflows by allowing recreation protection to be applied immediately after deletion
+* Improved reliability of deferred protection processing through page-existence validation
+* Improved consistency between immediate and deferred recreation protection behaviour
+* Improved notification handling by avoiding unnecessary edits to pages that no longer exist
+* Improved flexibility by allowing administrators to select the recreation protection level directly from the deletion interface
+* Improved protection consistency by ensuring cascade settings are applied uniformly to associated talk pages
+* Improved expiry validation by providing a safe fallback when a custom expiry field is left blank
+
+### Notes
+
+* Recreation protection is optional and must be enabled through the new deletion-section checkbox
+* The default recreation protection level is administrator-only protection
+* Deferred recreation protection now correctly applies creation protection while retaining the configured expiry period
+* Talk pages are evaluated individually to determine whether creation protection or edit/move protection is appropriate
+
 ## v2.15.0
 
 ### Added
