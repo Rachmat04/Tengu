@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.17.1
+ * Version 2.17.4
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -3320,7 +3320,7 @@ $(function () {
           // Expiry group: dropdown + optional custom input, side by side.
           const recreationExpiryGroup = document.createElement("div");
           recreationExpiryGroup.style.cssText =
-            "display: flex; gap: 6px; flex: 1;";
+            "display: flex; gap: 6px; flex: 1; min-width: 0;";
           inputPagedelProtectRecreationExpiry.style.flex = "1";
           recreationExpiryGroup.appendChild(
             wrapSelect(selPagedelProtectRecreationExpiry, "1"),
@@ -3329,24 +3329,36 @@ $(function () {
             inputPagedelProtectRecreationExpiry,
           );
 
-          // Inline row: checkbox at the left, level and expiry dropdowns on the same line.
-          const wrapRecreationRow = document.createElement("div");
-          wrapRecreationRow.style.cssText =
-            "display: flex; align-items: center; gap: 6px; flex-wrap: wrap;";
-          wrapRecreationRow.appendChild(wrapPagedelProtectRecreation);
-          wrapRecreationRow.appendChild(
-            wrapSelect(selPagedelProtectRecreationLevel, "0 0 auto"),
+          // Recreation protection group: checkbox + level and expiry rows,
+          // enclosed in a single border to signal they form one set.
+          const wrapRecreationGroup = document.createElement("div");
+          wrapRecreationGroup.className = "tng-recreation-group";
+          wrapRecreationGroup.appendChild(wrapPagedelProtectRecreation);
+
+          const { row: rowRecreationLevel, field: fieldRecreationLevel } =
+            makeRow("Protection level");
+          fieldRecreationLevel.appendChild(
+            wrapSelect(selPagedelProtectRecreationLevel, "1"),
           );
-          wrapRecreationRow.appendChild(recreationExpiryGroup);
+          rowRecreationLevel.style.opacity = "0.5";
+          wrapRecreationGroup.appendChild(rowRecreationLevel);
+
+          const { row: rowRecreationExpiry, field: fieldRecreationExpiry } =
+            makeRow("Expiry");
+          fieldRecreationExpiry.appendChild(recreationExpiryGroup);
+          rowRecreationExpiry.style.opacity = "0.5";
+          wrapRecreationGroup.appendChild(rowRecreationExpiry);
 
           chkPagedelProtectRecreation.addEventListener("change", function () {
             const enabled = chkPagedelProtectRecreation.checked;
             selPagedelProtectRecreationLevel.disabled = !enabled;
             selPagedelProtectRecreationExpiry.disabled = !enabled;
             inputPagedelProtectRecreationExpiry.disabled = !enabled;
+            rowRecreationLevel.style.opacity = enabled ? "" : "0.5";
+            rowRecreationExpiry.style.opacity = enabled ? "" : "0.5";
           });
 
-          checksPagedel.appendChild(wrapRecreationRow);
+          checksPagedel.appendChild(wrapRecreationGroup);
           bodyPagedel.appendChild(checksPagedel);
           body.appendChild(secPagedel);
 

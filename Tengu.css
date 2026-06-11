@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.16.0
+ * Version 2.17.4
  * All-in-one wiki moderation tool — Stylesheet
  * ============================================================================
  * PURPOSE:
@@ -160,6 +160,23 @@
   font-size: 0.88em;
   color: #54595d;
   padding-top: 4px;
+}
+/* --- Inline dropdown labels (e.g. recreation protection row) --- */
+.tng-inline-label {
+  font-size: 0.88em;
+  color: #54595d;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+/* --- Recreation protection group (page deletion section) --- */
+.tng-recreation-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  border: 1px solid #eaecf0;
+  border-radius: 4px;
+  padding: 8px;
+  width: 100%;
 }
 .tng-row .tng-field {
   flex: 1;
@@ -680,6 +697,12 @@
   .tng-help,
   .tng-optgroup-label {
     color: #a2a9b1;
+  }
+  .tng-inline-label {
+    color: #a2a9b1;
+  }
+  .tng-recreation-group {
+    border-color: #3a3a3a;
   }
   .tng-input,
   .tng-select {

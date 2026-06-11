@@ -1,3 +1,50 @@
+## v2.17.4
+
+### Added
+
+* Added `recreationDropdownRow`, a dedicated container for recreation protection configuration controls
+* Added inline labels for recreation protection settings:
+  * **"Protection level:"** before the protection level selector
+  * **"Expiry:"** before the expiry selector and custom expiry controls
+* Added `.tng-inline-label` styling to provide consistent label appearance alongside existing form controls
+* Added dark mode support for `.tng-inline-label`
+
+### Changed
+
+* Updated `wrapRecreationRow` from a horizontal layout to a column-based container
+* Updated the recreation protection layout so the checkbox occupies its own row above the configuration controls
+* Updated the recreation protection controls to appear directly beneath the checkbox in a dedicated row
+* Updated the recreation protection controls layout to use labelled fields instead of unlabeled dropdowns
+* Updated the recreation protection controls row to support wrapping on narrow viewports
+* Updated width handling so the recreation protection group occupies the full available width within the deletion section
+* Updated field sizing behaviour so selectors expand to fill available horizontal space
+* Updated custom expiry layout so the expiry selector and custom input share the available width when **"Other"** is selected
+
+### Fixed
+
+* Fixed layout issues where recreation protection dropdowns could appear on the same line as the checkbox on narrow viewports
+* Fixed alignment consistency between recreation protection controls and the rest of the deletion interface
+* Fixed responsive behaviour so recreation protection controls wrap in a predictable and readable manner on smaller screens
+
+### Removed
+
+* Removed `flex-wrap: wrap` behaviour from the outer recreation protection container
+* Removed the possibility of recreation protection dropdowns flowing onto the checkbox row
+
+### Improved
+
+* Improved form clarity by adding explicit labels to recreation protection settings
+* Improved visual consistency with existing `.tng-row` form layouts
+* Improved responsiveness by allowing the dropdown row to wrap independently when space is limited
+* Improved space utilisation by allowing controls to expand to the available width
+* Improved readability and discoverability of recreation protection options
+
+### Notes
+
+* The custom expiry input introduced previously remains unchanged
+* When **"Other"** is selected, the expiry selector and custom expiry input continue to share the available horizontal space evenly
+* This release affects only the layout, styling, and presentation of recreation protection controls; no changes were made to protection logic, expiry handling, or API behaviour
+
 ## v2.17.1
 
 ### Changed
