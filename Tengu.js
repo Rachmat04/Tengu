@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.18.1
+ * Version 2.19.0
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -608,7 +608,7 @@ $(function () {
 
               try {
                 await apiPost(data);
-                addLog(`[Block] Successfully blocked user ${targetVal}.`);
+                addLog(`[Block] Successfully blocked user ${targetVal}`);
                 stats.block++;
               } catch (e) {
                 addLog(
@@ -622,6 +622,32 @@ $(function () {
               if (stats.block > 0 && config.notifyBlock) {
                 const talkTitle = new mw.Title(targetVal, 3).getPrefixedText();
                 const isBlockIndef = config.blockDur === "never";
+
+                // Clear the talk page before posting notification if conditions are met
+                if (config.clearTalkPageBeforeNotify && isBlockIndef) {
+                  try {
+                    await apiPost({
+                      action: "edit",
+                      title: talkTitle,
+                      text: "",
+                      summary:
+                        (useIndonesian
+                          ? "Membersihkan halaman: pengguna diblokir secara permanen"
+                          : "Clearing talk page: user permanently blocked") +
+                        toolTag,
+                      bot: true,
+                    });
+                    addLog(
+                      `[Notify] Cleared talk page before notification: ${talkTitle}`,
+                    );
+                  } catch (e) {
+                    addLog(
+                      `[Notify] Failed to clear talk page at ${talkTitle}: ${formatApiError(e)}`,
+                      "warn",
+                    );
+                  }
+                }
+
                 const notice = useIndonesian
                   ? isBlockIndef
                     ? `== Pemberitahuan pemblokiran akun ==\nAkun "${targetVal}" telah diblokir secara tidak terbatas dengan alasan berikut: ${config.blockReason}.\n\nSelama masa pemblokiran, akun ini mungkin tidak dapat melakukan sebagian atau seluruh tindakan yang biasanya memerlukan hak penyuntingan. Pemblokiran ini tidak berakhir secara otomatis dan akan tetap berlaku kecuali diubah oleh pengurus.\n\nPemberitahuan ini dikirimkan secara otomatis. Silakan sampaikan pertanyaan atau keberatan ke halaman pembicaraan saya. ~~~~`
@@ -629,6 +655,7 @@ $(function () {
                   : isBlockIndef
                     ? `== Account block notice ==\nThe account "${targetVal}" has been blocked indefinitely due to the following reason: ${config.blockReason}.\n\nDuring the block period, the account may be unable to perform some or all actions that normally require editing privileges. This block does not expire automatically and will remain in effect unless modified by an administrator.\n\nThis notification was posted automatically. Please direct any questions or concerns to my user talk page. ~~~~`
                     : `== Account block notice ==\nThe account "${targetVal}" has been blocked for ${config.blockDur} due to the following reason: ${config.blockReason}.\n\nDuring the block period, the account may be unable to perform some or all actions that normally require editing privileges. The block is scheduled to remain in effect until it expires, unless modified by an administrator.\n\nThis notification was posted automatically. Please direct any questions or concerns to my user talk page. ~~~~`;
+
                 try {
                   await apiPost({
                     action: "edit",
@@ -1662,9 +1689,9 @@ $(function () {
           isAborted = false;
 
           if (isAborted) {
-            addLog("⛔ Operations aborted by user.");
+            addLog("⛔ Operations aborted by user");
           } else {
-            addLog("✅ All operations have been completed successfully.");
+            addLog("✅ All operations have been completed successfully");
           }
           btnClose.disabled = false;
 
@@ -3238,6 +3265,16 @@ $(function () {
           wrapNotifyBlock.title =
             "When ticked, a notification will be posted to the target user's talk page after a successful block.";
           checksBlock.appendChild(wrapNotifyBlock);
+          const {
+            wrap: wrapClearTalkPageBeforeNotify,
+            chk: chkClearTalkPageBeforeNotify,
+          } = makeCheckbox(
+            "Clear user talk page before sending notification (indefinite blocks only)",
+            false,
+          );
+          wrapClearTalkPageBeforeNotify.title =
+            "When ticked and the block is indefinite, the user's talk page will be emptied before the block notification is posted. The notification will replace any previous discussion.";
+          checksBlock.appendChild(wrapClearTalkPageBeforeNotify);
           bodyBlock.appendChild(checksBlock);
           body.appendChild(secBlock);
 
@@ -3957,6 +3994,7 @@ $(function () {
               protectTalk: chkProtectTalk.checked,
               protectCascade: chkProtectCascade.checked,
               notifyBlock: chkNotifyBlock.checked,
+              clearTalkPageBeforeNotify: chkClearTalkPageBeforeNotify.checked,
               notifyDelete: chkNotifyDelete.checked,
               notifyProtect: chkNotifyProtect.checked,
               rd: chkRevdel.checked,

@@ -1,3 +1,39 @@
+## v2.19.0
+
+### Added
+- Added a new block-section checkbox: **"Clear user talk page before sending notification (indefinite blocks only)"**
+- Added the `clearTalkPageBeforeNotify` configuration property to track the state of the new option.
+- Added support for automatically clearing a user's talk page before posting a block notification when the relevant conditions are met
+
+### Changed
+- Updated the block notification workflow to optionally clear the target user's talk page before posting a notification
+- Updated notification handling so talk-page clearing occurs only when:
+  - The block is indefinite or permanent,
+  - Block notifications are enabled, and
+  - The new talk-page clearing option is enabled
+- Updated block notification processing to post the notification to the newly cleared talk page when the feature is active
+- Increased the `.tng-log-box` font size from **0.9em** to **1em**
+
+### Fixed
+- Improved handling of indefinitely blocked users by preventing new block notices from being appended to pages containing outdated discussions and notices
+
+### Improved
+- Improved readability of indefinitely blocked users' talk pages by providing a clean destination for new block notifications
+- Improved moderator workflow by automating talk-page cleanup before posting permanent block notices
+- Improved consistency of long-term block notices by ensuring they appear prominently on the user's talk page
+- Improved interface consistency by using en-GB sentence case for all new labels and messages
+- Improved readability of log output within the progress dialogue
+- Improved accessibility by displaying log entries at the standard interface font size
+- Improved visibility of operation results, warnings, and errors during long-running actions
+
+### Notes
+- The feature applies only to indefinite or permanent blocks
+- No talk-page clearing occurs for finite-duration blocks
+- If block notifications are disabled, the talk-page clearing feature is not triggered
+- When enabled, the user's talk page is cleared before the block notification is posted
+- Existing block logic, notification formatting, and localisation behaviour remain unchanged
+- The log font-size change affects only the appearance of the log panel and does not alter logging behaviour, message content, or processing logic
+
 ## v2.18.1
 
 ### Changed
