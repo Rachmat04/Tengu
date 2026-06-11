@@ -1,3 +1,54 @@
+## v2.18.0
+
+### Added
+
+* Added a **"Send notification"** checkbox to the block section, enabled by default
+* Added a **"Send notification"** checkbox to the page deletion section, enabled by default
+* Added a **"Send notification"** checkbox to the page protection section, enabled by default
+* Added `notifyBlock`, `notifyDelete`, and `notifyProtect` configuration fields to store notification preferences for each action type
+* Added notification gating logic for block, deletion, and protection workflows based on the corresponding configuration flags
+* Added self-notification suppression for deletion notifications when the page creator and page deleter are the same user
+
+### Changed
+
+* Updated block notification dispatch to run only when:
+  * At least one block action succeeded, and
+  * `config.notifyBlock` is enabled.
+* Updated user-mode deletion notifications to run only when:
+  * Mass deletion is enabled,
+  * User mode is active,
+  * At least one page was successfully deleted, and
+  * `config.notifyDelete` is enabled.
+* Updated page-mode deletion notifications to run only when:
+  * Mass deletion is enabled,
+  * Page mode is active,
+  * At least one creator entry exists in `creatorMap`, and
+  * `config.notifyDelete` is enabled
+* Updated protection notification dispatch for both immediate and deferred protection workflows to respect `config.notifyProtect`
+* Updated deletion notification handling to avoid sending notifications when the creator and deleter are the same user
+
+### Fixed
+
+* Fixed insufficient spacing above recreation protection controls caused by `.tng-recreation-group` being a child of `.tng-checks` rather than `.tng-section-body`
+* Fixed the recreation protection layout by adding `margin-top: 6px` to `.tng-recreation-group`
+* Fixed unnecessary deletion notifications in self-created/self-deleted scenarios
+
+### Improved
+
+* Improved user control over notification delivery by allowing notifications to be enabled or disabled independently for block, deletion, and protection actions
+* Improved workflow flexibility for moderators who do not wish to leave automated notices
+* Improved interface spacing and visual separation around recreation protection controls
+* Improved notification relevance by suppressing notifications that would otherwise be sent to the same user responsible for creating and deleting the page
+* Improved consistency by applying notification controls across all major action workflows
+
+### Notes
+
+* All notification checkboxes are enabled by default to preserve existing behaviour for most users
+* Disabling a notification checkbox prevents only the associated notification from being posted; the underlying block, deletion, or protection action is unaffected
+* Protection notification gating applies to both immediate and deferred notification queues
+* Self-notification suppression applies only when the page creator and page deleter are the same account
+* The recreation protection spacing adjustment affects presentation only and does not alter protection behaviour
+
 ## v2.17.4
 
 ### Added

@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.17.4
+ * Version 2.18.0
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -619,7 +619,7 @@ $(function () {
 
               // Post notification to user talk page (separate from block action above,
               // so a notification failure does not misreport the block as having failed)
-              if (stats.block > 0) {
+              if (stats.block > 0 && config.notifyBlock) {
                 const talkTitle = new mw.Title(targetVal, 3).getPrefixedText();
                 const isBlockIndef = config.blockDur === "never";
                 const notice = useIndonesian
@@ -1059,7 +1059,7 @@ $(function () {
           // Dispatch protection notifications. If two or more protected pages resolve
           // to the same talk page, a single consolidated notice is posted instead of
           // one per page, whilst still listing every affected page by name.
-          if (notifyQueue.size > 0) {
+          if (notifyQueue.size > 0 && config.notifyProtect) {
             const protectExpiryDisplay =
               config.protectExpiry === "never"
                 ? "indefinitely"
@@ -1170,9 +1170,17 @@ $(function () {
                 deletedTitles.push(title);
                 // Record the creator mapping now that deletion is confirmed.
                 if (config.mode === "page" && pageCreator) {
-                  if (!creatorMap.has(pageCreator))
-                    creatorMap.set(pageCreator, []);
-                  creatorMap.get(pageCreator).push(title);
+                  const currentUser = mw.config.get("wgUserName") || "";
+                  if (pageCreator.toLowerCase() !== currentUser.toLowerCase()) {
+                    if (!creatorMap.has(pageCreator))
+                      creatorMap.set(pageCreator, []);
+                    creatorMap.get(pageCreator).push(title);
+                  } else {
+                    addLog(
+                      `[Notify] Skipped deletion notification for ${title}: page was created and deleted by the same user.`,
+                      "warn",
+                    );
+                  }
                 }
 
                 // Protect the deleted page against recreation if that option was selected.
@@ -1256,10 +1264,16 @@ $(function () {
           // Post deletion notification to the target user's talk page (user mode).
           // All deleted pages were created by the same user, so a single notice is
           // posted regardless of how many pages were deleted.
+          const isSelfDeletion =
+            config.mode === "user" &&
+            targetVal.toLowerCase() ===
+              (mw.config.get("wgUserName") || "").toLowerCase();
           if (
             config.massdel &&
             config.mode === "user" &&
-            deletedTitles.length > 0
+            deletedTitles.length > 0 &&
+            config.notifyDelete &&
+            !isSelfDeletion
           ) {
             const talkTitle = new mw.Title(targetVal, 3).getPrefixedText();
             try {
@@ -1294,7 +1308,12 @@ $(function () {
           // Each unique creator receives one consolidated notice listing all pages
           // deleted during this session that they created. The creatorMap was populated
           // during the deletion loop; entries are only present for confirmed deletions.
-          if (config.massdel && config.mode === "page" && creatorMap.size > 0) {
+          if (
+            config.massdel &&
+            config.mode === "page" &&
+            creatorMap.size > 0 &&
+            config.notifyDelete
+          ) {
             for (const [creator, titles] of creatorMap) {
               if (isAborted) break;
               const talkTitle = new mw.Title(creator, 3).getPrefixedText();
@@ -1437,7 +1456,7 @@ $(function () {
             }
 
             // Dispatch notifications for the deferred protect pass
-            if (notifyQueueDeferred.size > 0) {
+            if (notifyQueueDeferred.size > 0 && config.notifyProtect) {
               const protectExpiryDisplay =
                 config.protectExpiry === "never"
                   ? "indefinitely"
@@ -3212,6 +3231,13 @@ $(function () {
           checksBlock.appendChild(wrapHidename);
           checksBlock.appendChild(wrapAbuseFilter);
           checksBlock.appendChild(wrapDeletedContribs);
+          const { wrap: wrapNotifyBlock, chk: chkNotifyBlock } = makeCheckbox(
+            "Send block notification to user talk page",
+            true,
+          );
+          wrapNotifyBlock.title =
+            "When ticked, a notification will be posted to the target user's talk page after a successful block.";
+          checksBlock.appendChild(wrapNotifyBlock);
           bodyBlock.appendChild(checksBlock);
           body.appendChild(secBlock);
 
@@ -3359,6 +3385,13 @@ $(function () {
           });
 
           checksPagedel.appendChild(wrapRecreationGroup);
+          const { wrap: wrapNotifyDelete, chk: chkNotifyDelete } = makeCheckbox(
+            "Send deletion notification to page creator's talk page",
+            true,
+          );
+          wrapNotifyDelete.title =
+            "When ticked, a notification will be posted to the talk page of the page creator after a successful deletion. Not sent when the page creator and the deleting user are the same person.";
+          checksPagedel.appendChild(wrapNotifyDelete);
           bodyPagedel.appendChild(checksPagedel);
           body.appendChild(secPagedel);
 
@@ -3471,6 +3504,11 @@ $(function () {
           wrapProtectCascade.title =
             "Only available when edit restriction is set to administrators only.";
           checksProtect.appendChild(wrapProtectCascade);
+          const { wrap: wrapNotifyProtect, chk: chkNotifyProtect } =
+            makeCheckbox("Send protection notification to talk page", true);
+          wrapNotifyProtect.title =
+            "When ticked, a notification will be posted to the relevant talk page after a successful protection.";
+          checksProtect.appendChild(wrapNotifyProtect);
           bodyProtect.appendChild(checksProtect);
 
           // Cascade protection requires sysop-level edit restriction.
@@ -3918,6 +3956,9 @@ $(function () {
               protectReason: buildProtectReason() + suffix,
               protectTalk: chkProtectTalk.checked,
               protectCascade: chkProtectCascade.checked,
+              notifyBlock: chkNotifyBlock.checked,
+              notifyDelete: chkNotifyDelete.checked,
+              notifyProtect: chkNotifyProtect.checked,
               rd: chkRevdel.checked,
               rdHides: rdHides,
               rdReason: buildRevdelReason() + suffix,
