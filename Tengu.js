@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.18.0
+ * Version 2.18.1
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -3298,6 +3298,13 @@ $(function () {
           wrapPagedelUnlink.title =
             "When ticked, wikilinks pointing to each deleted page are removed from articles in the main namespace. Talk pages, user pages, and other namespaces are not modified.";
           checksPagedel.appendChild(wrapPagedelUnlink);
+          const { wrap: wrapNotifyDelete, chk: chkNotifyDelete } = makeCheckbox(
+            "Send deletion notification to page creator's talk page",
+            true,
+          );
+          wrapNotifyDelete.title =
+            "When ticked, a notification will be posted to the talk page of the page creator after a successful deletion. Not sent when the page creator and the deleting user are the same person.";
+          checksPagedel.appendChild(wrapNotifyDelete);
 
           // 'Protect from recreation after deletion' — inline row; dropdowns are
           // always visible but disabled until the checkbox is ticked.
@@ -3385,13 +3392,6 @@ $(function () {
           });
 
           checksPagedel.appendChild(wrapRecreationGroup);
-          const { wrap: wrapNotifyDelete, chk: chkNotifyDelete } = makeCheckbox(
-            "Send deletion notification to page creator's talk page",
-            true,
-          );
-          wrapNotifyDelete.title =
-            "When ticked, a notification will be posted to the talk page of the page creator after a successful deletion. Not sent when the page creator and the deleting user are the same person.";
-          checksPagedel.appendChild(wrapNotifyDelete);
           bodyPagedel.appendChild(checksPagedel);
           body.appendChild(secPagedel);
 

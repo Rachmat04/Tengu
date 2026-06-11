@@ -1,3 +1,20 @@
+## v2.18.1
+
+### Changed
+
+* Increased the `.tng-section-body` `max-height` value from **250px** to **450px**
+
+### Fixed
+
+* Reduced unnecessary scrolling within individual feature sections by allowing more content to remain visible before overflow handling is required
+
+### Improved
+
+* Improved usability by displaying more content within each section before a scrollbar appears
+* Improved visibility of controls and options in larger sections such as blocking, rollback, deletion, and protection
+* Improved workflow efficiency by reducing the need to scroll within section containers
+* Improved use of available vertical space within the dialogue
+
 ## v2.18.0
 
 ### Added
