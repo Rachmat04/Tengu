@@ -1,3 +1,34 @@
+## 2.20.0
+
+### Added
+
+* Edit summary wording now reflects whether notification text was replaced or appended
+
+### Changed
+
+* Consolidated notification workflow into a single edit operation
+* Replaced separate `clear` and `notify` edits with a unified `notify` action that either replaces or appends content
+* Replaced the use of two distinct edit summaries with a single `notifySummaryBlock` summary
+* Notification text now follows a consistent behavior:
+  * Uses `appendtext` when appending content
+  * Uses `text` when replacing existing content
+
+### Fixed
+
+* Removed duplicate edit summary generation for notification actions
+* Eliminated redundant log entries created during notification processing
+
+### Removed
+
+* Secondary notification edit summary
+* Duplicate notification log entry
+
+### Improved
+
+* Reduced the number of edits required for notification actions from two to one
+* Simplified logging output while preserving action context
+* Improved maintainability of notification-related code paths
+
 ## v2.19.0
 
 ### Added

@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.19.0
+ * Version 2.20.0
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -623,31 +623,6 @@ $(function () {
                 const talkTitle = new mw.Title(targetVal, 3).getPrefixedText();
                 const isBlockIndef = config.blockDur === "never";
 
-                // Clear the talk page before posting notification if conditions are met
-                if (config.clearTalkPageBeforeNotify && isBlockIndef) {
-                  try {
-                    await apiPost({
-                      action: "edit",
-                      title: talkTitle,
-                      text: "",
-                      summary:
-                        (useIndonesian
-                          ? "Membersihkan halaman: pengguna diblokir secara permanen"
-                          : "Clearing talk page: user permanently blocked") +
-                        toolTag,
-                      bot: true,
-                    });
-                    addLog(
-                      `[Notify] Cleared talk page before notification: ${talkTitle}`,
-                    );
-                  } catch (e) {
-                    addLog(
-                      `[Notify] Failed to clear talk page at ${talkTitle}: ${formatApiError(e)}`,
-                      "warn",
-                    );
-                  }
-                }
-
                 const notice = useIndonesian
                   ? isBlockIndef
                     ? `== Pemberitahuan pemblokiran akun ==\nAkun "${targetVal}" telah diblokir secara tidak terbatas dengan alasan berikut: ${config.blockReason}.\n\nSelama masa pemblokiran, akun ini mungkin tidak dapat melakukan sebagian atau seluruh tindakan yang biasanya memerlukan hak penyuntingan. Pemblokiran ini tidak berakhir secara otomatis dan akan tetap berlaku kecuali diubah oleh pengurus.\n\nPemberitahuan ini dikirimkan secara otomatis. Silakan sampaikan pertanyaan atau keberatan ke halaman pembicaraan saya. ~~~~`
@@ -656,15 +631,29 @@ $(function () {
                     ? `== Account block notice ==\nThe account "${targetVal}" has been blocked indefinitely due to the following reason: ${config.blockReason}.\n\nDuring the block period, the account may be unable to perform some or all actions that normally require editing privileges. This block does not expire automatically and will remain in effect unless modified by an administrator.\n\nThis notification was posted automatically. Please direct any questions or concerns to my user talk page. ~~~~`
                     : `== Account block notice ==\nThe account "${targetVal}" has been blocked for ${config.blockDur} due to the following reason: ${config.blockReason}.\n\nDuring the block period, the account may be unable to perform some or all actions that normally require editing privileges. The block is scheduled to remain in effect until it expires, unless modified by an administrator.\n\nThis notification was posted automatically. Please direct any questions or concerns to my user talk page. ~~~~`;
 
+                // When a permanent block is applied with the clear-before-notify option,
+                // replace the talk page with the notice in a single edit rather than
+                // clearing and then appending as two separate operations.
+                const shouldReplace =
+                  config.clearTalkPageBeforeNotify && isBlockIndef;
                 try {
-                  await apiPost({
+                  const editParams = {
                     action: "edit",
                     title: talkTitle,
-                    appendtext: "\n\n" + notice,
                     summary: notifySummaryBlock,
                     bot: true,
-                  });
-                  addLog(`[Notify] Notification posted to: ${talkTitle}`);
+                  };
+                  if (shouldReplace) {
+                    editParams.text = notice;
+                  } else {
+                    editParams.appendtext = "\n\n" + notice;
+                  }
+                  await apiPost(editParams);
+                  addLog(
+                    shouldReplace
+                      ? `[Notify] Talk page replaced with notification: ${talkTitle}`
+                      : `[Notify] Notification posted to: ${talkTitle}`,
+                  );
                 } catch (e) {
                   addLog(
                     `[Notify] Failed to post block notification to ${talkTitle}: ${formatApiError(e)}`,
@@ -862,7 +851,7 @@ $(function () {
             const undoSummaryStr = config.rollbackReason
               ? config.rollbackReason + toolTag
               : config.rollbackShow
-                ? "Reverting mass edits by " + targetVal + toolTag
+                ? "Reverting edits by " + targetVal + toolTag
                 : "Revert edits" + toolTag;
 
             const rbSummaryStr = config.rollbackReason
