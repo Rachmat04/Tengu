@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.20.0
+ * Version 2.21.0
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -532,7 +532,7 @@ $(function () {
           };
 
           // Add clear visibility notice that the automated process is currently ongoing
-          addLog("⏳ Processing operations... please wait.");
+          addLog("⏳ Processing operations... please wait...");
 
           const targetVal = config.target;
 
@@ -713,7 +713,7 @@ $(function () {
             }
 
             if (!contribs.length && !isAborted) {
-              addLog("[Info] No contributions found within this timeframe.");
+              addLog("[Info] No contributions found within this timeframe");
             } else if (!isAborted) {
               for (const edit of contribs) {
                 if (edit.new === "") {
@@ -1559,7 +1559,7 @@ $(function () {
           if (config.massdelUnlink && deletedTitles.length > 0) {
             for (const delTitle of deletedTitles) {
               if (isAborted) break;
-              addLog(`[Unlink] Searching for links to: ${delTitle}…`);
+              addLog(`[Unlink] Searching for links to: ${delTitle}...`);
 
               // Escape the title for use in a regular expression.
               // Spaces and underscores are treated as equivalent in wikilinks.
@@ -1766,7 +1766,7 @@ $(function () {
             container.innerHTML = "";
             const el = document.createElement("div");
             el.className = "tng-info-loading";
-            el.textContent = msg || "Loading…";
+            el.textContent = msg || "Loading...";
             container.appendChild(el);
           }
 
@@ -1804,9 +1804,9 @@ $(function () {
             arrow: arrowAbuseLog,
           } = makeDisplaySection("Abuse filter log", "⚠️");
 
-          setLoading(bodyBlockLog, "Loading block log…");
-          setLoading(bodyRights, "Loading rights changes…");
-          setLoading(bodyAbuseLog, "Loading abuse filter log…");
+          setLoading(bodyBlockLog, "Loading block log...");
+          setLoading(bodyRights, "Loading rights changes...");
+          setLoading(bodyAbuseLog, "Loading abuse filter log...");
 
           // --- Access rights card ---
           // Displayed before log sections. Shows the target user's groups and rights
@@ -1850,7 +1850,7 @@ $(function () {
           localBadgesEl.className = "tng-user-rights-badges";
           const localLoadingEl = document.createElement("span");
           localLoadingEl.className = "tng-info-loading";
-          localLoadingEl.textContent = "Loading…";
+          localLoadingEl.textContent = "Loading...";
           localBadgesEl.appendChild(localLoadingEl);
           localRow.appendChild(localBadgesEl);
           const localRightsListEl = document.createElement("div");
@@ -1879,7 +1879,7 @@ $(function () {
             : "tng-info-loading";
           globalLoadingEl.textContent = isTargetIP
             ? "Not applicable for IP addresses."
-            : "Loading…";
+            : "Loading...";
           globalBadgesEl.appendChild(globalLoadingEl);
           globalRow.appendChild(globalBadgesEl);
           const globalRightsListEl = document.createElement("div");
@@ -1904,7 +1904,7 @@ $(function () {
           globalLockBadgesEl.className = "tng-user-rights-badges";
           const globalLockLoadingEl = document.createElement("span");
           globalLockLoadingEl.className = "tng-info-loading";
-          globalLockLoadingEl.textContent = "Loading…";
+          globalLockLoadingEl.textContent = "Loading...";
           globalLockBadgesEl.appendChild(globalLockLoadingEl);
           globalLockRow.appendChild(globalLockBadgesEl);
           rightsCardBody.appendChild(globalLockRow);
@@ -2312,7 +2312,7 @@ $(function () {
             container.innerHTML = "";
             const el = document.createElement("div");
             el.className = "tng-info-loading";
-            el.textContent = msg || "Loading…";
+            el.textContent = msg || "Loading...";
             container.appendChild(el);
           }
 
@@ -2355,10 +2355,10 @@ $(function () {
             arrow: arrowMoveLog,
           } = makeDisplaySection("Move log", "📦");
 
-          setLoading(bodyAbuseLog, "Loading abuse filter log…");
-          setLoading(bodyProtectLog, "Loading protection log…");
-          setLoading(bodyDeleteLog, "Loading deletion log…");
-          setLoading(bodyMoveLog, "Loading move log…");
+          setLoading(bodyAbuseLog, "Loading abuse filter log...");
+          setLoading(bodyProtectLog, "Loading protection log...");
+          setLoading(bodyDeleteLog, "Loading deletion log...");
+          setLoading(bodyMoveLog, "Loading move log...");
 
           body.appendChild(secAbuseLog);
           body.appendChild(secProtectLog);
@@ -4522,7 +4522,7 @@ $(function () {
               );
 
               // --- Block status ---
-              setNote(divBlockStatus, "loading", "Loading block status…");
+              setNote(divBlockStatus, "loading", "Loading block status...");
               (async function () {
                 try {
                   const data = await apiGet({
@@ -4538,10 +4538,16 @@ $(function () {
                       user.blockexpiry === "infinity"
                         ? "indefinite"
                         : fmtStatusDate(user.blockexpiry);
+                    const blockFlags = (user.blockflags || "").split("|");
+                    const blockType = blockFlags.includes("partial")
+                      ? "partial"
+                      : "full";
                     setNote(
                       divBlockStatus,
                       "active",
-                      "Currently blocked · Blocked by: " +
+                      "Currently blocked (" +
+                        blockType +
+                        ") · Blocked by: " +
                         user.blockedby +
                         " · Expires: " +
                         expiry +
@@ -4604,8 +4610,8 @@ $(function () {
                 divGlobalStatus,
                 "loading",
                 isTargetIP
-                  ? "Loading global block status…"
-                  : "Loading global lock / block status…",
+                  ? "Loading global block status..."
+                  : "Loading global lock / block status...",
               );
               (async function () {
                 try {
@@ -4758,7 +4764,11 @@ $(function () {
               }
 
               // --- Deletion history ---
-              setNote(divPagedelStatus, "loading", "Loading deletion history…");
+              setNote(
+                divPagedelStatus,
+                "loading",
+                "Loading deletion history...",
+              );
               (async function () {
                 try {
                   const logData = await apiGet({
@@ -4805,7 +4815,7 @@ $(function () {
               setNote(
                 divProtectStatus,
                 "loading",
-                "Loading protection status…",
+                "Loading protection status...",
               );
               (async function () {
                 try {

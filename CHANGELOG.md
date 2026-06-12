@@ -1,3 +1,26 @@
+## 2.20.1
+
+### Added
+
+* Block status notices now display the scope of the active block:
+  * `Currently blocked (full)`
+  * `Currently blocked (partial)`
+
+### Changed
+
+* The blocking section now includes block type information alongside existing block details such as administrator, expiry, and reason
+* Block scope is determined from the `blockflags` field returned by the existing `blockinfo` query
+
+### Fixed
+
+* Resolved the lack of visibility into whether an active block was full or partial without checking the block log
+
+### Improved
+
+* Improved situational awareness when reviewing active blocks
+* Reduced the need to inspect block logs to determine block scope
+* Reused existing API response data without introducing additional API requests
+
 ## 2.20.0
 
 ### Added
