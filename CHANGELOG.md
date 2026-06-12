@@ -1,3 +1,31 @@
+## 2.20.2
+
+### Changed
+
+* Block type detection now checks the `blockpartial` property returned by the API instead of inspecting `blockflags`
+* Simplified the block type derivation logic into a single direct check
+
+### Fixed
+
+* Fixed incorrect detection of partial blocks
+* Fixed an issue where block scope could be misidentified because `blockflags` does not contain partial block information
+
+### Removed
+
+* Previous logic that searched for a `"partial"` token within `blockflags`
+* Redundant `blockFlags`/`blockType` derivation steps
+
+### Improved
+
+* Improved accuracy of block status reporting
+* Aligned block type detection with the MediaWiki API's actual data model
+* Reduced complexity in the block scope detection code
+
+### Notes
+
+* `blockflags` only contains block effect flags such as `nocreate` and `noemail`
+* Partial blocks are indicated by the `blockpartial` property on the user object returned by the API
+
 ## 2.20.1
 
 ### Added

@@ -4538,10 +4538,8 @@ $(function () {
                       user.blockexpiry === "infinity"
                         ? "indefinite"
                         : fmtStatusDate(user.blockexpiry);
-                    const blockFlags = (user.blockflags || "").split("|");
-                    const blockType = blockFlags.includes("partial")
-                      ? "partial"
-                      : "full";
+                    const blockType =
+                      user.blockpartial !== undefined ? "partial" : "full";
                     setNote(
                       divBlockStatus,
                       "active",
