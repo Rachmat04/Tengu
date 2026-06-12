@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.20.2
+ * Version 2.21.0
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -51,6 +51,7 @@ $(function () {
         const BLOCK_REASONS = tenguReasonsObj.BLOCK_REASONS;
         const PAGE_DELETE_REASONS = tenguReasonsObj.PAGE_DELETE_REASONS;
         const PROTECTION_REASONS = tenguReasonsObj.PROTECTION_REASONS;
+        const REVDEL_REASONS = tenguReasonsObj.REVDEL_REASONS;
 
         // ============================================================================
         // [Section 00] State
@@ -2689,18 +2690,6 @@ $(function () {
             " (stewards action)",
             " (global rollbackers action)",
           ];
-          const reasons = aioConf.reasons || {
-            revisiondelete: [
-              "Violations of copyright policy",
-              "Grossly insulting, degrading, or offensive material",
-              "Serious BLP violations",
-              "Purely disruptive material",
-              "Other valid deletion under deletion policy",
-              "Non-contentious housekeeping, revdel corrections, notes, conversion",
-              "Deletion mandated by a decision of the Arbitration Committee",
-              "Orphaned non-free file(s) deleted",
-            ],
-          };
 
           let packages = aioConf.packages || {};
           if (!packages.Default) packages.Default = defaultPackage;
@@ -3585,11 +3574,7 @@ $(function () {
           const { row: rowRevdelReason, field: fieldRevdelReason } =
             makeRow("Reason");
           const selRevdelReason = makeSelect(
-            [{ value: "", label: "Other:" }].concat(
-              (reasons.revisiondelete || []).map(function (r) {
-                return { value: r, label: r };
-              }),
-            ),
+            [{ value: "", label: "Other:" }].concat(REVDEL_REASONS),
           );
           const inputRevdelReason = makeInput("Full reason to submit");
           const btnRevdelAppend = makeBtn("Append", "quiet");

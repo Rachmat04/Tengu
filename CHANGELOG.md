@@ -1,3 +1,46 @@
+## 2.21.0
+
+### Added
+
+* Converted all eight RevisionDelete reasons to structured `{value, label}` objects in `Tengu-reasons.js`
+* Added localisation support for RevisionDelete reason values through the `v()` helper, allowing Indonesian-language wikis to display translated reason values
+* Expanded administrative reason descriptions to provide clearer explanations of why an action is being taken
+
+### Changed
+
+* RevisionDelete reasons now follow the same structure as all other reason sets used by Tengu
+* Administrative reason wording throughout the interface has been revised from short labels to concise explanatory descriptions
+* Reason text now focuses on the condition of the page, file, revision, or conduct requiring administrative action, rather than on individuals
+* Terminology has been aligned with established Wikimedia conventions and translation practices
+* Indonesian translations have been rewritten to read more naturally and consistently
+
+### Fixed
+
+* Resolved inconsistency between RevisionDelete reasons and other administrative reason sets
+* Removed duplicated maintenance of RevisionDelete reason definitions across multiple files
+* Improved clarity of administrative action reasons, particularly for newer contributors
+
+### Removed
+
+* Legacy `revisiondelete` fallback definitions from `Tengu.js`
+* The reasons fallback object, whose only remaining content was the RevisionDelete reason set
+* Inline `.map()` transformation logic previously used when building the RevisionDelete reason selector
+
+### Improved
+
+* Simplified reason management by centralising RevisionDelete definitions in a single source
+* Simplified the `makeSelect` implementation, as `REVDEL_REASONS` is already provided in `{value, label}` format
+* Reduced wording that could appear accusatory or judgemental
+* Added contextual information where administrative processes benefit from additional explanation
+* Improved consistency across deletion, protection, blocking, redirect, and RevisionDelete workflows
+* Made administrative reasons easier to understand while remaining formal and specific enough for administrative use
+
+### Notes
+
+* RevisionDelete reasons are now sourced exclusively from `REVDEL_REASONS`
+* The `v()` helper provides localised values while maintaining a consistent structure across all reason sets
+* Administrative reasons now generally favour explanatory descriptions over brief issue labels, making them more accessible to newer contributors
+
 ## 2.20.2
 
 ### Changed
