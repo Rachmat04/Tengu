@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.23.0
+ * Version 2.24.0
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -1640,7 +1640,9 @@ $(function () {
                         title: linkTitle,
                         text: newWikitext,
                         summary:
-                          "Removing links to deleted page: " +
+                          (useIndonesian
+                            ? "Menghapus pranala ke halaman yang sudah dihapus: "
+                            : "Removing links to deleted page: ") +
                           delTitle +
                           toolTag,
                         bot: true,

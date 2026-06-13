@@ -1,4 +1,27 @@
-## 2.22.1
+## 2.24.0
+
+### Added
+
+* Added an Indonesian-language edit summary for automated edits that remove links to deleted pages:
+  * `Menghapus pranala ke halaman yang sudah dihapus: `
+
+### Changed
+
+* The edit summary used when removing links to deleted pages now respects the `useIndonesian` setting
+* Indonesian-language wikis receive a localised edit summary, while other wikis continue to use the existing English version:
+  * `Removing links to deleted page: `
+
+### Fixed
+
+* Resolved an inconsistency where this maintenance edit summary was always displayed in English, regardless of the selected interface language
+
+### Improved
+
+* Improved localisation consistency across automated editing workflows
+* Provided a more natural experience for Indonesian-speaking administrators and patrollers
+* Aligned link-cleanup edit summaries with other recently localised administrative actions
+
+## 2.23.0
 
 ### Added
 
