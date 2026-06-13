@@ -1,3 +1,31 @@
+## 2.22.1
+
+### Added
+
+* Added the `updateClearTalkState` function to manage the state of the "Clear user talk page before sending notification" option
+* Automatic state updates when:
+  * The block expiry dropdown is changed
+  * A block package is applied via `applyPackage`
+  * Existing block settings are loaded via `applyActiveBlockSettings`
+
+### Changed
+
+* The "Clear user talk page before sending notification" checkbox is now only available for indefinite blocks
+* When the selected block expiry is not indefinite, the checkbox is automatically:
+  * Disabled
+  * Unchecked
+  * Displayed in a greyed-out state
+
+### Fixed
+
+* Prevented the talk page clearing option from remaining available when a finite block duration is selected
+
+### Improved
+
+* Improved consistency between block duration settings and notification options
+* Reduced the likelihood of unintentionally clearing a user's talk page for temporary blocks
+* Ensured the interface updates correctly when expiry values are changed manually, through packages, or through active block pre-filling
+
 ## 2.22.0
 
 ### Added

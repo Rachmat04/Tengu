@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.22.0
+ * Version 2.23.0
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -3255,6 +3255,17 @@ $(function () {
           wrapClearTalkPageBeforeNotify.title =
             "When ticked and the block is indefinite, the user's talk page will be emptied before the block notification is posted. The notification will replace any previous discussion.";
           checksBlock.appendChild(wrapClearTalkPageBeforeNotify);
+          // Disable the clear-talk-page option unless the block expiry is indefinite.
+          function updateClearTalkState() {
+            const isIndef = selBlockDur.value === "never";
+            chkClearTalkPageBeforeNotify.disabled = !isIndef;
+            wrapClearTalkPageBeforeNotify.style.opacity = isIndef ? "" : "0.5";
+            wrapClearTalkPageBeforeNotify.style.cursor = isIndef
+              ? ""
+              : "not-allowed";
+            if (!isIndef) chkClearTalkPageBeforeNotify.checked = false;
+          }
+          selBlockDur.addEventListener("change", updateClearTalkState);
           bodyBlock.appendChild(checksBlock);
           body.appendChild(secBlock);
 
@@ -4250,6 +4261,7 @@ $(function () {
                 inputBlockDur.classList.remove("tng-hidden");
               }
             }
+            updateClearTalkState();
 
             const br = bl.reason || "";
             let foundBr = false;
@@ -4373,6 +4385,7 @@ $(function () {
               inputBlockDur.value = expiry;
               inputBlockDur.classList.remove("tng-hidden");
             }
+            updateClearTalkState();
 
             // Reason — match against the dropdown list; fall back to free-text.
             let foundReason = false;
