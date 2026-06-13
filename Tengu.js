@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.21.0
+ * Version 2.22.0
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -1256,7 +1256,9 @@ $(function () {
                       action: "delete",
                       title: talkTitle,
                       reason:
-                        "Associated talk page of deleted page: " +
+                        (useIndonesian
+                          ? "Halaman pembicaraan dari halaman yang dihapus: "
+                          : "Associated talk page of deleted page: ") +
                         config.massdelReason +
                         toolTag,
                     });

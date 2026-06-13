@@ -1,3 +1,20 @@
+## 2.22.0
+
+### Added
+
+* Localised talk page deletion edit summaries based on the `useIndonesian` setting
+* Indonesian-language wikis now use the edit summary
+
+### Changed
+
+* The talk page deletion workflow now generates edit summaries in the user's configured interface language where applicable
+
+### Fixed
+
+* Resolved an inconsistency where the talk page deletion edit summary was always displayed in English, even on Indonesian-language wikis
+* Improved localisation consistency within deletion-related workflows
+* Provided a more native experience for Indonesian-speaking administrators
+
 ## 2.21.0
 
 ### Added
