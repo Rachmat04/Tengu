@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.26.0
+ * Version 2.26.1
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -3347,14 +3347,7 @@ $(function () {
           // Flatten the grouped WARN_MESSAGES structure into a single <select>
           // that uses <optgroup> labels for each group.
           const selWarnMsg = makeSelect(
-            [
-              {
-                value: "",
-                label: useIndonesian
-                  ? "— Pilih pesan —"
-                  : "— Select a message —",
-              },
-            ].concat(WARN_MESSAGES),
+            [{ value: "", label: "— Select a message —" }].concat((WARN_MESSAGES),
           );
 
           // Optional additional information text box

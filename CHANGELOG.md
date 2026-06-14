@@ -1,3 +1,35 @@
+## 2.26.1
+
+### Changed
+
+* Warning interface labels are now consistently displayed in en-GB regardless of wiki language
+* The "Select a message" placeholder in the warning template selector is now hard-coded to en-GB
+* Indonesian localisation is now applied only to the warning notice content posted to user talk pages, not to interface controls
+* The `withExtra()` helper now inserts optional additional-information text immediately before the closing signature
+
+### Fixed
+
+* Fixed incorrect localisation of warning interface elements, including warning group names and warning type labels
+* Fixed placement of additional-information text that previously appeared after the user's signature
+* Ensured that posted warning notices always end with the signature (`~~~~`) as intended
+
+### Removed
+
+* Unnecessary `useIndonesian` conditional logic from warning interface labels
+* Localisation handling for warning UI elements that should remain language-neutral
+
+### Improved
+
+* Improved consistency between Tengu's interface language and content localisation strategy
+* Improved readability and formatting of warning notices containing supplementary information
+* Ensured signatures remain the final element of every warning message
+
+### Notes
+
+* Interface-facing labels in the warning module now remain in en-GB across all wikis
+* Localisation continues to apply to the warning notice wikitext itself, allowing messages to be posted in Indonesian where appropriate
+* The additional-information field is now inserted before the signature to preserve standard talk-page message formatting
+
 ## 2.26.0
 
 ### Added
