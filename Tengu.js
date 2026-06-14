@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.26.1
+ * Version 2.26.2
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -3334,34 +3334,24 @@ $(function () {
             section: secWarn,
             sectionBody: bodyWarn,
             enableChk: chkWarn,
-          } = makeSection(
-            useIndonesian ? "Peringatan pengguna" : "User warning",
-            "⚠️",
-            false,
-          );
+          } = makeSection("User warning", "⚠️", false);
 
-          const { row: rowWarnMsg, field: fieldWarnMsg } = makeRow(
-            useIndonesian ? "Pesan" : "Message",
-          );
-
+          const { row: rowWarnMsg, field: fieldWarnMsg } = makeRow("Message");
           // Flatten the grouped WARN_MESSAGES structure into a single <select>
           // that uses <optgroup> labels for each group.
           const selWarnMsg = makeSelect(
-            [{ value: "", label: "— Select a message —" }].concat((WARN_MESSAGES),
+            [{ value: "", label: "— Select a message —" }].concat(
+              WARN_MESSAGES,
+            ),
           );
 
           // Optional additional information text box
-          const inputWarnExtra = makeInput(
-            useIndonesian
-              ? "Informasi tambahan (opsional)"
-              : "Additional information (optional)",
-          );
+          const inputWarnExtra = makeInput("Additional information (optional)");
 
           const helpWarnExtra = document.createElement("div");
           helpWarnExtra.className = "tng-help";
-          helpWarnExtra.textContent = useIndonesian
-            ? "Jika diisi, teks ini akan ditambahkan ke pesan peringatan. Kosongkan jika tidak diperlukan."
-            : "If filled in, this text will be appended to the warning message. Leave blank if not needed.";
+          helpWarnExtra.textContent =
+            "If filled in, this text will be appended to the warning message. Leave blank if not needed.";
 
           const reasonWrapWarn = document.createElement("div");
           reasonWrapWarn.className = "tng-reason-wrap";
@@ -3964,7 +3954,8 @@ $(function () {
               chkBlock.checked ||
               chkPagedel.checked ||
               chkProtect.checked ||
-              chkRevdel.checked
+              chkRevdel.checked ||
+              chkWarn.checked
             );
           }
 
@@ -3974,6 +3965,7 @@ $(function () {
           chkPagedel.addEventListener("change", updateStartBtn);
           chkProtect.addEventListener("change", updateStartBtn);
           chkRevdel.addEventListener("change", updateStartBtn);
+          chkWarn.addEventListener("change", updateStartBtn);
 
           btnStart.addEventListener("click", function () {
             const targetVal = inputTarget.value.trim();

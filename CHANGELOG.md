@@ -1,3 +1,26 @@
+## 2.26.2
+
+### Added
+
+* Added `chkWarn` to the Start button eligibility checks within `updateStartBtn()`
+* Added a `change` event listener for `chkWarn`, matching the behaviour of other action section checkboxes
+
+### Changed
+
+* The Start button now recognises the User warning section as a valid standalone action
+* Button state updates immediately when the User warning section is enabled or disabled
+
+### Fixed
+
+* Fixed an issue where selecting only the User warning section did not enable the Start button
+* Fixed delayed Start button updates when toggling the User warning checkbox
+
+### Improved
+
+* Improved consistency between the User warning section and other action modules
+* Improved responsiveness of the interface by updating the Start button state immediately after warning section changes
+* Reduced confusion when performing warning-only workflows
+
 ## 2.26.1
 
 ### Changed
