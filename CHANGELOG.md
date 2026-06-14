@@ -1,3 +1,39 @@
+## 2.26.0
+
+### Added
+
+* Added a new `Tengu-warn.js` module providing a dedicated warning-message library
+* Added the `window.TenguWarn.get(useIndonesian)` interface, following the same pattern as `Tengu-reasons.js`
+* Added a new **User warning** (⚠️) section to the Tengu dialogue in user mode
+* Added a grouped warning-template selector containing a **Common warnings** category with:
+  * Vandalism
+  * Disruptive editing
+  * Editing tests
+  * Removal of content / blanking
+* Added support for English and Indonesian variants of all warning templates
+* Added an optional free-text field for supplementary information within warning messages
+* Added automated posting of selected warning notices to user talk pages
+
+### Changed
+
+* Integrated `Tengu-warn.js` into the script loading sequence
+* Extended reason and message initialisation to unpack `WARN_MESSAGES` alongside existing reason sets
+* Updated the execution workflow to support warning delivery through the main `work()` process
+
+### Improved
+
+* Improved moderator workflow by providing ready-to-use warning templates directly within Tengu
+* Improved localisation support by centralising warning messages in a dedicated module
+* Improved consistency with existing notification workflows used for block and protection notices
+* Reduced the need for manual warning composition when responding to common editing issues
+
+### Notes
+
+* The **User warning** section is available only in user mode
+* The section is automatically disabled whenever page mode is active, alongside Block, Rollback, and Revision deletion controls
+* Warning notices are posted using the same `appendtext` and `apiPost` workflow already used by block and protection notifications
+* The warning library is self-contained and can be expanded with additional warning groups and templates in future releases
+
 ## 2.25.0
 
 ### Added

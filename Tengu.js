@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.25.0
+ * Version 2.26.0
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -23,6 +23,11 @@ $(function () {
       .getScript(
         "https://id.wikipedia.org/w/index.php?title=Pengguna:Rachmat04/Tengu-reasons.js&action=raw&ctype=text/javascript",
       )
+      .then(function () {
+        return mw.loader.getScript(
+          "https://id.wikipedia.org/w/index.php?title=Pengguna:Rachmat04/Tengu-warn.js&action=raw&ctype=text/javascript",
+        );
+      })
       .then(function () {
         const INDONESIAN_LANGS = new Set([
           "id",
@@ -52,6 +57,9 @@ $(function () {
         const PAGE_DELETE_REASONS = tenguReasonsObj.PAGE_DELETE_REASONS;
         const PROTECTION_REASONS = tenguReasonsObj.PROTECTION_REASONS;
         const REVDEL_REASONS = tenguReasonsObj.REVDEL_REASONS;
+
+        const tenguWarnObj = window.TenguWarn.get(useIndonesian);
+        const WARN_MESSAGES = tenguWarnObj.WARN_MESSAGES;
 
         // ============================================================================
         // [Section 00] State
@@ -549,6 +557,34 @@ $(function () {
             (useIndonesian
               ? "Notifikasi: Pemberitahuan perlindungan halaman"
               : "Notification: Page protection notice") + toolTag;
+
+          const notifySummaryWarn =
+            (useIndonesian
+              ? "Notifikasi: Peringatan pengguna"
+              : "Notification: User warning") + toolTag;
+
+          // --- User warning ---
+          // Only runs in user mode; config.warn is only set when the warn
+          // section is enabled and a message template has been selected.
+          if (config.warn && config.mode === "user" && !isAborted) {
+            const talkTitle = new mw.Title(targetVal, 3).getPrefixedText();
+            const notice = config.warnNotice;
+            try {
+              await apiPost({
+                action: "edit",
+                title: talkTitle,
+                appendtext: "\n\n" + notice,
+                summary: notifySummaryWarn,
+                bot: true,
+              });
+              addLog(`[Warn] Warning posted to: ${talkTitle}`);
+            } catch (e) {
+              addLog(
+                `[Warn] Failed to post warning to ${talkTitle}: ${formatApiError(e)}`,
+                "warn",
+              );
+            }
+          }
 
           // --- Block ---
           if (config.block && config.mode === "user" && !isAborted) {
@@ -3290,6 +3326,59 @@ $(function () {
           bodyBlock.appendChild(checksBlock);
           body.appendChild(secBlock);
 
+          // ============================================================================
+          // Warn section — user mode only
+          // Sends a templated warning message to the target user's talk page.
+          // ============================================================================
+          const {
+            section: secWarn,
+            sectionBody: bodyWarn,
+            enableChk: chkWarn,
+          } = makeSection(
+            useIndonesian ? "Peringatan pengguna" : "User warning",
+            "⚠️",
+            false,
+          );
+
+          const { row: rowWarnMsg, field: fieldWarnMsg } = makeRow(
+            useIndonesian ? "Pesan" : "Message",
+          );
+
+          // Flatten the grouped WARN_MESSAGES structure into a single <select>
+          // that uses <optgroup> labels for each group.
+          const selWarnMsg = makeSelect(
+            [
+              {
+                value: "",
+                label: useIndonesian
+                  ? "— Pilih pesan —"
+                  : "— Select a message —",
+              },
+            ].concat(WARN_MESSAGES),
+          );
+
+          // Optional additional information text box
+          const inputWarnExtra = makeInput(
+            useIndonesian
+              ? "Informasi tambahan (opsional)"
+              : "Additional information (optional)",
+          );
+
+          const helpWarnExtra = document.createElement("div");
+          helpWarnExtra.className = "tng-help";
+          helpWarnExtra.textContent = useIndonesian
+            ? "Jika diisi, teks ini akan ditambahkan ke pesan peringatan. Kosongkan jika tidak diperlukan."
+            : "If filled in, this text will be appended to the warning message. Leave blank if not needed.";
+
+          const reasonWrapWarn = document.createElement("div");
+          reasonWrapWarn.className = "tng-reason-wrap";
+          reasonWrapWarn.appendChild(wrapSelect(selWarnMsg));
+          reasonWrapWarn.appendChild(inputWarnExtra);
+          reasonWrapWarn.appendChild(helpWarnExtra);
+          fieldWarnMsg.appendChild(reasonWrapWarn);
+          bodyWarn.appendChild(rowWarnMsg);
+          body.appendChild(secWarn);
+
           const {
             section: secPagedel,
             sectionBody: bodyPagedel,
@@ -3781,6 +3870,13 @@ $(function () {
                 "Tengu is targeting a page, not a user.",
               );
               applyModeLock(
+                secWarn,
+                bodyWarn,
+                chkWarn,
+                true,
+                "Tengu is targeting a page, not a user.",
+              );
+              applyModeLock(
                 secRevdel,
                 bodyRevdel,
                 chkRevdel,
@@ -3791,6 +3887,7 @@ $(function () {
               // Remove mode locks first to enable features
               applyModeLock(secRollback, bodyRollback, chkRollback, false);
               applyModeLock(secBlock, bodyBlock, chkBlock, false);
+              applyModeLock(secWarn, bodyWarn, chkWarn, false);
               applyModeLock(secRevdel, bodyRevdel, chkRevdel, false);
               // Remove any special page locks that were active while in page mode
               applySpecialPageLocks(false);
@@ -3836,6 +3933,13 @@ $(function () {
               secBlock,
               bodyBlock,
               chkBlock,
+              true,
+              "Tengu is targeting a page, not a user.",
+            );
+            applyModeLock(
+              secWarn,
+              bodyWarn,
+              chkWarn,
               true,
               "Tengu is targeting a page, not a user.",
             );
@@ -3957,6 +4061,27 @@ $(function () {
             if (chkRdSummary.checked) rdHides += "comment|";
             if (chkRdUsername.checked) rdHides += "user|";
 
+            // Resolve the selected warn template into wikitext before
+            // freezing the config object. buildWarnNotice() returns an
+            // empty string when no template is selected.
+            function buildWarnNotice() {
+              if (!chkWarn.checked) return "";
+              const sel = selWarnMsg.value;
+              if (!sel) return "";
+              const extra = inputWarnExtra.value.trim();
+              // Walk the grouped structure to find the matching entry.
+              for (const group of WARN_MESSAGES) {
+                if (group.items) {
+                  for (const item of group.items) {
+                    if (item.value === sel) {
+                      return item.buildNotice(targetVal, extra);
+                    }
+                  }
+                }
+              }
+              return "";
+            }
+
             config = {
               mode: tenguMode,
               target: targetVal,
@@ -4005,6 +4130,8 @@ $(function () {
               clearTalkPageBeforeNotify: chkClearTalkPageBeforeNotify.checked,
               notifyDelete: chkNotifyDelete.checked,
               notifyProtect: chkNotifyProtect.checked,
+              warn: chkWarn.checked && !!selWarnMsg.value,
+              warnNotice: buildWarnNotice(),
               rd: chkRevdel.checked,
               rdHides: rdHides,
               rdReason: buildRevdelReason() + suffix,
