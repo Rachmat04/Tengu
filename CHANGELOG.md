@@ -1,3 +1,33 @@
+## 2.25.0
+
+### Added
+
+* Added `relevantUserName` and `isIPRange` variables to support IP range detection.
+* Added a dedicated IP range handling branch that:
+  * Disables the user mode button when the target is an IP range.
+  * Displays a tooltip explaining why the option is unavailable.
+
+### Changed
+
+* Updated the default `tenguMode` selection logic to exclude IP ranges from user mode
+* IP ranges are now treated separately from standard user accounts and individual IP addresses when determining available workflows
+
+### Fixed
+
+* Prevented user mode from being selected for IP ranges, where the workflow is not supported
+* Eliminated cases where unsupported actions could be presented for IP range targets
+
+### Improved
+
+* Improved interface behaviour when viewing contributions or logs associated with IP ranges
+* Provided clearer feedback by disabling unavailable options instead of allowing invalid selections
+* Reduced user confusion through contextual tooltip messaging
+
+### Notes
+
+* User mode remains available for registered accounts and individual IP addresses where supported
+* IP ranges are now detected explicitly and handled through dedicated interface logic
+
 ## 2.24.0
 
 ### Added

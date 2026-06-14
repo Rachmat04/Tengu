@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.24.0
+ * Version 2.25.0
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -2596,11 +2596,22 @@ $(function () {
             currentNamespace === 3 ||
             isContributionsPage;
 
+          // Detect IP ranges (CIDR notation) in the relevant username.
+          // mw.util.isIPAddress(str, true) accepts both single IPs and CIDR ranges;
+          // mw.util.isIPAddress(str) without the flag accepts single IPs only.
+          // A value that passes the former but not the latter is a range.
+          const relevantUserName = mw.config.get("wgRelevantUserName") || "";
+          const isIPRange =
+            !!relevantUserName &&
+            mw.util.isIPAddress(relevantUserName, true) &&
+            !mw.util.isIPAddress(relevantUserName);
+
           // Special pages (NS -1) cannot be deleted or protected; used to gate those sections in page mode
           const isSpecialPage = currentNamespace === -1;
 
-          // Default to user mode when a relevant username is available (including on the contributions page), otherwise page mode
-          let tenguMode = isUserMode ? "user" : "page";
+          // Default to page mode when the target is an IP range; user mode is not
+          // applicable as ranges are not addressable as individual user targets.
+          let tenguMode = isUserMode && !isIPRange ? "user" : "page";
           // Set when the rights Promise settles; used by applyModeRestrictions() to
           // re-apply rights-based locks when switching from page mode back to user mode.
           let resolvedRights = null;
@@ -2949,6 +2960,14 @@ $(function () {
             btnModeUser.style.cursor = "not-allowed";
             btnModeUser.title =
               "User mode is only available when Tengu is launched from a user profile or contribution space";
+          } else if (isIPRange) {
+            // IP ranges (e.g. 192.168.0.0/16 or 2001:db8::/32) cannot be used as
+            // individual user targets. User mode is disabled for range pages.
+            btnModeUser.disabled = true;
+            btnModeUser.style.opacity = "0.4";
+            btnModeUser.style.cursor = "not-allowed";
+            btnModeUser.title =
+              "User mode is not available for IP ranges. IP ranges cannot be targeted as individual users. Use the block section in page mode, or navigate to a single IP address instead.";
           } else {
             btnModeUser.addEventListener("click", function () {
               if (tenguMode === "user") return;
