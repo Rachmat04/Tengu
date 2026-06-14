@@ -134,7 +134,7 @@ window.TenguWarn = {
                 (isFinal ? finalSentence(false) : "") +
                 `\n\nIf you believe this notice has been issued in error, please leave a message on my talk page. ~~~~`;
               const bodyId =
-                `Seperti mungkin Anda sedang melakukan uji coba penyuntingan pada satu atau lebih halaman. Jika ingin bereksperimen, gunakan [[WP:SANDBOX|bak pasir]] sebagai gantinya, di mana uji coba sangat diperkenankan. Suntingan pada halaman artikel dan halaman lain yang tidak meningkatkan kualitas konten akan dikembalikan.` +
+                `Anda mungkin sedang melakukan uji coba penyuntingan pada satu atau lebih halaman. Jika ingin bereksperimen, gunakan [[WP:SANDBOX|bak pasir]] sebagai gantinya, tempat uji coba khusus. Suntingan pada halaman artikel dan halaman lain yang tidak meningkatkan kualitas konten akan dikembalikan.` +
                 (isFinal ? finalSentence(true) : "") +
                 `\n\nJika Anda merasa pemberitahuan ini diberikan secara keliru, silakan tinggalkan pesan di halaman pembicaraan saya. ~~~~`;
               const en = withExtra(headingEn + "\n" + bodyEn, extra, false);

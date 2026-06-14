@@ -3353,27 +3353,27 @@ $(function () {
           helpWarnExtra.textContent =
             "If filled in, this text will be appended to the warning message. Leave blank if not needed.";
 
-            const reasonWrapWarn = document.createElement("div");
-            reasonWrapWarn.className = "tng-reason-wrap";
-            reasonWrapWarn.appendChild(wrapSelect(selWarnMsg));
-            reasonWrapWarn.appendChild(inputWarnExtra);
-            reasonWrapWarn.appendChild(helpWarnExtra);
-            fieldWarnMsg.appendChild(reasonWrapWarn);
-            bodyWarn.appendChild(rowWarnMsg);
-  
-            const { wrap: wrapWarnFinal, chk: chkWarnFinal } = makeCheckbox(
-              "This is a final warning",
-              false,
-            );
-            wrapWarnFinal.title =
-              "When ticked, the message heading and body are adjusted to indicate that this is a final warning, and the recipient is notified that their account may be restricted from editing if the behaviour continues.";
-            const checksWarn = document.createElement("div");
-            checksWarn.className = "tng-checks";
-            checksWarn.style.paddingLeft = "0";
-            checksWarn.appendChild(wrapWarnFinal);
-            bodyWarn.appendChild(checksWarn);
-  
-            body.appendChild(secWarn);
+          const reasonWrapWarn = document.createElement("div");
+          reasonWrapWarn.className = "tng-reason-wrap";
+          reasonWrapWarn.appendChild(wrapSelect(selWarnMsg));
+          reasonWrapWarn.appendChild(inputWarnExtra);
+          reasonWrapWarn.appendChild(helpWarnExtra);
+          fieldWarnMsg.appendChild(reasonWrapWarn);
+          bodyWarn.appendChild(rowWarnMsg);
+
+          const { wrap: wrapWarnFinal, chk: chkWarnFinal } = makeCheckbox(
+            "This is a final warning",
+            false,
+          );
+          wrapWarnFinal.title =
+            "When ticked, the message heading and body are adjusted to indicate that this is a final warning, and the recipient is notified that their account may be restricted from editing if the behaviour continues.";
+          const checksWarn = document.createElement("div");
+          checksWarn.className = "tng-checks";
+          checksWarn.style.paddingLeft = "0";
+          checksWarn.appendChild(wrapWarnFinal);
+          bodyWarn.appendChild(checksWarn);
+
+          body.appendChild(secWarn);
 
           const {
             section: secPagedel,
