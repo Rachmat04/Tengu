@@ -1,3 +1,27 @@
+## 2.26.3
+
+### Added
+
+* Added a `finalSentence()` helper to generate a language-appropriate editing-restriction notice
+* Added support for final warning notices across all warning templates
+* Added a "This is a final warning" checkbox to the User warning section
+* Added a descriptive tooltip explaining the purpose of the final warning option
+* Added "Final" wording to warning section headings when a warning is marked as final (for example, `== Final warning: vandalism ==`)
+
+### Changed
+
+* All four `buildNotice()` functions now accept a third `isFinal` parameter
+* `buildWarnNotice()` now reads the state of `chkWarnFinal` and passes it to the selected warning template
+* Final warnings include an additional editing-restriction sentence within the notice body
+* The additional final warning text is inserted before the appeal section and signature
+
+### Improved
+
+* Improved escalation workflows by allowing administrators and patrollers to distinguish final warnings from standard warnings
+* Improved warning clarity by explicitly informing recipients that further disruptive behaviour may result in editing restrictions
+* Improved consistency across warning templates by implementing final warning support through a shared mechanism
+* Maintained localisation support for both English and Indonesian warning notices
+
 ## 2.26.2
 
 ### Added
