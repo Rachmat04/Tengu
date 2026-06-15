@@ -1833,17 +1833,17 @@ $(function () {
             section: secBlockLog,
             sectionBody: bodyBlockLog,
             arrow: arrowBlockLog,
-          } = makeDisplaySection("Block log", "🚫");
+          } = makeDisplaySection("Block log", "⛔️");
           const {
             section: secRights,
             sectionBody: bodyRights,
             arrow: arrowRights,
-          } = makeDisplaySection("Rights changes", "🔑");
+          } = makeDisplaySection("Rights changes", "🔐");
           const {
             section: secAbuseLog,
             sectionBody: bodyAbuseLog,
             arrow: arrowAbuseLog,
-          } = makeDisplaySection("Abuse filter log", "⚠️");
+          } = makeDisplaySection("Abuse filter log", "🛑");
 
           setLoading(bodyBlockLog, "Loading block log...");
           setLoading(bodyRights, "Loading rights changes...");
@@ -1865,7 +1865,7 @@ $(function () {
           const rightsCardHdr = document.createElement("div");
           rightsCardHdr.className = "tng-user-rights-header";
           const rightsCardHdrTitle = document.createElement("span");
-          rightsCardHdrTitle.textContent = "🎖️ Access rights";
+          rightsCardHdrTitle.textContent = "🎩 Access rights";
           rightsCardHdr.appendChild(rightsCardHdrTitle);
           const rightsCardArrow = document.createElement("span");
           rightsCardArrow.className = "tng-section-arrow tng-arrow-up";
@@ -2379,7 +2379,7 @@ $(function () {
             section: secAbuseLog,
             sectionBody: bodyAbuseLog,
             arrow: arrowAbuseLog,
-          } = makeDisplaySection("Abuse filter log", "⚠️");
+          } = makeDisplaySection("Abuse filter log", "🛑");
           const {
             section: secProtectLog,
             sectionBody: bodyProtectLog,
@@ -2394,7 +2394,7 @@ $(function () {
             section: secMoveLog,
             sectionBody: bodyMoveLog,
             arrow: arrowMoveLog,
-          } = makeDisplaySection("Move log", "📦");
+          } = makeDisplaySection("Move log", "📑");
 
           setLoading(bodyAbuseLog, "Loading abuse filter log...");
           setLoading(bodyProtectLog, "Loading protection log...");
@@ -3191,7 +3191,7 @@ $(function () {
             section: secBlock,
             sectionBody: bodyBlock,
             enableChk: chkBlock,
-          } = makeSection("Block", "🚫", false);
+          } = makeSection("Block", "⛔️", false);
 
           // Block status note — populated by updateSectionStatus() when the target changes
           const divBlockStatus = document.createElement("div");

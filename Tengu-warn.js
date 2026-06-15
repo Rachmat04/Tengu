@@ -727,6 +727,1422 @@ window.TenguWarn = {
         ],
       },
 
+      // --- Single notices ---
+      {
+        group: "Single notices",
+        items: [
+          // ------------------------------------------------------------------
+          // Mistakes with the Add a Link newcomer task
+          // ------------------------------------------------------------------
+          {
+            value: "addalink",
+            label: "Mistakes with the Add a Link newcomer task",
+            buildNotice: function (target, extra, isFinal) {
+              const headingEn = isFinal
+                ? "== Final notice: Add a Link newcomer task =="
+                : "== Notice: Add a Link newcomer task ==";
+              const headingId = isFinal
+                ? "== Pemberitahuan terakhir: tugas pemula Tambah Tautan =="
+                : "== Pemberitahuan: tugas pemula Tambah Tautan ==";
+              const bodyEn =
+                `Thank you for trying out the [[WP:ADD A LINK|Add a Link]] newcomer task. Some of your recent link suggestions do not appear to be a good fit for the target articles: links should connect a term to a relevant, encyclopaedic article that meaningfully aids the reader's understanding. Please review the guidance at [[WP:LINK]] and [[WP:OVERLINK]] before adding further links through this tool.` +
+                (isFinal ? finalSentence(false) : "") +
+                `\n\nIf you believe this notice has been issued in error, please leave a message on my talk page. ~~~~`;
+              const bodyId =
+                `Terima kasih telah mencoba tugas pemula [[WP:ADD A LINK|Tambahkan Pranala]]. Beberapa saran pranala Anda yang baru-baru ini tampaknya kurang tepat untuk artikel yang dituju. Pranala seharusnya menghubungkan sebuah istilah dengan artikel ensiklopedis yang relevan dan benar-benar membantu pemahaman pembaca. Harap tinjau panduan di [[WP:LINK]] dan [[WP:OVERLINK]] sebelum menambahkan pranala lebih lanjut melalui alat ini.` +
+                (isFinal ? finalSentence(true) : "") +
+                `\n\nJika Anda merasa pemberitahuan ini diberikan secara keliru, silakan tinggalkan pesan di halaman pembicaraan saya. ~~~~`;
+              const en = withExtra(headingEn + "\n" + bodyEn, extra, false);
+              const id = withExtra(headingId + "\n" + bodyId, extra, true);
+              return useIndonesian ? id : en;
+            },
+          },
+
+          // ------------------------------------------------------------------
+          // Use of multiple accounts (assuming good faith)
+          // ------------------------------------------------------------------
+          {
+            value: "multiaccountgf",
+            label: "Use of multiple accounts (assuming good faith)",
+            buildNotice: function (target, extra, isFinal) {
+              const headingEn = isFinal
+                ? "== Final notice: use of multiple accounts =="
+                : "== Notice: use of multiple accounts ==";
+              const headingId = isFinal
+                ? "== Pemberitahuan terakhir: penggunaan beberapa akun =="
+                : "== Pemberitahuan: penggunaan beberapa akun ==";
+              const bodyEn =
+                `It appears that you may be using more than one account to edit this wiki. While there are some legitimate reasons to maintain a secondary account, doing so is governed by [[WP:SOCK|Wikipedia's policy on alternative accounts]]. If you are operating multiple accounts, please ensure that each account's purpose complies with policy and that you are not using them in a way that could be seen as attempting to gain an unfair advantage in discussions or editing. Please review [[WP:SOCK]] for guidance.` +
+                (isFinal ? finalSentence(false) : "") +
+                `\n\nIf you believe this notice has been issued in error, please leave a message on my talk page. ~~~~`;
+              const bodyId =
+                `Anda mungkin menggunakan lebih dari satu akun untuk menyunting wiki ini. Meskipun terdapat beberapa alasan yang sah untuk mempertahankan akun kedua, hal tersebut diatur oleh [[WP:SOCK|kebijakan Wikipedia tentang akun alternatif]]. Jika Anda mengelola beberapa akun, pastikan tujuan setiap akun sesuai dengan kebijakan dan Anda tidak menggunakannya dengan cara yang dapat dianggap sebagai upaya memperoleh keuntungan yang tidak adil dalam diskusi atau penyuntingan. Harap tinjau [[WP:SOCK]] untuk panduan.` +
+                (isFinal ? finalSentence(true) : "") +
+                `\n\nJika Anda merasa pemberitahuan ini diberikan secara keliru, silakan tinggalkan pesan di halaman pembicaraan saya. ~~~~`;
+              const en = withExtra(headingEn + "\n" + bodyEn, extra, false);
+              const id = withExtra(headingId + "\n" + bodyId, extra, true);
+              return useIndonesian ? id : en;
+            },
+          },
+
+          // ------------------------------------------------------------------
+          // Bad AIV report
+          // ------------------------------------------------------------------
+          {
+            value: "badaiv",
+            label: "Bad AIV report",
+            buildNotice: function (target, extra, isFinal) {
+              const headingEn = isFinal
+                ? "== Final notice: incorrect AIV report =="
+                : "== Notice: incorrect AIV report ==";
+              const headingId = isFinal
+                ? "== Pemberitahuan terakhir: laporan AIV yang tidak tepat =="
+                : "== Pemberitahuan: laporan AIV yang tidak tepat ==";
+              const bodyEn =
+                `Your recent report at [[WP:AIV|Administrator intervention against vandalism]] (AIV) does not appear to meet the criteria for reporting. AIV is intended for editors who are actively and clearly vandalising the wiki and have already been warned. Reports that relate to good-faith errors, content disputes, or users who have not yet been warned are unlikely to result in a block and may slow administrators' response to genuine vandalism. Please review [[WP:AIV]] before making further reports.` +
+                (isFinal ? finalSentence(false) : "") +
+                `\n\nIf you believe this notice has been issued in error, please leave a message on my talk page. ~~~~`;
+              const bodyId =
+                `Laporan Anda yang baru-baru ini di [[WP:AIV|Intervensi pengurus terhadap vandalisme]] (AIV)tampaknya tidak memenuhi kriteria pelaporan. AIV ditujukan untuk penyunting yang secara aktif dan jelas melakukan vandalisme dan telah mendapat peringatan sebelumnya. Laporan yang berkaitan dengan kesalahan beritikad baik, perselisihan konten, atau pengguna yang belum mendapat peringatan kemungkinan tidak akan menghasilkan pemblokiran dan dapat memperlambat respons pengurus terhadap vandalisme yang jelas. Harap tinjau [[WP:AIV]] sebelum membuat laporan lebih lanjut.` +
+                (isFinal ? finalSentence(true) : "") +
+                `\n\nJika Anda merasa pemberitahuan ini diberikan secara keliru, silakan tinggalkan pesan di halaman pembicaraan saya. ~~~~`;
+              const en = withExtra(headingEn + "\n" + bodyEn, extra, false);
+              const id = withExtra(headingId + "\n" + bodyId, extra, true);
+              return useIndonesian ? id : en;
+            },
+          },
+
+          // ------------------------------------------------------------------
+          // Article moved to draftspace
+          // ------------------------------------------------------------------
+          {
+            value: "movedtodraft",
+            label: "Article moved to draftspace",
+            buildNotice: function (target, extra, isFinal) {
+              const headingEn = isFinal
+                ? "== Final notice: article moved to draftspace =="
+                : "== Notice: article moved to draftspace ==";
+              const headingId = isFinal
+                ? "== Pemberitahuan terakhir: artikel dipindahkan ke ruang draf =="
+                : "== Pemberitahuan: artikel dipindahkan ke ruang draf ==";
+              const bodyEn =
+                `A page you recently created or worked on has been moved to [[WP:DRAFTSPACE|draftspace]] because it does not yet meet the criteria for inclusion in the main encyclopaedia. This is not a deletion: the article remains accessible and you are welcome to continue developing it. Once it meets [[WP:NCRIT|Wikipedia's notability guidelines]] and [[WP:V|verifiability policy]], it may be submitted for review and moved back to the main namespace. Please review [[WP:YFA]] for guidance on creating new articles.` +
+                (isFinal ? finalSentence(false) : "") +
+                `\n\nIf you believe this notice has been issued in error, please leave a message on my talk page. ~~~~`;
+              const bodyId =
+                `Sebuah halaman yang baru-baru ini Anda buat atau kerjakan telah dipindahkan ke [[WP:DRAFTSPACE|ruang draf]] karena belum memenuhi kriteria untuk disertakan dalam ruang nama utama. Halaman Anda masih dapat diakses dan Anda dipersilakan untuk terus mengembangkannya. Setelah memenuhi [[WP:NCRIT|panduan kelayakan Wikipedia]] dan [[WP:V|kebijakan verifikasi]], artikel dapat diajukan untuk ditinjau dan dipindahkan kembali ke ruang nama utama. Harap tinjau [[WP:YFA]] untuk panduan membuat artikel baru.` +
+                (isFinal ? finalSentence(true) : "") +
+                `\n\nJika Anda merasa pemberitahuan ini diberikan secara keliru, silakan tinggalkan pesan di halaman pembicaraan saya. ~~~~`;
+              const en = withExtra(headingEn + "\n" + bodyEn, extra, false);
+              const id = withExtra(headingId + "\n" + bodyId, extra, true);
+              return useIndonesian ? id : en;
+            },
+          },
+
+          // ------------------------------------------------------------------
+          // Creating autobiographies
+          // ------------------------------------------------------------------
+          {
+            value: "autobiography",
+            label: "Creating autobiographies",
+            buildNotice: function (target, extra, isFinal) {
+              const headingEn = isFinal
+                ? "== Final notice: creating autobiographies =="
+                : "== Notice: creating autobiographies ==";
+              const headingId = isFinal
+                ? "== Pemberitahuan terakhir: membuat otobiografi =="
+                : "== Pemberitahuan: membuat otobiografi ==";
+              const bodyEn =
+                `It appears that you may have created or substantially edited an article about yourself. Wikipedia strongly discourages editors from writing about themselves, as it is very difficult to write about oneself in a neutral and verifiable way, and doing so creates a significant [[WP:COI|conflict of interest]]. Please review [[WP:AUTO]] and [[WP:COI]]. If you meet [[WP:NCRIT|Wikipedia's notability criteria]], you may wish to request that someone else write an article about you instead.` +
+                (isFinal ? finalSentence(false) : "") +
+                `\n\nIf you believe this notice has been issued in error, please leave a message on my talk page. ~~~~`;
+              const bodyId =
+                `Tampaknya Anda mungkin telah membuat atau menyunting secara substansial sebuah artikel tentang diri Anda sendiri. Wikipedia sangat tidak menganjurkan penyunting menulis tentang diri mereka sendiri, karena sangat sulit untuk menulis tentang diri sendiri secara netral dan dapat diverifikasi, dan hal ini menimbulkan [[WP:COI|konflik kepentingan]] yang signifikan. Harap tinjau [[WP:AUTO]] dan [[WP:COI]]. Jika Anda memenuhi [[WP:NCRIT|kriteria kelayakan Wikipedia]], Anda dapat meminta orang lain untuk menulis artikel tentang Anda.` +
+                (isFinal ? finalSentence(true) : "") +
+                `\n\nJika Anda merasa pemberitahuan ini diberikan secara keliru, silakan tinggalkan pesan di halaman pembicaraan saya. ~~~~`;
+              const en = withExtra(headingEn + "\n" + bodyEn, extra, false);
+              const id = withExtra(headingId + "\n" + bodyId, extra, true);
+              return useIndonesian ? id : en;
+            },
+          },
+
+          // ------------------------------------------------------------------
+          // Adding incorrect categories
+          // ------------------------------------------------------------------
+          {
+            value: "incorrectcat",
+            label: "Adding incorrect categories",
+            buildNotice: function (target, extra, isFinal) {
+              const headingEn = isFinal
+                ? "== Final notice: adding incorrect categories =="
+                : "== Notice: adding incorrect categories ==";
+              const headingId = isFinal
+                ? "== Pemberitahuan terakhir: penambahan kategori yang salah =="
+                : "== Pemberitahuan: penambahan kategori yang salah ==";
+              const bodyEn =
+                `Your recent edits appear to have added one or more categories to a page that do not accurately describe that page's subject matter. Categories should only be applied where their criteria are clearly met. Please review [[WP:CAT]] and the specific criteria of any category before applying it. Incorrect categorisation can misdirect readers and is usually reverted.` +
+                (isFinal ? finalSentence(false) : "") +
+                `\n\nIf you believe this notice has been issued in error, please leave a message on my talk page. ~~~~`;
+              const bodyId =
+                `Suntingan Anda yang baru-baru ini tampaknya menambahkan satu atau lebih kategori ke sebuah halaman yang tidak secara akurat menggambarkan subjek halaman tersebut. Kategori hanya boleh diterapkan apabila kriterianya jelas terpenuhi. Harap tinjau [[WP:CAT]] dan kriteria spesifik dari setiap kategori sebelum menerapkannya. Kategorisasi yang salah dapat menyesatkan pembaca dan biasanya akan dikembalikan.` +
+                (isFinal ? finalSentence(true) : "") +
+                `\n\nJika Anda merasa pemberitahuan ini diberikan secara keliru, silakan tinggalkan pesan di halaman pembicaraan saya. ~~~~`;
+              const en = withExtra(headingEn + "\n" + bodyEn, extra, false);
+              const id = withExtra(headingId + "\n" + bodyId, extra, true);
+              return useIndonesian ? id : en;
+            },
+          },
+
+          // ------------------------------------------------------------------
+          // Adding inappropriate entries to lists
+          // ------------------------------------------------------------------
+          {
+            value: "listentries",
+            label: "Adding inappropriate entries to lists",
+            buildNotice: function (target, extra, isFinal) {
+              const headingEn = isFinal
+                ? "== Final notice: adding inappropriate entries to lists =="
+                : "== Notice: adding inappropriate entries to lists ==";
+              const headingId = isFinal
+                ? "== Pemberitahuan terakhir: penambahan entri yang tidak sesuai ke daftar =="
+                : "== Pemberitahuan: penambahan entri yang tidak sesuai ke daftar ==";
+              const bodyEn =
+                `Your recent edits appear to have added one or more entries to a list that do not meet the inclusion criteria for that list. List articles define their scope in their lead section or guidelines; entries must meet those criteria and must be supported by a reliable source. Please review [[WP:LISTCRITERIA]] and the list's own documentation before adding further entries.` +
+                (isFinal ? finalSentence(false) : "") +
+                `\n\nIf you believe this notice has been issued in error, please leave a message on my talk page. ~~~~`;
+              const bodyId =
+                `Suntingan Anda yang baru-baru ini tampaknya menambahkan satu atau lebih entri ke sebuah daftar yang tidak memenuhi kriteria penyertaan daftar tersebut. Artikel daftar mendefinisikan cakupannya di bagian pembuka atau panduannya; entri harus memenuhi kriteria tersebut dan harus didukung oleh sumber tepercaya. Harap tinjau [[WP:LISTCRITERIA]] dan dokumentasi daftar itu sendiri sebelum menambahkan entri lebih lanjut.` +
+                (isFinal ? finalSentence(true) : "") +
+                `\n\nJika Anda merasa pemberitahuan ini diberikan secara keliru, silakan tinggalkan pesan di halaman pembicaraan saya. ~~~~`;
+              const en = withExtra(headingEn + "\n" + bodyEn, extra, false);
+              const id = withExtra(headingId + "\n" + bodyId, extra, true);
+              return useIndonesian ? id : en;
+            },
+          },
+
+          // ------------------------------------------------------------------
+          // Adding a bare URL
+          // ------------------------------------------------------------------
+          {
+            value: "bareurl",
+            label: "Adding a bare URL",
+            buildNotice: function (target, extra, isFinal) {
+              const headingEn = isFinal
+                ? "== Final notice: adding a bare URL =="
+                : "== Notice: adding a bare URL ==";
+              const headingId = isFinal
+                ? "== Pemberitahuan terakhir: penambahan URL mentah =="
+                : "== Pemberitahuan: penambahan URL mentah ==";
+              const bodyEn =
+                `Your recent edits appear to have added one or more bare URLs — that is, raw web addresses without a formatted citation — to an article. Bare URLs are difficult for readers to evaluate and do not display useful bibliographic information. Please format all references using a citation template such as {{|tlx|cite web}} or {{tlx|cite news}}. See [[WP:CITE]] for guidance on citing sources correctly.` +
+                (isFinal ? finalSentence(false) : "") +
+                `\n\nIf you believe this notice has been issued in error, please leave a message on my talk page. ~~~~`;
+              const bodyId =
+                `Suntingan Anda yang baru-baru ini tampaknya menambahkan satu atau lebih URL mentah, yaitu alamat web tanpa kutipan yang diformat, ke dalam artikel. URL mentah sulit dievaluasi oleh pembaca dan tidak menampilkan informasi bibliografi yang berguna. Harap format semua referensi menggunakan templat kutipan seperti {{tlx|cite web}} atau {{tlx|cite news}}. Lihat [[WP:CITE]] untuk panduan mengutip sumber dengan benar.` +
+                (isFinal ? finalSentence(true) : "") +
+                `\n\nJika Anda merasa pemberitahuan ini diberikan secara keliru, silakan tinggalkan pesan di halaman pembicaraan saya. ~~~~`;
+              const en = withExtra(headingEn + "\n" + bodyEn, extra, false);
+              const id = withExtra(headingId + "\n" + bodyId, extra, true);
+              return useIndonesian ? id : en;
+            },
+          },
+
+          // ------------------------------------------------------------------
+          // "Biting" newcomers
+          // ------------------------------------------------------------------
+          {
+            value: "bitingnewcomers",
+            label: '"Biting" newcomers',
+            buildNotice: function (target, extra, isFinal) {
+              const headingEn = isFinal
+                ? "== Final notice: biting newcomers =="
+                : "== Notice: biting newcomers ==";
+              const headingId = isFinal
+                ? "== Pemberitahuan terakhir: bersikap kasar terhadap pengguna baru =="
+                : "== Pemberitahuan: bersikap kasar terhadap pengguna baru ==";
+              const bodyEn =
+                `Your recent comments or actions towards a new editor may have come across as unwelcoming or unnecessarily harsh. Wikipedia encourages all editors to be patient and supportive with newcomers, who may not yet be familiar with our policies and conventions. Please review [[WP:BITE]] and [[WP:CIVIL]], and try to engage with new editors in a constructive and encouraging way.` +
+                (isFinal ? finalSentence(false) : "") +
+                `\n\nIf you believe this notice has been issued in error, please leave a message on my talk page. ~~~~`;
+              const bodyId =
+                `Komentar atau tindakan Anda yang baru-baru ini terhadap penyunting baru mungkin terkesan tidak ramah atau terlalu keras. Wikipedia mendorong semua penyunting untuk bersabar dan mendukung para pengguna baru, yang mungkin belum familier dengan kebijakan dan pedoman kita. Harap tinjau [[WP:BITE]] dan [[WP:CIVIL]], dan cobalah untuk berinteraksi dengan penyunting baru secara konstruktif dan mendukung.` +
+                (isFinal ? finalSentence(true) : "") +
+                `\n\nJika Anda merasa pemberitahuan ini diberikan secara keliru, silakan tinggalkan pesan di halaman pembicaraan saya. ~~~~`;
+              const en = withExtra(headingEn + "\n" + bodyEn, extra, false);
+              const id = withExtra(headingId + "\n" + bodyId, extra, true);
+              return useIndonesian ? id : en;
+            },
+          },
+
+          // ------------------------------------------------------------------
+          // Article blanked and redirected
+          // ------------------------------------------------------------------
+          {
+            value: "blankredirect",
+            label: "Article blanked and redirected",
+            buildNotice: function (target, extra, isFinal) {
+              const headingEn = isFinal
+                ? "== Final notice: article blanked and redirected =="
+                : "== Notice: article blanked and redirected ==";
+              const headingId = isFinal
+                ? "== Pemberitahuan terakhir: artikel dikosongkan dan dialihkan =="
+                : "== Pemberitahuan: artikel dikosongkan dan dialihkan ==";
+              const bodyEn =
+                `Your recent edits appear to have blanked the content of an article and converted it into a redirect. If you believe an article should be merged with or redirected to another, please follow the process described at [[WP:MERGE]] or [[WP:REDIRECT]] and propose the change on the relevant talk page first. Blanking content without discussion is not the correct procedure and is typically reverted.` +
+                (isFinal ? finalSentence(false) : "") +
+                `\n\nIf you believe this notice has been issued in error, please leave a message on my talk page. ~~~~`;
+              const bodyId =
+                `Suntingan Anda yang baru-baru ini tampaknya telah mengosongkan konten sebuah artikel dan mengubahnya menjadi pengalihan. Jika Anda berpendapat bahwa sebuah artikel harus digabungkan atau dialihkan ke artikel lain, ikuti proses yang dijelaskan di [[WP:MERGE]] atau [[WP:REDIRECT]] dan usulkan perubahan tersebut di halaman pembicaraan yang relevan terlebih dahulu. Mengosongkan konten tanpa diskusi bukan prosedur yang benar dan biasanya akan dikembalikan.` +
+                (isFinal ? finalSentence(true) : "") +
+                `\n\nJika Anda merasa pemberitahuan ini diberikan secara keliru, silakan tinggalkan pesan di halaman pembicaraan saya. ~~~~`;
+              const en = withExtra(headingEn + "\n" + bodyEn, extra, false);
+              const id = withExtra(headingId + "\n" + bodyId, extra, true);
+              return useIndonesian ? id : en;
+            },
+          },
+
+          // ------------------------------------------------------------------
+          // Using circular sources
+          // ------------------------------------------------------------------
+          {
+            value: "circularsources",
+            label: "Using circular sources",
+            buildNotice: function (target, extra, isFinal) {
+              const headingEn = isFinal
+                ? "== Final notice: using circular sources =="
+                : "== Notice: using circular sources ==";
+              const headingId = isFinal
+                ? "== Pemberitahuan terakhir: penggunaan sumber melingkar =="
+                : "== Pemberitahuan: penggunaan sumber melingkar ==";
+              const bodyEn =
+                `Your recent edits appear to cite sources that ultimately derive their information from Wikipedia itself, or from other sources that repeat claims originally published here. This is known as circular sourcing and does not satisfy [[WP:V|Wikipedia's verifiability policy]], because it does not provide independent verification of the information. Please use primary or reliable secondary sources that are independent of Wikipedia. See [[WP:CIRCULAR]] for guidance.` +
+                (isFinal ? finalSentence(false) : "") +
+                `\n\nIf you believe this notice has been issued in error, please leave a message on my talk page. ~~~~`;
+              const bodyId =
+                `Suntingan Anda yang baru-baru ini tampaknya mengutip sumber yang pada akhirnya mengambil informasinya dari Wikipedia sendiri, atau dari sumber lain yang mengulang klaim yang awalnya diterbitkan di sini. Hal ini dikenal sebagai sumber melingkar dan tidak memenuhi [[WP:V|kebijakan verifikasi Wikipedia]], karena tidak memberikan verifikasi independen atas informasi tersebut. Harap gunakan sumber primer atau sumber sekunder yang tepercaya dan independen dari Wikipedia. Lihat [[WP:CIRCULAR]] untuk panduan.` +
+                (isFinal ? finalSentence(true) : "") +
+                `\n\nJika Anda merasa pemberitahuan ini diberikan secara keliru, silakan tinggalkan pesan di halaman pembicaraan saya. ~~~~`;
+              const en = withExtra(headingEn + "\n" + bodyEn, extra, false);
+              const id = withExtra(headingId + "\n" + bodyId, extra, true);
+              return useIndonesian ? id : en;
+            },
+          },
+
+          // ------------------------------------------------------------------
+          // Conflict of interest
+          // ------------------------------------------------------------------
+          {
+            value: "coi",
+            label: "Conflict of interest",
+            buildNotice: function (target, extra, isFinal) {
+              const headingEn = isFinal
+                ? "== Final notice: conflict of interest =="
+                : "== Notice: conflict of interest ==";
+              const headingId = isFinal
+                ? "== Pemberitahuan terakhir: konflik kepentingan =="
+                : "== Pemberitahuan: konflik kepentingan ==";
+              const bodyEn =
+                `Your recent edits suggest that you may have a [[WP:COI|conflict of interest]] with respect to the subject of one or more articles you have edited. Editors with a personal, professional, or financial connection to a subject are strongly discouraged from editing related articles directly. If you have relevant information to contribute, please use the talk page to suggest changes and allow independent editors to assess them. Please review [[WP:COI]] and [[WP:PAID]] for further guidance.` +
+                (isFinal ? finalSentence(false) : "") +
+                `\n\nIf you believe this notice has been issued in error, please leave a message on my talk page. ~~~~`;
+              const bodyId =
+                `Suntingan Anda yang baru-baru ini mengindikasikan bahwa Anda mungkin memiliki [[WP:COI|konflik kepentingan]] terhadap subjek satu atau lebih artikel yang Anda sunting. Penyunting yang memiliki hubungan pribadi, profesional, atau finansial dengan suatu subjek sangat tidak dianjurkan untuk menyunting artikel terkait secara langsung. Jika Anda memiliki informasi yang relevan untuk dikontribusikan, gunakan halaman pembicaraan untuk menyarankan perubahan dan biarkan penyunting independen menilainya. Harap tinjau [[WP:COI]] dan [[WP:PAID]] untuk panduan lebih lanjut.` +
+                (isFinal ? finalSentence(true) : "") +
+                `\n\nJika Anda merasa pemberitahuan ini diberikan secara keliru, silakan tinggalkan pesan di halaman pembicaraan saya. ~~~~`;
+              const en = withExtra(headingEn + "\n" + bodyEn, extra, false);
+              const id = withExtra(headingId + "\n" + bodyId, extra, true);
+              return useIndonesian ? id : en;
+            },
+          },
+
+          // ------------------------------------------------------------------
+          // Copying text to another page
+          // ------------------------------------------------------------------
+          {
+            value: "copyingtext",
+            label: "Copying text to another page",
+            buildNotice: function (target, extra, isFinal) {
+              const headingEn = isFinal
+                ? "== Final notice: copying text to another page =="
+                : "== Notice: copying text to another page ==";
+              const headingId = isFinal
+                ? "== Pemberitahuan terakhir: menyalin teks ke halaman lain =="
+                : "== Pemberitahuan: menyalin teks ke halaman lain ==";
+              const bodyEn =
+                `Your recent edits appear to have copied text from one Wikipedia page to another without the required attribution. All Wikipedia content is released under a licence that requires attribution to the original contributors. When copying text between pages, you must acknowledge the source in the edit summary using a note such as "Copied text from [[Article name]]; see that article's history for attribution." Please review [[WP:COPYWITHIN]] for the correct procedure.` +
+                (isFinal ? finalSentence(false) : "") +
+                `\n\nIf you believe this notice has been issued in error, please leave a message on my talk page. ~~~~`;
+              const bodyId =
+                `Suntingan Anda yang baru-baru ini tampaknya menyalin teks dari satu halaman Wikipedia ke halaman lain tanpa atribusi yang diperlukan. Semua konten Wikipedia dirilis di bawah lisensi yang mewajibkan atribusi kepada kontributor aslinya. Saat menyalin teks antar halaman, Anda harus mencantumkan sumbernya dalam ringkasan suntingan menggunakan catatan seperti "Teks disalin dari [[Nama artikel]]; lihat riwayat artikel tersebut untuk atribusi." Harap tinjau [[WP:COPYWITHIN]] untuk prosedur yang benar.` +
+                (isFinal ? finalSentence(true) : "") +
+                `\n\nJika Anda merasa pemberitahuan ini diberikan secara keliru, silakan tinggalkan pesan di halaman pembicaraan saya. ~~~~`;
+              const en = withExtra(headingEn + "\n" + bodyEn, extra, false);
+              const id = withExtra(headingId + "\n" + bodyId, extra, true);
+              return useIndonesian ? id : en;
+            },
+          },
+
+          // ------------------------------------------------------------------
+          // Adding speculative or unconfirmed information
+          // ------------------------------------------------------------------
+          {
+            value: "speculative",
+            label: "Adding speculative or unconfirmed information",
+            buildNotice: function (target, extra, isFinal) {
+              const headingEn = isFinal
+                ? "== Final notice: adding speculative or unconfirmed information =="
+                : "== Notice: adding speculative or unconfirmed information ==";
+              const headingId = isFinal
+                ? "== Pemberitahuan terakhir: penambahan informasi spekulatif atau belum terkonfirmasi =="
+                : "== Pemberitahuan: penambahan informasi spekulatif atau belum terkonfirmasi ==";
+              const bodyEn =
+                `Your recent edits appear to have introduced speculative, rumoured, or otherwise unconfirmed information into one or more articles. Wikipedia's [[WP:V|verifiability policy]] requires that all content be attributable to a reliable, published source. Information that has not yet been confirmed or that represents speculation — even if widely reported — should not be added until it is properly sourced. Please review [[WP:V]] and [[WP:OR]] before making further edits of this kind.` +
+                (isFinal ? finalSentence(false) : "") +
+                `\n\nIf you believe this notice has been issued in error, please leave a message on my talk page. ~~~~`;
+              const bodyId =
+                `Suntingan Anda yang baru-baru ini tampaknya memasukkan informasi spekulatif, berupa rumor, atau belum terkonfirmasi ke dalam satu atau lebih artikel. [[WP:V|Kebijakan verifikasi Wikipedia]] mewajibkan bahwa semua konten dapat dikaitkan dengan sumber yang tepercaya dan telah diterbitkan. Informasi yang belum terkonfirmasi atau yang merupakan spekulasi, meskipun banyak dilaporkan, tidak boleh ditambahkan sampai bersumber dengan baik. Harap tinjau [[WP:V]] dan [[WP:OR]] sebelum melakukan suntingan serupa.` +
+                (isFinal ? finalSentence(true) : "") +
+                `\n\nJika Anda merasa pemberitahuan ini diberikan secara keliru, silakan tinggalkan pesan di halaman pembicaraan saya. ~~~~`;
+              const en = withExtra(headingEn + "\n" + bodyEn, extra, false);
+              const id = withExtra(headingId + "\n" + bodyId, extra, true);
+              return useIndonesian ? id : en;
+            },
+          },
+
+          // ------------------------------------------------------------------
+          // Cut and paste moves
+          // ------------------------------------------------------------------
+          {
+            value: "cutpastemove",
+            label: "Cut and paste moves",
+            buildNotice: function (target, extra, isFinal) {
+              const headingEn = isFinal
+                ? "== Final notice: cut and paste moves =="
+                : "== Notice: cut and paste moves ==";
+              const headingId = isFinal
+                ? "== Pemberitahuan terakhir: pemindahan dengan potong dan tempel =="
+                : "== Pemberitahuan: pemindahan dengan potong dan tempel ==";
+              const bodyEn =
+                `Your recent edits appear to have moved the content of a page by cutting it from one location and pasting it to another. This method of moving pages should not be used because it breaks the page's edit history, which is required for copyright attribution. To rename or move a page, please use the [[WP:MOVE|"Move" function]]. If you require assistance, you can request a page move at [[WP:RM]]. See [[WP:CPM]] for further explanation.` +
+                (isFinal ? finalSentence(false) : "") +
+                `\n\nIf you believe this notice has been issued in error, please leave a message on my talk page. ~~~~`;
+              const bodyId =
+                `Suntingan Anda yang baru-baru ini tampaknya memindahkan konten halaman dengan memotongnya dari satu lokasi dan menempelkannya di lokasi lain. Metode pemindahan halaman ini tidak boleh digunakan karena merusak riwayat suntingan halaman, yang diperlukan untuk atribusi hak cipta. Untuk mengganti nama atau memindahkan halaman, gunakan [[WP:MOVE|fitur "Pindahkan"]]. Jika Anda memerlukan bantuan, Anda dapat meminta pemindahan halaman di [[WP:RM]]. Lihat [[WP:CPM]] untuk penjelasan lebih lanjut.` +
+                (isFinal ? finalSentence(true) : "") +
+                `\n\nJika Anda merasa pemberitahuan ini diberikan secara keliru, silakan tinggalkan pesan di halaman pembicaraan saya. ~~~~`;
+              const en = withExtra(headingEn + "\n" + bodyEn, extra, false);
+              const id = withExtra(headingId + "\n" + bodyId, extra, true);
+              return useIndonesian ? id : en;
+            },
+          },
+
+          // ------------------------------------------------------------------
+          // Incorrect edit to a disambiguation page
+          // ------------------------------------------------------------------
+          {
+            value: "dabpage",
+            label: "Incorrect edit to a disambiguation page",
+            buildNotice: function (target, extra, isFinal) {
+              const headingEn = isFinal
+                ? "== Final notice: incorrect edit to a disambiguation page =="
+                : "== Notice: incorrect edit to a disambiguation page ==";
+              const headingId = isFinal
+                ? "== Pemberitahuan terakhir: suntingan yang salah pada halaman disambiguasi =="
+                : "== Pemberitahuan: suntingan yang salah pada halaman disambiguasi ==";
+              const bodyEn =
+                `Your recent edits to a [[WP:DAB|disambiguation page]] do not appear to follow the guidelines for those pages. Disambiguation pages are navigational aids that list articles sharing a similar name; they have specific formatting conventions and should not be used to add definitions, trivia, redlinks to non-notable topics, or content that belongs in an article. Please review [[WP:MOSDAB]] before editing disambiguation pages further.` +
+                (isFinal ? finalSentence(false) : "") +
+                `\n\nIf you believe this notice has been issued in error, please leave a message on my talk page. ~~~~`;
+              const bodyId =
+                `Suntingan Anda yang baru-baru ini pada [[WP:DAB|halaman disambiguasi]] tampaknya tidak mengikuti panduan untuk halaman tersebut. Halaman disambiguasi adalah alat navigasi yang mencantumkan artikel-artikel dengan nama serupa; halaman ini memiliki konvensi pemformatan khusus dan tidak boleh digunakan untuk menambahkan definisi, informasi trivial, pranala merah ke topik yang tidak layak, atau konten yang seharusnya berada dalam sebuah artikel. Harap tinjau [[WP:MOSDAB]] sebelum menyunting halaman disambiguasi lebih lanjut.` +
+                (isFinal ? finalSentence(true) : "") +
+                `\n\nJika Anda merasa pemberitahuan ini diberikan secara keliru, silakan tinggalkan pesan di halaman pembicaraan saya. ~~~~`;
+              const en = withExtra(headingEn + "\n" + bodyEn, extra, false);
+              const id = withExtra(headingId + "\n" + bodyId, extra, true);
+              return useIndonesian ? id : en;
+            },
+          },
+
+          // ------------------------------------------------------------------
+          // Unnecessarily changing date formats
+          // ------------------------------------------------------------------
+          {
+            value: "dateformat",
+            label: "Unnecessarily changing date formats",
+            buildNotice: function (target, extra, isFinal) {
+              const headingEn = isFinal
+                ? "== Final notice: unnecessarily changing date formats =="
+                : "== Notice: unnecessarily changing date formats ==";
+              const headingId = isFinal
+                ? "== Pemberitahuan terakhir: mengubah format tanggal secara tidak perlu =="
+                : "== Pemberitahuan: mengubah format tanggal secara tidak perlu ==";
+              const bodyEn =
+                `Your recent edits appear to have changed the date format used in one or more articles without a clear editorial reason to do so. Wikipedia's [[MOS:DATEFORMAT|Manual of Style]] advises that the date format already established in an article should generally be retained for consistency. Please avoid making changes to date formats that do not improve the encyclopaedia and review [[MOS:DATEFORMAT]] for guidance.` +
+                (isFinal ? finalSentence(false) : "") +
+                `\n\nIf you believe this notice has been issued in error, please leave a message on my talk page. ~~~~`;
+              const bodyId =
+                `Suntingan Anda yang baru-baru ini tampaknya telah mengubah format tanggal yang digunakan dalam satu atau lebih artikel tanpa alasan editorial yang jelas. [[MOS:DATEFORMAT|Panduan gaya Wikipedia]] menyarankan agar format tanggal yang telah ditetapkan dalam sebuah artikel umumnya dipertahankan untuk konsistensi. Harap hindari perubahan format tanggal yang tidak meningkatkan kualitas ensiklopedia dan tinjau [[MOS:DATEFORMAT]] untuk panduan.` +
+                (isFinal ? finalSentence(true) : "") +
+                `\n\nJika Anda merasa pemberitahuan ini diberikan secara keliru, silakan tinggalkan pesan di halaman pembicaraan saya. ~~~~`;
+              const en = withExtra(headingEn + "\n" + bodyEn, extra, false);
+              const id = withExtra(headingId + "\n" + bodyId, extra, true);
+              return useIndonesian ? id : en;
+            },
+          },
+
+          // ------------------------------------------------------------------
+          // Removing proper sources containing dead links
+          // ------------------------------------------------------------------
+          {
+            value: "deadlinks",
+            label: "Removing proper sources containing dead links",
+            buildNotice: function (target, extra, isFinal) {
+              const headingEn = isFinal
+                ? "== Final notice: removing sources containing dead links =="
+                : "== Notice: removing sources containing dead links ==";
+              const headingId = isFinal
+                ? "== Pemberitahuan terakhir: menghapus sumber yang memuat tautan mati =="
+                : "== Pemberitahuan: menghapus sumber yang memuat tautan mati ==";
+              const bodyEn =
+                `Your recent edits appear to have removed one or more references solely because the URL they contain is no longer accessible. A dead link does not invalidate a citation: the underlying source may still exist in print, in archives, or via a web archive service. Rather than removing such references, please consider updating the URL, marking them with {{tlx|dead link}}, or locating an archived version via the [[WP:WAYBACK|Wayback Machine]]. See [[WP:DEADREF]] for guidance.` +
+                (isFinal ? finalSentence(false) : "") +
+                `\n\nIf you believe this notice has been issued in error, please leave a message on my talk page. ~~~~`;
+              const bodyId =
+                `Suntingan Anda yang baru-baru ini tampaknya telah menghapus satu atau lebih referensi semata-mata karena URL yang dikandungnya tidak lagi dapat diakses. Pranala mati tidak membatalkan sebuah kutipan. Sumber yang mendasarinya mungkin masih ada dalam bentuk cetak, arsip, atau melalui layanan arsip web. Daripada menghapus referensi tersebut, pertimbangkan untuk memperbarui URL, menandainya dengan {{tlx|dead link}}, atau menemukan versi yang diarsipkan melalui [[WP:WAYBACK|Wayback Machine]]. Lihat [[WP:DEADREF]] untuk panduan.` +
+                (isFinal ? finalSentence(true) : "") +
+                `\n\nJika Anda merasa pemberitahuan ini diberikan secara keliru, silakan tinggalkan pesan di halaman pembicaraan saya. ~~~~`;
+              const en = withExtra(headingEn + "\n" + bodyEn, extra, false);
+              const id = withExtra(headingId + "\n" + bodyId, extra, true);
+              return useIndonesian ? id : en;
+            },
+          },
+
+          // ------------------------------------------------------------------
+          // Incorrect use of DISPLAYTITLE
+          // ------------------------------------------------------------------
+          {
+            value: "displaytitle",
+            label: "Incorrect use of DISPLAYTITLE",
+            buildNotice: function (target, extra, isFinal) {
+              const headingEn = isFinal
+                ? "== Final notice: incorrect use of DISPLAYTITLE =="
+                : "== Notice: incorrect use of DISPLAYTITLE ==";
+              const headingId = isFinal
+                ? "== Pemberitahuan terakhir: penggunaan DISPLAYTITLE yang salah =="
+                : "== Pemberitahuan: penggunaan DISPLAYTITLE yang salah ==";
+              const bodyEn =
+                `Your recent edits appear to have used the <code>{{DISPLAYTITLE}}</code> magic word in a way that does not comply with its intended purpose. <code>DISPLAYTITLE</code> may only be used to apply italics, change capitalisation, or make other minor adjustments consistent with the [[MOS:TITLE|Manual of Style]] where those changes differ from the page name. It must not be used to substantially alter how the page title appears or to circumvent naming conventions. Please review [[WP:DISPLAYTITLE]] before using this feature again.` +
+                (isFinal ? finalSentence(false) : "") +
+                `\n\nIf you believe this notice has been issued in error, please leave a message on my talk page. ~~~~`;
+              const bodyId =
+                `Suntingan Anda yang baru-baru ini tampaknya menggunakan kata magis <code>{{DISPLAYTITLE}}</code> dengan cara yang tidak sesuai dengan tujuan penggunaannya. <code>DISPLAYTITLE</code> hanya boleh digunakan untuk menerapkan cetak miring, mengubah kapitalisasi, atau melakukan penyesuaian kecil lainnya yang sesuai dengan [[MOS:TITLE|Panduan gaya]] di mana perubahan tersebut berbeda dari nama halaman. Kata ajaib ini tidak boleh digunakan untuk mengubah tampilan judul halaman secara substansial atau untuk menghindari konvensi penamaan. Harap tinjau [[WP:DISPLAYTITLE]] sebelum menggunakan fitur ini lagi.` +
+                (isFinal ? finalSentence(true) : "") +
+                `\n\nJika Anda merasa pemberitahuan ini diberikan secara keliru, silakan tinggalkan pesan di halaman pembicaraan saya. ~~~~`;
+              const en = withExtra(headingEn + "\n" + bodyEn, extra, false);
+              const id = withExtra(headingId + "\n" + bodyId, extra, true);
+              return useIndonesian ? id : en;
+            },
+          },
+
+          // ------------------------------------------------------------------
+          // User should draft in userspace without the risk of speedy deletion
+          // ------------------------------------------------------------------
+          {
+            value: "draftinuserspace",
+            label:
+              "User should draft in userspace without the risk of speedy deletion",
+            buildNotice: function (target, extra, isFinal) {
+              const headingEn = isFinal
+                ? "== Final notice: draft in userspace =="
+                : "== Notice: draft in userspace ==";
+              const headingId = isFinal
+                ? "== Pemberitahuan terakhir: buat draf di ruang pengguna =="
+                : "== Pemberitahuan: buat draf di ruang pengguna ==";
+              const bodyEn =
+                `It appears that you are working on a new article that is not yet ready for the main encyclopaedia. To avoid the risk of [[WP:CSD|speedy deletion]], you are welcome to develop it as a draft in your userspace, for example at [[Special:MyPage/Drafts|User:{{subst:REVISIONUSER}}/Drafts]]. Once it is sufficiently developed and meets [[WP:NCRIT|Wikipedia's notability guidelines]], you can submit it for review or move it to the main namespace. See [[WP:YFA]] for guidance on writing new articles.` +
+                (isFinal ? finalSentence(false) : "") +
+                `\n\nIf you believe this notice has been issued in error, please leave a message on my talk page. ~~~~`;
+              const bodyId =
+                `Tampaknya Anda sedang mengerjakan artikel baru yang belum siap untuk ensiklopedia utama. Untuk menghindari risiko [[WP:CSD|penghapusan cepat]], Anda dipersilakan untuk mengembangkannya sebagai draf di ruang pengguna Anda, misalnya di [[Special:MyPage/Draf|Pengguna:{{subst:REVISIONUSER}}/Draf]]. Setelah cukup berkembang dan memenuhi [[WP:NCRIT|panduan kelayakan Wikipedia]], Anda dapat mengajukannya untuk ditinjau atau memindahkannya ke ruang nama utama. Lihat [[WP:YFA]] untuk panduan menulis artikel baru.` +
+                (isFinal ? finalSentence(true) : "") +
+                `\n\nJika Anda merasa pemberitahuan ini diberikan secara keliru, silakan tinggalkan pesan di halaman pembicaraan saya. ~~~~`;
+              const en = withExtra(headingEn + "\n" + bodyEn, extra, false);
+              const id = withExtra(headingId + "\n" + bodyId, extra, true);
+              return useIndonesian ? id : en;
+            },
+          },
+
+          // ------------------------------------------------------------------
+          // New user not using edit summary
+          // ------------------------------------------------------------------
+          {
+            value: "newusereditsummary",
+            label: "New user not using edit summary",
+            buildNotice: function (target, extra, isFinal) {
+              const headingEn = isFinal
+                ? "== Final notice: please use edit summaries =="
+                : "== Notice: please use edit summaries ==";
+              const headingId = isFinal
+                ? "== Pemberitahuan terakhir: harap gunakan ringkasan suntingan =="
+                : "== Pemberitahuan: harap gunakan ringkasan suntingan ==";
+              const bodyEn =
+                `Welcome to Wikipedia! You may not yet be aware of the importance of edit summaries. When you make an edit, please use the edit summary box to briefly explain what you changed and why. Edit summaries help other editors understand your contributions and make it easier to review changes. Even a short note is helpful. See [[WP:ES]] for more information.` +
+                (isFinal ? finalSentence(false) : "") +
+                `\n\nIf you believe this notice has been issued in error, please leave a message on my talk page. ~~~~`;
+              const bodyId =
+                `Selamat datang di Wikipedia! Anda mungkin belum mengetahui pentingnya ringkasan suntingan. Saat Anda melakukan suntingan, gunakan kotak ringkasan suntingan untuk menjelaskan secara singkat apa yang Anda ubah dan mengapa. Ringkasan suntingan membantu penyunting lain memahami kontribusi Anda dan memudahkan peninjauan perubahan. Bahkan catatan singkat pun sangat berguna. Lihat [[WP:ES]] untuk informasi lebih lanjut.` +
+                (isFinal ? finalSentence(true) : "") +
+                `\n\nJika Anda merasa pemberitahuan ini diberikan secara keliru, silakan tinggalkan pesan di halaman pembicaraan saya. ~~~~`;
+              const en = withExtra(headingEn + "\n" + bodyEn, extra, false);
+              const id = withExtra(headingId + "\n" + bodyId, extra, true);
+              return useIndonesian ? id : en;
+            },
+          },
+
+          // ------------------------------------------------------------------
+          // Experienced user not using edit summary
+          // ------------------------------------------------------------------
+          {
+            value: "expusereditsummary",
+            label: "Experienced user not using edit summary",
+            buildNotice: function (target, extra, isFinal) {
+              const headingEn = isFinal
+                ? "== Final notice: please use edit summaries =="
+                : "== Notice: please use edit summaries ==";
+              const headingId = isFinal
+                ? "== Pemberitahuan terakhir: harap gunakan ringkasan suntingan =="
+                : "== Pemberitahuan: harap gunakan ringkasan suntingan ==";
+              const bodyEn =
+                `As an experienced editor, you will be aware of the importance of edit summaries. Your recent edits appear to have been made without one. Please remember to complete the edit summary field whenever you edit a page, even for minor changes. Edit summaries are essential for transparency and help other editors review and understand your contributions. See [[WP:ES]] for a reminder of best practice.` +
+                (isFinal ? finalSentence(false) : "") +
+                `\n\nIf you believe this notice has been issued in error, please leave a message on my talk page. ~~~~`;
+              const bodyId =
+                `Sebagai penyunting berpengalaman, Anda tentu mengetahui pentingnya ringkasan suntingan. Suntingan Anda yang baru-baru ini tampaknya dilakukan tanpa ringkasan suntingan. Harap ingat untuk mengisi kolom ringkasan suntingan setiap kali Anda menyunting halaman, bahkan untuk perubahan kecil sekalipun. Ringkasan suntingan sangat penting untuk transparansi dan membantu penyunting lain meninjau serta memahami kontribusi Anda. Lihat [[WP:ES]] untuk pengingat praktik terbaik.` +
+                (isFinal ? finalSentence(true) : "") +
+                `\n\nJika Anda merasa pemberitahuan ini diberikan secara keliru, silakan tinggalkan pesan di halaman pembicaraan saya. ~~~~`;
+              const en = withExtra(headingEn + "\n" + bodyEn, extra, false);
+              const id = withExtra(headingId + "\n" + bodyId, extra, true);
+              return useIndonesian ? id : en;
+            },
+          },
+
+          // ------------------------------------------------------------------
+          // Adding external links to the body of an article
+          // ------------------------------------------------------------------
+          {
+            value: "elinarticle",
+            label: "Adding external links to the body of an article",
+            buildNotice: function (target, extra, isFinal) {
+              const headingEn = isFinal
+                ? "== Final notice: external links in article body =="
+                : "== Notice: external links in article body ==";
+              const headingId = isFinal
+                ? "== Pemberitahuan terakhir: pranala luar di badan artikel =="
+                : "== Pemberitahuan: pranala luar di badan artikel ==";
+              const bodyEn =
+                `Your recent edits appear to have added external links directly into the body text of one or more articles. In Wikipedia, external links should generally only appear in the "External links" section at the foot of an article, or as part of a formatted inline citation. Bare external links embedded in article prose are not in keeping with our formatting guidelines. Please review [[WP:EL]] and [[WP:ELSTYLE]] for guidance.` +
+                (isFinal ? finalSentence(false) : "") +
+                `\n\nIf you believe this notice has been issued in error, please leave a message on my talk page. ~~~~`;
+              const bodyId =
+                `Suntingan Anda yang baru-baru ini tampaknya menambahkan pranala luar langsung ke dalam teks badan satu atau lebih artikel. Di Wikipedia, pranala luar umumnya hanya boleh muncul di bagian "Pranala luar" di bagian bawah artikel, atau sebagai bagian dari kutipan sebaris yang diformat. Pranala luar mentah yang disisipkan dalam prosa artikel tidak sesuai dengan panduan pemformatan kami. Harap tinjau [[WP:EL]] dan [[WP:ELSTYLE]] untuk panduan.` +
+                (isFinal ? finalSentence(true) : "") +
+                `\n\nJika Anda merasa pemberitahuan ini diberikan secara keliru, silakan tinggalkan pesan di halaman pembicaraan saya. ~~~~`;
+              const en = withExtra(headingEn + "\n" + bodyEn, extra, false);
+              const id = withExtra(headingId + "\n" + bodyId, extra, true);
+              return useIndonesian ? id : en;
+            },
+          },
+
+          // ------------------------------------------------------------------
+          // Hasty addition of speedy deletion tags
+          // ------------------------------------------------------------------
+          {
+            value: "hastycsd",
+            label: "Hasty addition of speedy deletion tags",
+            buildNotice: function (target, extra, isFinal) {
+              const headingEn = isFinal
+                ? "== Final notice: hasty addition of speedy deletion tags =="
+                : "== Notice: hasty addition of speedy deletion tags ==";
+              const headingId = isFinal
+                ? "== Pemberitahuan terakhir: penambahan tag hapus cepat yang terburu-buru =="
+                : "== Pemberitahuan: penambahan tag hapus cepat yang terburu-buru ==";
+              const bodyEn =
+                `Your recent edits appear to have tagged one or more pages for [[WP:CSD|speedy deletion]] without sufficient cause. Speedy deletion criteria are narrow and specific; pages that do not clearly meet a named criterion should not be tagged for speedy deletion. If you have concerns about a page's suitability, please consider nominating it for [[WP:AFD|articles for deletion]] or raising the issue on the article's talk page instead. Please review [[WP:CSD]] before tagging further pages.` +
+                (isFinal ? finalSentence(false) : "") +
+                `\n\nIf you believe this notice has been issued in error, please leave a message on my talk page. ~~~~`;
+              const bodyId =
+                `Suntingan Anda yang baru-baru ini tampaknya menandai satu atau lebih halaman untuk [[WP:CSD|penghapusan cepat]] tanpa alasan yang memadai. Kriteria penghapusan cepat bersifat sempit dan spesifik. Halaman yang tidak memenuhi kriteria yang disebutkan secara jelas tidak boleh ditandai untuk penghapusan cepat. Jika Anda memiliki kekhawatiran tentang kelayakan sebuah halaman, pertimbangkan untuk menominasikannya untuk [[WP:AFD|artikel yang akan dihapus]] atau sebaliknya angkat masalah tersebut di halaman pembicaraan artikel. Harap tinjau [[WP:CSD]] sebelum menandai halaman lebih lanjut.` +
+                (isFinal ? finalSentence(true) : "") +
+                `\n\nJika Anda merasa pemberitahuan ini diberikan secara keliru, silakan tinggalkan pesan di halaman pembicaraan saya. ~~~~`;
+              const en = withExtra(headingEn + "\n" + bodyEn, extra, false);
+              const id = withExtra(headingId + "\n" + bodyId, extra, true);
+              return useIndonesian ? id : en;
+            },
+          },
+
+          // ------------------------------------------------------------------
+          // Use of Islamic honorifics
+          // ------------------------------------------------------------------
+          {
+            value: "islamichon",
+            label: "Use of Islamic honorifics",
+            buildNotice: function (target, extra, isFinal) {
+              const headingEn = isFinal
+                ? "== Final notice: use of Islamic honorifics =="
+                : "== Notice: use of Islamic honorifics ==";
+              const headingId = isFinal
+                ? "== Pemberitahuan terakhir: penggunaan gelar kehormatan Islam =="
+                : "== Pemberitahuan: penggunaan gelar kehormatan Islam ==";
+              const bodyEn =
+                `Your recent edits appear to have added Islamic honorifics — such as "peace be upon him" (PBUH/SAW) or "may Allah be pleased with him/her" — to one or more articles. Wikipedia's [[MOS:HON|Manual of Style]] advises against the use of honorifics of any religious tradition in encyclopaedic articles, as their inclusion may not reflect the neutral point of view required of all articles. Please review [[MOS:HON]] and [[WP:NPOV]] before making further edits of this kind.` +
+                (isFinal ? finalSentence(false) : "") +
+                `\n\nIf you believe this notice has been issued in error, please leave a message on my talk page. ~~~~`;
+              const bodyId =
+                `Suntingan Anda yang baru-baru ini tampaknya menambahkan gelar kehormatan Islam, seperti "shallallahu 'alaihi wasallam" (SAW) atau "radhiyallahu 'anhu/ha", ke satu atau lebih artikel. [[MOS:HON|Panduan gaya Wikipedia]] tidak menganjurkan penggunaan gelar kehormatan dari tradisi keagamaan mana pun dalam artikel ensiklopedis, karena penyertaannya mungkin tidak mencerminkan sudut pandang netral yang diperlukan dari semua artikel. Harap tinjau [[MOS:HON]] dan [[WP:NPOV]] sebelum melakukan suntingan serupa.` +
+                (isFinal ? finalSentence(true) : "") +
+                `\n\nJika Anda merasa pemberitahuan ini diberikan secara keliru, silakan tinggalkan pesan di halaman pembicaraan saya. ~~~~`;
+              const en = withExtra(headingEn + "\n" + bodyEn, extra, false);
+              const id = withExtra(headingId + "\n" + bodyId, extra, true);
+              return useIndonesian ? id : en;
+            },
+          },
+
+          // ------------------------------------------------------------------
+          // Italicise books, films, albums, magazines, TV series, etc. within articles
+          // ------------------------------------------------------------------
+          {
+            value: "italicstitle",
+            label:
+              "Italicise books, films, albums, magazines, TV series, etc. within articles",
+            buildNotice: function (target, extra, isFinal) {
+              const headingEn = isFinal
+                ? "== Final notice: italicising titles of works =="
+                : "== Notice: italicising titles of works ==";
+              const headingId = isFinal
+                ? "== Pemberitahuan terakhir: penggunaan cetak miring pada judul karya =="
+                : "== Pemberitahuan: penggunaan cetak miring pada judul karya ==";
+              const bodyEn =
+                `Your recent edits appear to have either failed to italicise titles of works or to have italicised titles that should not be styled that way. According to [[MOS:ITAL|Wikipedia's Manual of Style]], the titles of books, films, albums, magazines, newspapers, television series, and other long-form works should be italicised when mentioned within article text. Shorter works such as song titles and individual episodes are placed in quotation marks instead. Please review [[MOS:ITAL]] for guidance.` +
+                (isFinal ? finalSentence(false) : "") +
+                `\n\nIf you believe this notice has been issued in error, please leave a message on my talk page. ~~~~`;
+              const bodyId =
+                `Suntingan Anda yang baru-baru ini tampaknya tidak menggunakan cetak miring pada judul karya, atau justru menggunakan cetak miring pada judul yang seharusnya tidak diberi gaya seperti itu. Menurut [[MOS:ITAL|Panduan gaya Wikipedia]], judul buku, film, album, majalah, surat kabar, serial televisi, dan karya panjang lainnya harus dicetak miring ketika disebutkan dalam teks artikel. Karya yang lebih pendek seperti judul lagu dan episode individual ditulis dalam tanda kutip. Harap tinjau [[MOS:ITAL]] untuk panduan.` +
+                (isFinal ? finalSentence(true) : "") +
+                `\n\nJika Anda merasa pemberitahuan ini diberikan secara keliru, silakan tinggalkan pesan di halaman pembicaraan saya. ~~~~`;
+              const en = withExtra(headingEn + "\n" + bodyEn, extra, false);
+              const id = withExtra(headingId + "\n" + bodyId, extra, true);
+              return useIndonesian ? id : en;
+            },
+          },
+
+          // ------------------------------------------------------------------
+          // Unnecessarily changing between British and American English
+          // ------------------------------------------------------------------
+          {
+            value: "engvarchange",
+            label:
+              "Unnecessarily changing between British and American English",
+            buildNotice: function (target, extra, isFinal) {
+              const headingEn = isFinal
+                ? "== Final notice: unnecessarily changing English variety =="
+                : "== Notice: unnecessarily changing English variety ==";
+              const headingId = isFinal
+                ? "== Pemberitahuan terakhir: mengubah ragam bahasa Inggris secara tidak perlu =="
+                : "== Pemberitahuan: mengubah ragam bahasa Inggris secara tidak perlu ==";
+              const bodyEn =
+                `Your recent edits appear to have changed the variety of English used in one or more articles — for example, converting between British and American spellings — without good reason to do so. Wikipedia's [[MOS:ENGVAR|Manual of Style]] advises that whichever variety of English is established in an article should be maintained consistently, and that editors should not change it without a clear and compelling justification. Please review [[MOS:ENGVAR]] before making further edits of this kind.` +
+                (isFinal ? finalSentence(false) : "") +
+                `\n\nIf you believe this notice has been issued in error, please leave a message on my talk page. ~~~~`;
+              const bodyId =
+                `Suntingan Anda yang baru-baru ini tampaknya mengubah ragam bahasa Inggris yang digunakan dalam satu atau lebih artikel, misalnya mengubah ejaan Inggris Britania ke Inggris Amerika atau sebaliknya, tanpa alasan yang tepat. [[MOS:ENGVAR|Panduan gaya Wikipedia]] menyarankan agar ragam bahasa Inggris yang telah ditetapkan dalam sebuah artikel dipertahankan secara konsisten, dan para penyunting tidak boleh mengubahnya tanpa pembenaran yang jelas dan kuat. Harap tinjau [[MOS:ENGVAR]] sebelum melakukan suntingan serupa.` +
+                (isFinal ? finalSentence(true) : "") +
+                `\n\nJika Anda merasa pemberitahuan ini diberikan secara keliru, silakan tinggalkan pesan di halaman pembicaraan saya. ~~~~`;
+              const en = withExtra(headingEn + "\n" + bodyEn, extra, false);
+              const id = withExtra(headingId + "\n" + bodyId, extra, true);
+              return useIndonesian ? id : en;
+            },
+          },
+
+          // ------------------------------------------------------------------
+          // Excessive addition of redlinks or repeated blue links
+          // ------------------------------------------------------------------
+          {
+            value: "overlinking",
+            label: "Excessive addition of redlinks or repeated blue links",
+            buildNotice: function (target, extra, isFinal) {
+              const headingEn = isFinal
+                ? "== Final notice: excessive or repeated links =="
+                : "== Notice: excessive or repeated links ==";
+              const headingId = isFinal
+                ? "== Pemberitahuan terakhir: tautan berlebihan atau berulang =="
+                : "== Pemberitahuan: tautan berlebihan atau berulang ==";
+              const bodyEn =
+                `Your recent edits appear to have added an excessive number of wikilinks to one or more articles, including repeated links to the same target or a large number of redlinks to non-notable topics. Wikipedia's [[WP:OVERLINK|overlinking guideline]] advises that terms should generally be linked only once per article, and only when the linked article is likely to help the reader understand the text. Redlinks should only be used for topics that are genuinely likely to warrant their own article. Please review [[WP:OVERLINK]] and [[WP:REDLINK]] for guidance.` +
+                (isFinal ? finalSentence(false) : "") +
+                `\n\nIf you believe this notice has been issued in error, please leave a message on my talk page. ~~~~`;
+              const bodyId =
+                `Suntingan Anda yang baru-baru ini tampaknya menambahkan pranala wiki yang berlebihan ke satu atau lebih artikel, termasuk tautan berulang ke target yang sama atau sejumlah besar pranala merah ke topik yang tidak layak. [[WP:OVERLINK|Panduan tautan berlebihan Wikipedia]] menyarankan agar istilah umumnya hanya ditautkan sekali per artikel, dan hanya jika artikel yang ditautkan kemungkinan besar membantu pembaca memahami teks. Pranala merah hanya boleh digunakan untuk topik yang benar-benar kemungkinan layak mendapatkan artikel tersendiri. Harap tinjau [[WP:OVERLINK]] dan [[WP:REDLINK]] untuk panduan.` +
+                (isFinal ? finalSentence(true) : "") +
+                `\n\nJika Anda merasa pemberitahuan ini diberikan secara keliru, silakan tinggalkan pesan di halaman pembicaraan saya. ~~~~`;
+              const en = withExtra(headingEn + "\n" + bodyEn, extra, false);
+              const id = withExtra(headingId + "\n" + bodyId, extra, true);
+              return useIndonesian ? id : en;
+            },
+          },
+
+          // ------------------------------------------------------------------
+          // Insertion of long short description
+          // ------------------------------------------------------------------
+          {
+            value: "shortdesc",
+            label: "Insertion of long short description",
+            buildNotice: function (target, extra, isFinal) {
+              const headingEn = isFinal
+                ? "== Final notice: long short description =="
+                : "== Notice: long short description ==";
+              const headingId = isFinal
+                ? "== Pemberitahuan terakhir: deskripsi singkat yang terlalu panjang =="
+                : "== Pemberitahuan: deskripsi singkat yang terlalu panjang ==";
+              const bodyEn =
+                `Your recent edits appear to have added a short description that is longer than recommended. Short descriptions, added via the {{tlx|Short description}} template, are intended to be a brief disambiguating phrase — typically no more than 40 characters — that helps readers identify the article's subject in search results. They should not be full sentences. Please review [[WP:SDSHORT]] for guidance on writing effective short descriptions.` +
+                (isFinal ? finalSentence(false) : "") +
+                `\n\nIf you believe this notice has been issued in error, please leave a message on my talk page. ~~~~`;
+              const bodyId =
+                `Suntingan Anda yang baru-baru ini tampaknya menambahkan deskripsi singkat yang lebih panjang dari yang direkomendasikan. Deskripsi singkat, yang ditambahkan melalui templat {{tlx|Short description}}, dimaksudkan sebagai frasa pembeda yang ringkas, biasanya tidak lebih dari 40 karakter, yang membantu pembaca mengidentifikasi subjek artikel dalam hasil pencarian. Deskripsi ini tidak boleh berupa kalimat lengkap. Harap tinjau [[WP:SDSHORT]] untuk panduan menulis deskripsi singkat yang efektif.` +
+                (isFinal ? finalSentence(true) : "") +
+                `\n\nJika Anda merasa pemberitahuan ini diberikan secara keliru, silakan tinggalkan pesan di halaman pembicaraan saya. ~~~~`;
+              const en = withExtra(headingEn + "\n" + bodyEn, extra, false);
+              const id = withExtra(headingId + "\n" + bodyId, extra, true);
+              return useIndonesian ? id : en;
+            },
+          },
+
+          // ------------------------------------------------------------------
+          // Incorrect use of minor edits check box
+          // ------------------------------------------------------------------
+          {
+            value: "minoredit",
+            label: "Incorrect use of minor edits check box",
+            buildNotice: function (target, extra, isFinal) {
+              const headingEn = isFinal
+                ? "== Final notice: incorrect use of the minor edit checkbox =="
+                : "== Notice: incorrect use of the minor edit checkbox ==";
+              const headingId = isFinal
+                ? "== Pemberitahuan terakhir: penggunaan kotak centang suntingan kecil yang salah =="
+                : "== Pemberitahuan: penggunaan kotak centang suntingan kecil yang salah ==";
+              const bodyEn =
+                `Your recent edits appear to have been marked as minor when the changes made were not minor in nature. The minor edit checkbox should only be used for genuinely trivial changes, such as fixing spelling or punctuation, that could not be considered controversial. Marking a substantive edit as minor can cause other editors to overlook it during recent changes patrol. Please review [[WP:MINOR]] for guidance on when to use this feature.` +
+                (isFinal ? finalSentence(false) : "") +
+                `\n\nIf you believe this notice has been issued in error, please leave a message on my talk page. ~~~~`;
+              const bodyId =
+                `Suntingan Anda yang baru-baru ini tampaknya telah ditandai sebagai suntingan kecil padahal perubahan yang dilakukan tidak bersifat kecil. Kotak centang suntingan kecil hanya boleh digunakan untuk perubahan yang benar-benar sepele, seperti memperbaiki ejaan atau tanda baca, yang tidak dapat dianggap kontroversial. Menandai suntingan substantif sebagai suntingan kecil dapat menyebabkan penyunting lain mengabaikannya saat patroli perubahan terbaru. Harap tinjau [[WP:MINOR]] untuk panduan kapan menggunakan fitur ini.` +
+                (isFinal ? finalSentence(true) : "") +
+                `\n\nJika Anda merasa pemberitahuan ini diberikan secara keliru, silakan tinggalkan pesan di halaman pembicaraan saya. ~~~~`;
+              const en = withExtra(headingEn + "\n" + bodyEn, extra, false);
+              const id = withExtra(headingId + "\n" + bodyId, extra, true);
+              return useIndonesian ? id : en;
+            },
+          },
+
+          // ------------------------------------------------------------------
+          // Formatting of trademarks
+          // ------------------------------------------------------------------
+          {
+            value: "trademarks",
+            label: "Formatting of trademarks",
+            buildNotice: function (target, extra, isFinal) {
+              const headingEn = isFinal
+                ? "== Final notice: formatting of trademarks =="
+                : "== Notice: formatting of trademarks ==";
+              const headingId = isFinal
+                ? "== Pemberitahuan terakhir: pemformatan merek dagang =="
+                : "== Pemberitahuan: pemformatan merek dagang ==";
+              const bodyEn =
+                `Your recent edits appear to have formatted one or more trademarks in a way that does not comply with Wikipedia's style guidelines. Wikipedia does not use trademark symbols (™ or ®) in article text, and the capitalisation of trademarked terms should follow standard English rules rather than the stylised capitalisation used in marketing materials — unless the non-standard form is extremely well established. Please review [[MOS:TM]] before making further edits of this kind.` +
+                (isFinal ? finalSentence(false) : "") +
+                `\n\nIf you believe this notice has been issued in error, please leave a message on my talk page. ~~~~`;
+              const bodyId =
+                `Suntingan Anda yang baru-baru ini tampaknya memformat satu atau lebih merek dagang dengan cara yang tidak sesuai dengan panduan gaya Wikipedia. Wikipedia tidak menggunakan simbol merek dagang (™ atau ®) dalam teks artikel, dan kapitalisasi istilah merek dagang harus mengikuti aturan bahasa Inggris standar daripada kapitalisasi bergaya yang digunakan dalam materi pemasaran, kecuali jika bentuk non-standar tersebut sudah sangat mapan. Harap tinjau [[MOS:TM]] sebelum melakukan suntingan serupa.` +
+                (isFinal ? finalSentence(true) : "") +
+                `\n\nJika Anda merasa pemberitahuan ini diberikan secara keliru, silakan tinggalkan pesan di halaman pembicaraan saya. ~~~~`;
+              const en = withExtra(headingEn + "\n" + bodyEn, extra, false);
+              const id = withExtra(headingId + "\n" + bodyId, extra, true);
+              return useIndonesian ? id : en;
+            },
+          },
+
+          // ------------------------------------------------------------------
+          // Inappropriate use of alternative accounts
+          // ------------------------------------------------------------------
+          {
+            value: "altaccountmisuse",
+            label: "Inappropriate use of alternative accounts",
+            buildNotice: function (target, extra, isFinal) {
+              const headingEn = isFinal
+                ? "== Final notice: inappropriate use of alternative accounts =="
+                : "== Notice: inappropriate use of alternative accounts ==";
+              const headingId = isFinal
+                ? "== Pemberitahuan terakhir: penggunaan akun alternatif yang tidak sesuai =="
+                : "== Pemberitahuan: penggunaan akun alternatif yang tidak sesuai ==";
+              const bodyEn =
+                `Your use of an alternative account appears to fall outside the circumstances permitted by [[WP:SOCK|Wikipedia's policy on alternative accounts]]. Alternative accounts must not be used to create the appearance of broader consensus, to circumvent blocks or sanctions, to edit articles where your main account has a declared conflict of interest, or to otherwise gain an advantage that a single account would not have. Please review [[WP:SOCK]] and [[WP:LEGITSOCK]] and ensure that any alternative accounts you operate are used only for permitted purposes.` +
+                (isFinal ? finalSentence(false) : "") +
+                `\n\nIf you believe this notice has been issued in error, please leave a message on my talk page. ~~~~`;
+              const bodyId =
+                `Penggunaan akun alternatif Anda tampaknya berada di luar keadaan yang diizinkan oleh [[WP:SOCK|kebijakan Wikipedia tentang akun alternatif]]. Akun alternatif tidak boleh digunakan untuk menciptakan kesan konsensus yang lebih luas, untuk menghindari pemblokiran atau sanksi, untuk menyunting artikel saat akun utama Anda memiliki konflik kepentingan yang dideklarasikan, atau untuk memperoleh keuntungan lain yang tidak akan dimiliki oleh satu akun saja. Harap tinjau [[WP:SOCK]] dan [[WP:LEGITSOCK]] dan pastikan akun alternatif yang Anda kelola hanya digunakan untuk tujuan yang diizinkan.` +
+                (isFinal ? finalSentence(true) : "") +
+                `\n\nJika Anda merasa pemberitahuan ini diberikan secara keliru, silakan tinggalkan pesan di halaman pembicaraan saya. ~~~~`;
+              const en = withExtra(headingEn + "\n" + bodyEn, extra, false);
+              const id = withExtra(headingId + "\n" + bodyId, extra, true);
+              return useIndonesian ? id : en;
+            },
+          },
+
+          // ------------------------------------------------------------------
+          // We use consensus, not voting
+          // ------------------------------------------------------------------
+          {
+            value: "consensus",
+            label: "We use consensus, not voting",
+            buildNotice: function (target, extra, isFinal) {
+              const headingEn = isFinal
+                ? "== Final notice: consensus, not voting =="
+                : "== Notice: consensus, not voting ==";
+              const headingId = isFinal
+                ? "== Pemberitahuan terakhir: konsensus, bukan pemungutan suara =="
+                : "== Pemberitahuan: konsensus, bukan pemungutan suara ==";
+              const bodyEn =
+                `Your recent comments in one or more discussions suggest a misunderstanding of how Wikipedia reaches decisions. Wikipedia does not operate by majority vote: decisions are made by [[WP:CONSENSUS|consensus]], which means weighing up the arguments and evidence presented, not simply counting the number of editors on each side. Please focus your contributions to discussions on policy-based reasoning rather than on expressing a preference or tallying support. See [[WP:CONSENSUS]] and [[WP:NOTDEMOCRACY]] for further guidance.` +
+                (isFinal ? finalSentence(false) : "") +
+                `\n\nIf you believe this notice has been issued in error, please leave a message on my talk page. ~~~~`;
+              const bodyId =
+                `Komentar Anda yang baru-baru ini dalam satu atau lebih diskusi menunjukkan kesalahpahaman tentang bagaimana Wikipedia mencapai keputusan. Wikipedia tidak beroperasi melalui pemungutan suara mayoritas: keputusan dibuat melalui [[WP:CONSENSUS|konsensus]], yang berarti mempertimbangkan argumen dan bukti yang dikemukakan, bukan sekadar menghitung jumlah penyunting di setiap sisi. Harap fokuskan kontribusi Anda dalam diskusi pada penalaran berbasis kebijakan daripada mengungkapkan preferensi atau menghitung dukungan. Lihat [[WP:CONSENSUS]] dan [[WP:NOTDEMOCRACY]] untuk panduan lebih lanjut.` +
+                (isFinal ? finalSentence(true) : "") +
+                `\n\nJika Anda merasa pemberitahuan ini diberikan secara keliru, silakan tinggalkan pesan di halaman pembicaraan saya. ~~~~`;
+              const en = withExtra(headingEn + "\n" + bodyEn, extra, false);
+              const id = withExtra(headingId + "\n" + bodyId, extra, true);
+              return useIndonesian ? id : en;
+            },
+          },
+
+          // ------------------------------------------------------------------
+          // Talk page created with no article
+          // ------------------------------------------------------------------
+          {
+            value: "talknearticle",
+            label: "Talk page created with no article",
+            buildNotice: function (target, extra, isFinal) {
+              const headingEn = isFinal
+                ? "== Final notice: talk page created with no article =="
+                : "== Notice: talk page created with no article ==";
+              const headingId = isFinal
+                ? "== Pemberitahuan terakhir: halaman pembicaraan dibuat tanpa artikel =="
+                : "== Pemberitahuan: halaman pembicaraan dibuat tanpa artikel ==";
+              const bodyEn =
+                `You appear to have created a talk page for an article that does not exist. Talk pages exist to support discussion about their corresponding article; they should not be created independently. If you wish to write an article on this topic, please create it in the main namespace or as a draft. The talk page will be created automatically once an article exists. If the article was deleted, please do not recreate its talk page.` +
+                (isFinal ? finalSentence(false) : "") +
+                `\n\nIf you believe this notice has been issued in error, please leave a message on my talk page. ~~~~`;
+              const bodyId =
+                `Anda tampaknya telah membuat halaman pembicaraan untuk artikel yang tidak ada. Halaman pembicaraan ada untuk mendukung diskusi tentang artikel yang sesuai. Halaman ini tidak boleh dibuat secara mandiri. Jika Anda ingin menulis artikel tentang topik ini, buatlah di ruang nama utama atau sebagai draf. Halaman pembicaraan akan dibuat secara otomatis setelah artikel ada. Jika artikel telah dihapus, jangan buat ulang halaman pembicaraannya.` +
+                (isFinal ? finalSentence(true) : "") +
+                `\n\nJika Anda merasa pemberitahuan ini diberikan secara keliru, silakan tinggalkan pesan di halaman pembicaraan saya. ~~~~`;
+              const en = withExtra(headingEn + "\n" + bodyEn, extra, false);
+              const id = withExtra(headingId + "\n" + bodyId, extra, true);
+              return useIndonesian ? id : en;
+            },
+          },
+
+          // ------------------------------------------------------------------
+          // Copying from public domain sources without attribution
+          // ------------------------------------------------------------------
+          {
+            value: "pdnoattrib",
+            label: "Copying from public domain sources without attribution",
+            buildNotice: function (target, extra, isFinal) {
+              const headingEn = isFinal
+                ? "== Final notice: copying from public domain sources without attribution =="
+                : "== Notice: copying from public domain sources without attribution ==";
+              const headingId = isFinal
+                ? "== Pemberitahuan terakhir: menyalin dari sumber domain publik tanpa atribusi =="
+                : "== Pemberitahuan: menyalin dari sumber domain publik tanpa atribusi ==";
+              const bodyEn =
+                `Your recent edits appear to have copied text from a public domain source without providing the required attribution. Even though public domain works may be reproduced freely, Wikipedia's best practice is to acknowledge the source in order to maintain transparency and aid further research. Please note the source of any copied text in your edit summary and, where appropriate, in the article itself. See [[WP:PD]] and [[WP:PDTXT]] for guidance.` +
+                (isFinal ? finalSentence(false) : "") +
+                `\n\nIf you believe this notice has been issued in error, please leave a message on my talk page. ~~~~`;
+              const bodyId =
+                `Suntingan Anda yang baru-baru ini tampaknya menyalin teks dari sumber domain publik tanpa memberikan atribusi yang diperlukan. Meskipun karya domain publik dapat direproduksi secara bebas, praktik terbaik Wikipedia adalah mengakui sumbernya untuk menjaga transparansi dan membantu penelitian lebih lanjut. Harap catat sumber teks yang disalin dalam ringkasan suntingan Anda dan, jika sesuai, dalam artikel itu sendiri. Lihat [[WP:PD]] dan [[WP:PDTXT]] untuk panduan.` +
+                (isFinal ? finalSentence(true) : "") +
+                `\n\nJika Anda merasa pemberitahuan ini diberikan secara keliru, silakan tinggalkan pesan di halaman pembicaraan saya. ~~~~`;
+              const en = withExtra(headingEn + "\n" + bodyEn, extra, false);
+              const id = withExtra(headingId + "\n" + bodyId, extra, true);
+              return useIndonesian ? id : en;
+            },
+          },
+
+          // ------------------------------------------------------------------
+          // Use preview button to avoid mistakes
+          // ------------------------------------------------------------------
+          {
+            value: "preview",
+            label: "Use preview button to avoid mistakes",
+            buildNotice: function (target, extra, isFinal) {
+              const headingEn = isFinal
+                ? "== Final notice: use the preview button =="
+                : "== Notice: use the preview button ==";
+              const headingId = isFinal
+                ? "== Pemberitahuan terakhir: gunakan tombol pratinjau =="
+                : "== Pemberitahuan: gunakan tombol pratinjau ==";
+              const bodyEn =
+                `Your recent editing pattern appears to involve a large number of consecutive small edits to the same page. This can clutter the page's revision history and make it harder to review changes. Before saving, please use the "Show preview" button to check your edits for errors and make all necessary corrections in a single save. See [[WP:PREVIEW]] for more information.` +
+                (isFinal ? finalSentence(false) : "") +
+                `\n\nIf you believe this notice has been issued in error, please leave a message on my talk page. ~~~~`;
+              const bodyId =
+                `Pola penyuntingan Anda yang baru-baru ini tampaknya melibatkan sejumlah besar suntingan kecil berturut-turut pada halaman yang sama. Hal ini dapat membuat riwayat revisi halaman menjadi penuh dan menyulitkan peninjauan perubahan. Sebelum menyimpan, gunakan tombol "Tampilkan pratinjau" untuk memeriksa suntingan Anda dari kesalahan dan melakukan semua koreksi yang diperlukan dalam satu kali penyimpanan. Lihat [[WP:PREVIEW]] untuk informasi lebih lanjut.` +
+                (isFinal ? finalSentence(true) : "") +
+                `\n\nJika Anda merasa pemberitahuan ini diberikan secara keliru, silakan tinggalkan pesan di halaman pembicaraan saya. ~~~~`;
+              const en = withExtra(headingEn + "\n" + bodyEn, extra, false);
+              const id = withExtra(headingId + "\n" + bodyId, extra, true);
+              return useIndonesian ? id : en;
+            },
+          },
+
+          // ------------------------------------------------------------------
+          // Indiscriminate removal of redlinks
+          // ------------------------------------------------------------------
+          {
+            value: "remredlinks",
+            label: "Indiscriminate removal of redlinks",
+            buildNotice: function (target, extra, isFinal) {
+              const headingEn = isFinal
+                ? "== Final notice: indiscriminate removal of redlinks =="
+                : "== Notice: indiscriminate removal of redlinks ==";
+              const headingId = isFinal
+                ? "== Pemberitahuan terakhir: penghapusan tautan merah secara tidak selektif =="
+                : "== Pemberitahuan: penghapusan tautan merah secara tidak selektif ==";
+              const bodyEn =
+                `Your recent edits appear to have removed redlinks from one or more articles without considering whether those links serve a useful purpose. Redlinks are not errors: they indicate that a linked article does not yet exist and can encourage editors to create it. Redlinks to topics that are genuinely likely to be notable enough for their own article should generally be retained. Please review [[WP:REDLINK]] before removing redlinks in future.` +
+                (isFinal ? finalSentence(false) : "") +
+                `\n\nIf you believe this notice has been issued in error, please leave a message on my talk page. ~~~~`;
+              const bodyId =
+                `Suntingan Anda yang baru-baru ini tampaknya telah menghapus pranala merah dari satu atau lebih artikel tanpa mempertimbangkan apakah tautan tersebut bermanfaat. Pranala merah bukan kesalahan. Ia menunjukkan bahwa artikel yang ditautkan belum ada dan dapat mendorong penyunting untuk membuatnya. Pranala merah ke topik yang benar-benar kemungkinan cukup layak untuk memiliki artikel tersendiri umumnya harus dipertahankan. Harap tinjau [[WP:REDLINK]] sebelum menghapus tautan merah di masa mendatang.` +
+                (isFinal ? finalSentence(true) : "") +
+                `\n\nJika Anda merasa pemberitahuan ini diberikan secara keliru, silakan tinggalkan pesan di halaman pembicaraan saya. ~~~~`;
+              const en = withExtra(headingEn + "\n" + bodyEn, extra, false);
+              const id = withExtra(headingId + "\n" + bodyId, extra, true);
+              return useIndonesian ? id : en;
+            },
+          },
+
+          // ------------------------------------------------------------------
+          // Adding citations to research published by a small group of researchers
+          // ------------------------------------------------------------------
+          {
+            value: "fringe",
+            label:
+              "Adding citations to research published by a small group of researchers",
+            buildNotice: function (target, extra, isFinal) {
+              const headingEn = isFinal
+                ? "== Final notice: citing fringe or undue research =="
+                : "== Notice: citing fringe or undue research ==";
+              const headingId = isFinal
+                ? "== Pemberitahuan terakhir: pengutipan penelitian pinggiran atau tidak proporsional =="
+                : "== Pemberitahuan: pengutipan penelitian pinggiran atau tidak proporsional ==";
+              const bodyEn =
+                `Your recent edits appear to have added citations to research produced by a very small number of researchers that does not reflect the mainstream scientific or academic view. Wikipedia requires that article content give appropriate weight to the range of perspectives represented in reliable sources, and that minority or fringe views be clearly contextualised as such. Please review [[WP:FRINGE]], [[WP:UNDUE]], and [[WP:MEDRS]] (where applicable) before making further edits of this kind.` +
+                (isFinal ? finalSentence(false) : "") +
+                `\n\nIf you believe this notice has been issued in error, please leave a message on my talk page. ~~~~`;
+              const bodyId =
+                `Suntingan Anda yang baru-baru ini tampaknya menambahkan kutipan penelitian yang dihasilkan oleh sejumlah kecil peneliti yang tidak mencerminkan pandangan ilmiah atau akademis arus utama. Wikipedia mensyaratkan konten artikel memberikan bobot yang tepat terhadap berbagai perspektif yang diwakili dalam sumber tepercaya, dan pandangan minoritas atau pinggiran harus dikontekstualisasikan dengan jelas sebagai demikian. Harap tinjau [[WP:FRINGE]], [[WP:UNDUE]], dan [[WP:MEDRS]] (jika berlaku) sebelum melakukan suntingan serupa.` +
+                (isFinal ? finalSentence(true) : "") +
+                `\n\nJika Anda merasa pemberitahuan ini diberikan secara keliru, silakan tinggalkan pesan di halaman pembicaraan saya. ~~~~`;
+              const en = withExtra(headingEn + "\n" + bodyEn, extra, false);
+              const id = withExtra(headingId + "\n" + bodyId, extra, true);
+              return useIndonesian ? id : en;
+            },
+          },
+
+          // ------------------------------------------------------------------
+          // Self-reverted editing tests
+          // ------------------------------------------------------------------
+          {
+            value: "selfrevtest",
+            label: "Self-reverted editing tests",
+            buildNotice: function (target, extra, isFinal) {
+              const headingEn = isFinal
+                ? "== Final notice: self-reverted editing tests =="
+                : "== Notice: self-reverted editing tests ==";
+              const headingId = isFinal
+                ? "== Pemberitahuan terakhir: uji coba penyuntingan yang dibatalkan sendiri =="
+                : "== Pemberitahuan: uji coba penyuntingan yang dibatalkan sendiri ==";
+              const bodyEn =
+                `It appears that you may have been testing edits on one or more pages and subsequently reverting them yourself. While self-reverting is appreciated, test edits should be made in the [[WP:SANDBOX|sandbox]] rather than in the main namespace, as every edit — including test edits — leaves an entry in the page's revision history. Please use the sandbox for any future editing experiments.` +
+                (isFinal ? finalSentence(false) : "") +
+                `\n\nIf you believe this notice has been issued in error, please leave a message on my talk page. ~~~~`;
+              const bodyId =
+                `Tampaknya Anda mungkin sedang menguji suntingan di satu atau lebih halaman dan kemudian membatalkannya sendiri. Meskipun pembatalan mandiri merupakan hal yang diapresiasi, uji coba suntingan sebaiknya dilakukan di [[WP:SANDBOX|bak pasir]] daripada di ruang nama utama, karena setiap suntingan, termasuk uji coba, meninggalkan entri dalam riwayat revisi halaman. Gunakan bak pasir untuk percobaan penyuntingan di masa mendatang.` +
+                (isFinal ? finalSentence(true) : "") +
+                `\n\nJika Anda merasa pemberitahuan ini diberikan secara keliru, silakan tinggalkan pesan di halaman pembicaraan saya. ~~~~`;
+              const en = withExtra(headingEn + "\n" + bodyEn, extra, false);
+              const id = withExtra(headingId + "\n" + bodyId, extra, true);
+              return useIndonesian ? id : en;
+            },
+          },
+
+          // ------------------------------------------------------------------
+          // Wikipedia is not a social network
+          // ------------------------------------------------------------------
+          {
+            value: "notsocial",
+            label: "Wikipedia is not a social network",
+            buildNotice: function (target, extra, isFinal) {
+              const headingEn = isFinal
+                ? "== Final notice: Wikipedia is not a social network =="
+                : "== Notice: Wikipedia is not a social network ==";
+              const headingId = isFinal
+                ? "== Pemberitahuan terakhir: Wikipedia bukan jejaring sosial =="
+                : "== Pemberitahuan: Wikipedia bukan jejaring sosial ==";
+              const bodyEn =
+                `Your recent contributions appear to treat Wikipedia as a social networking platform. Wikipedia is an encyclopaedia, and its pages — including user pages and talk pages — should be used primarily to support the goal of building and improving encyclopaedic content. Extensive personal posts, social chatter, or use of your user page as a personal profile are discouraged. Please review [[WP:NOT#SOCIAL]] and [[WP:USERPAGE]] for guidance.` +
+                (isFinal ? finalSentence(false) : "") +
+                `\n\nIf you believe this notice has been issued in error, please leave a message on my talk page. ~~~~`;
+              const bodyId =
+                `Kontribusi Anda yang baru-baru ini tampaknya memperlakukan Wikipedia sebagai platform jejaring sosial. Wikipedia adalah ensiklopedia, dan halaman-halamannya, termasuk halaman pengguna dan halaman pembicaraan, harus digunakan terutama untuk mendukung tujuan membangun dan meningkatkan konten ensiklopedis. Kiriman pribadi yang berlebihan, obrolan sosial, atau penggunaan halaman pengguna Anda sebagai profil pribadi tidak dianjurkan. Harap tinjau [[WP:NOT#SOCIAL]] dan [[WP:USERPAGE]] untuk panduan.` +
+                (isFinal ? finalSentence(true) : "") +
+                `\n\nJika Anda merasa pemberitahuan ini diberikan secara keliru, silakan tinggalkan pesan di halaman pembicaraan saya. ~~~~`;
+              const en = withExtra(headingEn + "\n" + bodyEn, extra, false);
+              const id = withExtra(headingId + "\n" + bodyId, extra, true);
+              return useIndonesian ? id : en;
+            },
+          },
+
+          // ------------------------------------------------------------------
+          // Be bold and fix things yourself
+          // ------------------------------------------------------------------
+          {
+            value: "bebold",
+            label: "Be bold and fix things yourself",
+            buildNotice: function (target, extra, isFinal) {
+              const headingEn = isFinal
+                ? "== Final notice: be bold =="
+                : "== Notice: be bold ==";
+              const headingId = isFinal
+                ? "== Pemberitahuan terakhir: beranilah =="
+                : "== Pemberitahuan: beranilah ==";
+              const bodyEn =
+                `Your recent talk-page message or edit request suggests that you may be hesitant to make an edit directly. Wikipedia encourages editors to [[WP:BOLD|be bold]] and make improvements themselves rather than asking others to do so on their behalf. If you can see something that needs fixing, feel free to fix it — all edits can be reviewed and undone if necessary. See [[WP:BOLD]] for more information.` +
+                (isFinal ? finalSentence(false) : "") +
+                `\n\nIf you believe this notice has been issued in error, please leave a message on my talk page. ~~~~`;
+              const bodyId =
+                `Pesan halaman pembicaraan atau permintaan suntingan Anda yang baru-baru ini menunjukkan bahwa Anda mungkin ragu untuk melakukan suntingan secara langsung. Wikipedia mendorong penyunting untuk [[WP:BOLD|berani]] dan melakukan perbaikan sendiri daripada meminta orang lain melakukannya atas nama mereka. Jika Anda melihat sesuatu yang perlu diperbaiki, silakan perbaiki, karena semua suntingan dapat ditinjau dan dibatalkan jika diperlukan. Lihat [[WP:BOLD]] untuk informasi lebih lanjut.` +
+                (isFinal ? finalSentence(true) : "") +
+                `\n\nJika Anda merasa pemberitahuan ini diberikan secara keliru, silakan tinggalkan pesan di halaman pembicaraan saya. ~~~~`;
+              const en = withExtra(headingEn + "\n" + bodyEn, extra, false);
+              const id = withExtra(headingId + "\n" + bodyId, extra, true);
+              return useIndonesian ? id : en;
+            },
+          },
+
+          // ------------------------------------------------------------------
+          // Adding spoiler alerts or removing spoilers from appropriate sections
+          // ------------------------------------------------------------------
+          {
+            value: "spoilers",
+            label:
+              "Adding spoiler alerts or removing spoilers from appropriate sections",
+            buildNotice: function (target, extra, isFinal) {
+              const headingEn = isFinal
+                ? "== Final notice: spoiler alerts and spoiler content =="
+                : "== Notice: spoiler alerts and spoiler content ==";
+              const headingId = isFinal
+                ? "== Pemberitahuan terakhir: peringatan spoiler dan konten spoiler =="
+                : "== Pemberitahuan: peringatan spoiler dan konten spoiler ==";
+              const bodyEn =
+                `Your recent edits appear to have either added "spoiler warning" templates to one or more articles or removed plot details from sections where such information is appropriate. Wikipedia is an encyclopaedia that provides comprehensive information about its subjects, including plot summaries and story details of fictional works. Spoiler warnings are not used on Wikipedia, and plot content that is relevant to the article's subject should not be removed. Please review [[WP:SPOILER]] for further information.` +
+                (isFinal ? finalSentence(false) : "") +
+                `\n\nIf you believe this notice has been issued in error, please leave a message on my talk page. ~~~~`;
+              const bodyId =
+                `Suntingan Anda yang baru-baru ini tampaknya menambahkan templat "peringatan beberan" ke satu atau lebih artikel atau menghapus detail plot dari bagian tempat informasi tersebut sesuai. Wikipedia adalah ensiklopedia yang memberikan informasi komprehensif tentang subjeknya, termasuk ringkasan plot dan detail cerita karya fiksi. Peringatan beberan tidak digunakan di Wikipedia, dan konten plot yang relevan dengan subjek artikel tidak boleh dihapus. Harap tinjau [[WP:SPOILER]] untuk informasi lebih lanjut.` +
+                (isFinal ? finalSentence(true) : "") +
+                `\n\nJika Anda merasa pemberitahuan ini diberikan secara keliru, silakan tinggalkan pesan di halaman pembicaraan saya. ~~~~`;
+              const en = withExtra(headingEn + "\n" + bodyEn, extra, false);
+              const id = withExtra(headingId + "\n" + bodyId, extra, true);
+              return useIndonesian ? id : en;
+            },
+          },
+
+          // ------------------------------------------------------------------
+          // Talk in article
+          // ------------------------------------------------------------------
+          {
+            value: "talkarticle",
+            label: "Talk in article",
+            buildNotice: function (target, extra, isFinal) {
+              const headingEn = isFinal
+                ? "== Final notice: talk in article =="
+                : "== Notice: talk in article ==";
+              const headingId = isFinal
+                ? "== Pemberitahuan terakhir: diskusi dalam artikel =="
+                : "== Pemberitahuan: diskusi dalam artikel ==";
+              const bodyEn =
+                `Your recent edits appear to have added comments, questions, or notes directed at other editors into the text of an article. Article pages are for encyclopaedic content only. If you wish to discuss an article, ask a question about it, or leave a note for other editors, please use the article's [[WP:TALKPAGE|talk page]] instead. See [[WP:TALK]] for guidance.` +
+                (isFinal ? finalSentence(false) : "") +
+                `\n\nIf you believe this notice has been issued in error, please leave a message on my talk page. ~~~~`;
+              const bodyId =
+                `Suntingan Anda yang baru-baru ini tampaknya menambahkan komentar, pertanyaan, atau catatan yang ditujukan kepada penyunting lain ke dalam teks artikel. Halaman artikel hanya untuk konten ensiklopedis. Jika Anda ingin mendiskusikan sebuah artikel, mengajukan pertanyaan tentangnya, atau meninggalkan catatan untuk penyunting lain, gunakan [[WP:TALKPAGE|halaman pembicaraan]] artikel tersebut. Lihat [[WP:TALK]] untuk panduan.` +
+                (isFinal ? finalSentence(true) : "") +
+                `\n\nJika Anda merasa pemberitahuan ini diberikan secara keliru, silakan tinggalkan pesan di halaman pembicaraan saya. ~~~~`;
+              const en = withExtra(headingEn + "\n" + bodyEn, extra, false);
+              const id = withExtra(headingId + "\n" + bodyId, extra, true);
+              return useIndonesian ? id : en;
+            },
+          },
+
+          // ------------------------------------------------------------------
+          // Not signing posts
+          // ------------------------------------------------------------------
+          {
+            value: "nosign",
+            label: "Not signing posts",
+            buildNotice: function (target, extra, isFinal) {
+              const headingEn = isFinal
+                ? "== Final notice: please sign your posts =="
+                : "== Notice: please sign your posts ==";
+              const headingId = isFinal
+                ? "== Pemberitahuan terakhir: harap tandatangani kiriman Anda =="
+                : "== Pemberitahuan: harap tandatangani kiriman Anda ==";
+              const bodyEn =
+                `Your recent posts to one or more talk pages appear to have been made without a signature. Please remember to sign all talk page posts by typing four tildes (<code><nowiki>~~~~</nowiki></code>) at the end of your comment, or by clicking the signature button in the editor toolbar. Signing your posts helps other editors identify who said what and when. See [[WP:SIGN]] for more information.` +
+                (isFinal ? finalSentence(false) : "") +
+                `\n\nIf you believe this notice has been issued in error, please leave a message on my talk page. ~~~~`;
+              const bodyId =
+                `Kiriman Anda yang baru-baru ini di satu atau lebih halaman pembicaraan tampaknya dilakukan tanpa tanda tangan. Harap ingat untuk menandatangani semua kiriman halaman pembicaraan dengan mengetik empat tilde (<code><nowiki>~~~~</nowiki></code>) di akhir komentar Anda, atau dengan mengklik tombol tanda tangan di bilah perkakas editor. Menandatangani kiriman Anda membantu penyunting lain mengidentifikasi siapa yang berkata apa dan kapan. Lihat [[WP:SIGN]] untuk informasi lebih lanjut.` +
+                (isFinal ? finalSentence(true) : "") +
+                `\n\nJika Anda merasa pemberitahuan ini diberikan secara keliru, silakan tinggalkan pesan di halaman pembicaraan saya. ~~~~`;
+              const en = withExtra(headingEn + "\n" + bodyEn, extra, false);
+              const id = withExtra(headingId + "\n" + bodyId, extra, true);
+              return useIndonesian ? id : en;
+            },
+          },
+
+          // ------------------------------------------------------------------
+          // Posting at the top of talk pages
+          // ------------------------------------------------------------------
+          {
+            value: "talkpagetop",
+            label: "Posting at the top of talk pages",
+            buildNotice: function (target, extra, isFinal) {
+              const headingEn = isFinal
+                ? "== Final notice: posting at the top of talk pages =="
+                : "== Notice: posting at the top of talk pages ==";
+              const headingId = isFinal
+                ? "== Pemberitahuan terakhir: kiriman di bagian atas halaman pembicaraan =="
+                : "== Pemberitahuan: kiriman di bagian atas halaman pembicaraan ==";
+              const bodyEn =
+                `Your recent posts appear to have been added to the top of a talk page rather than at the bottom. On Wikipedia, new talk page topics and responses should be added at the bottom of the page (or at the bottom of the relevant thread), not the top, so that discussions appear in chronological order. Please review [[WP:TALKNEW]] before posting on talk pages again.` +
+                (isFinal ? finalSentence(false) : "") +
+                `\n\nIf you believe this notice has been issued in error, please leave a message on my talk page. ~~~~`;
+              const bodyId =
+                `Kiriman Anda yang baru-baru ini tampaknya ditambahkan di bagian atas halaman pembicaraan daripada di bagian bawah. Di Wikipedia, topik halaman pembicaraan baru dan tanggapan harus ditambahkan di bagian bawah halaman (atau di bagian bawah utas yang relevan), bukan di bagian atas, sehingga diskusi muncul secara urutan kronologis. Harap tinjau [[WP:TALKNEW]] sebelum kembali memposting di halaman pembicaraan.` +
+                (isFinal ? finalSentence(true) : "") +
+                `\n\nJika Anda merasa pemberitahuan ini diberikan secara keliru, silakan tinggalkan pesan di halaman pembicaraan saya. ~~~~`;
+              const en = withExtra(headingEn + "\n" + bodyEn, extra, false);
+              const id = withExtra(headingId + "\n" + bodyId, extra, true);
+              return useIndonesian ? id : en;
+            },
+          },
+
+          // ------------------------------------------------------------------
+          // Adding translations without proper attribution
+          // ------------------------------------------------------------------
+          {
+            value: "transnoattrib",
+            label: "Adding translations without proper attribution",
+            buildNotice: function (target, extra, isFinal) {
+              const headingEn = isFinal
+                ? "== Final notice: translations without proper attribution =="
+                : "== Notice: translations without proper attribution ==";
+              const headingId = isFinal
+                ? "== Pemberitahuan terakhir: terjemahan tanpa atribusi yang tepat =="
+                : "== Pemberitahuan: terjemahan tanpa atribusi yang tepat ==";
+              const bodyEn =
+                `Your recent edits appear to have added content translated from another language Wikipedia without providing the attribution required by the source wiki's licence. When importing content from another Wikipedia, you must credit the source article and its contributors, typically by noting this in the edit summary and on the article's talk page. Please review [[WP:TRANSWIKI]] and [[WP:ATTRIB]] for the correct procedure.` +
+                (isFinal ? finalSentence(false) : "") +
+                `\n\nIf you believe this notice has been issued in error, please leave a message on my talk page. ~~~~`;
+              const bodyId =
+                `Suntingan Anda yang baru-baru ini tampaknya menambahkan konten yang diterjemahkan dari Wikipedia bahasa lain tanpa memberikan atribusi yang dipersyaratkan oleh lisensi wiki sumber. Saat mengimpor konten dari Wikipedia lain, Anda harus mengakui artikel sumber beserta kontributornya, biasanya dengan mencantumkan hal ini dalam ringkasan suntingan dan di halaman pembicaraan artikel. Harap tinjau [[WP:TRANSWIKI]] dan [[WP:ATTRIB]] untuk prosedur yang benar.` +
+                (isFinal ? finalSentence(true) : "") +
+                `\n\nJika Anda merasa pemberitahuan ini diberikan secara keliru, silakan tinggalkan pesan di halaman pembicaraan saya. ~~~~`;
+              const en = withExtra(headingEn + "\n" + bodyEn, extra, false);
+              const id = withExtra(headingId + "\n" + bodyId, extra, true);
+              return useIndonesian ? id : en;
+            },
+          },
+
+          // ------------------------------------------------------------------
+          // Copying from compatibly-licensed sources without attribution
+          // ------------------------------------------------------------------
+          {
+            value: "ccnoattrib",
+            label:
+              "Copying from compatibly-licensed sources without attribution",
+            buildNotice: function (target, extra, isFinal) {
+              const headingEn = isFinal
+                ? "== Final notice: copying from compatibly-licensed sources without attribution =="
+                : "== Notice: copying from compatibly-licensed sources without attribution ==";
+              const headingId = isFinal
+                ? "== Pemberitahuan terakhir: menyalin dari sumber berlisensi kompatibel tanpa atribusi =="
+                : "== Pemberitahuan: menyalin dari sumber berlisensi kompatibel tanpa atribusi ==";
+              const bodyEn =
+                `Your recent edits appear to have included text copied from a compatibly-licensed source (such as a Creative Commons-licensed work) without the required attribution. Even when a licence permits reproduction, its terms typically require that the original author and source be credited. Please provide the necessary attribution in your edit summary and, where appropriate, in the article. See [[WP:COPYPASTE]] and [[WP:ATTRIB]] for guidance.` +
+                (isFinal ? finalSentence(false) : "") +
+                `\n\nIf you believe this notice has been issued in error, please leave a message on my talk page. ~~~~`;
+              const bodyId =
+                `Suntingan Anda yang baru-baru ini tampaknya menyertakan teks yang disalin dari sumber berlisensi kompatibel (seperti karya berlisensi Creative Commons) tanpa atribusi yang diperlukan. Meskipun lisensi mengizinkan reproduksi, ketentuannya biasanya mensyaratkan agar penulis dan sumber asli dicantumkan. Harap berikan atribusi yang diperlukan dalam ringkasan suntingan Anda dan, jika sesuai, dalam artikel. Lihat [[WP:COPYPASTE]] dan [[WP:ATTRIB]] untuk panduan.` +
+                (isFinal ? finalSentence(true) : "") +
+                `\n\nJika Anda merasa pemberitahuan ini diberikan secara keliru, silakan tinggalkan pesan di halaman pembicaraan saya. ~~~~`;
+              const en = withExtra(headingEn + "\n" + bodyEn, extra, false);
+              const id = withExtra(headingId + "\n" + bodyId, extra, true);
+              return useIndonesian ? id : en;
+            },
+          },
+
+          // ------------------------------------------------------------------
+          // Stale userspace draft
+          // ------------------------------------------------------------------
+          {
+            value: "staleuserdraft",
+            label: "Stale userspace draft",
+            buildNotice: function (target, extra, isFinal) {
+              const headingEn = isFinal
+                ? "== Final notice: stale userspace draft =="
+                : "== Notice: stale userspace draft ==";
+              const headingId = isFinal
+                ? "== Pemberitahuan terakhir: draf ruang pengguna yang kedaluwarsa =="
+                : "== Pemberitahuan: draf ruang pengguna yang kedaluwarsa ==";
+              const bodyEn =
+                `You have one or more userspace drafts that have not been edited for a considerable period of time. Stale drafts that have been inactive for an extended period may be eligible for deletion under [[WP:CSD#U5|CSD U5]]. If you intend to continue working on a draft, please make some progress on it; if you no longer wish to pursue it, you may request its deletion by adding <code>{{tlx|Db-u1}}</code> to the page. See [[WP:STALEDRAFT]] for guidance.` +
+                (isFinal ? finalSentence(false) : "") +
+                `\n\nIf you believe this notice has been issued in error, please leave a message on my talk page. ~~~~`;
+              const bodyId =
+                `Anda memiliki satu atau lebih draf ruang pengguna yang sudah lama tidak disunting. Draf yang sudah lama tidak aktif mungkin memenuhi syarat untuk dihapus berdasarkan [[WP:CSD#U5|CSD U5]]. Jika Anda bermaksud melanjutkan pengerjaan draf, harap buat beberapa kemajuan. Jika Anda tidak lagi ingin melanjutkannya, Anda dapat meminta penghapusannya dengan menambahkan <code>{{tlx|delete|U1}}</code> ke halaman. Lihat [[WP:STALEDRAFT]] untuk panduan.` +
+                (isFinal ? finalSentence(true) : "") +
+                `\n\nJika Anda merasa pemberitahuan ini diberikan secara keliru, silakan tinggalkan pesan di halaman pembicaraan saya. ~~~~`;
+              const en = withExtra(headingEn + "\n" + bodyEn, extra, false);
+              const id = withExtra(headingId + "\n" + bodyId, extra, true);
+              return useIndonesian ? id : en;
+            },
+          },
+
+          // ------------------------------------------------------------------
+          // Misuse of user talk page
+          // ------------------------------------------------------------------
+          {
+            value: "talkmisuse",
+            label: "Misuse of user talk page",
+            buildNotice: function (target, extra, isFinal) {
+              const headingEn = isFinal
+                ? "== Final notice: misuse of user talk page =="
+                : "== Notice: misuse of user talk page ==";
+              const headingId = isFinal
+                ? "== Pemberitahuan terakhir: penyalahgunaan halaman pembicaraan pengguna =="
+                : "== Pemberitahuan: penyalahgunaan halaman pembicaraan pengguna ==";
+              const bodyEn =
+                `Your user talk page appears to have been used in a way that is not consistent with its intended purpose. User talk pages are primarily for receiving messages from other editors and for communication related to editing Wikipedia. They should not be used to publish content that would not be permitted in the main namespace, to host promotional material, or to carry on extended personal conversations unrelated to the project. Please review [[WP:USERPAGE]] and [[WP:TALKPAGE]] for guidance.` +
+                (isFinal ? finalSentence(false) : "") +
+                `\n\nIf you believe this notice has been issued in error, please leave a message on my talk page. ~~~~`;
+              const bodyId =
+                `Halaman pembicaraan pengguna Anda tampaknya digunakan dengan cara yang tidak sesuai dengan tujuan yang dimaksudkan. Halaman pembicaraan pengguna terutama untuk menerima pesan dari penyunting lain dan untuk komunikasi yang berkaitan dengan penyuntingan Wikipedia. Halaman ini tidak boleh digunakan untuk menerbitkan konten yang tidak diizinkan di ruang nama utama, untuk menampung materi promosi, atau untuk percakapan pribadi yang panjang yang tidak berkaitan dengan proyek. Harap tinjau [[WP:USERPAGE]] dan [[WP:TALKPAGE]] untuk panduan.` +
+                (isFinal ? finalSentence(true) : "") +
+                `\n\nJika Anda merasa pemberitahuan ini diberikan secara keliru, silakan tinggalkan pesan di halaman pembicaraan saya. ~~~~`;
+              const en = withExtra(headingEn + "\n" + bodyEn, extra, false);
+              const id = withExtra(headingId + "\n" + bodyId, extra, true);
+              return useIndonesian ? id : en;
+            },
+          },
+
+          // ------------------------------------------------------------------
+          // Adding video game walkthroughs, cheats or instructions
+          // ------------------------------------------------------------------
+          {
+            value: "gameguide",
+            label: "Adding video game walkthroughs, cheats or instructions",
+            buildNotice: function (target, extra, isFinal) {
+              const headingEn = isFinal
+                ? "== Final notice: adding game guides or walkthroughs =="
+                : "== Notice: adding game guides or walkthroughs ==";
+              const headingId = isFinal
+                ? "== Pemberitahuan terakhir: penambahan panduan atau panduan permainan =="
+                : "== Pemberitahuan: penambahan panduan atau panduan permainan ==";
+              const bodyEn =
+                `Your recent edits appear to have added walkthrough instructions, cheat codes, tips, or other gameplay guidance to one or more articles. Wikipedia is an encyclopaedia, not a game guide; articles about video games should provide encyclopaedic information about the game rather than instructions on how to play it. Please review [[WP:NOT#GUIDE]] and consider contributing gameplay guides to a dedicated resource such as [[WP:WIKIA|a fan wiki]] instead.` +
+                (isFinal ? finalSentence(false) : "") +
+                `\n\nIf you believe this notice has been issued in error, please leave a message on my talk page. ~~~~`;
+              const bodyId =
+                `Suntingan Anda yang baru-baru ini tampaknya menambahkan panduan cara bermain, kode curang, kiat, atau panduan bermain lainnya ke satu atau lebih artikel. Wikipedia adalah ensiklopedia, bukan panduan permainan. Artikel tentang permainan video harus memberikan informasi ensiklopedis tentang permainan tersebut daripada instruksi cara memainkannya. Harap tinjau [[WP:NOT#GUIDE]] dan pertimbangkan untuk menyumbangkan panduan bermain ke situs web khusus, seperti [[WP:WIKIA|wiki penggemar]].` +
+                (isFinal ? finalSentence(true) : "") +
+                `\n\nJika Anda merasa pemberitahuan ini diberikan secara keliru, silakan tinggalkan pesan di halaman pembicaraan saya. ~~~~`;
+              const en = withExtra(headingEn + "\n" + bodyEn, extra, false);
+              const id = withExtra(headingId + "\n" + bodyId, extra, true);
+              return useIndonesian ? id : en;
+            },
+          },
+
+          // ------------------------------------------------------------------
+          // Place user warning templates when reverting vandalism
+          // ------------------------------------------------------------------
+          {
+            value: "warnwhilerev",
+            label: "Place user warning templates when reverting vandalism",
+            buildNotice: function (target, extra, isFinal) {
+              const headingEn = isFinal
+                ? "== Final notice: warn users when reverting vandalism =="
+                : "== Notice: warn users when reverting vandalism ==";
+              const headingId = isFinal
+                ? "== Pemberitahuan terakhir: beri peringatan pengguna saat membalik vandalisme =="
+                : "== Pemberitahuan: beri peringatan pengguna saat membalik vandalisme ==";
+              const bodyEn =
+                `When reverting apparent vandalism, please remember to leave an appropriate warning on the responsible editor's talk page. Warning editors about problematic behaviour is an important step in the anti-vandalism process and helps users understand what they have done wrong before more serious action is considered. A range of warning templates is available via [[WP:WARN]]. Please make a habit of posting a warning after each revert of vandalism.` +
+                (isFinal ? finalSentence(false) : "") +
+                `\n\nIf you believe this notice has been issued in error, please leave a message on my talk page. ~~~~`;
+              const bodyId =
+                `Saat membalik vandalisme yang jelas, harap ingat untuk meninggalkan peringatan yang sesuai di halaman pembicaraan penyunting yang bertanggung jawab. Memperingatkan penyunting tentang perilaku bermasalah adalah langkah penting dalam proses antivandalisme dan membantu pengguna memahami apa yang mereka lakukan salah sebelum tindakan yang lebih serius dipertimbangkan. Berbagai templat peringatan tersedia melalui [[WP:WARN]]. Harap biasakan untuk memposting peringatan setelah setiap pembalikan vandalisme.` +
+                (isFinal ? finalSentence(true) : "") +
+                `\n\nJika Anda merasa pemberitahuan ini diberikan secara keliru, silakan tinggalkan pesan di halaman pembicaraan saya. ~~~~`;
+              const en = withExtra(headingEn + "\n" + bodyEn, extra, false);
+              const id = withExtra(headingId + "\n" + bodyId, extra, true);
+              return useIndonesian ? id : en;
+            },
+          },
+
+          // ------------------------------------------------------------------
+          // Using inaccurate or inappropriate edit summaries
+          // ------------------------------------------------------------------
+          {
+            value: "badsummary",
+            label: "Using inaccurate or inappropriate edit summaries",
+            buildNotice: function (target, extra, isFinal) {
+              const headingEn = isFinal
+                ? "== Final notice: inaccurate or inappropriate edit summaries =="
+                : "== Notice: inaccurate or inappropriate edit summaries ==";
+              const headingId = isFinal
+                ? "== Pemberitahuan terakhir: ringkasan suntingan yang tidak akurat atau tidak sesuai =="
+                : "== Pemberitahuan: ringkasan suntingan yang tidak akurat atau tidak sesuai ==";
+              const bodyEn =
+                `Your recent edits appear to have been accompanied by edit summaries that are inaccurate, misleading, or otherwise inappropriate. Edit summaries should accurately and concisely describe the change made. Using a misleading summary — for example, describing a significant edit as a minor correction, or using an edit summary to make personal remarks — is contrary to the spirit of transparent and collaborative editing. Please review [[WP:ES]] and ensure that your edit summaries accurately reflect your changes.` +
+                (isFinal ? finalSentence(false) : "") +
+                `\n\nIf you believe this notice has been issued in error, please leave a message on my talk page. ~~~~`;
+              const bodyId =
+                `Suntingan Anda yang baru-baru ini tampaknya disertai ringkasan suntingan yang tidak akurat, menyesatkan, atau tidak sesuai. Ringkasan suntingan harus menggambarkan perubahan yang dilakukan secara akurat dan ringkas. Menggunakan ringkasan yang menyesatkan, misalnya menggambarkan suntingan yang signifikan sebagai koreksi kecil, atau menggunakan ringkasan suntingan untuk membuat komentar pribadi, bertentangan dengan semangat penyuntingan yang transparan dan kolaboratif. Harap tinjau [[WP:ES]] dan pastikan ringkasan suntingan Anda mencerminkan perubahan Anda secara akurat.` +
+                (isFinal ? finalSentence(true) : "") +
+                `\n\nJika Anda merasa pemberitahuan ini diberikan secara keliru, silakan tinggalkan pesan di halaman pembicaraan saya. ~~~~`;
+              const en = withExtra(headingEn + "\n" + bodyEn, extra, false);
+              const id = withExtra(headingId + "\n" + bodyId, extra, true);
+              return useIndonesian ? id : en;
+            },
+          },
+        ],
+      },
+
       // --- Removal of deletion tags ---
       {
         group: "Removal of deletion tags",

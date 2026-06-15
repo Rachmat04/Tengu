@@ -1,36 +1,34 @@
+## 2.26.5
+
+### Added
+
+* Added a new **Single notices** group to `Tengu-warn.js`
+* Added **54 notice templates** covering informational and one-time communication scenarios
+* Added support for a softer **Notice** / **Pemberitahuan** heading convention for these templates
+* Added notice variants for situations
+
+### Changed
+
+* Introduced a distinction between escalating warnings and non-escalating notices within the warning library
+* Single-notice templates now use **Notice** / **Pemberitahuan** headings rather than **Warning** / **Peringatan** headings
+* Appeal text in notice templates now refers to the possibility that a **notice** was issued in error, rather than a **warning**
+
+### Improved
+
+* Expanded the range of communication tools available to administrators and patrollers
+* Improved flexibility by providing templates for situations that do not warrant formal warnings
+* Encouraged a more proportionate and constructive approach to user communication
+* Reduced the need to adapt warning templates for routine informational messages
+* Improved consistency with the existing `testediting` notice style
+
 ## 2.26.4
 
 ### Added
 
-* Added the **Promotions and spam** warning group with notices for:
-  * Advertising and promotion
-  * Neutral point of view (NPOV) violations
-  * Undisclosed paid editing
-  * Inappropriate external links
-* Added the **Behaviour towards other editors** warning group with notices for:
-  * Failure to assume good faith
-  * Use of LLM-generated comments in discussions
-  * Harassment
-  * Personal attacks
-  * Misuse of warning and blocking templates
-* Added the **Removal of deletion tags** warning group with notices for:
-  * Articles for deletion (AfD) tag removal
-  * Biographies of living persons proposed deletion (BLP PROD) tag removal
-  * File deletion tag removal
-  * Redirects for discussion (RfD) tag removal
-  * Speedy deletion tag removal
-  * Templates for discussion (TfD) tag removal
-* Added the **Other warnings** group with notices for:
-  * Triggering the edit filter
-  * Misusing talk pages as discussion forums
-  * Creating inappropriate pages
-  * Adding sources that do not verify the referenced content
-  * Misleading edit summaries
-  * Manual of Style violations
-  * Page moves that conflict with naming conventions
-  * Inappropriate redirects
-  * Refactoring other editors' talk page comments
-  * Uploading non-encyclopaedic images
+* Added the **Promotions and spam** warning group with notices
+* Added the **Behaviour towards other editors** warning group with notices
+* Added the **Removal of deletion tags** warning group with notices
+* Added the **Other warnings** group with notices
 
 ### Changed
 
