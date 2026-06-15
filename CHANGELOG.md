@@ -1,3 +1,51 @@
+## 2.26.4
+
+### Added
+
+* Added the **Promotions and spam** warning group with notices for:
+  * Advertising and promotion
+  * Neutral point of view (NPOV) violations
+  * Undisclosed paid editing
+  * Inappropriate external links
+* Added the **Behaviour towards other editors** warning group with notices for:
+  * Failure to assume good faith
+  * Use of LLM-generated comments in discussions
+  * Harassment
+  * Personal attacks
+  * Misuse of warning and blocking templates
+* Added the **Removal of deletion tags** warning group with notices for:
+  * Articles for deletion (AfD) tag removal
+  * Biographies of living persons proposed deletion (BLP PROD) tag removal
+  * File deletion tag removal
+  * Redirects for discussion (RfD) tag removal
+  * Speedy deletion tag removal
+  * Templates for discussion (TfD) tag removal
+* Added the **Other warnings** group with notices for:
+  * Triggering the edit filter
+  * Misusing talk pages as discussion forums
+  * Creating inappropriate pages
+  * Adding sources that do not verify the referenced content
+  * Misleading edit summaries
+  * Manual of Style violations
+  * Page moves that conflict with naming conventions
+  * Inappropriate redirects
+  * Refactoring other editors' talk page comments
+  * Uploading non-encyclopaedic images
+
+### Changed
+
+* Extended `WARN_MESSAGES` with four additional warning categories
+* Reordered warning groups to incorporate the new categories while preserving the existing grouped structure
+* Increased the total number of available warning templates from **29** to **45**
+
+### Improved
+
+* Expanded coverage of common moderation and maintenance scenarios
+* Improved guidance for deletion-related disputes by directing users to the appropriate discussion processes instead of simply discouraging tag removal
+* Improved support for editor-conduct issues and community interaction policies
+* Improved consistency across all warning templates through shared formatting and localisation behaviour
+* Reduced the need for manual warning drafting in less common administrative situations
+
 ## 2.26.3
 
 ### Added
