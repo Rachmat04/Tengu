@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.26.4
+ * Version 2.26.6
  * User warning message definitions for the Tengu moderation tool
  * ============================================================================
  * PURPOSE:
@@ -803,7 +803,7 @@ window.TenguWarn = {
                 (isFinal ? finalSentence(false) : "") +
                 `\n\nIf you believe this notice has been issued in error, please leave a message on my talk page. ~~~~`;
               const bodyId =
-                `Laporan Anda yang baru-baru ini di [[WP:AIV|Intervensi pengurus terhadap vandalisme]] (AIV)tampaknya tidak memenuhi kriteria pelaporan. AIV ditujukan untuk penyunting yang secara aktif dan jelas melakukan vandalisme dan telah mendapat peringatan sebelumnya. Laporan yang berkaitan dengan kesalahan beritikad baik, perselisihan konten, atau pengguna yang belum mendapat peringatan kemungkinan tidak akan menghasilkan pemblokiran dan dapat memperlambat respons pengurus terhadap vandalisme yang jelas. Harap tinjau [[WP:AIV]] sebelum membuat laporan lebih lanjut.` +
+                `Laporan Anda yang baru-baru ini di [[WP:AIV|Intervensi pengurus terhadap vandalisme]] (AIV) tampaknya tidak memenuhi kriteria pelaporan. AIV ditujukan untuk penyunting yang secara aktif dan jelas melakukan vandalisme dan telah mendapat peringatan sebelumnya. Laporan yang berkaitan dengan kesalahan beriktikad baik, perselisihan konten, atau pengguna yang belum mendapat peringatan kemungkinan tidak akan menghasilkan pemblokiran dan dapat memperlambat respons pengurus terhadap vandalisme yang jelas. Harap tinjau [[WP:AIV]] sebelum membuat laporan lebih lanjut.` +
                 (isFinal ? finalSentence(true) : "") +
                 `\n\nJika Anda merasa pemberitahuan ini diberikan secara keliru, silakan tinggalkan pesan di halaman pembicaraan saya. ~~~~`;
               const en = withExtra(headingEn + "\n" + bodyEn, extra, false);
@@ -1344,7 +1344,8 @@ window.TenguWarn = {
                 (isFinal ? finalSentence(false) : "") +
                 `\n\nIf you believe this notice has been issued in error, please leave a message on my talk page. ~~~~`;
               const bodyId =
-                `Suntingan Anda yang baru-baru ini tampaknya menambahkan pranala luar langsung ke dalam teks badan satu atau lebih artikel. Di Wikipedia, pranala luar umumnya hanya boleh muncul di bagian "Pranala luar" di bagian bawah artikel, atau sebagai bagian dari kutipan sebaris yang diformat. Pranala luar mentah yang disisipkan dalam prosa artikel tidak sesuai dengan panduan pemformatan kami. Harap tinjau [[WP:EL]] dan [[WP:ELSTYLE]] untuk panduan.` +
+                `Suntingan terbaru tampaknya menambahkan pranala luar secara langsung ke dalam isi satu atau lebih artikel. Di Wikipedia, pranala luar pada umumnya hanya boleh ditempatkan di bagian "Pranala luar" pada akhir artikel atau digunakan sebagai bagian dari sitasi yang diformat dengan benar. Pranala luar mentah (''bare external links'') yang disisipkan langsung ke dalam teks artikel tidak sesuai dengan pedoman pemformatan Wikipedia. ` +
+                `\n\nMohon tinjau [[WP:EL]] dan [[WP:ELSTYLE]] untuk memperoleh panduan lebih lanjut mengenai penggunaan dan penempatan pranala luar yang sesuai.` +
                 (isFinal ? finalSentence(true) : "") +
                 `\n\nJika Anda merasa pemberitahuan ini diberikan secara keliru, silakan tinggalkan pesan di halaman pembicaraan saya. ~~~~`;
               const en = withExtra(headingEn + "\n" + bodyEn, extra, false);
@@ -2727,8 +2728,786 @@ window.TenguWarn = {
           },
         ],
       },
-    ];
 
+      // --- Single warning ---
+      {
+        group: "Single warning",
+        items: [
+          // ------------------------------------------------------------------
+          // Potential three-revert rule violation
+          // ------------------------------------------------------------------
+          {
+            value: "3rr",
+            label: "Potential three-revert rule violation",
+            buildNotice: function (target, extra, isFinal) {
+              const headingEn = isFinal
+                ? "== Final warning: potential three-revert rule violation =="
+                : "== Warning: potential three-revert rule violation ==";
+              const headingId = isFinal
+                ? "== Peringatan terakhir: kemungkinan pelanggaran peraturan tiga-revert =="
+                : "== Peringatan: kemungkinan pelanggaran peraturan tiga-revert ==";
+              const bodyEn =
+                `Your recent edits appear to have involved reverting the same article more than three times in a 24-hour period. This violates the three-revert rule, which is designed to prevent edit wars. Instead of continuing to revert, please discuss disputed content on the article's talk page and seek consensus with other editors. If you need additional help resolving disputes, consider using the dispute resolution process.` +
+                (isFinal ? finalSentence(false) : "") +
+                `\n\nIf you believe this warning has been issued in error, please leave a message on my talk page. ~~~~`;
+              const bodyId =
+                `Suntingan Anda yang baru-baru ini tampaknya melibatkan pengembalian artikel yang sama lebih dari tiga kali dalam periode 24 jam. Ini melanggar peraturan tiga-revert, yang dirancang untuk mencegah perang suntingan. Alih-alih terus mengembalikan, silakan diskusikan konten yang diperdebatkan di halaman pembicaraan artikel dan cari konsensus dengan penyunting lain. Jika Anda memerlukan bantuan tambahan untuk menyelesaikan perselisihan, pertimbangkan untuk menggunakan proses penyelesaian perselisihan.` +
+                (isFinal ? finalSentence(true) : "") +
+                `\n\nJika Anda merasa peringatan ini diberikan secara keliru, silakan tinggalkan pesan di halaman pembicaraan saya. ~~~~`;
+              const en = withExtra(headingEn + "\n" + bodyEn, extra, false);
+              const id = withExtra(headingId + "\n" + bodyId, extra, true);
+              return useIndonesian ? id : en;
+            },
+          },
+
+          // ------------------------------------------------------------------
+          // Affiliate marketing
+          // ------------------------------------------------------------------
+          {
+            value: "affiliatemarketing",
+            label: "Affiliate marketing",
+            buildNotice: function (target, extra, isFinal) {
+              const headingEn = isFinal
+                ? "== Final warning: affiliate marketing =="
+                : "== Warning: affiliate marketing ==";
+              const headingId = isFinal
+                ? "== Peringatan terakhir: pemasaran afiliasi =="
+                : "== Peringatan: pemasaran afiliasi ==";
+              const bodyEn =
+                `Your recent edits appear to have involved adding affiliate links or promoting products or services in which you have a financial interest. This violates Wikipedia's conflict of interest policy. Affiliate marketing and self-promotion are not permitted on Wikipedia. Please refrain from adding such content and disclose any financial interests you may have in articles you edit.` +
+                (isFinal ? finalSentence(false) : "") +
+                `\n\nIf you believe this warning has been issued in error, please leave a message on my talk page. ~~~~`;
+              const bodyId =
+                `Suntingan Anda yang baru-baru ini tampaknya melibatkan penambahan pranala afiliasi atau promosi produk atau layanan yang Anda miliki kepentingan finansial. Ini melanggar kebijakan konflik kepentingan Wikipedia. Pemasaran afiliasi dan promosi diri tidak diperkenankan di Wikipedia. Harap hindari menambahkan konten tersebut dan sebutkan setiap kepentingan finansial yang mungkin Anda miliki dalam artikel yang Anda sunting.` +
+                (isFinal ? finalSentence(true) : "") +
+                `\n\nJika Anda merasa peringatan ini diberikan secara keliru, silakan tinggalkan pesan di halaman pembicaraan saya. ~~~~`;
+              const en = withExtra(headingEn + "\n" + bodyEn, extra, false);
+              const id = withExtra(headingId + "\n" + bodyId, extra, true);
+              return useIndonesian ? id : en;
+            },
+          },
+
+          // ------------------------------------------------------------------
+          // Creating attack pages
+          // ------------------------------------------------------------------
+          {
+            value: "attackpage",
+            label: "Creating attack pages",
+            buildNotice: function (target, extra, isFinal) {
+              const headingEn = isFinal
+                ? "== Final warning: creating attack pages =="
+                : "== Warning: creating attack pages ==";
+              const headingId = isFinal
+                ? "== Peringatan terakhir: membuat halaman serangan =="
+                : "== Peringatan: membuat halaman serangan ==";
+              const bodyEn =
+                `Your recent edits appear to have involved creating or editing pages designed to attack, insult, or demean other editors or individuals. Attack pages are not permitted on Wikipedia. Wikipedia is an encyclopedia, not a venue for personal disputes or harassment. Please refrain from creating such pages and treat all editors with respect and civility.` +
+                (isFinal ? finalSentence(false) : "") +
+                `\n\nIf you believe this warning has been issued in error, please leave a message on my talk page. ~~~~`;
+              const bodyId =
+                `Suntingan Anda yang baru-baru ini tampaknya melibatkan pembuatan atau penyuntingan halaman yang dirancang untuk menyerang, menghina, atau merendahkan penyunting atau individu lain. Halaman serangan tidak diperkenankan di Wikipedia. Wikipedia adalah ensiklopedia, bukan tempat untuk perselisihan pribadi atau pelecehan. Harap hindari membuat halaman tersebut dan perlakukan semua penyunting dengan hormat dan kesopanan.` +
+                (isFinal ? finalSentence(true) : "") +
+                `\n\nJika Anda merasa peringatan ini diberikan secara keliru, silakan tinggalkan pesan di halaman pembicaraan saya. ~~~~`;
+              const en = withExtra(headingEn + "\n" + bodyEn, extra, false);
+              const id = withExtra(headingId + "\n" + bodyId, extra, true);
+              return useIndonesian ? id : en;
+            },
+          },
+
+          // ------------------------------------------------------------------
+          // Bot username
+          // ------------------------------------------------------------------
+          {
+            value: "botusername",
+            label: "Bot username",
+            buildNotice: function (target, extra, isFinal) {
+              const headingEn = isFinal
+                ? "== Final warning: bot username =="
+                : "== Warning: bot username ==";
+              const headingId = isFinal
+                ? "== Peringatan terakhir: nama pengguna bot =="
+                : "== Peringatan: nama pengguna bot ==";
+              const bodyEn =
+                `Your username appears to indicate that you are a bot, but your account does not appear to be approved as a bot account. If you intend to operate as a bot, you must request approval through [[WP:BOTR|the appropriate channels]] and use an account that has been flagged as a bot. If your username merely contains the word "bot" but you are a human editor, please consider renaming your account to avoid confusion.` +
+                (isFinal ? finalSentence(false) : "") +
+                `\n\nIf you believe this warning has been issued in error, please leave a message on my talk page. ~~~~`;
+              const bodyId =
+                `Nama pengguna Anda tampaknya menunjukkan bahwa Anda adalah bot, tetapi akun Anda tidak tampak disetujui sebagai akun bot. Jika Anda bermaksud mengoperasikannya sebagai bot, Anda harus meminta persetujuan melalui [[WP:BOT|kanal yang sesuai]] dan menggunakan akun yang telah ditandai sebagai bot. Jika nama pengguna Anda hanya berisi kata "bot" tetapi Anda adalah penyunting manusia, silakan pertimbangkan untuk mengganti nama akun Anda untuk menghindari kebingungan.` +
+                (isFinal ? finalSentence(true) : "") +
+                `\n\nJika Anda merasa peringatan ini diberikan secara keliru, silakan tinggalkan pesan di halaman pembicaraan saya. ~~~~`;
+              const en = withExtra(headingEn + "\n" + bodyEn, extra, false);
+              const id = withExtra(headingId + "\n" + bodyId, extra, true);
+              return useIndonesian ? id : en;
+            },
+          },
+
+          // ------------------------------------------------------------------
+          // Canvassing
+          // ------------------------------------------------------------------
+          {
+            value: "canvassing",
+            label: "Canvassing",
+            buildNotice: function (target, extra, isFinal) {
+              const headingEn = isFinal
+                ? "== Final warning: canvassing =="
+                : "== Warning: canvassing ==";
+              const headingId = isFinal
+                ? "== Peringatan terakhir: canvassing =="
+                : "== Peringatan: canvassing ==";
+              const bodyEn =
+                `Your recent actions appear to have involved canvassing, which is the practice of soliciting opinions or votes from other editors in a manner designed to support a particular position or outcome in a dispute. Canvassing manipulates the consensus-building process and is not permitted on Wikipedia. Please refrain from canvassing and allow discussions to proceed organically with input from genuinely interested editors.` +
+                (isFinal ? finalSentence(false) : "") +
+                `\n\nIf you believe this warning has been issued in error, please leave a message on my talk page. ~~~~`;
+              const bodyId =
+                `Tindakan terbaru tampaknya melibatkan penganvasan, yaitu praktik meminta pendapat atau dukungan dari penyunting lain dengan cara yang dimaksudkan untuk mendukung suatu posisi atau hasil tertentu dalam sebuah sengketa atau diskusi. Penganvasan dapat memengaruhi proses pembentukan konsensus secara tidak semestinya dan tidak diperbolehkan di Wikipedia. ` +
+                `\n\nMohon untuk tidak melakukan penganvasan dan biarkan diskusi berlangsung secara wajar dengan masukan dari para penyunting yang memang memiliki ketertarikan atau keterlibatan terhadap topik yang sedang dibahas. Konsensus Wikipedia harus dibangun melalui diskusi yang terbuka, netral, dan bebas dari upaya untuk mengarahkan hasil melalui perekrutan dukungan yang selektif.` +
+                (isFinal ? finalSentence(true) : "") +
+                `\n\nJika Anda merasa peringatan ini diberikan secara keliru, silakan tinggalkan pesan di halaman pembicaraan saya. ~~~~`;
+              const en = withExtra(headingEn + "\n" + bodyEn, extra, false);
+              const id = withExtra(headingId + "\n" + bodyId, extra, true);
+              return useIndonesian ? id : en;
+            },
+          },
+
+          // ------------------------------------------------------------------
+          // Copyright violation
+          // ------------------------------------------------------------------
+          {
+            value: "copyvio",
+            label: "Copyright violation",
+            buildNotice: function (target, extra, isFinal) {
+              const headingEn = isFinal
+                ? "== Final warning: copyright violation =="
+                : "== Warning: copyright violation ==";
+              const headingId = isFinal
+                ? "== Peringatan terakhir: pelanggaran hak cipta =="
+                : "== Peringatan: pelanggaran hak cipta ==";
+              const bodyEn =
+                `Your recent edits appear to have involved adding text that is not compatible with Wikipedia's free content licensing requirements. Wikipedia content must be original or properly licensed under a compatible free license. Adding copyrighted material without permission is not permitted and violates both Wikipedia policy and copyright law. Please ensure all content you add is either original or properly attributed and licensed.` +
+                (isFinal ? finalSentence(false) : "") +
+                `\n\nIf you believe this warning has been issued in error, please leave a message on my talk page. ~~~~`;
+              const bodyId =
+                `Suntingan Anda yang baru-baru ini tampaknya melibatkan penambahan teks yang tidak kompatibel dengan persyaratan lisensi konten bebas Wikipedia. Konten Wikipedia harus asli atau berlisensi dengan benar di bawah lisensi bebas yang kompatibel. Menambahkan materi berhak cipta tanpa izin tidak diperkenankan dan melanggar kebijakan Wikipedia dan hukum hak cipta. Harap pastikan semua konten yang Anda tambahkan bersifat asli atau dikreditkan dan berlisensi dengan benar.` +
+                (isFinal ? finalSentence(true) : "") +
+                `\n\nJika Anda merasa peringatan ini diberikan secara keliru, silakan tinggalkan pesan di halaman pembicaraan saya. ~~~~`;
+              const en = withExtra(headingEn + "\n" + bodyEn, extra, false);
+              const id = withExtra(headingId + "\n" + bodyId, extra, true);
+              return useIndonesian ? id : en;
+            },
+          },
+
+          // ------------------------------------------------------------------
+          // Linking to copyrighted works violation
+          // ------------------------------------------------------------------
+          {
+            value: "copyrightlinks",
+            label: "Linking to copyrighted works violation",
+            buildNotice: function (target, extra, isFinal) {
+              const headingEn = isFinal
+                ? "== Final warning: linking to copyrighted works violation =="
+                : "== Warning: linking to copyrighted works violation ==";
+              const headingId = isFinal
+                ? "== Peringatan terakhir: pelanggaran pranala luar ke karya berhak cipta =="
+                : "== Peringatan: pelanggaran pranala luar ke karya berhak cipta ==";
+              const bodyEn =
+                `Your recent edits appear to have involved adding links to external websites that primarily host copyrighted material in violation of copyright law. Wikipedia's external links policy does not permit linking to sites whose main purpose is to distribute copyrighted content illegally. Please refrain from adding such links and instead use legitimate sources that respect intellectual property rights.` +
+                (isFinal ? finalSentence(false) : "") +
+                `\n\nIf you believe this warning has been issued in error, please leave a message on my talk page. ~~~~`;
+              const bodyId =
+                `Suntingan Anda yang baru-baru ini tampaknya melibatkan penambahan pranala ke situs web eksternal yang terutama menyimpan materi berhak cipta yang melanggar hukum hak cipta. Kebijakan pranala luar Wikipedia tidak memperbolehkan pranala ke situs yang tujuan utamanya adalah mendistribusikan konten berhak cipta secara ilegal. Harap hindari menambahkan pranala luar tersebut dan gunakan sumber yang sah yang menghormati hak kekayaan intelektual.` +
+                (isFinal ? finalSentence(true) : "") +
+                `\n\nJika Anda merasa peringatan ini diberikan secara keliru, silakan tinggalkan pesan di halaman pembicaraan saya. ~~~~`;
+              const en = withExtra(headingEn + "\n" + bodyEn, extra, false);
+              const id = withExtra(headingId + "\n" + bodyId, extra, true);
+              return useIndonesian ? id : en;
+            },
+          },
+
+          // ------------------------------------------------------------------
+          // Copyright violation (with explanation for new users)
+          // ------------------------------------------------------------------
+          {
+            value: "copyvio-explain",
+            label: "Copyright violation (with explanation for new users)",
+            buildNotice: function (target, extra, isFinal) {
+              const headingEn = isFinal
+                ? "== Final warning: copyright violation =="
+                : "== Warning: copyright violation ==";
+              const headingId = isFinal
+                ? "== Peringatan terakhir: pelanggaran hak cipta =="
+                : "== Peringatan: pelanggaran hak cipta ==";
+              const bodyEn =
+                `Your recent edits appear to have involved adding text that is not compatible with Wikipedia's free content licensing requirements. Wikipedia is built on the principle that all content should be freely available for anyone to use, modify, and distribute. This means we cannot accept text copied from copyrighted sources, including published books, academic papers, news articles, and websites, unless they are released under a compatible free license. ` +
+                `\n\nWhen you contribute to Wikipedia, any text you add becomes available under the Creative Commons Attribution-ShareAlike License, which requires that others be free to reuse and modify it. If you copy text from a copyrighted source without permission, you are violating both Wikipedia's policy and copyright law. ` +
+                `\n\nInstead, please write in your own words to explain concepts from sources you've read. You can cite sources to support your information, but the actual text must be original. If you're new to Wikipedia, please take time to read our guidelines on [[WP:CITING|citing sources and writing original content]].` +
+                (isFinal ? finalSentence(false) : "") +
+                `\n\nIf you believe this warning has been issued in error, please leave a message on my talk page. ~~~~`;
+              const bodyId =
+                `Suntingan terbaru Anda tampaknya menambahkan teks yang tidak sesuai dengan persyaratan lisensi konten bebas Wikipedia. Wikipedia dibangun berdasarkan prinsip bahwa seluruh kontennya harus tersedia secara bebas untuk digunakan, dimodifikasi, dan disebarluaskan oleh siapa pun. Oleh karena itu, Wikipedia tidak dapat menerima teks yang disalin dari sumber berhak cipta, termasuk buku terbitan, makalah akademik, artikel berita, maupun situs web, kecuali sumber tersebut diterbitkan dengan lisensi bebas yang kompatibel. ` +
+                `\n\nKetika Anda berkontribusi ke Wikipedia, setiap teks yang ditambahkan akan tersedia di bawah Lisensi Creative Commons Atribusi-BerbagiSerupa (Creative Commons Attribution-ShareAlike), yang mengharuskan pihak lain dapat menggunakan kembali dan memodifikasinya secara bebas. Jika Anda menyalin teks dari sumber yang dilindungi hak cipta tanpa izin, tindakan tersebut melanggar kebijakan Wikipedia sekaligus hukum hak cipta. ` +
+                `\n\nSebagai gantinya, tulislah informasi dengan kata-kata Anda sendiri berdasarkan sumber yang telah dibaca. Anda dapat mencantumkan sumber untuk mendukung informasi yang ditambahkan, tetapi teks yang ditulis harus merupakan hasil penyusunan sendiri. Jika Anda baru mengenal Wikipedia, luangkan waktu untuk mempelajari pedoman mengenai [[WP:KUTIP|pencantuman sumber]] dan penulisan konten asli.` +
+                (isFinal ? finalSentence(true) : "") +
+                `\n\nJika Anda merasa peringatan ini diberikan secara keliru, silakan tinggalkan pesan di halaman pembicaraan saya. ~~~~`;
+              const en = withExtra(headingEn + "\n" + bodyEn, extra, false);
+              const id = withExtra(headingId + "\n" + bodyId, extra, true);
+              return useIndonesian ? id : en;
+            },
+          },
+
+          // ------------------------------------------------------------------
+          // Removing {{copyvio}} template from articles
+          // ------------------------------------------------------------------
+          {
+            value: "removecopyviolate",
+            label: "Removing {{copyvio}} template from articles",
+            buildNotice: function (target, extra, isFinal) {
+              const headingEn = isFinal
+                ? "== Final warning: removing {{copyvio}} template from articles =="
+                : "== Warning: removing {{copyvio}} template from articles ==";
+              const headingId = isFinal
+                ? "== Peringatan terakhir: menghapus templat {{copyvio}} dari artikel =="
+                : "== Peringatan: menghapus templat {{copyvio}} dari artikel ==";
+              const bodyEn =
+                `Your recent edits appear to have involved removing the {{tlx|copyvio}} template or copyright violation notices from articles without resolving the underlying copyright issues. The {{tlx|copyvio}} template is placed on articles to alert editors and readers that the article may contain copyrighted material that needs to be addressed. Removing this template without fixing the copyright problem does not resolve the issue and prevents other editors from being aware of the problem. ` +
+                `\n\nIf you believe a copyright violation notice was added in error, please discuss it on the article's talk page or contact the editor who added it. If the copyright violation has been resolved by rewriting the problematic sections in original text, then the template may be removed. Simply removing the template without addressing the underlying issue is not permitted.` +
+                (isFinal ? finalSentence(false) : "") +
+                `\n\nIf you believe this warning has been issued in error, please leave a message on my talk page. ~~~~`;
+              const bodyId =
+                `Suntingan Anda yang baru-baru ini tampaknya melibatkan penghapusan templat {{tlx|copyvio}} atau pemberitahuan pelanggaran hak cipta dari artikel tanpa menyelesaikan masalah hak cipta yang mendasarinya. Templat {{tlx|copyvio}} ditempatkan pada artikel untuk memperingatkan penyunting dan pembaca bahwa artikel mungkin berisi materi berhak cipta yang perlu ditangani. Menghapus templat ini tanpa memperbaiki masalah hak cipta tidak menyelesaikan masalah dan mencegah penyunting lain mengetahui masalahnya. ` +
+                `\n\nJika Anda percaya bahwa pemberitahuan pelanggaran hak cipta ditambahkan secara keliru, silakan diskusikan di halaman pembicaraan artikel atau hubungi penyunting yang menambahkannya. Jika pelanggaran hak cipta telah diselesaikan dengan menulis ulang bagian-bagian bermasalah dengan teks asli, maka templat dapat dihapus. Sekadar menghapus templat tanpa mengatasi masalah yang mendasarinya tidak diperkenankan.` +
+                (isFinal ? finalSentence(true) : "") +
+                `\n\nJika Anda merasa peringatan ini diberikan secara keliru, silakan tinggalkan pesan di halaman pembicaraan saya. ~~~~`;
+              const en = withExtra(headingEn + "\n" + bodyEn, extra, false);
+              const id = withExtra(headingId + "\n" + bodyId, extra, true);
+              return useIndonesian ? id : en;
+            },
+          },
+
+          // ------------------------------------------------------------------
+          // Addition of derogatory/hateful content
+          // ------------------------------------------------------------------
+          {
+            value: "derogatory",
+            label: "Addition of derogatory/hateful content",
+            buildNotice: function (target, extra, isFinal) {
+              const headingEn = isFinal
+                ? "== Final warning: addition of derogatory/hateful content =="
+                : "== Warning: addition of derogatory/hateful content ==";
+              const headingId = isFinal
+                ? "== Peringatan terakhir: penambahan konten merendahkan/kebencian =="
+                : "== Peringatan: penambahan konten merendahkan/kebencian ==";
+              const bodyEn =
+                `Your recent edits appear to have involved adding content that is derogatory, hateful, or discriminatory toward individuals or groups based on characteristics such as race, ethnicity, religion, gender, sexual orientation, or disability. Wikipedia has a strict policy against such content. Our encyclopaedia should be written in a neutral, respectful tone and should not promote hatred or discrimination of any kind. ` +
+                `\n\nAll editors are expected to treat others with respect and civility. Content that demeans or attacks people based on their identity is not compatible with Wikipedia's values and community standards. Please review Wikipedia's policy on [[WP:CIVIL|civility]] and [[WP:NPOV|neutral point of view]] before making further edits.` +
+                (isFinal ? finalSentence(false) : "") +
+                `\n\nIf you believe this warning has been issued in error, please leave a message on my talk page. ~~~~`;
+              const bodyId =
+                `Suntingan Anda yang baru-baru ini tampaknya melibatkan penambahan konten yang merendahkan, penuh kebencian, atau diskriminasi terhadap individu atau kelompok berdasarkan karakteristik seperti ras, etnis, agama, jenis kelamin, orientasi seksual, atau disabilitas. Wikipedia memiliki kebijakan ketat terhadap konten semacam itu. Ensiklopedia kita harus ditulis dengan nada yang netral dan menghormati serta tidak boleh mempromosikan kebencian atau diskriminasi dalam bentuk apa pun. ` +
+                `\n\nSemua penyunting diharapkan memperlakukan orang lain dengan hormat dan kesopanan. Konten yang merendahkan atau menyerang orang berdasarkan identitas mereka tidak sesuai dengan nilai-nilai dan standar komunitas Wikipedia. Silakan tinjau kebijakan Wikipedia tentang [[WP:CIVIL|kesopanan]] dan [[WP:NPOV|sudut pandang netral]] sebelum melakukan penyuntingan lebih lanjut.` +
+                (isFinal ? finalSentence(true) : "") +
+                `\n\nJika Anda merasa peringatan ini diberikan secara keliru, silakan tinggalkan pesan di halaman pembicaraan saya. ~~~~`;
+              const en = withExtra(headingEn + "\n" + bodyEn, extra, false);
+              const id = withExtra(headingId + "\n" + bodyId, extra, true);
+              return useIndonesian ? id : en;
+            },
+          },
+
+          // ------------------------------------------------------------------
+          // Edit summary triggering the edit filter
+          // ------------------------------------------------------------------
+          {
+            value: "editsummaryfilter",
+            label: "Edit summary triggering the edit filter",
+            buildNotice: function (target, extra, isFinal) {
+              const headingEn = isFinal
+                ? "== Final warning: edit summary triggering the edit filter =="
+                : "== Warning: edit summary triggering the edit filter ==";
+              const headingId = isFinal
+                ? "== Peringatan terakhir: ringkasan suntingan memicu filter penyuntingan =="
+                : "== Peringatan: ringkasan suntingan memicu filter penyuntingan ==";
+              const bodyEn =
+                `Your recent edit was flagged by the abuse filter due to the content of your edit summary. Edit summaries are an important part of Wikipedia's collaborative process, as they help other editors understand the changes being made. However, edit summaries should remain constructive, civil, and relevant to the actual edits being made. ` +
+                `\n\nAbusive, hostile, or offensive language in edit summaries—even if the edit itself is constructive—can trigger automated filters designed to prevent disruption. Please ensure that your edit summaries are polite, informative, and free from language that could be considered insulting or provocative. If you have a concern about an edit or editor, address it through appropriate channels such as the talk page, not through hostile edit summaries.` +
+                (isFinal ? finalSentence(false) : "") +
+                `\n\nIf you believe this warning has been issued in error, please leave a message on my talk page. ~~~~`;
+              const bodyId =
+                `Suntingan Anda yang baru-baru ini ditandai oleh penyaring penyalahgunaan karena konten ringkasan suntingan Anda. Ringkasan suntingan adalah bagian penting dari proses kolaboratif Wikipedia, karena membantu penyunting lain memahami perubahan yang dibuat. Namun, ringkasan suntingan harus tetap konstruktif, sopan, dan relevan dengan suntingan aktual yang dilakukan. ` +
+                `\n\nBahasa kasar, bermusuhan, atau menyinggung dalam ringkasan suntingan. Bahkan, jika suntingannya sendiri konstruktif, dapat memicu penyaring otomatis yang dirancang untuk mencegah gangguan. Harap pastikan bahwa ringkasan suntingan Anda sopan, informatif, dan bebas dari bahasa yang dapat dianggap menghina atau provokatif. Jika Anda memiliki kekhawatiran tentang suntingan atau penyunting, tangani melalui saluran yang sesuai seperti halaman pembicaraan, bukan melalui ringkasan suntingan yang bermusuhan.` +
+                (isFinal ? finalSentence(true) : "") +
+                `\n\nJika Anda merasa peringatan ini diberikan secara keliru, silakan tinggalkan pesan di halaman pembicaraan saya. ~~~~`;
+              const en = withExtra(headingEn + "\n" + bodyEn, extra, false);
+              const id = withExtra(headingId + "\n" + bodyId, extra, true);
+              return useIndonesian ? id : en;
+            },
+          },
+
+          // ------------------------------------------------------------------
+          // Edit warring (stronger wording)
+          // ------------------------------------------------------------------
+          {
+            value: "ew-strong",
+            label: "Edit warring (stronger wording)",
+            buildNotice: function (target, extra, isFinal) {
+              const headingEn = isFinal
+                ? "== Final warning: edit warring =="
+                : "== Warning: edit warring ==";
+              const headingId = isFinal
+                ? "== Peringatan terakhir: perang suntingan =="
+                : "== Peringatan: perang suntingan ==";
+              const bodyEn =
+                `Your recent edits constitute edit warring. You have repeatedly reverted, overwritten, or undone the contributions of other editors without seeking consensus or engaging in meaningful discussion. Edit warring is a serious violation of Wikipedia policy and directly undermines the collaborative nature of this project. ` +
+                `\n\nWikipedia is built on consensus and constructive dialogue. When you disagree with another editor's contribution, the appropriate response is to discuss the matter on the article's talk page, not to engage in a cycle of reverts. Continuing to revert changes without discussion demonstrates bad faith and is disruptive to the community. ` +
+                `\n\nThis behaviour can result in loss of editing privileges. If disputes persist, they will be escalated through formal dispute resolution processes, which may result in blocks or other sanctions. Please immediately cease this edit warring behaviour and use the talk page to discuss any content disagreements with other editors. Consensus must be reached through dialogue, not through repeated reverts.` +
+                (isFinal ? finalSentence(false) : "") +
+                `\n\nIf you believe this warning has been issued in error, please leave a message on my talk page. ~~~~`;
+              const bodyId =
+                `Suntingan Anda yang baru-baru ini merupakan perang suntingan. Anda telah berulang kali mengembalikan, menimpa, atau membatalkan kontribusi penyunting lain tanpa mencari konsensus atau terlibat dalam diskusi bermakna. Perang suntingan adalah pelanggaran serius terhadap kebijakan Wikipedia dan secara langsung merusak sifat kolaboratif proyek ini. ` +
+                `\n\nWikipedia dibangun atas dasar konsensus dan dialog konstruktif. Ketika Anda tidak setuju dengan kontribusi penyunting lain, tanggapan yang tepat adalah mendiskusikan masalah di halaman pembicaraan artikel, bukan terlibat dalam siklus pengembalian. Terus mengembalikan perubahan tanpa diskusi menunjukkan iktikad buruk dan mengganggu komunitas. ` +
+                `\n\nPerilaku ini dapat mengakibatkan hilangnya hak istimewa penyuntingan. Jika perselisihan terus berlanjut, perselisihan akan ditingkatkan melalui proses penyelesaian perselisihan formal, yang dapat mengakibatkan pemblokiran atau sanksi lainnya. Harap segera hentikan perilaku perang suntingan ini dan gunakan halaman pembicaraan untuk mendiskusikan ketidaksepakatan konten apa pun dengan penyunting lain. Konsensus harus dicapai melalui dialog, bukan melalui pengembalian berulang.` +
+                (isFinal ? finalSentence(true) : "") +
+                `\n\nJika Anda merasa peringatan ini diberikan secara keliru, silakan tinggalkan pesan di halaman pembicaraan saya. ~~~~`;
+              const en = withExtra(headingEn + "\n" + bodyEn, extra, false);
+              const id = withExtra(headingId + "\n" + bodyId, extra, true);
+              return useIndonesian ? id : en;
+            },
+          },
+
+          // ------------------------------------------------------------------
+          // Edit warring (softer wording for newcomers)
+          // ------------------------------------------------------------------
+          {
+            value: "ew-newcomer",
+            label: "Edit warring (softer wording for newcomers)",
+            buildNotice: function (target, extra, isFinal) {
+              const headingEn = isFinal
+                ? "== Final warning: edit warring =="
+                : "== Warning: edit warring ==";
+              const headingId = isFinal
+                ? "== Peringatan terakhir: perang suntingan =="
+                : "== Peringatan: perang suntingan ==";
+              const bodyEn =
+                `I noticed that you've been reverting edits made by other editors multiple times on the same article. I understand that you may feel strongly about certain content, but repeatedly undoing other editors' changes without discussion can create tension and conflict in our community. ` +
+                `\n\nWikipedia works best when editors collaborate and talk through their disagreements. Instead of reverting changes back and forth, please try using the article's talk page to discuss your concerns with other editors. Explain why you think a change is incorrect, and listen to what others have to say. This helps us reach agreements that everyone can accept. ` +
+                `\n\nIf you're new to Wikipedia, you might find it helpful to read about how to resolve disagreements. Most disputes can be worked out through calm, respectful conversation. Thank you for understanding, and please feel free to reach out if you have questions about how to discuss edits with other editors.` +
+                (isFinal ? finalSentence(false) : "") +
+                `\n\nIf you believe this warning has been issued in error, please leave a message on my talk page. ~~~~`;
+              const bodyId =
+                `Saya perhatikan bahwa Anda telah mengembalikan suntingan yang dibuat oleh penyunting lain berkali-kali pada artikel yang sama. Saya memahami bahwa Anda mungkin merasa kuat tentang konten tertentu, tetapi berulang kali membatalkan perubahan penyunting lain tanpa diskusi dapat menciptakan ketegangan dan konflik di komunitas kita. ` +
+                `\n\nWikipedia bekerja paling baik ketika penyunting berkolaborasi dan membicarakan perselisihan mereka. Alih-alih mengembalikan perubahan bolak-balik, silakan coba gunakan halaman pembicaraan artikel untuk mendiskusikan kekhawatiran Anda dengan penyunting lain. Jelaskan mengapa Anda pikir perubahan itu salah, dan dengarkan apa yang dikatakan orang lain. Ini membantu kita mencapai kesepakatan yang dapat diterima semua orang. ` +
+                `\n\nJika Anda baru mengenal Wikipedia, Anda mungkin merasa terbantu untuk membaca tentang cara menyelesaikan perselisihan. Sebagian besar perselisihan dapat diselesaikan melalui percakapan yang tenang dan menghormati. Terima kasih telah memahami, dan silakan hubungi jika Anda memiliki pertanyaan tentang cara mendiskusikan suntingan dengan penyunting lain.` +
+                (isFinal ? finalSentence(false) : "") +
+                `\n\nJika Anda merasa peringatan ini diberikan secara keliru, silakan tinggalkan pesan di halaman pembicaraan saya. ~~~~`;
+              const en = withExtra(headingEn + "\n" + bodyEn, extra, false);
+              const id = withExtra(headingId + "\n" + bodyId, extra, true);
+              return useIndonesian ? id : en;
+            },
+          },
+
+          // ------------------------------------------------------------------
+          // Hijacking articles
+          // ------------------------------------------------------------------
+          {
+            value: "hijacking",
+            label: "Hijacking articles",
+            buildNotice: function (target, extra, isFinal) {
+              const headingEn = isFinal
+                ? "== Final warning: hijacking articles =="
+                : "== Warning: hijacking articles ==";
+              const headingId = isFinal
+                ? "== Peringatan terakhir: pembajakan artikel =="
+                : "== Peringatan: pembajakan artikel ==";
+              const bodyEn =
+                `Your recent edits appear to have involved hijacking an article by substantially altering its focus, scope, or topic without consensus from other editors. Article hijacking occurs when an editor takes over an article and changes it to serve a different purpose, promote a particular viewpoint, or remove content that other editors have contributed, all without discussion or agreement. ` +
+                `\n\nArticles on Wikipedia belong to the community as a whole, not to any individual editor. Major changes to an article's scope, focus, or content should be discussed on the article's talk page to ensure that all editors have an opportunity to participate in decisions about the article's direction. Unilaterally making large-scale changes that fundamentally alter an article without consensus is not permitted. ` +
+                `\n\nIf you believe an article needs significant changes, please start a discussion on its talk page, explain your proposed changes, and work toward consensus with other editors. Respect the collaborative nature of Wikipedia and the contributions of other editors.` +
+                (isFinal ? finalSentence(false) : "") +
+                `\n\nIf you believe this warning has been issued in error, please leave a message on my talk page. ~~~~`;
+              const bodyId =
+                `Suntingan terbaru tampaknya melibatkan pengambilalihan artikel (''article hijacking''), yaitu tindakan mengubah fokus, cakupan, atau topik suatu artikel secara substansial tanpa adanya konsensus dari penyunting lain. Pengambilalihan artikel terjadi ketika seorang penyunting mengubah artikel sehingga melayani tujuan yang berbeda, mempromosikan sudut pandang tertentu, atau menghapus kontribusi penyunting lain tanpa diskusi maupun kesepakatan terlebih dahulu. ` +
+                `\n\nArtikel di Wikipedia merupakan milik komunitas secara keseluruhan, bukan milik penyunting perorangan. Perubahan besar terhadap cakupan, fokus, atau isi artikel seharusnya didiskusikan terlebih dahulu di halaman pembicaraan artikel agar semua penyunting memiliki kesempatan untuk berpartisipasi dalam menentukan arah pengembangan artikel tersebut. Melakukan perubahan besar secara sepihak yang mengubah karakter atau tujuan dasar sebuah artikel tanpa konsensus tidak diperbolehkan. ` +
+                `\n\nJika Anda merasa suatu artikel memerlukan perubahan yang signifikan, silakan memulai diskusi di halaman pembicaraannya, menjelaskan perubahan yang diusulkan, dan berupaya mencapai konsensus bersama penyunting lain. Hormati sifat kolaboratif Wikipedia serta kontribusi yang telah diberikan oleh para penyunting lainnya.` +
+                (isFinal ? finalSentence(true) : "") +
+                `\n\nJika Anda merasa peringatan ini diberikan secara keliru, silakan tinggalkan pesan di halaman pembicaraan saya. ~~~~`;
+              const en = withExtra(headingEn + "\n" + bodyEn, extra, false);
+              const id = withExtra(headingId + "\n" + bodyId, extra, true);
+              return useIndonesian ? id : en;
+            },
+          },
+
+          // ------------------------------------------------------------------
+          // Creating hoaxes
+          // ------------------------------------------------------------------
+          {
+            value: "hoax",
+            label: "Creating hoaxes",
+            buildNotice: function (target, extra, isFinal) {
+              const headingEn = isFinal
+                ? "== Final warning: creating hoaxes =="
+                : "== Warning: creating hoaxes ==";
+              const headingId = isFinal
+                ? "== Peringatan terakhir: membuat hoaks =="
+                : "== Peringatan: membuat hoaks ==";
+              const bodyEn =
+                `Your recent edits appear to have involved creating or contributing to hoax articles or hoax content. Hoaxes are deliberately false or misleading articles designed to deceive readers. They undermine Wikipedia's credibility and mission to provide reliable, accurate information. Creating hoaxes is a serious violation of Wikipedia policy and damages the trust that readers place in our encyclopaedia. ` +
+                `\n\nWikipedia is an encyclopaedia intended to contain factual, verifiable information. All content must be based on reliable sources, and editors are expected to act in good faith. Deliberately inserting false information, fabricated sources, or misleading content—whether as a prank, experiment, or for any other reason—is not permitted and can result in serious consequences, including permanent bans from editing. ` +
+                `\n\nIf you are interested in experimenting with Wikipedia's editing features, please use the [[WP:SANDBOX|sandbox]] or [[WP:TEST|test pages]] provided for that purpose. If you have questions about what constitutes reliable sourcing or how to verify information, please ask for guidance from experienced editors.` +
+                (isFinal ? finalSentence(false) : "") +
+                `\n\nIf you believe this warning has been issued in error, please leave a message on my talk page. ~~~~`;
+              const bodyId =
+                `Suntingan terbaru tampaknya melibatkan pembuatan atau penambahan kontribusi pada artikel tipuan (hoaks) maupun konten tipuan. Artikel hoaks adalah artikel yang sengaja memuat informasi palsu atau menyesatkan dengan tujuan memperdaya pembaca. Tindakan semacam ini merusak kredibilitas Wikipedia dan bertentangan dengan misinya untuk menyediakan informasi yang andal dan akurat. Pembuatan artikel tipuan merupakan pelanggaran serius terhadap kebijakan Wikipedia dan dapat mengurangi kepercayaan pembaca terhadap ensiklopedia ini. ` +
+                `\n\nWikipedia adalah ensiklopedia yang bertujuan menyajikan informasi faktual yang dapat diverifikasi. Semua konten harus didasarkan pada sumber tepercaya, dan para penyunting diharapkan bertindak dengan iktikad baik. Menambahkan informasi palsu, sumber yang direkayasa, atau konten yang menyesatkan secara sengaja, baik sebagai lelucon, percobaan, maupun untuk tujuan lainnya, tidak diperbolehkan dan dapat berakibat serius, termasuk pelarangan menyunting tanpa batas waktu. ` +
+                `\n\nJika Anda ingin mencoba fitur-fitur penyuntingan Wikipedia, silakan gunakan [[WP:SANDBOX|bak pasir]] atau [[WP:TEST|halaman uji coba]] yang disediakan untuk tujuan tersebut. Jika memiliki pertanyaan mengenai sumber tepercaya atau cara memverifikasi informasi, silakan meminta bimbingan dari penyunting yang lebih berpengalaman.` +
+                (isFinal ? finalSentence(true) : "") +
+                `\n\nJika Anda merasa peringatan ini diberikan secara keliru, silakan tinggalkan pesan di halaman pembicaraan saya. ~~~~`;
+              const en = withExtra(headingEn + "\n" + bodyEn, extra, false);
+              const id = withExtra(headingId + "\n" + bodyId, extra, true);
+              return useIndonesian ? id : en;
+            },
+          },
+
+          // ------------------------------------------------------------------
+          // Making legal threats
+          // ------------------------------------------------------------------
+          {
+            value: "legalthreat",
+            label: "Making legal threats",
+            buildNotice: function (target, extra, isFinal) {
+              const headingEn = isFinal
+                ? "== Final warning: making legal threats =="
+                : "== Warning: making legal threats ==";
+              const headingId = isFinal
+                ? "== Peringatan terakhir: membuat ancaman hukum =="
+                : "== Peringatan: membuat ancaman hukum ==";
+              const bodyEn =
+                `Your recent actions appear to have involved making legal threats against Wikipedia, its editors, or the Wikimedia Foundation. Making legal threats—whether explicit or implicit—is a serious violation of Wikipedia policy and is not tolerated under any circumstances. Legal threats are used to intimidate, silence, or coerce others, and they have no place in collaborative editing. ` +
+                `\n\nIf you have a legitimate legal concern regarding Wikipedia content or the conduct of other editors, the appropriate course of action is to contact the Wikimedia Foundation's legal department through [mailto:legal@wikimedia.org official channels], not to issue threats on Wikipedia itself. Making threats in edit summaries, talk pages, or elsewhere on the site will not advance your position and will only result in disciplinary action. ` +
+                `\n\nWikipedia is built on mutual respect and the assumption of good faith. Threatening legal action is fundamentally incompatible with these principles and demonstrates a failure to engage constructively with the community. Any further legal threats will result in immediate action, including potential permanent removal of your editing privileges.` +
+                (isFinal ? finalSentence(false) : "") +
+                `\n\nIf you believe this warning has been issued in error, please leave a message on my talk page. ~~~~`;
+              const bodyId =
+                `Tindakan terbaru tampaknya melibatkan ancaman hukum terhadap Wikipedia, para penyuntingnya, atau Wikimedia Foundation. Ancaman hukum, baik secara tersurat maupun tersirat, merupakan pelanggaran serius terhadap kebijakan Wikipedia dan tidak ditoleransi dalam keadaan apa pun. Ancaman hukum dapat digunakan untuk mengintimidasi, membungkam, atau menekan pihak lain, sehingga tidak memiliki tempat dalam lingkungan penyuntingan kolaboratif. ` +
+                `\n\nJika Anda memiliki kekhawatiran hukum yang sah mengenai isi Wikipedia atau perilaku penyunting lain, langkah yang tepat adalah menghubungi bagian hukum Wikimedia Foundation melalui saluran resmi, seperti surel ke [mailto:legal@wikimedia.org legal@wikimedia.org], bukan dengan menyampaikan ancaman di Wikipedia. Ancaman yang disampaikan melalui ringkasan suntingan, halaman pembicaraan, atau bagian lain situs tidak akan memperkuat posisi Anda dan hanya akan berujung pada tindakan administratif. ` +
+                `\n\nWikipedia dibangun atas dasar saling menghormati dan anggapan iktikad baik. Mengancam akan menempuh tindakan hukum bertentangan dengan prinsip-prinsip tersebut dan menunjukkan ketidakmampuan untuk berinteraksi secara konstruktif dengan komunitas. Setiap ancaman hukum lebih lanjut dapat mengakibatkan tindakan segera, termasuk kemungkinan pencabutan hak penyuntingan secara permanen.` +
+                (isFinal ? finalSentence(true) : "") +
+                `\n\nJika Anda merasa peringatan ini diberikan secara keliru, silakan tinggalkan pesan di halaman pembicaraan saya. ~~~~`;
+              const en = withExtra(headingEn + "\n" + bodyEn, extra, false);
+              const id = withExtra(headingId + "\n" + bodyId, extra, true);
+              return useIndonesian ? id : en;
+            },
+          },
+
+          // ------------------------------------------------------------------
+          // Editing while logged out
+          // ------------------------------------------------------------------
+          {
+            value: "loggedout",
+            label: "Editing while logged out",
+            buildNotice: function (target, extra, isFinal) {
+              const headingEn = isFinal
+                ? "== Final warning: editing while logged out =="
+                : "== Warning: editing while logged out ==";
+              const headingId = isFinal
+                ? "== Peringatan terakhir: menyunting saat tidak masuk =="
+                : "== Peringatan: menyunting saat tidak masuk ==";
+              const bodyEn =
+                `Your recent edits appear to have been made while logged out, using only your IP address rather than a registered account. While editing while logged out is not explicitly forbidden, it is strongly discouraged because it creates several problems for the Wikipedia community. ` +
+                `\n\nWhen you edit without logging in, your IP address is recorded publicly on Wikipedia, which can reveal your location and make it difficult for other editors to keep track of your contributions. It also prevents you from building a reputation as a reliable editor and makes it harder for administrators to track patterns of behaviour. Additionally, editing while logged out can sometimes result in your IP address being mistaken for other editors' IPs, which can cause confusion. ` +
+                `\n\nFor these reasons, we ask that you please log in before making edits. Creating a registered account is quick, free, and provides you with many benefits, including the ability to track your contributions, set preferences, and build trust with the community. If you do not already have an account, please consider creating one. If you have questions about creating or using an account, feel free to ask.` +
+                (isFinal ? finalSentence(false) : "") +
+                `\n\nIf you believe this warning has been issued in error, please leave a message on my talk page. ~~~~`;
+              const bodyId =
+                `Suntingan terbaru tampaknya dilakukan saat Anda tidak masuk log (''log in'') dan hanya menggunakan alamat IP, bukan akun terdaftar. Meskipun menyunting tanpa masuk log tidak secara tegas dilarang, praktik tersebut sangat tidak dianjurkan karena dapat menimbulkan berbagai kendala bagi komunitas Wikipedia. ` +
+                `\n\nKetika Anda menyunting tanpa masuk log, alamat IP Anda akan tercatat dan ditampilkan secara publik di Wikipedia. Hal ini dapat mengungkapkan perkiraan lokasi Anda serta menyulitkan penyunting lain untuk menelusuri kontribusi yang telah dibuat. Selain itu, Anda tidak dapat membangun reputasi sebagai penyunting yang tepercaya, dan pengurus akan lebih sulit mengenali pola kontribusi maupun perilaku penyuntingan Anda. Dalam beberapa kasus, penyuntingan menggunakan alamat IP juga dapat menyebabkan alamat tersebut tertukar dengan alamat IP penyunting lain sehingga menimbulkan kebingungan. ` +
+                `\n\nOleh karena itu, kami meminta Anda untuk masuk log sebelum melakukan penyuntingan. Membuat akun terdaftar dapat dilakukan dengan cepat dan tanpa biaya, serta memberikan berbagai manfaat, termasuk kemampuan untuk melacak kontribusi, mengatur preferensi, dan membangun kepercayaan di dalam komunitas. Jika Anda belum memiliki akun, pertimbangkan untuk membuatnya. Apabila memiliki pertanyaan mengenai cara membuat atau menggunakan akun, jangan ragu untuk bertanya.` +
+                (isFinal ? finalSentence(true) : "") +
+                `\n\nJika Anda merasa peringatan ini diberikan secara keliru, silakan tinggalkan pesan di halaman pembicaraan saya. ~~~~`;
+              const en = withExtra(headingEn + "\n" + bodyEn, extra, false);
+              const id = withExtra(headingId + "\n" + bodyId, extra, true);
+              return useIndonesian ? id : en;
+            },
+          },
+
+          // ------------------------------------------------------------------
+          // Usage of multiple temporary accounts
+          // ------------------------------------------------------------------
+          {
+            value: "multiaccount",
+            label: "Usage of multiple temporary accounts",
+            buildNotice: function (target, extra, isFinal) {
+              const headingEn = isFinal
+                ? "== Final warning: usage of multiple temporary accounts =="
+                : "== Warning: usage of multiple temporary accounts ==";
+              const headingId = isFinal
+                ? "== Peringatan terakhir: penggunaan beberapa akun sementara =="
+                : "== Peringatan: penggunaan beberapa akun sementara ==";
+              const bodyEn =
+                `Your recent edits appear to have involved the use of multiple accounts, which suggests an attempt to circumvent community policies, manipulate discussions, or evade accountability. Creating and using multiple accounts to achieve goals that would be difficult or impossible with a single account is known as sock puppeting and is not permitted on Wikipedia. ` +
+                `\n\nMultiple accounts can be used to make it appear that there is broader support for a particular position than actually exists, to evade editing restrictions, to engage in edit warring without detection, or to avoid consequences for rule violations. This type of behaviour undermines the integrity of Wikipedia's collaborative process and violates the trust of the community. ` +
+                `\n\nEditors are expected to use a single, identifiable account for all their edits. If you have legitimate reasons for maintaining multiple accounts (for example, separate accounts for different languages or projects), you should disclose this to administrators and request approval. Using multiple accounts without disclosure or authorization is a serious violation and can result in all of your accounts being blocked permanently.` +
+                (isFinal ? finalSentence(false) : "") +
+                `\n\nIf you believe this warning has been issued in error, please leave a message on my talk page. ~~~~`;
+              const bodyId =
+                `Suntingan terbaru tampaknya melibatkan penggunaan beberapa akun, yang mengindikasikan adanya upaya untuk menghindari kebijakan komunitas, memengaruhi jalannya diskusi, atau menghindari pertanggungjawaban. Pembuatan dan penggunaan beberapa akun untuk mencapai tujuan yang sulit atau tidak mungkin dicapai dengan satu akun dikenal sebagai penggunaan akun siluman (''sock puppeting'') dan tidak diperbolehkan di Wikipedia. ` +
+                `\n\nBeberapa akun dapat digunakan untuk menciptakan kesan bahwa suatu pendapat memperoleh dukungan yang lebih luas daripada yang sebenarnya, menghindari pembatasan penyuntingan, terlibat dalam perang suntingan tanpa mudah terdeteksi, atau menghindari konsekuensi atas pelanggaran aturan. Perilaku semacam ini merusak integritas proses kolaboratif Wikipedia dan melanggar kepercayaan komunitas. ` +
+                `\n\nPenyunting diharapkan menggunakan satu akun yang jelas identitasnya untuk seluruh kegiatan penyuntingan. Jika memiliki alasan yang sah untuk mempertahankan lebih dari satu akun, misalnya akun terpisah untuk bahasa atau proyek yang berbeda, hal tersebut sebaiknya diungkapkan kepada pengurus dan memperoleh persetujuan terlebih dahulu. Penggunaan beberapa akun tanpa pengungkapan atau izin merupakan pelanggaran serius yang dapat mengakibatkan seluruh akun yang terkait diblokir permanen.` +
+                (isFinal ? finalSentence(true) : "") +
+                `\n\nJika Anda merasa peringatan ini diberikan secara keliru, silakan tinggalkan pesan di halaman pembicaraan saya. ~~~~`;
+              const en = withExtra(headingEn + "\n" + bodyEn, extra, false);
+              const id = withExtra(headingId + "\n" + bodyId, extra, true);
+              return useIndonesian ? id : en;
+            },
+          },
+
+          // ------------------------------------------------------------------
+          // Close paraphrasing
+          // ------------------------------------------------------------------
+          {
+            value: "closeParaphrasing",
+            label: "Close paraphrasing",
+            buildNotice: function (target, extra, isFinal) {
+              const headingEn = isFinal
+                ? "== Final warning: close paraphrasing =="
+                : "== Warning: close paraphrasing ==";
+              const headingId = isFinal
+                ? "== Peringatan terakhir: parafrase yang mirip =="
+                : "== Peringatan: parafrase yang mirip ==";
+              const bodyEn =
+                `Your recent edits appear to have involved close paraphrasing of copyrighted material. Close paraphrasing occurs when text is reworded from a source material in a way that stays too closely to the original wording, structure, or flow, without sufficiently transforming the content into your own words. This practice violates Wikipedia's copyright policies just as much as direct copying does. ` +
+                `\n\nWikipedia requires that all content be original or properly licensed. When you paraphrase from a source, you must substantially rephrase the material, changing not just individual words but also the sentence structure and organisation. Simply rearranging words or replacing a few terms with synonyms is not acceptable paraphrasing. ` +
+                `\n\nThe best approach is to read a source material, understand the concepts, and then write about them in your own words without referring back to the original text. Always ensure that your contribution reflects your own understanding and expression of the information. If you need guidance on how to properly paraphrase and attribute information, please consult Wikipedia's guidelines on [[WP:CITING|citing sources]].` +
+                (isFinal ? finalSentence(false) : "") +
+                `\n\nIf you believe this warning has been issued in error, please leave a message on my talk page. ~~~~`;
+              const bodyId =
+                `Suntingan terbaru tampaknya melibatkan parafrasa yang terlalu dekat (''close paraphrasing'') dengan materi yang dilindungi hak cipta. Parafrasa yang terlalu dekat terjadi ketika teks dari suatu sumber ditulis ulang dengan perubahan yang sangat terbatas sehingga susunan kalimat, struktur, atau alur penyampaiannya masih terlalu mirip dengan teks asli. Praktik ini melanggar kebijakan hak cipta Wikipedia sama halnya dengan penyalinan langsung. ` +
+                `\n\nWikipedia mengharuskan seluruh konten yang ditambahkan bersifat asli atau berasal dari materi yang memiliki lisensi yang sesuai. Ketika memparafrasakan suatu sumber, Anda harus menulis ulang materi tersebut secara substansial, tidak hanya mengganti beberapa kata, tetapi juga mengubah struktur kalimat dan cara penyajian informasinya. Sekadar menata ulang kata-kata atau mengganti beberapa istilah dengan sinonim tidak dianggap sebagai parafrasa yang memadai. ` +
+                `\n\nPendekatan terbaik adalah membaca sumber, memahami konsep yang disampaikan, lalu menuliskannya kembali dengan kata-kata sendiri tanpa terus merujuk pada teks aslinya. Pastikan setiap kontribusi mencerminkan pemahaman dan penyampaian informasi Anda sendiri. Jika memerlukan panduan mengenai cara memparafrasakan dan mencantumkan sumber dengan benar, silakan merujuk pada pedoman Wikipedia tentang [[WP:CITING|pencantuman sumber]].` +
+                (isFinal ? finalSentence(true) : "") +
+                `\n\nJika Anda merasa peringatan ini diberikan secara keliru, silakan tinggalkan pesan di halaman pembicaraan saya. ~~~~`;
+              const en = withExtra(headingEn + "\n" + bodyEn, extra, false);
+              const id = withExtra(headingId + "\n" + bodyId, extra, true);
+              return useIndonesian ? id : en;
+            },
+          },
+
+          // ------------------------------------------------------------------
+          // Personal info (outing)
+          // ------------------------------------------------------------------
+          {
+            value: "outing",
+            label: "Personal info (outing)",
+            buildNotice: function (target, extra, isFinal) {
+              const headingEn = isFinal
+                ? "== Final warning: personal information disclosure =="
+                : "== Warning: personal information disclosure ==";
+              const headingId = isFinal
+                ? "== Peringatan terakhir: pengungkapan informasi pribadi =="
+                : "== Peringatan: pengungkapan informasi pribadi ==";
+              const bodyEn =
+                `Your recent actions appear to have involved disclosing or attempting to [[WP:DOXXING|disclose personal information]] about another editor or individual without their consent. This practice, known as "outing," is a serious violation of Wikipedia policy and is absolutely not tolerated under any circumstances. ` +
+                `\n\nPersonal information includes, but is not limited to, real names, addresses, phone numbers, email addresses, workplace information, photographs, or any other details that could identify or locate an individual in the real world. Disclosing such information—whether to harass, intimidate, retaliate against, or embarrass someone—is a form of harassment and can have serious real-world consequences for the person involved. ` +
+                `\n\nWikipedia's privacy policies exist to protect the safety and security of our editors and the people they write about. Violating someone's privacy through outing is harmful to the individual, damaging to the Wikipedia community, and may violate applicable laws. This behaviour will not be tolerated and will result in immediate and severe consequences, including permanent removal of your editing privileges and potential legal action.` +
+                (isFinal ? finalSentence(false) : "") +
+                `\n\nIf you believe this warning has been issued in error, please leave a message on my talk page. ~~~~`;
+              const bodyId =
+                `Tindakan terbaru tampaknya melibatkan pengungkapan atau upaya mengungkap [[WP:DOXXING|informasi pribadi]] milik penyunting lain atau individu lain tanpa persetujuan mereka. Praktik ini, yang dikenal sebagai ''outing'', merupakan pelanggaran serius terhadap kebijakan Wikipedia dan sama sekali tidak ditoleransi dalam keadaan apa pun. ` +
+                `\n\nInformasi pribadi mencakup, tetapi tidak terbatas pada, nama asli, alamat, nomor telepon, alamat surel, informasi tempat kerja, foto, atau rincian lain yang dapat digunakan untuk mengidentifikasi atau menemukan seseorang di dunia nyata. Mengungkap informasi semacam itu, baik untuk melecehkan, mengintimidasi, membalas dendam, maupun mempermalukan seseorang, merupakan bentuk pelecehan yang dapat menimbulkan konsekuensi serius bagi individu yang bersangkutan. ` +
+                `\n\nKebijakan privasi Wikipedia dibuat untuk melindungi keselamatan dan keamanan para penyunting serta orang-orang yang menjadi subjek tulisan di Wikipedia. Pelanggaran privasi melalui outing merugikan individu yang menjadi sasaran, merusak komunitas Wikipedia, dan dalam beberapa kasus dapat melanggar hukum yang berlaku. Perilaku semacam ini tidak akan ditoleransi dan dapat mengakibatkan tindakan segera serta tegas, termasuk pencabutan hak penyuntingan secara permanen dan kemungkinan langkah hukum lebih lanjut.` +
+                (isFinal ? finalSentence(true) : "") +
+                `\n\nJika Anda merasa peringatan ini diberikan secara keliru, silakan tinggalkan pesan di halaman pembicaraan saya. ~~~~`;
+              const en = withExtra(headingEn + "\n" + bodyEn, extra, false);
+              const id = withExtra(headingId + "\n" + bodyId, extra, true);
+              return useIndonesian ? id : en;
+            },
+          },
+
+          // ------------------------------------------------------------------
+          // Recreating salted articles under a different title
+          // ------------------------------------------------------------------
+          {
+            value: "saltedrecreate",
+            label: "Recreating salted articles under a different title",
+            buildNotice: function (target, extra, isFinal) {
+              const headingEn = isFinal
+                ? "== Final warning: recreating salted articles under a different title =="
+                : "== Warning: recreating salted articles under a different title ==";
+              const headingId = isFinal
+                ? "== Peringatan terakhir: membuat ulang artikel di bawah judul yang berbeda =="
+                : "== Peringatan: membuat ulang artikel di bawah judul yang berbeda ==";
+              const bodyEn =
+                `Your recent edits appear to have involved recreating an article that has been salted by administrators under a different title. Salting is an administrative action taken to prevent the recreation of articles that have been deleted due to policy violations, such as articles about non-notable subjects, hoaxes, or articles that repeatedly violated Wikipedia's policies. ` +
+                `\n\nWhen an article is salted, it means that administrators have determined that the article should not exist on Wikipedia and have taken steps to prevent its recreation. Attempting to circumvent this restriction by recreating the article under a similar or different title undermines administrative decisions and the deletion process. This behaviour demonstrates bad faith and a disregard for community consensus. ` +
+                `\n\nIf you believe an article was unfairly deleted or salted, the appropriate course of action is to request an undeletion review through Wikipedia's dispute resolution process, not to recreate the article yourself. Please respect administrative decisions and work through proper channels if you wish to challenge them.` +
+                (isFinal ? finalSentence(false) : "") +
+                `\n\nIf you believe this warning has been issued in error, please leave a message on my talk page. ~~~~`;
+              const bodyId =
+                `Suntingan terbaru tampaknya berupa pembuatan kembali sebuah artikel yang telah dikenai perlindungan terhadap pembuatan ulang (''salted'') oleh pengurus dengan judul lain. Tindakan ini diterapkan untuk mencegah artikel yang sebelumnya dihapus karena pelanggaran kebijakan dibuat kembali, seperti artikel tentang subjek yang tidak memenuhi kriteria kelayakan, artikel tipuan, atau artikel yang berulang kali melanggar kebijakan Wikipedia. ` +
+                `\n\nJika sebuah artikel telah dikenai perlindungan terhadap pembuatan ulang (''salted''), berarti para pengurus telah menetapkan bahwa artikel tersebut tidak layak berada di Wikipedia dan telah menerapkan langkah untuk mencegah pembuatannya kembali. Mencoba mengakali pembatasan tersebut dengan membuat ulang artikel yang sama di bawah judul serupa atau berbeda merupakan tindakan yang bertentangan dengan keputusan administratif dan proses penghapusan yang berlaku. Perilaku ini mencerminkan kurangnya iktikad baik serta ketidakpatuhan terhadap konsensus komunitas. ` +
+                `\n\nApabila terdapat keyakinan bahwa suatu artikel telah dihapus atau dikenai perlindungan terhadap pembuatan ulang secara tidak semestinya, tindakan yang tepat adalah meminta peninjauan atas penghapusan tersebut melalui prosedur penyelesaian sengketa yang berlaku di Wikipedia, bukan dengan membuat ulang artikelnya. Harap menghormati keputusan administratif yang telah ditetapkan dan menempuh saluran yang sesuai apabila ingin menantang atau mengajukan keberatan atas keputusan tersebut.` +
+                (isFinal ? finalSentence(true) : "") +
+                `\n\nJika Anda merasa peringatan ini diberikan secara keliru, silakan tinggalkan pesan di halaman pembicaraan saya. ~~~~`;
+              const en = withExtra(headingEn + "\n" + bodyEn, extra, false);
+              const id = withExtra(headingId + "\n" + bodyId, extra, true);
+              return useIndonesian ? id : en;
+            },
+          },
+
+          // ------------------------------------------------------------------
+          // Sockpuppetry
+          // ------------------------------------------------------------------
+          {
+            value: "sockpuppetry",
+            label: "Sockpuppetry",
+            buildNotice: function (target, extra, isFinal) {
+              const headingEn = isFinal
+                ? "== Final warning: sockpuppetry =="
+                : "== Warning: sockpuppetry ==";
+              const headingId = isFinal
+                ? "== Peringatan terakhir: sockpuppetry =="
+                : "== Peringatan: sockpuppetry ==";
+              const bodyEn =
+                `Your recent actions appear to have involved sockpuppetry, which is the creation and use of multiple accounts to achieve goals that would be difficult or impossible with a single account. Sockpuppetry is a serious violation of Wikipedia policy and is not tolerated under any circumstances. ` +
+                `\n\nMultiple accounts can be misused in various ways, including to make it appear that there is broader support for a particular position than actually exists, to evade editing restrictions or blocks, to engage in edit warring without detection, to circumvent community decisions, or to avoid accountability for rule violations. All of these uses undermine the integrity of Wikipedia's collaborative process and violate the trust of the community. ` +
+                `\n\nEditors are expected to maintain a single, identifiable account and to use it for all their contributions on Wikipedia. If you have legitimate reasons for maintaining multiple accounts, such as separate accounts for different languages or projects, you must disclose this to administrators and request explicit approval. Using multiple accounts without prior disclosure and authorisation is a serious violation that can result in all of your accounts being permanently blocked and your contributions being reverted.` +
+                (isFinal ? finalSentence(false) : "") +
+                `\n\nIf you believe this warning has been issued in error, please leave a message on my talk page. ~~~~`;
+              const bodyId =
+                `Tindakan terbaru tampaknya melibatkan penggunaan akun siluman (''sockpuppetry''), yaitu pembuatan dan penggunaan beberapa akun untuk mencapai tujuan yang sulit atau tidak mungkin dicapai dengan satu akun saja. Penggunaan akun siluman merupakan pelanggaran serius terhadap kebijakan Wikipedia dan tidak ditoleransi dalam keadaan apa pun. ` +
+                `\n\nBeberapa akun dapat disalahgunakan dalam berbagai cara, termasuk untuk menciptakan kesan seolah-olah terdapat dukungan yang lebih luas terhadap suatu pendapat daripada yang sebenarnya, menghindari pembatasan penyuntingan atau pemblokiran, terlibat dalam perang suntingan tanpa terdeteksi, mengakali keputusan komunitas, atau menghindari pertanggungjawaban atas pelanggaran aturan. Semua bentuk penyalahgunaan tersebut merusak integritas proses kolaboratif Wikipedia dan melanggar kepercayaan komunitas. ` +
+                `\n\nPenyunting diharapkan menggunakan satu akun yang jelas identitasnya dan memakainya untuk seluruh kontribusi di Wikipedia. Apabila terdapat alasan yang sah untuk memiliki lebih dari satu akun, misalnya akun terpisah untuk bahasa atau proyek yang berbeda, hal tersebut harus diungkapkan kepada pengurus dan memperoleh persetujuan yang jelas terlebih dahulu. Penggunaan beberapa akun tanpa pengungkapan dan izin sebelumnya merupakan pelanggaran serius yang dapat mengakibatkan seluruh akun diblokir tanpa batas waktu serta kontribusi yang terkait dibatalkan.` +
+                (isFinal ? finalSentence(true) : "") +
+                `\n\nJika Anda merasa peringatan ini diberikan secara keliru, silakan tinggalkan pesan di halaman pembicaraan saya. ~~~~`;
+              const en = withExtra(headingEn + "\n" + bodyEn, extra, false);
+              const id = withExtra(headingId + "\n" + bodyId, extra, true);
+              return useIndonesian ? id : en;
+            },
+          },
+
+          // ------------------------------------------------------------------
+          // Userpage vandalism
+          // ------------------------------------------------------------------
+          {
+            value: "userpageVandalism",
+            label: "Userpage vandalism",
+            buildNotice: function (target, extra, isFinal) {
+              const headingEn = isFinal
+                ? "== Final warning: userpage vandalism =="
+                : "== Warning: userpage vandalism ==";
+              const headingId = isFinal
+                ? "== Peringatan terakhir: vandalisme halaman pengguna =="
+                : "== Peringatan: vandalisme halaman pengguna ==";
+              const bodyEn =
+                `Your recent edits appear to have involved vandalising the userpage of another editor. While editors generally have significant freedom in how they customise their own userpages, vandalising someone else's userpage is not permitted. A userpage is a personal space for an editor to present information about themselves and their interests, and it should be treated with respect. ` +
+                `\n\nVandalising another editor's userpage—whether by adding insults, false information, obscene content, or making unwanted edits—is a form of harassment and disruptive behaviour. It damages community relations and can intimidate other editors. If you have a concern about another editor's userpage content, the appropriate response is to discuss it on their talk page, not to vandalise the page yourself. ` +
+                `\n\nPlease refrain from making unauthorised edits to other editors' userpages. Respect the personal spaces of your fellow editors and treat them with the same courtesy you would expect to receive. If you have questions about what is and is not appropriate on a userpage, please ask an administrator.` +
+                (isFinal ? finalSentence(false) : "") +
+                `\n\nIf you believe this warning has been issued in error, please leave a message on my talk page. ~~~~`;
+              const bodyId =
+                `Suntingan Anda yang baru-baru ini tampaknya melibatkan vandalisme halaman pengguna penyunting lain. Meskipun penyunting secara umum memiliki kebebasan yang signifikan dalam cara mereka menyesuaikan halaman pengguna mereka sendiri, vandalisme halaman pengguna seseorang tidak diperkenankan. Halaman pengguna adalah ruang pribadi bagi penyunting untuk menyajikan informasi tentang diri mereka dan minat mereka, dan harus diperlakukan dengan hormat. ` +
+                `\n\nVandalisme terhadap halaman pengguna penyunting lain, baik dengan menambahkan hinaan, informasi palsu, konten yang tidak pantas, maupun melakukan perubahan yang tidak diinginkan, merupakan bentuk pelecehan dan perilaku yang mengganggu. Tindakan tersebut merusak hubungan antaranggota komunitas dan dapat membuat penyunting lain merasa tidak nyaman atau terintimidasi. Jika terdapat keberatan terhadap isi halaman pengguna seseorang, cara yang tepat adalah mendiskusikannya di halaman pembicaraan pengguna tersebut, bukan melakukan vandalisme pada halamannya. ` +
+                `\n\nMohon untuk tidak melakukan penyuntingan tanpa izin pada halaman pengguna milik penyunting lain. Hormati ruang pribadi sesama penyunting dan perlakukan mereka dengan kesopanan yang sama seperti yang diharapkan dari orang lain. Jika memiliki pertanyaan mengenai hal-hal yang diperbolehkan atau tidak diperbolehkan di halaman pengguna, silakan menghubungi pengurus.` +
+                (isFinal ? finalSentence(true) : "") +
+                `\n\nJika Anda merasa peringatan ini diberikan secara keliru, silakan tinggalkan pesan di halaman pembicaraan saya. ~~~~`;
+              const en = withExtra(headingEn + "\n" + bodyEn, extra, false);
+              const id = withExtra(headingId + "\n" + bodyId, extra, true);
+              return useIndonesian ? id : en;
+            },
+          },
+
+          // ------------------------------------------------------------------
+          // Username is against policy
+          // ------------------------------------------------------------------
+          {
+            value: "usernamePolicy",
+            label: "Username is against policy",
+            buildNotice: function (target, extra, isFinal) {
+              const headingEn = isFinal
+                ? "== Final warning: username is against policy =="
+                : "== Warning: username is against policy ==";
+              const headingId = isFinal
+                ? "== Peringatan terakhir: nama pengguna melanggar kebijakan =="
+                : "== Peringatan: nama pengguna melanggar kebijakan ==";
+              const bodyEn =
+                `Your username does not comply with Wikipedia's [[WP:USERNAME|username policy]]. Usernames on Wikipedia must not be offensive, impersonatory, promotional, or otherwise inappropriate. Your current username appears to violate one or more of these requirements. ` +
+                `\n\nExamples of usernames that are against policy include those that: contain hate speech or discriminatory language; impersonate real individuals, administrators, or public figures; advertise products, services, or websites; contain explicit or vulgar language; or are otherwise disruptive or inappropriate. Your username may fall into one of these categories or may otherwise violate the username policy. ` +
+                `\n\nYou are required to change your username to one that complies with Wikipedia's policies. To do so, please visit [[Special:GlobalRenameRequest|this page]] to change your username. Choose a new username that is neutral, respectful, and does not violate any of Wikipedia's policies. If you are unsure whether a potential new username is acceptable, you may ask an administrator for guidance. Continuing to use a username that violates policy may result in account restrictions or other disciplinary action.` +
+                (isFinal ? finalSentence(false) : "") +
+                `\n\nIf you believe this warning has been issued in error, please leave a message on my talk page. ~~~~`;
+              const bodyId =
+                `Nama pengguna Anda tidak sesuai dengan [[WP:NAMA|kebijakan nama pengguna]] Wikipedia. Nama pengguna di Wikipedia tidak boleh bersifat ofensif, meniru identitas pihak lain, digunakan untuk promosi, atau tidak pantas dalam bentuk apa pun. Nama pengguna yang saat ini digunakan tampaknya melanggar satu atau lebih ketentuan tersebut. ` +
+                `\n\nContoh nama pengguna yang bertentangan dengan kebijakan antara lain nama yang mengandung ujaran kebencian atau bahasa diskriminatif; meniru identitas individu nyata, pengurus, atau tokoh publik; mempromosikan produk, layanan, atau situs web; mengandung bahasa vulgar atau tidak senonoh; atau bersifat mengganggu maupun tidak pantas. Nama pengguna yang digunakan mungkin termasuk dalam salah satu kategori tersebut atau melanggar kebijakan nama pengguna dengan cara lain. ` +
+                `\n\nAnda diwajibkan mengganti nama pengguna menjadi nama yang sesuai dengan kebijakan Wikipedia. Untuk melakukannya, kunjungi [[Special:GlobalRenameRequest|halaman ini]] untuk mengganti nama pengguna. Pilihlah nama pengguna baru yang netral, sopan, dan tidak melanggar kebijakan Wikipedia mana pun. Jika ragu apakah suatu nama pengguna dapat diterima, Anda dapat meminta saran kepada pengurus. Penggunaan nama pengguna yang melanggar kebijakan secara berkelanjutan dapat mengakibatkan pembatasan akun atau tindakan administratif lainnya.` +
+                (isFinal ? finalSentence(true) : "") +
+                `\n\nJika Anda merasa peringatan ini diberikan secara keliru, silakan tinggalkan pesan di halaman pembicaraan saya. ~~~~`;
+              const en = withExtra(headingEn + "\n" + bodyEn, extra, false);
+              const id = withExtra(headingId + "\n" + bodyId, extra, true);
+              return useIndonesian ? id : en;
+            },
+          },
+
+          // ------------------------------------------------------------------
+          // Username is against policy, and conflict of interest
+          // ------------------------------------------------------------------
+          {
+            value: "usernameConflictOfInterest",
+            label: "Username is against policy, and conflict of interest",
+            buildNotice: function (target, extra, isFinal) {
+              const headingEn = isFinal
+                ? "== Final warning: username is against policy, and conflict of interest =="
+                : "== Warning: username is against policy, and conflict of interest ==";
+              const headingId = isFinal
+                ? "== Peringatan terakhir: nama pengguna melanggar kebijakan, dan konflik kepentingan =="
+                : "== Peringatan: nama pengguna melanggar kebijakan, dan konflik kepentingan ==";
+              const bodyEn =
+                `Your username does not comply with Wikipedia's [[WP:USERNAME|username policy]] and appears to reflect a conflict of interest. Usernames on Wikipedia must not be promotional, represent a company, organisation, product, or service in which you have a financial interest, or otherwise indicate a potential conflict of interest. ` +
+                `\n\nUsernames that advertise a business, brand, or service, or that suggest you are editing on behalf of an organisation with a financial stake in the content, violate Wikipedia's policies on both usernames and conflicts of interest. Wikipedia requires that editors disclose financial interests and avoid editing articles in which they have a direct stake. Using a promotional or business-related username makes such conflicts immediately apparent and is not permitted. ` +
+                `\n\nYou are required to change your username to one that is neutral and does not reflect any commercial or financial interest. Additionally, you should disclose any conflict of interest on your userpage and on the talk pages of articles you edit where a conflict may exist. To do so, please visit [[Special:GlobalRenameRequest|this page]] to change your username. Choose a new username that complies with Wikipedia's policies. Continuing to use a non-compliant username may result in account restrictions or other disciplinary action.` +
+                (isFinal ? finalSentence(false) : "") +
+                `\n\nIf you believe this warning has been issued in error, please leave a message on my talk page. ~~~~`;
+              const bodyId =
+                `Nama pengguna Anda tidak sesuai dengan [[WP:NAMA|kebijakan nama pengguna]] Wikipedia dan tampaknya menunjukkan adanya konflik kepentingan. Nama pengguna di Wikipedia tidak boleh bersifat promosi, mewakili perusahaan, organisasi, produk, atau layanan yang terkait dengan kepentingan finansial Anda, maupun menunjukkan potensi konflik kepentingan lainnya. ` +
+                `\n\nNama pengguna yang digunakan untuk mengiklankan suatu bisnis, merek, atau layanan, atau yang mengesankan bahwa Anda menyunting atas nama organisasi yang memiliki kepentingan finansial terhadap isi artikel, melanggar kebijakan Wikipedia mengenai nama pengguna dan konflik kepentingan. Wikipedia mengharuskan penyunting mengungkapkan kepentingan finansial yang dimiliki serta menghindari penyuntingan artikel yang berkaitan langsung dengan kepentingan tersebut. Penggunaan nama pengguna yang bersifat promosi atau terkait bisnis membuat konflik kepentingan semacam itu tampak jelas dan tidak diperbolehkan. ` +
+                `\n\nAnda diwajibkan mengganti nama pengguna menjadi nama yang netral dan tidak mencerminkan kepentingan komersial maupun finansial apa pun. Selain itu, Anda sebaiknya mengungkapkan setiap konflik kepentingan di halaman pengguna dan di halaman pembicaraan artikel yang disunting apabila terdapat potensi konflik kepentingan. Untuk mengganti nama pengguna, kunjungi [[Special:GlobalRenameRequest|halaman ini]] untuk mengganti nama pengguna. Pilihlah nama pengguna baru yang sesuai dengan kebijakan Wikipedia. Penggunaan nama pengguna yang tidak sesuai dengan kebijakan secara berkelanjutan dapat mengakibatkan pembatasan akun atau tindakan administratif lainnya.` +
+                (isFinal ? finalSentence(true) : "") +
+                `\n\nJika Anda merasa peringatan ini diberikan secara keliru, silakan tinggalkan pesan di halaman pembicaraan saya. ~~~~`;
+              const en = withExtra(headingEn + "\n" + bodyEn, extra, false);
+              const id = withExtra(headingId + "\n" + bodyId, extra, true);
+              return useIndonesian ? id : en;
+            },
+          },
+
+          // ------------------------------------------------------------------
+          // Userpage or subpage is against policy
+          // ------------------------------------------------------------------
+          {
+            value: "userpagePolicy",
+            label: "Userpage or subpage is against policy",
+            buildNotice: function (target, extra, isFinal) {
+              const headingEn = isFinal
+                ? "== Final warning: userpage or subpage is against policy =="
+                : "== Warning: userpage or subpage is against policy ==";
+              const headingId = isFinal
+                ? "== Peringatan terakhir: halaman pengguna atau subhalaman melanggar kebijakan =="
+                : "== Peringatan: halaman pengguna atau subhalaman melanggar kebijakan ==";
+              const bodyEn =
+                `Your userpage or one of your subpages contains content that violates Wikipedia's userpage policy. While editors have considerable freedom in how they use their userpages, certain types of content are not permitted. This includes content that is promotional, offensive, sexually explicit, that violates copyright, that contains original research, or that is otherwise inappropriate for Wikipedia. ` +
+                `\n\nUserpages should be used to present information about yourself as an editor, your interests, your contributions to Wikipedia, and your views on various topics. However, they should not be used to promote products or services, to host content unrelated to Wikipedia editing, to publish material that violates copyright, to advertise external websites or businesses, or to post content that would be inappropriate in article space. ` +
+                `\n\nYou are required to remove or modify the problematic content on your userpage or subpage to bring it into compliance with [[WP:USERPAGE|Wikipedia's policies]]. Please review Wikipedia's userpage policy to understand what types of content are and are not acceptable. If you are unsure whether specific content violates policy, you may ask an administrator for guidance. Failure to remove policy-violating content may result in the content being removed by administrators or other disciplinary action.` +
+                (isFinal ? finalSentence(false) : "") +
+                `\n\nIf you believe this warning has been issued in error, please leave a message on my talk page. ~~~~`;
+              const bodyId =
+                `Halaman pengguna Anda atau salah satu subhalamannya berisi konten yang melanggar kebijakan halaman pengguna Wikipedia. Meskipun penyunting memiliki keleluasaan yang cukup besar dalam menggunakan halaman pengguna mereka, jenis konten tertentu tidak diperbolehkan. Ini mencakup konten yang bersifat promosi, menyinggung, eksplisit secara seksual, melanggar hak cipta, mengandung riset asli, atau tidak sesuai dengan tujuan Wikipedia. ` +
+                `\n\nHalaman pengguna seharusnya digunakan untuk menyajikan informasi mengenai diri Anda sebagai penyunting, minat, kontribusi di Wikipedia, serta pandangan mengenai berbagai topik. Namun, halaman tersebut tidak boleh digunakan untuk mempromosikan produk atau layanan, menyimpan konten yang tidak berkaitan dengan penyuntingan Wikipedia, menerbitkan materi yang melanggar hak cipta, mengiklankan situs web atau bisnis eksternal, maupun memuat konten yang tidak layak berada di ruang artikel. ` +
+                `\n\nAnda diwajibkan menghapus atau mengubah konten yang bermasalah pada halaman pengguna atau subhalaman tersebut agar sesuai dengan kebijakan Wikipedia. Silakan meninjau [[WP:USERPAGE|kebijakan halaman pengguna Wikipedia]] untuk memahami jenis konten yang diperbolehkan dan yang tidak diperbolehkan. Jika ragu apakah suatu konten melanggar kebijakan, Anda dapat meminta petunjuk kepada pengurus. Kegagalan untuk menghapus konten yang melanggar kebijakan dapat mengakibatkan konten tersebut dihapus oleh pengurus atau dikenakannya tindakan administratif lainnya.` +
+                (isFinal ? finalSentence(true) : "") +
+                `\n\nJika Anda merasa peringatan ini diberikan secara keliru, silakan tinggalkan pesan di halaman pembicaraan saya. ~~~~`;
+              const en = withExtra(headingEn + "\n" + bodyEn, extra, false);
+              const id = withExtra(headingId + "\n" + bodyId, extra, true);
+              return useIndonesian ? id : en;
+            },
+          },
+        ],
+      },
+    ];
     return { WARN_MESSAGES };
   },
 };

@@ -1,3 +1,21 @@
+## 2.26.6
+
+### Added
+
+* Added the following warning templates to the **Single warn** group
+
+### Changed
+
+* Expanded the scope of the **Single warn** category to cover a broader range of behavioural, editorial, and policy-enforcement scenarios
+* Added specialised warning variants for situations requiring different levels of severity or audience-appropriate wording, including newcomer-focused and stronger enforcement variants
+
+### Improved
+
+* Improved coverage of common administrator and patroller workflows
+* Reduced the need for manually written warnings in specialised policy areas
+* Improved consistency of user messaging across copyright, conduct, username, and account-related issues
+* Expanded support for educational warnings that explain policies while remaining action-oriented
+
 ## 2.26.5
 
 ### Added
