@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.26.6
+ * Version 2.27.0
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -1401,6 +1401,42 @@ $(function () {
                 );
               }
               await new Promise((resolve) => setTimeout(resolve, 100));
+            }
+          }
+
+          // --- Recreation protection (page mode, non-existent page) ---
+          // Uses create= protection, which is the correct API parameter for
+          // preventing a deleted or never-created page from being recreated.
+          // Unlike edit=/move= protection, this only applies to missing pages.
+          if (
+            config.protectRecreation &&
+            config.mode === "page" &&
+            !isAborted
+          ) {
+            try {
+              await apiPost({
+                action: "protect",
+                title: targetVal,
+                protections: "create=" + config.protectRecreationLevel,
+                expiry: config.protectRecreationExpiry,
+                reason:
+                  (useIndonesian
+                    ? "Perlindungan terhadap pembuatan ulang"
+                    : "Protection against re-creation") + toolTag,
+              });
+              addLog(
+                "[Protect] Protected page against recreation: " + targetVal,
+              );
+              stats.protect++;
+              updateStatusDisplay();
+            } catch (e) {
+              addLog(
+                "[Protect] Failed to protect " +
+                  targetVal +
+                  " against recreation: " +
+                  formatApiError(e),
+                true,
+              );
             }
           }
 
@@ -3643,6 +3679,99 @@ $(function () {
           wrapNotifyProtect.title =
             "When ticked, a notification will be posted to the relevant talk page after a successful protection.";
           checksProtect.appendChild(wrapNotifyProtect);
+          // "Protect against recreation" — only active on non-existent pages.
+          // Uses create= protection, which is the correct API parameter for
+          // preventing deleted pages from being recreated.
+          const { wrap: wrapProtectRecreation, chk: chkProtectRecreation } =
+            makeCheckbox("Protect against recreation", false);
+          // Disabled at construction time. Enabled only after the API confirms the page does not exist.
+          chkProtectRecreation.disabled = true;
+          wrapProtectRecreation.style.opacity = "0.5";
+          wrapProtectRecreation.title =
+            "Only available when the target page does not exist.";
+
+          const selProtectRecreationLevel = makeSelect([
+            { value: "autoconfirmed", label: "Autoconfirmed users" },
+            { value: "sysop", label: "Administrators only" },
+          ]);
+          selProtectRecreationLevel.value = "sysop";
+          selProtectRecreationLevel.disabled = true;
+
+          const selProtectRecreationExpiry = makeSelect([
+            { value: "1 day", label: "1 day" },
+            { value: "3 days", label: "3 days" },
+            { value: "1 week", label: "1 week" },
+            { value: "2 weeks", label: "2 weeks" },
+            { value: "1 month", label: "1 month" },
+            { value: "3 months", label: "3 months" },
+            { value: "6 months", label: "6 months" },
+            { value: "1 year", label: "1 year" },
+            { value: "never", label: "Indefinite" },
+            { value: "other", label: "Other:" },
+          ]);
+          selProtectRecreationExpiry.disabled = true;
+
+          const inputProtectRecreationExpiry = makeInput(
+            "e.g. 6 months, 2099-01-01",
+          );
+          inputProtectRecreationExpiry.classList.add("tng-hidden");
+          inputProtectRecreationExpiry.disabled = true;
+          selProtectRecreationExpiry.addEventListener("change", function () {
+            inputProtectRecreationExpiry.classList.toggle(
+              "tng-hidden",
+              selProtectRecreationExpiry.value !== "other",
+            );
+          });
+
+          // Expiry group: dropdown + optional custom input, side by side.
+          const recreationProtectExpiryGroup = document.createElement("div");
+          recreationProtectExpiryGroup.style.cssText =
+            "display: flex; gap: 6px; flex: 1; min-width: 0;";
+          inputProtectRecreationExpiry.style.flex = "1";
+          recreationProtectExpiryGroup.appendChild(
+            wrapSelect(selProtectRecreationExpiry, "1"),
+          );
+          recreationProtectExpiryGroup.appendChild(
+            inputProtectRecreationExpiry,
+          );
+
+          // Recreation-protection group: checkbox + level and expiry rows,
+          // enclosed in a bordered container to signal they form one set.
+          const wrapProtectRecreationGroup = document.createElement("div");
+          wrapProtectRecreationGroup.className = "tng-recreation-group";
+          wrapProtectRecreationGroup.appendChild(wrapProtectRecreation);
+
+          const {
+            row: rowProtectRecreationLevel,
+            field: fieldProtectRecreationLevel,
+          } = makeRow("Protection level");
+          fieldProtectRecreationLevel.appendChild(
+            wrapSelect(selProtectRecreationLevel, "1"),
+          );
+          rowProtectRecreationLevel.style.opacity = "0.5";
+          wrapProtectRecreationGroup.appendChild(rowProtectRecreationLevel);
+
+          const {
+            row: rowProtectRecreationExpiry,
+            field: fieldProtectRecreationExpiry,
+          } = makeRow("Expiry");
+          fieldProtectRecreationExpiry.appendChild(
+            recreationProtectExpiryGroup,
+          );
+          rowProtectRecreationExpiry.style.opacity = "0.5";
+          wrapProtectRecreationGroup.appendChild(rowProtectRecreationExpiry);
+
+          // Enable/disable the sub-controls when the checkbox is toggled.
+          chkProtectRecreation.addEventListener("change", function () {
+            const enabled = chkProtectRecreation.checked;
+            selProtectRecreationLevel.disabled = !enabled;
+            selProtectRecreationExpiry.disabled = !enabled;
+            inputProtectRecreationExpiry.disabled = !enabled;
+            rowProtectRecreationLevel.style.opacity = enabled ? "" : "0.5";
+            rowProtectRecreationExpiry.style.opacity = enabled ? "" : "0.5";
+          });
+
+          checksProtect.appendChild(wrapProtectRecreationGroup);
           bodyProtect.appendChild(checksProtect);
 
           // Cascade protection requires sysop-level edit restriction.
@@ -4125,6 +4254,13 @@ $(function () {
               protectReason: buildProtectReason() + suffix,
               protectTalk: chkProtectTalk.checked,
               protectCascade: chkProtectCascade.checked,
+              protectRecreation:
+                chkProtectRecreation.checked && !chkProtectRecreation.disabled,
+              protectRecreationLevel: selProtectRecreationLevel.value,
+              protectRecreationExpiry:
+                selProtectRecreationExpiry.value === "other"
+                  ? inputProtectRecreationExpiry.value.trim() || "never"
+                  : selProtectRecreationExpiry.value,
               notifyBlock: chkNotifyBlock.checked,
               clearTalkPageBeforeNotify: chkClearTalkPageBeforeNotify.checked,
               notifyDelete: chkNotifyDelete.checked,
@@ -4956,6 +5092,21 @@ $(function () {
                 }
               })();
 
+              // Reset recreation-protection controls synchronously on every target change.
+              // The async call below re-enables them only if the page is confirmed to be missing.
+              chkProtectRecreation.disabled = true;
+              chkProtectRecreation.checked = false;
+              wrapProtectRecreation.style.opacity = "0.5";
+              wrapProtectRecreation.title =
+                "Only available when the target page does not exist.";
+              selProtectRecreationLevel.disabled = true;
+              selProtectRecreationExpiry.disabled = true;
+              inputProtectRecreationExpiry.disabled = true;
+              rowProtectRecreationLevel.style.opacity = "0.5";
+              rowProtectRecreationExpiry.style.opacity = "0.5";
+
+              // --- Protection status ---
+
               // --- Protection status ---
               setNote(
                 divProtectStatus,
@@ -4973,11 +5124,33 @@ $(function () {
                   });
                   const pages = data.query && data.query.pages;
                   const page = pages && pages[0];
+                  const pageIsMissing = !!(page && page.missing);
                   const protection = (page && page.protection) || [];
                   // Entries with level "all" indicate an explicitly unprotected type; exclude them.
                   const active = protection.filter(function (p) {
                     return p.level && p.level !== "all";
                   });
+
+                  // Enable recreation-protection controls only when the page is confirmed missing.
+                  // The synchronous reset above this IIFE already locks them for the existing-page
+                  // case, but an explicit else branch is kept here to handle any out-of-order resolution.
+                  if (pageIsMissing) {
+                    chkProtectRecreation.disabled = false;
+                    wrapProtectRecreation.style.opacity = "";
+                    wrapProtectRecreation.title =
+                      "When ticked, the page will be protected against recreation using create-level protection.";
+                  } else {
+                    chkProtectRecreation.disabled = true;
+                    chkProtectRecreation.checked = false;
+                    wrapProtectRecreation.style.opacity = "0.5";
+                    wrapProtectRecreation.title =
+                      "Only available when the target page does not exist.";
+                    selProtectRecreationLevel.disabled = true;
+                    selProtectRecreationExpiry.disabled = true;
+                    inputProtectRecreationExpiry.disabled = true;
+                    rowProtectRecreationLevel.style.opacity = "0.5";
+                    rowProtectRecreationExpiry.style.opacity = "0.5";
+                  }
 
                   if (active.length) {
                     const parts = active.map(function (p) {

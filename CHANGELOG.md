@@ -1,3 +1,29 @@
+## 2.27.0
+
+### Added
+
+* Added an explicit `pageIsMissing` handling branch to re-enable recreation-protection controls when the target page does not exist
+* Added immediate UI state updates based on page existence before asynchronous page checks complete
+
+### Changed
+
+* The recreation-protection checkbox is now disabled from the moment the dialogue opens when the target page exists
+* Changing the target to an existing page now disables the recreation-protection option immediately, rather than waiting for asynchronous API responses
+* Recreation-protection controls are now enabled and disabled together as a coordinated group based on page existence status
+
+### Fixed
+
+* Fixed a race condition where the recreation-protection checkbox could remain temporarily enabled while page existence checks were still in progress
+* Fixed inconsistent control states when switching between existing and non-existent pages
+* Fixed a UI timing issue that allowed recreation-protection controls to appear available before page status had been confirmed
+
+### Improved
+
+* Improved interface responsiveness by updating control availability on the first render
+* Improved consistency between displayed controls and actual page state
+* Reduced the possibility of user confusion caused by temporary asynchronous state mismatches
+* Further reinforced existing safeguards that prevent recreation protection from being applied to existing pages
+
 ## 2.26.6
 
 ### Added

@@ -1,8 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.26.6
- * User warning message definitions for the Tengu moderation tool
+ * All-in-one wiki moderation tool — User warning message definitions
  * ============================================================================
  * PURPOSE:
  * Provides warning message templates posted to a user's talk page.
