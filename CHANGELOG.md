@@ -36,7 +36,6 @@
 
 * Extended `WARN_MESSAGES` with four additional warning categories
 * Reordered warning groups to incorporate the new categories while preserving the existing grouped structure
-* Increased the total number of available warning templates from **29** to **45**
 
 ### Improved
 
