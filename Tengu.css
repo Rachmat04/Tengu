@@ -862,3 +862,20 @@
     border-color: #2a5090;
   }
 }
+/* Filter text box above filterable <select> dropdowns */
+.tng-filtered-select {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  width: 100%;
+}
+
+.tng-filtered-select-input {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+/* Ensure the <select> inside fills the wrapper width */
+.tng-filtered-select select {
+  width: 100%;
+}

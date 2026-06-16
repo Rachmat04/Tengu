@@ -1,3 +1,46 @@
+## 2.29.1
+
+### Added
+
+* Added the `notcommunicatingwikilang` notice template
+* Added the `notcommunicatingenglish` notice template
+* Added the `notcommunicatingindonesian` notice template
+* Added the `articlenotwikilang` notice template
+
+### Changed
+
+* Revised the structure of language-related notices to use a two-paragraph format
+* Notices now separate:
+  * The explanation of the issue and its consequences
+  * The recommended next steps for the contributor
+
+### Improved
+
+* Improved guidance for contributors who accidentally post messages or create content in the wrong language
+* Improved clarity by separating problem descriptions from recommended actions
+* Reduced ambiguity around expected communication languages on multilingual Wikimedia projects
+* Improved localisation flexibility through runtime language detection where appropriate
+
+## 2.29.0
+
+### Added
+
+* Added a new `makeFilteredSelect()` helper for creating filterable select controls
+* Added filtering support to the selectors
+* Added new `.tng-filtered-select` CSS styles in `Tengu.css`
+
+### Changed
+
+* Existing reason and message dropdowns are now wrapped with the new filterable-select component
+* Large administrative reason lists can now be searched and narrowed directly within the interface
+
+### Improved
+
+* Improved usability when working with extensive reason and warning libraries
+* Reduced scrolling and manual searching through long dropdown menus
+* Improved discoverability of warning templates and administrative reasons
+* Provided a more consistent selection experience across administrative workflows
+
 ## 2.28.0
 
 ### Added

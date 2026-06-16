@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.28.0
+ * Version 2.29.0
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -214,6 +214,75 @@ $(function () {
           wrap.appendChild(sel);
           return wrap;
         }
+
+        // Wraps a <select> in a container with a filter text box above it.
+        // Typing in the box hides non-matching options in real time; clearing it
+        // restores all options. Works with both flat lists and <optgroup> elements.
+        // Returns { wrap, filter } — wrap replaces the bare <select> in the DOM,
+        // filter is the <input> element (exposed so callers can clear it if needed).
+        function makeFilteredSelect(sel) {
+          const wrap = document.createElement("div");
+          wrap.className = "tng-filtered-select";
+
+          const filter = document.createElement("input");
+          filter.type = "text";
+          filter.className = "tng-input tng-filtered-select-input";
+          filter.placeholder = "Filter options…";
+          filter.setAttribute("aria-label", "Filter options");
+
+          wrap.appendChild(filter);
+          wrap.appendChild(sel);
+
+          // Collect all <option> elements once, preserving their original parent
+          // (<select> or <optgroup>) so they can be moved in and out cleanly.
+          const allOptions = Array.from(sel.querySelectorAll("option"));
+
+          filter.addEventListener("input", function () {
+            const query = filter.value.toLowerCase().trim();
+
+            if (!query) {
+              // Restore everything in original order
+              allOptions.forEach(function (opt) {
+                opt.hidden = false;
+              });
+              // Re-show all optgroups
+              Array.from(sel.querySelectorAll("optgroup")).forEach(
+                function (og) {
+                  og.hidden = false;
+                },
+              );
+              return;
+            }
+
+            // Hide non-matching options; show matching ones
+            allOptions.forEach(function (opt) {
+              opt.hidden = !opt.textContent.toLowerCase().includes(query);
+            });
+
+            // Hide any optgroup whose every child option is now hidden
+            Array.from(sel.querySelectorAll("optgroup")).forEach(function (og) {
+              const visible = Array.from(og.querySelectorAll("option")).some(
+                function (o) {
+                  return !o.hidden;
+                },
+              );
+              og.hidden = !visible;
+            });
+
+            // If the currently selected option has become hidden, move focus to
+            // the first visible option so the <select> value stays meaningful.
+            const selectedOpt = sel.options[sel.selectedIndex];
+            if (selectedOpt && selectedOpt.hidden) {
+              const firstVisible = allOptions.find(function (o) {
+                return !o.hidden;
+              });
+              if (firstVisible) sel.value = firstVisible.value;
+            }
+          });
+
+          return { wrap, filter };
+        }
+
         function makeInput(placeholder, cls) {
           const inp = document.createElement("input");
           inp.type = "text";
@@ -3207,10 +3276,12 @@ $(function () {
           const inputRbReason = makeInput(
             "Additional details / customised reason",
           );
+          const { wrap: filteredWrapRbReason } =
+            makeFilteredSelect(selRbReason);
 
           const reasonWrapRollback = document.createElement("div");
           reasonWrapRollback.className = "tng-reason-wrap";
-          reasonWrapRollback.appendChild(wrapSelect(selRbReason));
+          reasonWrapRollback.appendChild(filteredWrapRbReason);
           reasonWrapRollback.appendChild(inputRbReason);
 
           const helpRbReason = document.createElement("div");
@@ -3276,9 +3347,11 @@ $(function () {
             makeRow("Reason");
           const selBlockReason = makeSelect(BLOCK_REASONS);
           const inputBlockReason = makeInput("Additional reason");
+          const { wrap: filteredWrapBlockReason } =
+            makeFilteredSelect(selBlockReason);
           const reasonWrapBlock = document.createElement("div");
           reasonWrapBlock.className = "tng-reason-wrap";
-          reasonWrapBlock.appendChild(wrapSelect(selBlockReason));
+          reasonWrapBlock.appendChild(filteredWrapBlockReason);
           reasonWrapBlock.appendChild(inputBlockReason);
           fieldBlockReason.appendChild(reasonWrapBlock);
           bodyBlock.appendChild(rowBlockReason);
@@ -3376,10 +3449,9 @@ $(function () {
           // Flatten the grouped WARN_MESSAGES structure into a single <select>
           // that uses <optgroup> labels for each group.
           const selWarnMsg = makeSelect(
-            [{ value: "", label: "— Select a message —" }].concat(
-              WARN_MESSAGES,
-            ),
+            [{ value: "", label: "(Select a message)" }].concat(WARN_MESSAGES),
           );
+          const { wrap: filteredWrapWarnMsg } = makeFilteredSelect(selWarnMsg);
 
           // Optional additional information text box
           const inputWarnExtra = makeInput("Additional information (optional)");
@@ -3391,7 +3463,7 @@ $(function () {
 
           const reasonWrapWarn = document.createElement("div");
           reasonWrapWarn.className = "tng-reason-wrap";
-          reasonWrapWarn.appendChild(wrapSelect(selWarnMsg));
+          reasonWrapWarn.appendChild(filteredWrapWarnMsg);
           reasonWrapWarn.appendChild(inputWarnExtra);
           reasonWrapWarn.appendChild(helpWarnExtra);
           fieldWarnMsg.appendChild(reasonWrapWarn);
@@ -3428,6 +3500,10 @@ $(function () {
           const { row: rowPagedelReason, field: fieldPagedelReason } =
             makeRow("Reason");
           const selPagedelReason = makeSelect(PAGE_DELETE_REASONS);
+          const {
+            wrap: filteredWrapPagedelReason,
+            filter: filterPagedelReason,
+          } = makeFilteredSelect(selPagedelReason);
           const inputPagedelReason = makeInput("Full reason to submit");
           const btnPagedelAppend = makeBtn("Append", "quiet");
           btnPagedelAppend.className += " tng-btn-sm";
@@ -3437,12 +3513,14 @@ $(function () {
             if (!add) return;
             inputPagedelReason.value = cur ? cur + "; " + add : add;
             selPagedelReason.selectedIndex = 0;
+            filterPagedelReason.value = "";
+            filterPagedelReason.dispatchEvent(new Event("input"));
           });
           const reasonWrapPagedel = document.createElement("div");
           reasonWrapPagedel.className = "tng-reason-wrap";
           const reasonTopPagedel = document.createElement("div");
           reasonTopPagedel.className = "tng-reason-top";
-          reasonTopPagedel.appendChild(wrapSelect(selPagedelReason));
+          reasonTopPagedel.appendChild(filteredWrapPagedelReason);
           reasonTopPagedel.appendChild(btnPagedelAppend);
           reasonWrapPagedel.appendChild(reasonTopPagedel);
           reasonWrapPagedel.appendChild(inputPagedelReason);
@@ -3634,6 +3712,10 @@ $(function () {
           const { row: rowProtectReason, field: fieldProtectReason } =
             makeRow("Reason");
           const selProtectReason = makeSelect(PROTECTION_REASONS);
+          const {
+            wrap: filteredWrapProtectReason,
+            filter: filterProtectReason,
+          } = makeFilteredSelect(selProtectReason);
           const inputProtectReason = makeInput("Full reason to submit");
           const btnProtectAppend = makeBtn("Append", "quiet");
           btnProtectAppend.className += " tng-btn-sm";
@@ -3643,12 +3725,14 @@ $(function () {
             if (!add) return;
             inputProtectReason.value = cur ? cur + "; " + add : add;
             selProtectReason.selectedIndex = 0;
+            filterProtectReason.value = "";
+            filterProtectReason.dispatchEvent(new Event("input"));
           });
           const reasonWrapProtect = document.createElement("div");
           reasonWrapProtect.className = "tng-reason-wrap";
           const reasonTopProtect = document.createElement("div");
           reasonTopProtect.className = "tng-reason-top";
-          reasonTopProtect.appendChild(wrapSelect(selProtectReason));
+          reasonTopProtect.appendChild(filteredWrapProtectReason);
           reasonTopProtect.appendChild(btnProtectAppend);
           reasonWrapProtect.appendChild(reasonTopProtect);
           reasonWrapProtect.appendChild(inputProtectReason);
@@ -3824,6 +3908,8 @@ $(function () {
           const selRevdelReason = makeSelect(
             [{ value: "", label: "Other:" }].concat(REVDEL_REASONS),
           );
+          const { wrap: filteredWrapRevdelReason, filter: filterRevdelReason } =
+            makeFilteredSelect(selRevdelReason);
           const inputRevdelReason = makeInput("Full reason to submit");
           const btnRevdelAppend = makeBtn("Append", "quiet");
           btnRevdelAppend.className += " tng-btn-sm";
@@ -3833,12 +3919,14 @@ $(function () {
             if (!add) return;
             inputRevdelReason.value = cur ? cur + "; " + add : add;
             selRevdelReason.selectedIndex = 0;
+            filterRevdelReason.value = "";
+            filterRevdelReason.dispatchEvent(new Event("input"));
           });
           const reasonWrapRevdel = document.createElement("div");
           reasonWrapRevdel.className = "tng-reason-wrap";
           const reasonTopRevdel = document.createElement("div");
           reasonTopRevdel.className = "tng-reason-top";
-          reasonTopRevdel.appendChild(wrapSelect(selRevdelReason));
+          reasonTopRevdel.appendChild(filteredWrapRevdelReason);
           reasonTopRevdel.appendChild(btnRevdelAppend);
           reasonWrapRevdel.appendChild(reasonTopRevdel);
           reasonWrapRevdel.appendChild(inputRevdelReason);
