@@ -48,6 +48,15 @@ window.TenguWarn = {
       return body + prefix + extra;
     }
 
+    // Helper functions for building notices with variable substitution.
+    function buildNoticeWithTemplates(text, variables) {
+      let result = text;
+      Object.keys(variables).forEach((key) => {
+        result = result.replace(new RegExp(`__${key}__`, "g"), variables[key]);
+      });
+      return result;
+    }
+
     // Returns the restriction sentence appended before the closing appeal
     // when a notice is marked as a final warning.
     function finalSentence(useId) {
@@ -1762,14 +1771,27 @@ window.TenguWarn = {
               const headingId = isFinal
                 ? "== Pemberitahuan terakhir: tidak berkomunikasi dalam bahasa wiki =="
                 : "== Pemberitahuan: tidak berkomunikasi dalam bahasa wiki ==";
-              const bodyEn =
-                `${siteName} operates in ${wikiLangEn}. A recent message you left appears to have been written in a different language. This makes it difficult for other editors and administrators on this wiki to read and respond to your message, and it may be archived without action as a result.\n\nWhen communicating on talk pages, noticeboards, and other discussion areas, please write in ${wikiLangEn}. If you are not confident in ${wikiLangEn}, you may use a translation tool to help. For wikis in your own language, please visit the [[Wikipedia:List of Wikipedias|list of Wikipedia language editions]].` +
+
+              const bodyEnTemplate =
+                `This ${siteName} operates in __LANG_EN__. A recent message you left appears to have been written in a different language. This makes it difficult for other editors and administrators on this wiki to read and respond to your message, and it may be archived without action as a result.\n\nWhen communicating on talk pages, noticeboards, and other discussion areas, please write in __LANG_EN__. If you are not confident in __LANG_EN__, you may use a translation tool to help. For wikis in your own language, please visit the [[Wikipedia:List of Wikipedias|list of Wikipedia language editions]].` +
                 (isFinal ? finalSentence(false) : "") +
-                `\n\nIf you believe this notice has been issued in error, please leave a message on my talk page. ~~~~`;
-              const bodyId =
-                `${siteName} beroperasi dalam bahasa ${wikiLangId}. Pesan yang baru-baru ini Anda tinggalkan tampaknya ditulis dalam bahasa lain. Hal ini menyulitkan penyunting dan pengurus wiki ini untuk membaca dan menanggapi pesan Anda, sehingga pesan tersebut mungkin akan diarsipkan tanpa tindakan.\n\nSaat berkomunikasi di halaman pembicaraan, papan pengumuman, dan area diskusi lainnya, harap tulis dalam bahasa ${wikiLangId}. Jika Anda kurang yakin dengan kemampuan bahasa ${wikiLangId} Anda, Anda dapat menggunakan alat terjemahan untuk membantu. Untuk wiki dalam bahasa Anda sendiri, silakan kunjungi [[Wikipedia:Daftar Wikipedia|daftar edisi bahasa Wikipedia]].` +
+                `\n\nIf you believe this notice has been issued in error, please leave a message on my talk page. ` +
+                `~`.repeat(4);
+
+              const bodyIdTemplate =
+                `${siteName} ini beroperasi dalam __LANG_ID__. Pesan yang baru-baru ini Anda tinggalkan tampaknya ditulis dalam bahasa lain. Hal ini menyulitkan penyunting dan pengurus wiki ini untuk membaca dan menanggapi pesan Anda, sehingga pesan tersebut mungkin akan diarsipkan tanpa tindakan.\n\nSaat berkomunikasi di halaman pembicaraan, papan pengumuman, dan area diskusi lainnya, harap tulis dalam __LANG_ID__. Jika Anda kurang yakin dengan kemampuan __LANG_ID__, Anda dapat menggunakan alat terjemahan untuk membantu. Untuk wiki dalam bahasa Anda sendiri, silakan kunjungi [[w:id:Wikipedia:Daftar Wikipedia|daftar edisi bahasa Wikipedia]].` +
                 (isFinal ? finalSentence(true) : "") +
-                `\n\nJika Anda merasa pemberitahuan ini diberikan secara keliru, silakan tinggalkan pesan di halaman pembicaraan saya. ~~~~`;
+                `\n\nJika Anda merasa pemberitahuan ini diberikan secara keliru, silakan tinggalkan pesan di halaman pembicaraan saya. ` +
+                `~`.repeat(4);
+
+              const bodyEn = buildNoticeWithTemplates(bodyEnTemplate, {
+                LANG_EN: `{{#language:${wikiLangEn}}}`,
+              });
+
+              const bodyId = buildNoticeWithTemplates(bodyIdTemplate, {
+                LANG_ID: `{{#language:${wikiLangId}}}`,
+              });
+
               const en = withExtra(headingEn + "\n" + bodyEn, extra, false);
               const id = withExtra(headingId + "\n" + bodyId, extra, true);
               return useIndonesian ? id : en;
@@ -1792,11 +1814,13 @@ window.TenguWarn = {
               const bodyEn =
                 `This wiki operates in English. A recent message you left appears to have been written in a different language. This makes it difficult for other editors and administrators to read and respond to your message, and it may be archived without action as a result.\n\nWhen communicating on talk pages, noticeboards, and other discussion areas, please write in English. If you are not confident in English, you may use a translation tool to help. For wikis in your own language, please visit the [[Wikipedia:List of Wikipedias|list of Wikipedia language editions]].` +
                 (isFinal ? finalSentence(false) : "") +
-                `\n\nIf you believe this notice has been issued in error, please leave a message on my talk page. ~~~~`;
+                `\n\nIf you believe this notice has been issued in error, please leave a message on my talk page. ` +
+                `~`.repeat(4);
               const bodyId =
                 `Wiki ini beroperasi dalam bahasa Inggris. Pesan yang baru-baru ini Anda tinggalkan tampaknya ditulis dalam bahasa lain. Hal ini menyulitkan penyunting dan pengurus untuk membaca dan menanggapi pesan Anda, sehingga pesan tersebut mungkin akan diarsipkan tanpa tindakan.\n\nSaat berkomunikasi di halaman pembicaraan, papan pengumuman, dan area diskusi lainnya, harap tulis dalam bahasa Inggris. Jika Anda kurang yakin dengan kemampuan bahasa Inggris Anda, Anda dapat menggunakan alat terjemahan untuk membantu. Untuk wiki dalam bahasa Anda sendiri, silakan kunjungi [[w:id:Wikipedia:Daftar Wikipedia|daftar edisi bahasa Wikipedia]].` +
                 (isFinal ? finalSentence(true) : "") +
-                `\n\nJika Anda merasa pemberitahuan ini diberikan secara keliru, silakan tinggalkan pesan di halaman pembicaraan saya. ~~~~`;
+                `\n\nJika Anda merasa pemberitahuan ini diberikan secara keliru, silakan tinggalkan pesan di halaman pembicaraan saya. ` +
+                `~`.repeat(4);
               const en = withExtra(headingEn + "\n" + bodyEn, extra, false);
               const id = withExtra(headingId + "\n" + bodyId, extra, true);
               return useIndonesian ? id : en;
@@ -1819,11 +1843,13 @@ window.TenguWarn = {
               const bodyEn =
                 `This wiki operates in Indonesian. A recent message you left appears to have been written in a different language. This makes it difficult for other editors and administrators to read and respond to your message, and it may be archived without action as a result.\n\nWhen communicating on talk pages, noticeboards, and other discussion areas, please write in Indonesian. If you are not confident in Indonesian, you may use a translation tool to help. For wikis in your own language, please visit the [[Wikipedia:List of Wikipedias|list of Wikipedia language editions]].` +
                 (isFinal ? finalSentence(false) : "") +
-                `\n\nIf you believe this notice has been issued in error, please leave a message on my talk page. ~~~~`;
+                `\n\nIf you believe this notice has been issued in error, please leave a message on my talk page. ` +
+                `~`.repeat(4);
               const bodyId =
                 `Wiki ini beroperasi dalam bahasa Indonesia. Pesan yang baru-baru ini Anda tinggalkan tampaknya ditulis dalam bahasa lain. Hal ini menyulitkan penyunting dan pengurus untuk membaca dan menanggapi pesan Anda, sehingga pesan tersebut mungkin akan diarsipkan tanpa tindakan.\n\nSaat berkomunikasi di halaman pembicaraan, papan pengumuman, dan area diskusi lainnya, harap tulis dalam bahasa Indonesia. Jika Anda kurang yakin dengan kemampuan bahasa Indonesia Anda, Anda dapat menggunakan alat terjemahan untuk membantu. Untuk wiki dalam bahasa Anda sendiri, silakan kunjungi [[w:id:Wikipedia:Daftar Wikipedia|daftar edisi bahasa Wikipedia]].` +
                 (isFinal ? finalSentence(true) : "") +
-                `\n\nJika Anda merasa pemberitahuan ini diberikan secara keliru, silakan tinggalkan pesan di halaman pembicaraan saya. ~~~~`;
+                `\n\nJika Anda merasa pemberitahuan ini diberikan secara keliru, silakan tinggalkan pesan di halaman pembicaraan saya. ` +
+                `~`.repeat(4);
               const en = withExtra(headingEn + "\n" + bodyEn, extra, false);
               const id = withExtra(headingId + "\n" + bodyId, extra, true);
               return useIndonesian ? id : en;
@@ -1853,14 +1879,27 @@ window.TenguWarn = {
               const headingId = isFinal
                 ? "== Pemberitahuan terakhir: membuat artikel tidak dalam bahasa wiki =="
                 : "== Pemberitahuan: membuat artikel tidak dalam bahasa wiki ==";
-              const bodyEn =
-                `${siteName} only accepts articles written in ${wikiLangEn}. An article you recently created or edited appears to have been written in a different language. Articles not written in ${wikiLangEn} cannot be properly reviewed, maintained, or categorised by editors on this wiki, and are liable to be nominated for deletion.\n\nBefore creating or editing an article, please make sure it is written in ${wikiLangEn}. If you would like to contribute in another language, please visit the [[Wikipedia:List of Wikipedias|list of Wikipedia language editions]] to find the appropriate wiki. Translation tools may also help if you wish to adapt existing content into ${wikiLangEn}.` +
+
+              const bodyEnTemplate =
+                `This ${siteName} only accepts articles written in __LANG_EN__. An article you recently created or edited appears to have been written in a different language. Articles not written in __LANG_EN__ cannot be properly reviewed, maintained, or categorised by editors on this wiki, and are liable to be nominated for deletion.\n\nBefore creating or editing an article, please make sure it is written in __LANG_EN__. If you would like to contribute in another language, please visit the [[Wikipedia:List of Wikipedias|list of Wikipedia language editions]] to find the appropriate wiki. Translation tools may also help if you wish to adapt existing content into __LANG_EN__.` +
                 (isFinal ? finalSentence(false) : "") +
-                `\n\nIf you believe this notice has been issued in error, please leave a message on my talk page. ~~~~`;
-              const bodyId =
-                `${siteName} hanya menerima artikel yang ditulis dalam bahasa ${wikiLangId}. Artikel yang baru-baru ini Anda buat atau sunting tampaknya ditulis dalam bahasa lain. Artikel yang tidak ditulis dalam bahasa ${wikiLangId} tidak dapat ditinjau, dirawat, atau dikategorikan dengan semestinya oleh penyunting wiki ini, dan dapat diajukan untuk penghapusan.\n\nSebelum membuat atau menyunting artikel, pastikan artikel tersebut ditulis dalam bahasa ${wikiLangId}. Jika Anda ingin berkontribusi dalam bahasa lain, silakan kunjungi [[w:id:Wikipedia:Daftar Wikipedia|daftar edisi bahasa Wikipedia]] untuk menemukan wiki yang sesuai. Alat terjemahan juga dapat membantu jika Anda ingin mengadaptasi konten yang ada ke dalam bahasa ${wikiLangId}.` +
+                `\n\nIf you believe this notice has been issued in error, please leave a message on my talk page. ` +
+                `~`.repeat(4);
+
+              const bodyIdTemplate =
+                `${siteName} ini hanya menerima artikel yang ditulis dalam __LANG_ID__. Artikel yang baru-baru ini Anda buat atau sunting tampaknya ditulis dalam bahasa lain. Artikel yang tidak ditulis dalam __LANG_ID__ tidak dapat ditinjau, dirawat, atau dikategorikan dengan semestinya oleh penyunting wiki ini, dan dapat diajukan untuk penghapusan.\n\nSebelum membuat atau menyunting artikel, pastikan artikel tersebut ditulis dalam __LANG_ID__. Jika Anda ingin berkontribusi dalam bahasa lain, silakan kunjungi [[w:id:Wikipedia:Daftar Wikipedia|daftar edisi bahasa Wikipedia]] untuk menemukan wiki yang sesuai. Alat terjemahan juga dapat membantu jika Anda ingin mengadaptasi konten yang ada ke dalam __LANG_ID__.` +
                 (isFinal ? finalSentence(true) : "") +
-                `\n\nJika Anda merasa pemberitahuan ini diberikan secara keliru, silakan tinggalkan pesan di halaman pembicaraan saya. ~~~~`;
+                `\n\nJika Anda merasa pemberitahuan ini diberikan secara keliru, silakan tinggalkan pesan di halaman pembicaraan saya. ` +
+                `~`.repeat(4);
+
+              const bodyEn = buildNoticeWithTemplates(bodyEnTemplate, {
+                LANG_EN: `{{#language:${wikiLangEn}}}`,
+              });
+
+              const bodyId = buildNoticeWithTemplates(bodyIdTemplate, {
+                LANG_ID: `{{#language:${wikiLangId}}}`,
+              });
+
               const en = withExtra(headingEn + "\n" + bodyEn, extra, false);
               const id = withExtra(headingId + "\n" + bodyId, extra, true);
               return useIndonesian ? id : en;

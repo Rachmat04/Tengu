@@ -1,3 +1,35 @@
+## 2.29.3
+
+### Added
+
+* Added a new `buildNoticeWithTemplates()` helper function for safely inserting wiki template syntax into generated notice text
+* Added placeholder replacement support for dynamically generated language templates
+
+### Changed
+
+* Replaced direct template syntax usage with placeholder tokens and post-processing replacement
+* Updated language-related notices to generate `{{#language:...}}` templates only in the final output string
+* Replaced placeholder markers
+* Updated the following notice templates
+
+### Fixed
+
+* Fixed an issue where `{{#language:...}}` syntax embedded directly in JavaScript strings was not being parsed as intended
+* Fixed incorrect output where language names could appear as literal template text instead of rendered language names
+* Fixed problems caused by wrapping language parser functions in `<nowiki>`, which prevented template evaluation
+
+### Removed
+
+* Direct use of `<nowiki>{{#language:...}}</nowiki>` in generated notice content
+* Hardcoded parser-function syntax embedded directly within affected notice strings
+
+### Improved
+
+* Improved reliability of language-name rendering across language-related notices
+* Improved readability of notice source code through the use of descriptive placeholders
+* Improved maintainability by centralising template substitution logic in a reusable helper function
+* Reduced the likelihood of future parser-function escaping and formatting issues
+
 ## 2.29.2
 
 ### Changed
