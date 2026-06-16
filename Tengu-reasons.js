@@ -309,7 +309,7 @@ window.TenguReasons = {
           label: "Other:",
         },
         {
-          group: "Speedy deletion – General",
+          group: "Speedy deletion (General)",
           items: [
             {
               value: v(
@@ -452,7 +452,7 @@ window.TenguReasons = {
           ],
         },
         {
-          group: "Speedy deletion – Articles",
+          group: "Speedy deletion (Articles)",
           items: [
             {
               value: v(
@@ -481,15 +481,7 @@ window.TenguReasons = {
                 "No credible indication that the subject meets notability requirements or has significance supported by reliable sources",
                 "Tidak ada indikasi yang meyakinkan bahwa subjek memenuhi persyaratan kelayakan atau memiliki signifikansi yang didukung oleh sumber tepercaya",
               ),
-              label:
-                "No indication of significance (people, animals, organisations, web content, events)",
-            },
-            {
-              value: v(
-                "No credible indication that the recording has significance or meets applicable notability requirements",
-                "Tidak ada indikasi yang meyakinkan bahwa rekaman tersebut memiliki signifikansi atau memenuhi persyaratan kelayakan yang berlaku",
-              ),
-              label: "No indication of significance (musical recordings)",
+              label: "No indication of significance",
             },
             {
               value: v(
@@ -508,7 +500,7 @@ window.TenguReasons = {
           ],
         },
         {
-          group: "Speedy deletion – Redirects",
+          group: "Speedy deletion (Redirects)",
           items: [
             {
               value: v(
@@ -535,7 +527,7 @@ window.TenguReasons = {
           ],
         },
         {
-          group: "Speedy deletion – Files",
+          group: "Speedy deletion (Files)",
           items: [
             {
               value: v(
@@ -610,7 +602,7 @@ window.TenguReasons = {
           ],
         },
         {
-          group: "Speedy deletion – Categories",
+          group: "Speedy deletion (Categories)",
           items: [
             {
               value: v(
@@ -636,7 +628,7 @@ window.TenguReasons = {
           ],
         },
         {
-          group: "Speedy deletion – Templates",
+          group: "Speedy deletion (Templates)",
           items: [
             {
               value: v(
@@ -648,7 +640,7 @@ window.TenguReasons = {
           ],
         },
         {
-          group: "Speedy deletion – User pages",
+          group: "Speedy deletion (User pages)",
           items: [
             {
               value: v(

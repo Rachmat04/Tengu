@@ -1,3 +1,31 @@
+## 2.30.1
+
+### Added
+
+* Expanded the existing criterion to explicitly cover musical recordings in addition to general subjects
+
+### Changed
+
+* Merged separate references to "subject" and "recording" into the unified wording "subject or recording"
+* Updated the criterion label to include musical recordings within the existing category
+* Replaced two related criteria with a single consolidated entry
+
+### Fixed
+
+* Removed overlap between criteria that addressed substantially similar cases
+* Reduced ambiguity by defining a single criterion that applies consistently across both contexts
+
+### Removed
+
+* A separate criterion that previously applied only to musical recordings
+* Duplicate wording and categorisation covering similar eligibility conditions
+
+### Improved
+
+* Simplified criterion selection and maintenance
+* Reduced duplication within the criteria list
+* Improved consistency by applying the same standard to both general subjects and musical recordings
+
 ## 2.30.0
 
 ### Added
