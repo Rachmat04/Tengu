@@ -1,3 +1,31 @@
+## 2.30.0
+
+### Added
+
+* Added a new **Delete redirects to deleted page** option, enabled by default
+  * Deletes redirects pointing to each page selected for deletion
+  * Processes redirects individually after the main page deletion workflow
+* Added a new **Delete subpages of deleted page** option, enabled by default
+  * Deletes subpages associated with each deleted page
+  * Processes subpages individually after the main page deletion workflow
+* Added two new configuration keys:
+  * `massdelRedirects`
+  * `massdelSubpages`
+
+### Changed
+
+* Updated the dialog header title from its previous wording to:
+  * `Tengu — your all-in-one moderation tools`
+* Extended the deletion workflow to support optional deletion of related redirects and subpages
+* Integrated the new options into the deletion interface immediately after the **Also delete the talk page** setting
+
+### Improved
+
+* Improved deletion workflow efficiency by allowing related pages to be removed as part of a single operation
+* Reduced manual cleanup work following page deletions
+* Improved handling of page hierarchies and redirect networks associated with deleted content
+* Expanded administrative automation while preserving individual deletion actions for each affected page
+
 ## 2.29.3
 
 ### Added

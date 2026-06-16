@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.29.1
+ * Version 2.30.0
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -1376,6 +1376,103 @@ $(function () {
                 } catch (e) {
                   addLog(
                     `[Delete] Failed to delete talk page for ${title}: ${formatApiError(e)}`,
+                    true,
+                  );
+                }
+              }
+
+              // Delete redirects to the deleted page if the option was selected.
+              // Uses list=backlinks with blfilterredir=redirects to find only redirects.
+              if (mainDeleted && config.massdelRedirects) {
+                try {
+                  const rdData = await apiGet({
+                    action: "query",
+                    list: "backlinks",
+                    bltitle: title,
+                    blfilterredir: "redirects",
+                    bllimit: "max",
+                    formatversion: 2,
+                  });
+                  const redirectPages =
+                    (rdData.query && rdData.query.backlinks) || [];
+                  for (const rdPage of redirectPages) {
+                    try {
+                      await apiPost({
+                        action: "delete",
+                        title: rdPage.title,
+                        reason:
+                          (useIndonesian
+                            ? "Pengalihan ke halaman yang dihapus: "
+                            : "Redirect to deleted page: ") +
+                          config.massdelReason +
+                          toolTag,
+                      });
+                      addLog(
+                        `[Delete] Deleted redirect to deleted page: ${rdPage.title}`,
+                      );
+                      stats.delete++;
+                      updateStatusDisplay();
+                    } catch (e) {
+                      addLog(
+                        `[Delete] Failed to delete redirect ${rdPage.title}: ${formatApiError(e)}`,
+                        true,
+                      );
+                    }
+                    await new Promise((resolve) => setTimeout(resolve, 100));
+                  }
+                } catch (e) {
+                  addLog(
+                    `[Delete] Failed to fetch redirects for ${title}: ${formatApiError(e)}`,
+                    true,
+                  );
+                }
+              }
+
+              // Delete subpages of the deleted page if the option was selected.
+              // Uses list=allpages with apprefix to find all subpages.
+              if (mainDeleted && config.massdelSubpages) {
+                try {
+                  const titleObj = new mw.Title(title);
+                  const ns = titleObj.getNamespaceId();
+                  const mainText = titleObj.getMain(); // Title without namespace prefix
+                  const spData = await apiGet({
+                    action: "query",
+                    list: "allpages",
+                    apprefix: mainText + "/",
+                    apnamespace: ns,
+                    aplimit: "max",
+                    formatversion: 2,
+                  });
+                  const subpages =
+                    (spData.query && spData.query.allpages) || [];
+                  for (const sp of subpages) {
+                    try {
+                      await apiPost({
+                        action: "delete",
+                        title: sp.title,
+                        reason:
+                          (useIndonesian
+                            ? "Subhalaman dari halaman yang dihapus: "
+                            : "Subpage of deleted page: ") +
+                          config.massdelReason +
+                          toolTag,
+                      });
+                      addLog(
+                        `[Delete] Deleted subpage of deleted page: ${sp.title}`,
+                      );
+                      stats.delete++;
+                      updateStatusDisplay();
+                    } catch (e) {
+                      addLog(
+                        `[Delete] Failed to delete subpage ${sp.title}: ${formatApiError(e)}`,
+                        true,
+                      );
+                    }
+                    await new Promise((resolve) => setTimeout(resolve, 100));
+                  }
+                } catch (e) {
+                  addLog(
+                    `[Delete] Failed to fetch subpages for ${title}: ${formatApiError(e)}`,
                     true,
                   );
                 }
@@ -3066,7 +3163,7 @@ $(function () {
           }
 
           const { overlay, dialog, body, footer } = createDialog({
-            title: "Tengu",
+            title: "Tengu — your all-in-one moderation tools",
             icon: "⛩️",
           });
 
@@ -3538,6 +3635,19 @@ $(function () {
           checksPagedel.className = "tng-checks";
           checksPagedel.style.paddingLeft = "0";
           checksPagedel.appendChild(wrapPagedelTalk);
+          // 'Delete redirects to deleted page' option
+          const { wrap: wrapPagedelRedirects, chk: chkPagedelRedirects } =
+            makeCheckbox("Delete redirects to deleted page", true);
+          wrapPagedelRedirects.title =
+            "When ticked, all redirects pointing to each deleted page are also deleted. Redirects to a non-existent target serve no purpose and are removed automatically.";
+          checksPagedel.appendChild(wrapPagedelRedirects);
+
+          // 'Delete subpages of deleted page' option
+          const { wrap: wrapPagedelSubpages, chk: chkPagedelSubpages } =
+            makeCheckbox("Delete subpages of deleted page", true);
+          wrapPagedelSubpages.title =
+            "When ticked, all subpages of each deleted page are also deleted. Only applies to namespaces that support subpages.";
+          checksPagedel.appendChild(wrapPagedelSubpages);
           const { wrap: wrapPagedelUnlink, chk: chkPagedelUnlink } =
             makeCheckbox(
               "Remove links to deleted page (article namespace only)",
@@ -4323,6 +4433,8 @@ $(function () {
               blockHide: chkHidename.checked,
               massdel: chkPagedel.checked,
               massdelTalk: chkPagedelTalk.checked,
+              massdelRedirects: chkPagedelRedirects.checked,
+              massdelSubpages: chkPagedelSubpages.checked,
               massdelUnlink: chkPagedelUnlink.checked,
               massdelProtectRecreation: chkPagedelProtectRecreation.checked,
               massdelProtectRecreationLevel:
@@ -5365,7 +5477,7 @@ $(function () {
             "#",
             "⛩️ Tengu",
             "ca-tengu",
-            "Open Tengu, all-in-one moderation tool",
+            "Open Tengu, all-in-one moderation tools",
           ),
         ).on("click", function (e) {
           e.preventDefault();
