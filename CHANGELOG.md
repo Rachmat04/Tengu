@@ -1,3 +1,22 @@
+## 2.29.2
+
+### Changed
+
+* Updated `makeFilteredSelect()` to wrap its `<select>` element using `wrapSelect()` before appending it to the filtered-select container
+* Restored the standard select-wrapper structure used throughout the interface
+
+### Fixed
+
+* Fixed missing dropdown chevrons in filterable select controls
+* Fixed an issue where `makeFilteredSelect()` bypassed `wrapSelect()` and appended the `<select>` element directly to the wrapper container
+* Restored compatibility with existing CSS that renders the chevron through the `.tng-select-wrap::after` pseudo-element
+
+### Improved
+
+* Improved visual consistency between filterable selects and standard select controls
+* Restored expected dropdown appearance without altering filtering behaviour
+* Preserved all existing filter functionality while correcting the UI structure
+
 ## 2.29.1
 
 ### Added

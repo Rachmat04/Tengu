@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.29.0
+ * Version 2.29.1
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -231,7 +231,7 @@ $(function () {
           filter.setAttribute("aria-label", "Filter options");
 
           wrap.appendChild(filter);
-          wrap.appendChild(sel);
+          wrap.appendChild(wrapSelect(sel));
 
           // Collect all <option> elements once, preserving their original parent
           // (<select> or <optgroup>) so they can be moved in and out cleanly.
