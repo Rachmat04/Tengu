@@ -1,3 +1,34 @@
+## 2.28.0
+
+### Added
+
+* Added automatic fallback to **Undo** when user rights are resolved and the user does not possess the `rollback` permission
+* Added rights-aware handling during package application to preserve the appropriate rollback/undo state
+
+### Changed
+
+* `applyPackage()` no longer unconditionally resets `chkUndo` to `false`
+* Package application now checks `resolvedRights` before determining the state of the Undo option
+* Updated the checkbox label:
+  * From: `Use undo feature (alternative without rollback rights)`
+  * To: `Use undo instead of rollback`
+
+### Fixed
+
+* Fixed an issue where applying a package could override the correct Undo state for users without rollback rights
+* Fixed inconsistent behaviour between rights resolution and package selection workflows
+
+### Removed
+
+* Removed unconditional resetting of the Undo checkbox during package application
+
+### Improved
+
+* Improved usability for users without rollback rights by automatically selecting the appropriate action
+* Improved consistency between interface state and available user permissions
+* Reduced manual configuration steps when performing rollback-related actions
+* Simplified the Undo option label for greater clarity
+
 ## 2.27.0
 
 ### Added

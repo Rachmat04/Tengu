@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.27.0
+ * Version 2.28.0
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -3191,7 +3191,7 @@ $(function () {
             true,
           );
           const { wrap: wrapUndo, chk: chkUndo } = makeCheckbox(
-            "Use undo feature (alternative without rollback rights)",
+            "Use undo instead of rollback",
             false,
           );
           const checksRollback = document.createElement("div");
@@ -4427,6 +4427,12 @@ $(function () {
                 hasRevdel,
               };
 
+              // If the user lacks the rollback right, automatically switch to undo.
+              // The checkbox remains available so users with rollback can still opt in manually.
+              if (!hasRollback) {
+                chkUndo.checked = true;
+              }
+
               if (!hasBlock && tenguMode === "user")
                 lockSection(
                   secBlock,
@@ -4499,7 +4505,8 @@ $(function () {
             }
             chkBot.checked = !!rb.bot;
             chkShow.checked = rb.showname !== false;
-            chkUndo.checked = false; // Reset to default rollback method when switching packages
+            // Reset to the appropriate default: undo if the user lacks rollback rights, rollback otherwise.
+            chkUndo.checked = !!(resolvedRights && !resolvedRights.hasRollback);
 
             const rbr = rb.reason || "";
             let foundRbr = false;
