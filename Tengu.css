@@ -879,9 +879,23 @@
 .tng-filtered-select select {
   width: 100%;
 }
+
 .tng-unblock-row {
   display: flex;
   flex-direction: column;
   gap: 6px;
   margin: 4px 0 8px;
+}
+.tng-unblock-controls {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.tng-unblock-controls .tng-input {
+  flex: 0 0 80%;
+  width: 80%;
+}
+.tng-unblock-controls .tng-btn {
+  flex: 0 0 20%;
+  width: 20%;
 }

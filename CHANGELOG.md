@@ -1,4 +1,4 @@
-## 2.31.0
+## 2.31.2
 
 ### Added
 
@@ -22,24 +22,6 @@
 * Reduced the need to switch between separate administrative interfaces for blocking and unblocking actions
 * Improved user feedback by automatically hiding unblock controls once a block has been confirmed as lifted
 * Improved interface responsiveness through live block-status verification
-
-### Notes
-
-* Clicking **Unblock account** prompts for confirmation before submitting the unblock request
-* The unblock action uses the MediaWiki unblock API
-* If notification is enabled, a talk-page notice is posted after a successful unblock
-* Unblock controls are:
-  * Hidden when no target is selected
-  * Hidden while block status is loading
-  * Shown only when an active block is confirmed
-  * Hidden when the target is not blocked
-  * Hidden if block-status retrieval fails
-  * Hidden in page mode
-* These visibility rules are managed through additions to `updateSectionStatus()`
-
-### Git Push Summary
-
-v2.31.0: Add integrated unblock workflow with optional talk-page notifications and live status updates
 
 ## 2.30.1
 
