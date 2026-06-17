@@ -879,3 +879,9 @@
 .tng-filtered-select select {
   width: 100%;
 }
+.tng-unblock-row {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 4px 0 8px;
+}

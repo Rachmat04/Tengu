@@ -1,3 +1,46 @@
+## 2.31.0
+
+### Added
+
+* Added an **Unblock account** button to the existing Block section
+* Added an optional unblock reason field
+* Added a **Send unblock notification to user talk page** checkbox, enabled by default
+* Added support for posting unblock notifications to the user's talk page after a successful unblock
+* Added bilingual unblock notification messages with:
+  * Indonesian (`id`)
+  * English (`en-GB`)
+
+### Changed
+
+* Extended the Block section to support both blocking and unblocking workflows
+* The unblock interface is now displayed only when an active block is detected for the target account
+* After a successful unblock, the interface automatically re-checks the user's current block status and updates the available controls
+
+### Improved
+
+* Improved administrator workflow by allowing unblocks to be performed directly from the Block section
+* Reduced the need to switch between separate administrative interfaces for blocking and unblocking actions
+* Improved user feedback by automatically hiding unblock controls once a block has been confirmed as lifted
+* Improved interface responsiveness through live block-status verification
+
+### Notes
+
+* Clicking **Unblock account** prompts for confirmation before submitting the unblock request
+* The unblock action uses the MediaWiki unblock API
+* If notification is enabled, a talk-page notice is posted after a successful unblock
+* Unblock controls are:
+  * Hidden when no target is selected
+  * Hidden while block status is loading
+  * Shown only when an active block is confirmed
+  * Hidden when the target is not blocked
+  * Hidden if block-status retrieval fails
+  * Hidden in page mode
+* These visibility rules are managed through additions to `updateSectionStatus()`
+
+### Git Push Summary
+
+v2.31.0: Add integrated unblock workflow with optional talk-page notifications and live status updates
+
 ## 2.30.1
 
 ### Added

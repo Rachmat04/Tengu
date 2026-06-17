@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.30.0
+ * Version 2.31.0
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -3409,6 +3409,115 @@ $(function () {
           divGlobalStatus.textContent = "Enter a target to see global status.";
           bodyBlock.appendChild(divGlobalStatus);
 
+          // Unblock control — hidden by default; shown by updateSectionStatus()
+          // only when the target currently has an active local block.
+          const divUnblock = document.createElement("div");
+          divUnblock.className = "tng-unblock-row tng-hidden";
+
+          const inputUnblockReason = makeInput("Unblock reason (optional)");
+          divUnblock.appendChild(inputUnblockReason);
+
+          const btnUnblock = makeBtn("Unblock account", "destructive");
+          btnUnblock.className += " tng-btn-sm";
+          divUnblock.appendChild(btnUnblock);
+
+          const { wrap: wrapNotifyUnblock, chk: chkNotifyUnblock } =
+            makeCheckbox("Send unblock notification to user talk page", true);
+          wrapNotifyUnblock.title =
+            "When ticked, a notification will be posted to the target user's talk page after the block is lifted.";
+          divUnblock.appendChild(wrapNotifyUnblock);
+
+          bodyBlock.appendChild(divUnblock);
+
+          // Lifts the active block on the current target, then optionally posts
+          // a notification to the target's talk page. Runs immediately on click
+          // rather than via the Start button, since it acts on an existing block
+          // rather than configuring a new one.
+          btnUnblock.addEventListener("click", async function () {
+            const target = inputTarget.value.trim();
+            if (!target) return;
+
+            const confirmed = await new Promise((resolve) => {
+              const { overlay, body, footer } = createDialog({
+                title: "Unblock confirmation",
+                icon: "⚠️",
+                onClose: () => resolve(false),
+              });
+              body.innerHTML =
+                "<p>You are about to lift the block on <b>" +
+                target +
+                "</b>. Are you certain you wish to proceed?</p>";
+              const btnCancel = makeBtn("Cancel", "quiet");
+              btnCancel.addEventListener("click", () => {
+                overlay.closeHandler();
+                resolve(false);
+              });
+              const btnConfirm = makeBtn("Unblock", "destructive");
+              btnConfirm.addEventListener("click", () => {
+                overlay.closeHandler();
+                resolve(true);
+              });
+              footer.appendChild(btnCancel);
+              footer.appendChild(btnConfirm);
+            });
+            if (!confirmed) return;
+
+            const toolTag = " — [[w:id:Pengguna:Rachmat04/Tengu.js|⛩️]]";
+            const unblockReason = inputUnblockReason.value.trim();
+
+            btnUnblock.disabled = true;
+            btnUnblock.textContent = "Unblocking...";
+
+            try {
+              await apiPost({
+                action: "unblock",
+                user: target,
+                reason: (unblockReason ? unblockReason : "") + toolTag,
+              });
+
+              if (chkNotifyUnblock.checked) {
+                const talkTitle = new mw.Title(target, 3).getPrefixedText();
+                const reasonPart = unblockReason
+                  ? useIndonesian
+                    ? ` dengan alasan berikut: ${unblockReason}`
+                    : ` with the following reason: ${unblockReason}`
+                  : "";
+                const notice = useIndonesian
+                  ? `== Pemberitahuan pencabutan pemblokiran akun ==\nPemblokiran pada akun "${target}" telah dicabut${reasonPart}.\n\nPemberitahuan ini dikirimkan secara otomatis. Silakan sampaikan pertanyaan atau keberatan ke halaman pembicaraan saya. ~~~~`
+                  : `== Account unblock notice ==\nThe block on the account "${target}" has been lifted${reasonPart}.\n\nThis notification was posted automatically. Please direct any questions or concerns to my user talk page. ~~~~`;
+                const notifySummaryUnblock =
+                  (useIndonesian
+                    ? "Notifikasi: Pemberitahuan pencabutan pemblokiran akun"
+                    : "Notification: Account unblock notice") + toolTag;
+                try {
+                  await apiPost({
+                    action: "edit",
+                    title: talkTitle,
+                    appendtext: "\n\n" + notice,
+                    summary: notifySummaryUnblock,
+                    bot: true,
+                  });
+                } catch (e) {
+                  showNotification(
+                    divUnblock,
+                    "Unblocked, but failed to post notification: " +
+                      formatApiError(e),
+                  );
+                }
+              }
+
+              inputUnblockReason.value = "";
+              // Re-check live status — this also hides the unblock control
+              // once the absence of an active block is confirmed.
+              updateSectionStatus();
+            } catch (e) {
+              showNotification(divUnblock, formatApiError(e));
+            } finally {
+              btnUnblock.disabled = false;
+              btnUnblock.textContent = "Unblock account";
+            }
+          });
+
           const { row: rowBlockDur, field: fieldBlockDur } = makeRow("Expiry");
           const selBlockDur = makeSelect([
             { value: "1 day", label: "1 day" },
@@ -4995,6 +5104,7 @@ $(function () {
                 "loading",
                 "Enter a target to see protection status.",
               );
+              divUnblock.classList.add("tng-hidden");
               return;
             }
 
@@ -5013,6 +5123,7 @@ $(function () {
 
               // --- Block status ---
               setNote(divBlockStatus, "loading", "Loading block status...");
+              divUnblock.classList.add("tng-hidden");
               (async function () {
                 try {
                   const data = await apiGet({
@@ -5044,8 +5155,11 @@ $(function () {
                     );
                     // Pre-fill block controls with the active block's settings.
                     applyActiveBlockSettings(user);
+                    // An active block exists — reveal the unblock control.
+                    divUnblock.classList.remove("tng-hidden");
                   } else {
                     // Not currently blocked — check most recent block log entry
+                    divUnblock.classList.add("tng-hidden");
                     try {
                       const logData = await apiGet({
                         action: "query",
