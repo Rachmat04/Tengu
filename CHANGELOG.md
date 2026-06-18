@@ -1,3 +1,25 @@
+## 2.33.4
+
+### Fixed
+
+* Fixed the "Unblock account" button having no click handler, meaning it performed no action when clicked
+* Added the missing `action=unblock` API call, wired to the existing reason field and "Send unblock notification to user talk page" checkbox
+
+### Added
+
+* Added an account unblock notification, posted to the target's talk page when the notify checkbox is ticked, mirroring the wording style used for block, deletion, and protection notices
+
+## 2.33.3
+
+### Fixed
+
+* Fixed the Unblock section becoming permanently stuck on "Unavailable: block status is still loading" after the block status had already been resolved
+* Fixed `applyUnblockStatusLock()` returning early without updating the displayed lock reason whenever the section was already status-locked, which prevented the tooltip from refreshing to reflect the account's actual block status or the user's actual permissions
+
+### Improved
+
+* Improved accuracy of the Unblock section's lock message so it always reflects the most recently resolved reason (no target specified, no block right, account not blocked, or block status confirmed)
+
 ## 2.33.2
 
 ### Added

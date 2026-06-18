@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.33.2
+ * Version 2.33.4
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -3583,6 +3583,67 @@ $(function () {
           bodyUnblock.appendChild(divUnblock);
           body.appendChild(secUnblock);
 
+          // Performs the unblock action immediately. Unlike Block, Rollback, etc.,
+          // this is a standalone action that runs on click rather than being
+          // queued through the Start button and work().
+          btnUnblock.addEventListener("click", async function () {
+            const targetVal = inputTarget.value.trim();
+            if (!targetVal) return;
+
+            const toolTag = " — [[w:id:Pengguna:Rachmat04/Tengu.js|⛩️]]";
+            const reason = inputUnblockReason.value.trim();
+            const sendNotify = chkNotifyUnblock.checked;
+
+            btnUnblock.disabled = true;
+            const origLabel = btnUnblock.textContent;
+            btnUnblock.textContent = "Unblocking...";
+
+            try {
+              await apiPost({
+                action: "unblock",
+                user: targetVal,
+                reason: reason + toolTag,
+              });
+
+              if (sendNotify) {
+                const talkTitle = new mw.Title(targetVal, 3).getPrefixedText();
+                const reasonDisplay =
+                  reason ||
+                  (useIndonesian
+                    ? "(tidak ada alasan yang diberikan)"
+                    : "(no reason given)");
+                const notifySummaryUnblock =
+                  (useIndonesian
+                    ? "Notifikasi: Pemberitahuan pencabutan pemblokiran"
+                    : "Notification: Account unblock notice") + toolTag;
+                const notice = useIndonesian
+                  ? `== Pemberitahuan pencabutan pemblokiran ==\nPemblokiran pada akun "${targetVal}" telah dicabut dengan alasan berikut: ${reasonDisplay}.\n\nPemberitahuan ini dikirimkan secara otomatis. Silakan sampaikan pertanyaan atau keberatan ke halaman pembicaraan saya. ~~~~`
+                  : `== Account unblock notice ==\nThe block on the account "${targetVal}" has been lifted due to the following reason: ${reasonDisplay}.\n\nThis notification was posted automatically. Please direct any questions or concerns to my user talk page. ~~~~`;
+                try {
+                  await apiPost({
+                    action: "edit",
+                    title: talkTitle,
+                    appendtext: "\n\n" + notice,
+                    summary: notifySummaryUnblock,
+                    bot: true,
+                  });
+                } catch (e) {
+                  // A failed notification should not be reported as an unblock failure.
+                }
+              }
+
+              inputUnblockReason.value = "";
+              btnUnblock.textContent = origLabel;
+              // Re-check block status so the section locks itself again
+              // (the account is no longer blocked) and the status note updates.
+              updateSectionStatus();
+            } catch (e) {
+              btnUnblock.textContent = origLabel;
+              btnUnblock.disabled = false;
+              showNotification(unblockInputRow, formatApiError(e));
+            }
+          });
+
           // Reversible lock for this section, driven solely by the target's live
           // block status. Tracked separately from the mode lock (applyModeLock)
           // and the permanent rights lock (lockSection) via its own set.
@@ -3593,10 +3654,20 @@ $(function () {
             const hdr = secUnblock.querySelector(".tng-section-header");
 
             if (locked) {
-              // Replaced `if (chkUnblock.disabled) return;`
-              // We only return early if it's already status-locked to prevent stacking duplicate
-              // badges. We MUST register the state in the Set even if disabled by a mode lock.
-              if (unblockStatusLocked.has(chkUnblock)) return;
+              // If the section is already status-locked, only refresh the
+              // displayed reason. Returning early without updating left the
+              // tooltip stuck on whichever reason was passed in first (usually
+              // "block status is still loading"), even after the real reason
+              // had been resolved.
+              if (unblockStatusLocked.has(chkUnblock)) {
+                hdr.title = "Unavailable: " + reason;
+                const existingBadge = hdr.querySelector(
+                  ".tng-unblock-lock-badge",
+                );
+                if (existingBadge)
+                  existingBadge.title = "Unavailable: " + reason;
+                return;
+              }
 
               unblockStatusLocked.add(chkUnblock);
               chkUnblock.checked = false;
