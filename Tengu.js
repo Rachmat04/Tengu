@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.33.0
+ * Version 2.33.1
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -3550,18 +3550,34 @@ $(function () {
           const divUnblock = document.createElement("div");
           divUnblock.className = "tng-unblock-row";
 
+          // Create a dedicated flex container to hold the input and button side-by-side
+          const unblockInputRow = document.createElement("div");
+          unblockInputRow.style.display = "flex";
+          unblockInputRow.style.gap = "8px"; // Adds a small visual gap between the elements
+          unblockInputRow.style.marginBottom = "8px"; // Separates the row from the checkbox below
+
           const inputUnblockReason = makeInput("Unblock reason (optional)");
+          // Force the text box to occupy roughly 80% of the available space
+          inputUnblockReason.style.flex = "8";
+          inputUnblockReason.style.boxSizing = "border-box";
 
           const btnUnblock = makeBtn("Unblock account", "destructive");
           btnUnblock.className += " tng-btn-sm";
+          // Force the button to occupy roughly 20% of the available space
+          btnUnblock.style.flex = "2";
+          btnUnblock.style.boxSizing = "border-box";
+
+          // Append the input and button to the new flex row
+          unblockInputRow.appendChild(inputUnblockReason);
+          unblockInputRow.appendChild(btnUnblock);
 
           const { wrap: wrapNotifyUnblock, chk: chkNotifyUnblock } =
             makeCheckbox("Send unblock notification to user talk page", true);
           wrapNotifyUnblock.title =
             "When ticked, a notification will be posted to the target user's talk page after the block is lifted.";
 
-          divUnblock.appendChild(inputUnblockReason);
-          divUnblock.appendChild(btnUnblock);
+          // Append the 80/20 flex row and the checkbox to the main container
+          divUnblock.appendChild(unblockInputRow);
           divUnblock.appendChild(wrapNotifyUnblock);
 
           bodyUnblock.appendChild(divUnblock);
@@ -3569,15 +3585,19 @@ $(function () {
 
           // Reversible lock for this section, driven solely by the target's live
           // block status. Tracked separately from the mode lock (applyModeLock)
-          // and the permanent rights lock (lockSection) via its own set, so none
-          // of the three can clear a lock set by another; chk.disabled is checked
-          // first so a stronger lock (rights or mode) always takes precedence.
+          // and the permanent rights lock (lockSection) via its own set.
           const unblockStatusLocked = new Set();
+
           function applyUnblockStatusLock(locked, reason) {
             const arrow = secUnblock.querySelector(".tng-section-arrow");
             const hdr = secUnblock.querySelector(".tng-section-header");
+
             if (locked) {
-              if (chkUnblock.disabled) return; // Already locked by rights or mode
+              // Replaced `if (chkUnblock.disabled) return;`
+              // We only return early if it's already status-locked to prevent stacking duplicate
+              // badges. We MUST register the state in the Set even if disabled by a mode lock.
+              if (unblockStatusLocked.has(chkUnblock)) return;
+
               unblockStatusLocked.add(chkUnblock);
               chkUnblock.checked = false;
               chkUnblock.disabled = true;
@@ -3586,7 +3606,9 @@ $(function () {
               chkNotifyUnblock.disabled = true;
               secUnblock.classList.add("tng-disabled");
               bodyUnblock.classList.add("tng-hidden");
+
               if (arrow) arrow.classList.add("tng-hidden");
+
               hdr.title = "Unavailable: " + reason;
               const badge = document.createElement("span");
               badge.className = "tng-rights-lock tng-unblock-lock-badge";
@@ -3601,6 +3623,7 @@ $(function () {
               btnUnblock.disabled = false;
               chkNotifyUnblock.disabled = false;
               secUnblock.classList.toggle("tng-disabled", !chkUnblock.checked);
+
               if (arrow) {
                 arrow.classList.remove("tng-hidden");
                 arrow.classList.toggle(
@@ -3613,7 +3636,6 @@ $(function () {
               if (badge) badge.remove();
             }
           }
-          applyUnblockStatusLock(true, "this account is not currently blocked");
 
           // ============================================================================
           // Warn section — user mode only
@@ -4740,19 +4762,21 @@ $(function () {
                 chkUndo.checked = true;
               }
 
-              if (!hasBlock && tenguMode === "user")
+              if (!hasBlock && tenguMode === "user") {
                 lockSection(
                   secBlock,
                   bodyBlock,
                   chkBlock,
                   "you do not have the block right on this wiki",
                 );
-              lockSection(
-                secUnblock,
-                bodyUnblock,
-                chkUnblock,
-                "you do not have the block right on this wiki",
-              );
+                lockSection(
+                  secUnblock,
+                  bodyUnblock,
+                  chkUnblock,
+                  "you do not have the block right on this wiki",
+                );
+              }
+
               if (!hasDelete)
                 lockSection(
                   secPagedel,
@@ -4760,6 +4784,7 @@ $(function () {
                   chkPagedel,
                   "you do not have the delete right on this wiki",
                 );
+
               if (!hasProtect)
                 lockSection(
                   secProtect,
@@ -4767,6 +4792,7 @@ $(function () {
                   chkProtect,
                   "you do not have the protect right on this wiki",
                 );
+
               if (!hasRevdel && tenguMode === "user")
                 lockSection(
                   secRevdel,
@@ -5128,6 +5154,7 @@ $(function () {
               // --- Block status ---
               setNote(divBlockStatus, "loading", "Loading block status...");
               applyUnblockStatusLock(true, "block status is still loading");
+
               (async function () {
                 try {
                   const data = await apiGet({
@@ -5138,6 +5165,7 @@ $(function () {
                   });
                   const user =
                     data.query && data.query.users && data.query.users[0];
+
                   if (user && user.blockedby) {
                     const expiry =
                       user.blockexpiry === "infinity"
@@ -5145,6 +5173,7 @@ $(function () {
                         : fmtStatusDate(user.blockexpiry);
                     const blockType =
                       user.blockpartial !== undefined ? "partial" : "full";
+
                     setNote(
                       divBlockStatus,
                       "active",
@@ -5157,8 +5186,12 @@ $(function () {
                         " · Reason: " +
                         (user.blockreason || "(no reason given)"),
                     );
+
                     // Pre-fill block controls with the active block's settings.
                     applyActiveBlockSettings(user);
+                    // Explicitly lift the loading status lock since an active block exists.
+                    applyUnblockStatusLock(false);
+
                     // An active block exists — reveal the unblock control.
                     divUnblock.classList.remove("tng-hidden");
                   } else {
@@ -5206,11 +5239,14 @@ $(function () {
                     }
                   }
                 } catch (e) {
+                  // Changed state from "loading" to "error" (or "inactive" if "error" isn't defined in your CSS)
                   setNote(
                     divBlockStatus,
-                    "loading",
+                    "error",
                     "Could not load block status.",
                   );
+                  // PATCH: Update the lock reason so it doesn't get stuck saying "loading"
+                  applyUnblockStatusLock(true, "could not fetch block status");
                 }
               })();
 

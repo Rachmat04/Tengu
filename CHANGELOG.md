@@ -1,3 +1,34 @@
+## 2.33.1
+
+### Added
+
+* Added an explicit `applyUnblockStatusLock(false)` call when an active block is detected, allowing the Unblock section to unlock correctly
+* Added a Flexbox layout container for the unblock controls
+
+### Changed
+
+* Updated the Unblock section layout so the **Unblock reason** field and **Unblock account** button appear on a single horizontal row
+* Applied an 80/20 layout ratio using Flexbox (`flex: 8` / `flex: 2`) to improve spacing and alignment
+
+### Fixed
+
+* Fixed an initialisation race condition caused by a hardcoded `applyUnblockStatusLock(true)` call that could override actual block-status information during startup
+* Fixed an issue where the Unblock section remained locked even when the target user was actively blocked
+* Fixed a permissions-related bug caused by missing curly braces around the `hasBlock` conditional
+* Fixed unintended unconditional locking of the Unblock section for users regardless of their actual permissions
+* Fixed inconsistent synchronisation between live block status and section lock state
+
+### Removed
+
+* Removed the unconditional startup call to `applyUnblockStatusLock(true)` that forced the section into a locked state
+
+### Improved
+
+* Improved reliability of Unblock section state management
+* Improved consistency between permission checks, block detection, and UI locking behaviour
+* Improved responsiveness of the interface when switching between blocked and unblocked targets
+* Improved usability through a cleaner and more compact unblock-control layout
+
 ## 2.33.0
 
 ### Added
