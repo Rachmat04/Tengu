@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.31.2
+ * Version 2.32.0
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -4000,15 +4000,40 @@ $(function () {
           wrapNotifyProtect.title =
             "When ticked, a notification will be posted to the relevant talk page after a successful protection.";
           checksProtect.appendChild(wrapNotifyProtect);
-          // "Protect against recreation" — only active on non-existent pages.
-          // Uses create= protection, which is the correct API parameter for
-          // preventing deleted pages from being recreated.
-          const { wrap: wrapProtectRecreation, chk: chkProtectRecreation } =
-            makeCheckbox("Protect against recreation", false);
+          bodyProtect.appendChild(checksProtect);
+
+          // Cascade protection requires sysop-level edit restriction.
+          // Disable and uncheck the cascade checkbox whenever the edit level drops below sysop.
+          function updateCascadeAvailability() {
+            const isSysop = selProtectEdit.value === "sysop";
+            chkProtectCascade.disabled = !isSysop;
+            wrapProtectCascade.title = isSysop
+              ? "When ticked, pages transcluded into this page are also protected at the same level."
+              : "Only available when edit restriction is set to administrators only.";
+            if (!isSysop) chkProtectCascade.checked = false;
+          }
+          selProtectEdit.addEventListener("change", updateCascadeAvailability);
+          updateCascadeAvailability();
+
+          body.appendChild(secProtect);
+
+          // Page recreation-protection module — kept as its own section, separate
+          // from page protection above, so the two protection types are not
+          // presented together in one section. Uses create= protection, which is
+          // the correct API parameter for preventing a deleted or never-created
+          // page from being recreated. Only active on non-existent pages.
+          const {
+            section: secProtectRecreation,
+            sectionBody: bodyProtectRecreation,
+            enableChk: chkProtectRecreation,
+          } = makeSection("Protect against recreation", "🚫", false);
+
           // Disabled at construction time. Enabled only after the API confirms the page does not exist.
           chkProtectRecreation.disabled = true;
-          wrapProtectRecreation.style.opacity = "0.5";
-          wrapProtectRecreation.title =
+          const hdrProtectRecreation = secProtectRecreation.querySelector(
+            ".tng-section-header",
+          );
+          hdrProtectRecreation.title =
             "Only available when the target page does not exist.";
 
           const selProtectRecreationLevel = makeSelect([
@@ -4056,12 +4081,6 @@ $(function () {
             inputProtectRecreationExpiry,
           );
 
-          // Recreation-protection group: checkbox + level and expiry rows,
-          // enclosed in a bordered container to signal they form one set.
-          const wrapProtectRecreationGroup = document.createElement("div");
-          wrapProtectRecreationGroup.className = "tng-recreation-group";
-          wrapProtectRecreationGroup.appendChild(wrapProtectRecreation);
-
           const {
             row: rowProtectRecreationLevel,
             field: fieldProtectRecreationLevel,
@@ -4070,7 +4089,7 @@ $(function () {
             wrapSelect(selProtectRecreationLevel, "1"),
           );
           rowProtectRecreationLevel.style.opacity = "0.5";
-          wrapProtectRecreationGroup.appendChild(rowProtectRecreationLevel);
+          bodyProtectRecreation.appendChild(rowProtectRecreationLevel);
 
           const {
             row: rowProtectRecreationExpiry,
@@ -4080,7 +4099,7 @@ $(function () {
             recreationProtectExpiryGroup,
           );
           rowProtectRecreationExpiry.style.opacity = "0.5";
-          wrapProtectRecreationGroup.appendChild(rowProtectRecreationExpiry);
+          bodyProtectRecreation.appendChild(rowProtectRecreationExpiry);
 
           // Enable/disable the sub-controls when the checkbox is toggled.
           chkProtectRecreation.addEventListener("change", function () {
@@ -4092,23 +4111,7 @@ $(function () {
             rowProtectRecreationExpiry.style.opacity = enabled ? "" : "0.5";
           });
 
-          checksProtect.appendChild(wrapProtectRecreationGroup);
-          bodyProtect.appendChild(checksProtect);
-
-          // Cascade protection requires sysop-level edit restriction.
-          // Disable and uncheck the cascade checkbox whenever the edit level drops below sysop.
-          function updateCascadeAvailability() {
-            const isSysop = selProtectEdit.value === "sysop";
-            chkProtectCascade.disabled = !isSysop;
-            wrapProtectCascade.title = isSysop
-              ? "When ticked, pages transcluded into this page are also protected at the same level."
-              : "Only available when edit restriction is set to administrators only.";
-            if (!isSysop) chkProtectCascade.checked = false;
-          }
-          selProtectEdit.addEventListener("change", updateCascadeAvailability);
-          updateCascadeAvailability();
-
-          body.appendChild(secProtect);
+          body.appendChild(secProtectRecreation);
 
           const {
             section: secRevdel,
@@ -4264,9 +4267,22 @@ $(function () {
                 true,
                 "special pages cannot be protected",
               );
+              applyModeLock(
+                secProtectRecreation,
+                bodyProtectRecreation,
+                chkProtectRecreation,
+                true,
+                "special pages cannot be protected",
+              );
             } else {
               applyModeLock(secPagedel, bodyPagedel, chkPagedel, false);
               applyModeLock(secProtect, bodyProtect, chkProtect, false);
+              applyModeLock(
+                secProtectRecreation,
+                bodyProtectRecreation,
+                chkProtectRecreation,
+                false,
+              );
             }
           }
 
@@ -5435,8 +5451,8 @@ $(function () {
               // The async call below re-enables them only if the page is confirmed to be missing.
               chkProtectRecreation.disabled = true;
               chkProtectRecreation.checked = false;
-              wrapProtectRecreation.style.opacity = "0.5";
-              wrapProtectRecreation.title =
+              secProtectRecreation.classList.add("tng-disabled");
+              hdrProtectRecreation.title =
                 "Only available when the target page does not exist.";
               selProtectRecreationLevel.disabled = true;
               selProtectRecreationExpiry.disabled = true;
@@ -5475,14 +5491,17 @@ $(function () {
                   // case, but an explicit else branch is kept here to handle any out-of-order resolution.
                   if (pageIsMissing) {
                     chkProtectRecreation.disabled = false;
-                    wrapProtectRecreation.style.opacity = "";
-                    wrapProtectRecreation.title =
+                    secProtectRecreation.classList.toggle(
+                      "tng-disabled",
+                      !chkProtectRecreation.checked,
+                    );
+                    hdrProtectRecreation.title =
                       "When ticked, the page will be protected against recreation using create-level protection.";
                   } else {
                     chkProtectRecreation.disabled = true;
                     chkProtectRecreation.checked = false;
-                    wrapProtectRecreation.style.opacity = "0.5";
-                    wrapProtectRecreation.title =
+                    secProtectRecreation.classList.add("tng-disabled");
+                    hdrProtectRecreation.title =
                       "Only available when the target page does not exist.";
                     selProtectRecreationLevel.disabled = true;
                     selProtectRecreationExpiry.disabled = true;

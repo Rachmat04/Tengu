@@ -1,3 +1,33 @@
+## 2.32.0
+
+### Added
+
+* Added a new standalone **Protect against recreation** section
+* Positioned the new section immediately after **Page protection**
+
+### Changed
+
+* Moved recreation-protection functionality out of the Page protection section
+* Updated the target-change workflow to manage the standalone recreation-protection section through `secProtectRecreation` and `hdrProtectRecreation`
+* Updated `applySpecialPageLocks()` to lock and unlock the new section alongside Page protection when special pages are targeted
+
+### Fixed
+
+* Reduced ambiguity between standard page protection and recreation protection workflows
+* Improved control handling by removing dependencies on the former `wrapProtectRecreation` container
+
+### Removed
+
+* Removed the **Protect against recreation** checkbox from the Page protection section's `checksProtect` group
+* Removed the associated recreation-protection level and expiry controls from the Page protection section
+
+### Improved
+
+* Improved interface organisation by separating two distinct protection actions into dedicated sections
+* Reduced user confusion when selecting protection options
+* Made recreation protection more visible and easier to understand as an independent administrative action
+* Improved maintainability by isolating recreation-protection controls from standard page-protection controls
+
 ## 2.31.2
 
 ### Added
