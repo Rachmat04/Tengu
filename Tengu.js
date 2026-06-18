@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.32.0
+ * Version 2.33.0
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -3530,11 +3530,23 @@ $(function () {
           }
           selBlockDur.addEventListener("change", updateClearTalkState);
           bodyBlock.appendChild(checksBlock);
+          body.appendChild(secBlock);
 
-          // Unblock control — placed below the block configuration fields.
-          // Stays visible at all times; setUnblockState() locks it rather
-          // than hiding it when the target has no active local block.
-          // Text box, button, and checkbox all sit inside this one container.
+          // ============================================================================
+          // Unblock section — user mode only
+          // Lifts an active block on the target. Kept separate from the Block section
+          // since it is a standalone, immediate action rather than a configurable one
+          // queued for the Start button. Locked whenever the target has no active
+          // local block; updateSectionStatus() drives the lock/unlock as the target
+          // changes or the block is lifted.
+          // ============================================================================
+          const {
+            section: secUnblock,
+            sectionBody: bodyUnblock,
+            enableChk: chkUnblock,
+          } = makeSection("Unblock", "🔓", false);
+
+          // Text box, button, and checkbox all sit inside this one row container.
           const divUnblock = document.createElement("div");
           divUnblock.className = "tng-unblock-row";
 
@@ -3552,112 +3564,56 @@ $(function () {
           divUnblock.appendChild(btnUnblock);
           divUnblock.appendChild(wrapNotifyUnblock);
 
-          bodyBlock.appendChild(divUnblock);
+          bodyUnblock.appendChild(divUnblock);
+          body.appendChild(secUnblock);
 
-          // Enables or locks the unblock control. The control remains
-          // visible either way; "reason" is shown as a title tooltip
-          // explaining why it is locked.
-          function setUnblockState(enabled, reason) {
-            inputUnblockReason.disabled = !enabled;
-            btnUnblock.disabled = !enabled;
-            chkNotifyUnblock.disabled = !enabled;
-            divUnblock.classList.toggle("tng-unblock-disabled", !enabled);
-            divUnblock.title = enabled
-              ? ""
-              : reason || "This account is not currently blocked.";
-          }
-          setUnblockState(false);
-
-          // Lifts the active block on the current target, then optionally posts
-          // a notification to the target's talk page. Runs immediately on click
-          // rather than via the Start button, since it acts on an existing block
-          // rather than configuring a new one.
-          btnUnblock.addEventListener("click", async function () {
-            const target = inputTarget.value.trim();
-            if (!target) return;
-
-            const confirmed = await new Promise((resolve) => {
-              const { overlay, body, footer } = createDialog({
-                title: "Unblock confirmation",
-                icon: "⚠️",
-                onClose: () => resolve(false),
-              });
-              body.innerHTML =
-                "<p>You are about to lift the block on <b>" +
-                target +
-                "</b>. Are you certain you wish to proceed?</p>";
-              const btnCancel = makeBtn("Cancel", "quiet");
-              btnCancel.addEventListener("click", () => {
-                overlay.closeHandler();
-                resolve(false);
-              });
-              const btnConfirm = makeBtn("Unblock", "destructive");
-              btnConfirm.addEventListener("click", () => {
-                overlay.closeHandler();
-                resolve(true);
-              });
-              footer.appendChild(btnCancel);
-              footer.appendChild(btnConfirm);
-            });
-            if (!confirmed) return;
-
-            const toolTag = " — [[w:id:Pengguna:Rachmat04/Tengu.js|⛩️]]";
-            const unblockReason = inputUnblockReason.value.trim();
-
-            btnUnblock.disabled = true;
-            btnUnblock.textContent = "Unblocking...";
-
-            try {
-              await apiPost({
-                action: "unblock",
-                user: target,
-                reason: (unblockReason ? unblockReason : "") + toolTag,
-              });
-
-              if (chkNotifyUnblock.checked) {
-                const talkTitle = new mw.Title(target, 3).getPrefixedText();
-                const reasonPart = unblockReason
-                  ? useIndonesian
-                    ? ` dengan alasan berikut: ${unblockReason}`
-                    : ` with the following reason: ${unblockReason}`
-                  : "";
-                const notice = useIndonesian
-                  ? `== Pemberitahuan pencabutan pemblokiran akun ==\nPemblokiran pada akun "${target}" telah dicabut${reasonPart}.\n\nPemberitahuan ini dikirimkan secara otomatis. Silakan sampaikan pertanyaan atau keberatan ke halaman pembicaraan saya. ~~~~`
-                  : `== Account unblock notice ==\nThe block on the account "${target}" has been lifted${reasonPart}.\n\nThis notification was posted automatically. Please direct any questions or concerns to my user talk page. ~~~~`;
-                const notifySummaryUnblock =
-                  (useIndonesian
-                    ? "Notifikasi: Pemberitahuan pencabutan pemblokiran akun"
-                    : "Notification: Account unblock notice") + toolTag;
-                try {
-                  await apiPost({
-                    action: "edit",
-                    title: talkTitle,
-                    appendtext: "\n\n" + notice,
-                    summary: notifySummaryUnblock,
-                    bot: true,
-                  });
-                } catch (e) {
-                  showNotification(
-                    divUnblock,
-                    "Unblocked, but failed to post notification: " +
-                      formatApiError(e),
-                  );
-                }
-              }
-
-              inputUnblockReason.value = "";
-              // Re-check live status — this also locks the unblock control
-              // once the absence of an active block is confirmed.
-              updateSectionStatus();
-            } catch (e) {
-              showNotification(divUnblock, formatApiError(e));
-            } finally {
+          // Reversible lock for this section, driven solely by the target's live
+          // block status. Tracked separately from the mode lock (applyModeLock)
+          // and the permanent rights lock (lockSection) via its own set, so none
+          // of the three can clear a lock set by another; chk.disabled is checked
+          // first so a stronger lock (rights or mode) always takes precedence.
+          const unblockStatusLocked = new Set();
+          function applyUnblockStatusLock(locked, reason) {
+            const arrow = secUnblock.querySelector(".tng-section-arrow");
+            const hdr = secUnblock.querySelector(".tng-section-header");
+            if (locked) {
+              if (chkUnblock.disabled) return; // Already locked by rights or mode
+              unblockStatusLocked.add(chkUnblock);
+              chkUnblock.checked = false;
+              chkUnblock.disabled = true;
+              inputUnblockReason.disabled = true;
+              btnUnblock.disabled = true;
+              chkNotifyUnblock.disabled = true;
+              secUnblock.classList.add("tng-disabled");
+              bodyUnblock.classList.add("tng-hidden");
+              if (arrow) arrow.classList.add("tng-hidden");
+              hdr.title = "Unavailable: " + reason;
+              const badge = document.createElement("span");
+              badge.className = "tng-rights-lock tng-unblock-lock-badge";
+              badge.textContent = "🔒";
+              badge.title = "Unavailable: " + reason;
+              hdr.appendChild(badge);
+            } else {
+              if (!unblockStatusLocked.has(chkUnblock)) return; // Not status-locked
+              unblockStatusLocked.delete(chkUnblock);
+              chkUnblock.disabled = false;
+              inputUnblockReason.disabled = false;
               btnUnblock.disabled = false;
-              btnUnblock.textContent = "Unblock account";
+              chkNotifyUnblock.disabled = false;
+              secUnblock.classList.toggle("tng-disabled", !chkUnblock.checked);
+              if (arrow) {
+                arrow.classList.remove("tng-hidden");
+                arrow.classList.toggle(
+                  "tng-arrow-up",
+                  !bodyUnblock.classList.contains("tng-hidden"),
+                );
+              }
+              hdr.title = "";
+              const badge = hdr.querySelector(".tng-unblock-lock-badge");
+              if (badge) badge.remove();
             }
-          });
-
-          body.appendChild(secBlock);
+          }
+          applyUnblockStatusLock(true, "this account is not currently blocked");
 
           // ============================================================================
           // Warn section — user mode only
@@ -4336,6 +4292,13 @@ $(function () {
                 "Tengu is targeting a page, not a user.",
               );
               applyModeLock(
+                secUnblock,
+                bodyUnblock,
+                chkUnblock,
+                true,
+                "Tengu is targeting a page, not a user.",
+              );
+              applyModeLock(
                 secWarn,
                 bodyWarn,
                 chkWarn,
@@ -4353,6 +4316,7 @@ $(function () {
               // Remove mode locks first to enable features
               applyModeLock(secRollback, bodyRollback, chkRollback, false);
               applyModeLock(secBlock, bodyBlock, chkBlock, false);
+              applyModeLock(secUnblock, bodyUnblock, chkUnblock, false);
               applyModeLock(secWarn, bodyWarn, chkWarn, false);
               applyModeLock(secRevdel, bodyRevdel, chkRevdel, false);
               // Remove any special page locks that were active while in page mode
@@ -4783,6 +4747,12 @@ $(function () {
                   chkBlock,
                   "you do not have the block right on this wiki",
                 );
+              lockSection(
+                secUnblock,
+                bodyUnblock,
+                chkUnblock,
+                "you do not have the block right on this wiki",
+              );
               if (!hasDelete)
                 lockSection(
                   secPagedel,
@@ -5138,7 +5108,7 @@ $(function () {
                 "loading",
                 "Enter a target to see protection status.",
               );
-              divUnblock.classList.add("tng-hidden");
+              applyUnblockStatusLock(true, "no target has been specified");
               return;
             }
 
@@ -5157,7 +5127,7 @@ $(function () {
 
               // --- Block status ---
               setNote(divBlockStatus, "loading", "Loading block status...");
-              divUnblock.classList.add("tng-hidden");
+              applyUnblockStatusLock(true, "block status is still loading");
               (async function () {
                 try {
                   const data = await apiGet({
@@ -5193,7 +5163,10 @@ $(function () {
                     divUnblock.classList.remove("tng-hidden");
                   } else {
                     // Not currently blocked — check most recent block log entry
-                    divUnblock.classList.add("tng-hidden");
+                    applyUnblockStatusLock(
+                      true,
+                      "this account is not currently blocked",
+                    );
                     try {
                       const logData = await apiGet({
                         action: "query",

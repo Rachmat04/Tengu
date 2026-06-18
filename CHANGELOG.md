@@ -1,3 +1,37 @@
+## 2.33.0
+
+### Added
+
+* Added a standalone **Unblock** section positioned immediately after the **Block** section
+* Added padlock-based section locking for the Unblock workflow, matching the behaviour used elsewhere in the interface
+
+### Changed
+
+* Moved the unblock workflow out of the Block section into its own dedicated section
+* Updated visibility and availability handling so the entire Unblock section is locked and collapsed when unavailable, rather than displaying disabled controls
+* Applied the same section-level locking model used by Block and Revision deletion
+* Extended lock management to evaluate:
+  * User rights
+  * Current interface mode
+  * Live block status of the target user
+
+### Fixed
+
+* Removed the previous behaviour where unblock controls remained visible but greyed out when the target was not blocked
+* Improved consistency between the Unblock workflow and other lockable administrative sections
+
+### Removed
+
+* Unblock controls embedded within the Block section
+* The permanently visible disabled unblock row used when no active block was present
+
+### Improved
+
+* Improved interface organisation by separating blocking and unblocking into distinct workflows
+* Reduced visual clutter when unblocking is unavailable
+* Improved consistency of lock indicators and section behaviour across administrative tools
+* Made availability rules easier to understand through the use of section-level locking and padlock indicators
+
 ## 2.32.0
 
 ### Added
