@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.33.4
+ * Version 2.33.5
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -3585,7 +3585,8 @@ $(function () {
 
           // Performs the unblock action immediately. Unlike Block, Rollback, etc.,
           // this is a standalone action that runs on click rather than being
-          // queued through the Start button and work().
+          // queued through the Start button and work(). A small progress dialogue
+          // is shown so the unblock and notification steps are visible to the user.
           btnUnblock.addEventListener("click", async function () {
             const targetVal = inputTarget.value.trim();
             if (!targetVal) return;
@@ -3598,12 +3599,65 @@ $(function () {
             const origLabel = btnUnblock.textContent;
             btnUnblock.textContent = "Unblocking...";
 
+            const {
+              overlay: ubOverlay,
+              body: ubBody,
+              footer: ubFooter,
+            } = createDialog({
+              title: "Unblocking account",
+              icon: "🔓",
+            });
+
+            const ubLogBox = document.createElement("div");
+            ubLogBox.className = "tng-log-box";
+            ubBody.appendChild(ubLogBox);
+
+            let ubLogCount = 0;
+            const addUnblockLog = (msg, isErr) => {
+              const d = document.createElement("div");
+              ubLogCount++;
+              const _n = new Date();
+              const _ts =
+                _n.getUTCFullYear() +
+                "-" +
+                String(_n.getUTCMonth() + 1).padStart(2, "0") +
+                "-" +
+                String(_n.getUTCDate()).padStart(2, "0") +
+                " " +
+                String(_n.getUTCHours()).padStart(2, "0") +
+                ":" +
+                String(_n.getUTCMinutes()).padStart(2, "0") +
+                ":" +
+                String(_n.getUTCSeconds()).padStart(2, "0") +
+                " UTC";
+              d.textContent = ubLogCount + ". [" + _ts + "] " + msg;
+              if (isErr === "warn") {
+                d.className = "tng-log-warn";
+              } else if (isErr) {
+                d.className = "tng-log-err";
+              } else {
+                d.className = "tng-log-succ";
+              }
+              ubLogBox.appendChild(d);
+              ubLogBox.scrollTop = ubLogBox.scrollHeight;
+            };
+
+            const ubBtnClose = makeBtn("Close", "quiet");
+            ubBtnClose.disabled = true;
+            ubBtnClose.addEventListener("click", () =>
+              ubOverlay.closeHandler(),
+            );
+            ubFooter.appendChild(ubBtnClose);
+
+            addUnblockLog("⏳ Unblocking " + targetVal + "...");
+
             try {
               await apiPost({
                 action: "unblock",
                 user: targetVal,
                 reason: reason + toolTag,
               });
+              addUnblockLog("[Unblock] Successfully unblocked " + targetVal);
 
               if (sendNotify) {
                 const talkTitle = new mw.Title(targetVal, 3).getPrefixedText();
@@ -3627,21 +3681,39 @@ $(function () {
                     summary: notifySummaryUnblock,
                     bot: true,
                   });
+                  addUnblockLog(
+                    "[Notify] Notification posted to: " + talkTitle,
+                  );
                 } catch (e) {
-                  // A failed notification should not be reported as an unblock failure.
+                  addUnblockLog(
+                    "[Notify] Failed to post unblock notification to " +
+                      talkTitle +
+                      ": " +
+                      formatApiError(e),
+                    "warn",
+                  );
                 }
               }
 
+              addUnblockLog("✅ Unblock operation completed.");
               inputUnblockReason.value = "";
               btnUnblock.textContent = origLabel;
               // Re-check block status so the section locks itself again
               // (the account is no longer blocked) and the status note updates.
               updateSectionStatus();
             } catch (e) {
+              addUnblockLog(
+                "[Unblock] Failed to unblock " +
+                  targetVal +
+                  ": " +
+                  formatApiError(e),
+                true,
+              );
               btnUnblock.textContent = origLabel;
               btnUnblock.disabled = false;
-              showNotification(unblockInputRow, formatApiError(e));
             }
+
+            ubBtnClose.disabled = false;
           });
 
           // Reversible lock for this section, driven solely by the target's live

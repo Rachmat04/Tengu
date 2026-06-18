@@ -1,3 +1,17 @@
+## 2.33.5
+
+### Added
+
+* Added a progress dialogue for the unblock action, displaying a timestamped log of each step in the unblock workflow, including notification delivery when applicable
+
+### Changed
+
+* Replaced the inline error notification previously shown when an unblock failed with a dedicated log entry in the progress dialogue
+
+### Improved
+
+* Improved transparency of the unblock process by surfacing individual workflow steps in real time rather than running them silently in the background
+
 ## 2.33.4
 
 ### Fixed
