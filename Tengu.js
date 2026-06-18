@@ -1,12 +1,12 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.33.5
+ * Version 2.34.0
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
  * An all-in-one moderation script for MediaWiki that streamlines user blocking,
- * rollbacks, page deletions, page protections, and revision deletions from a single interface.
+ * rollbacks, page deletions, page undeletions, page protections, and revision deletions from a single interface.
  *
  * REPOSITORY:
  * https://github.com/Rachmat04/Tengu
@@ -57,6 +57,7 @@ $(function () {
         const PAGE_DELETE_REASONS = tenguReasonsObj.PAGE_DELETE_REASONS;
         const PROTECTION_REASONS = tenguReasonsObj.PROTECTION_REASONS;
         const REVDEL_REASONS = tenguReasonsObj.REVDEL_REASONS;
+        const UNDELETE_REASONS = tenguReasonsObj.UNDELETE_REASONS;
 
         const tenguWarnObj = window.TenguWarn.get(useIndonesian);
         const WARN_MESSAGES = tenguWarnObj.WARN_MESSAGES;
@@ -513,7 +514,7 @@ $(function () {
 
         // ============================================================================
         // [Section 07] Main work function
-        // Executes API orchestration loops for user blocks, rollbacks, and deletions whilst piping execution log messages.
+        // Executes API orchestration loops for user blocks, rollbacks, deletions, and page undeletions whilst piping execution log messages.
         // ============================================================================
         const work = async function () {
           let isAborted = false;
@@ -522,6 +523,7 @@ $(function () {
             rollback: 0,
             revdel: 0,
             delete: 0,
+            undelete: 0,
             protect: 0,
             unlink: 0,
             error: 0,
@@ -540,13 +542,13 @@ $(function () {
           // Helper function to update status dynamically
           const updateStatusDisplay = () => {
             const statusText = isAborted ? "Aborted." : "Processing...";
-            const summaryLine = `<b>Status:</b> ${statusText}<br/>Summary: <b>${stats.rollback}</b> reverted | <b>${stats.delete}</b> deleted | <b>${stats.unlink}</b> unlinked | <b>${stats.protect}</b> protected | <b>${stats.revdel}</b> hidden | <b>${stats.error}</b> errors.`;
+            const summaryLine = `<b>Status:</b> ${statusText}<br/>Summary: <b>${stats.rollback}</b> reverted | <b>${stats.delete}</b> deleted | <b>${stats.undelete}</b> undeleted | <b>${stats.unlink}</b> unlinked | <b>${stats.protect}</b> protected | <b>${stats.revdel}</b> hidden | <b>${stats.error}</b> errors.`;
             statusLbl.innerHTML = summaryLine;
           };
 
           const statusLbl = document.createElement("div");
           statusLbl.innerHTML =
-            "<b>Status:</b> Processing...<br/>Summary: <b>0</b> reverted | <b>0</b> deleted | <b>0</b> unlinked | <b>0</b> protected | <b>0</b> hidden | <b>0</b> errors.";
+            "<b>Status:</b> Processing...<br/>Summary: <b>0</b> reverted | <b>0</b> deleted | <b>0</b> undeleted | <b>0</b> unlinked | <b>0</b> protected | <b>0</b> hidden | <b>0</b> errors.";
           statusLbl.style.marginBottom = "8px";
 
           const logBox = document.createElement("div");
@@ -768,6 +770,25 @@ $(function () {
                 }
               }
             } // end if (proceedWithBlock)
+          }
+
+          // --- Page undeletion ---
+          if (config.undelete && config.mode === "page" && !isAborted) {
+            try {
+              await apiPost({
+                action: "undelete",
+                title: targetVal,
+                reason: config.undeleteReason + toolTag,
+              });
+              addLog(`[Undelete] Successfully restored page: ${targetVal}`);
+              stats.undelete++;
+              updateStatusDisplay();
+            } catch (e) {
+              addLog(
+                `[Undelete] Failed to restore ${targetVal}: ${formatApiError(e)}`,
+                true,
+              );
+            }
           }
 
           // --- Fetch user contributions OR prepare target page ---
@@ -1916,7 +1937,7 @@ $(function () {
             config.rollbackMethod === "undo" ? "undone" : "reverted";
           const statusWord = isAborted ? "Aborted." : "Completed.";
           const statusPrefix = `<b>Status: ${statusWord}</b><br/>`;
-          const finalStatus = `${statusPrefix}Summary: <b>${stats.rollback}</b> ${methodTxt} | <b>${stats.delete}</b> deleted | <b>${stats.unlink}</b> unlinked | <b>${stats.protect}</b> protected | <b>${stats.revdel}</b> hidden | <b>${stats.error}</b> errors.`;
+          const finalStatus = `${statusPrefix}Summary: <b>${stats.rollback}</b> ${methodTxt} | <b>${stats.delete}</b> deleted | <b>${stats.undelete}</b> undeleted | <b>${stats.unlink}</b> unlinked | <b>${stats.protect}</b> protected | <b>${stats.revdel}</b> hidden | <b>${stats.error}</b> errors.`;
           statusLbl.innerHTML = finalStatus;
           isAborted = false;
 
@@ -2853,6 +2874,10 @@ $(function () {
           // Set when the rights Promise settles; used by applyModeRestrictions() to
           // re-apply rights-based locks when switching from page mode back to user mode.
           let resolvedRights = null;
+          // Set to true once the rights check confirms the user lacks the undelete
+          // right; guards the dynamic per-target enable/disable logic in
+          // updateSectionStatus() so a permanent rights lock is never undone.
+          let undeleteRightsLocked = false;
 
           // Fetch the current user's rights and groups immediately so the result is
           // ready (or very close to ready) by the time the dialogue finishes building.
@@ -4001,6 +4026,61 @@ $(function () {
           bodyPagedel.appendChild(checksPagedel);
           body.appendChild(secPagedel);
 
+          // Page undeletion module — restores a previously deleted page.
+          // Page mode only. Disabled at construction time; only enabled once
+          // updateSectionStatus() confirms the target page has previous
+          // deletion log entries and the user holds the undelete right.
+          const {
+            section: secUndelete,
+            sectionBody: bodyUndelete,
+            enableChk: chkUndelete,
+          } = makeSection("Page undeletion", "♻️", false);
+
+          chkUndelete.disabled = true;
+          const hdrUndelete = secUndelete.querySelector(".tng-section-header");
+          hdrUndelete.title =
+            "Only available for pages with previous deletion log entries.";
+
+          // Page undeletion status note — populated by updateSectionStatus() when the target changes
+          const divUndeleteStatus = document.createElement("div");
+          divUndeleteStatus.className =
+            "tng-status-note tng-status-note-loading";
+          divUndeleteStatus.textContent =
+            "Enter a target to see deletion history.";
+          bodyUndelete.appendChild(divUndeleteStatus);
+
+          const { row: rowUndeleteReason, field: fieldUndeleteReason } =
+            makeRow("Reason");
+          const selUndeleteReason = makeSelect(UNDELETE_REASONS);
+          const {
+            wrap: filteredWrapUndeleteReason,
+            filter: filterUndeleteReason,
+          } = makeFilteredSelect(selUndeleteReason);
+          const inputUndeleteReason = makeInput("Full reason to submit");
+          const btnUndeleteAppend = makeBtn("Append", "quiet");
+          btnUndeleteAppend.className += " tng-btn-sm";
+          btnUndeleteAppend.addEventListener("click", function () {
+            const cur = inputUndeleteReason.value;
+            const add = selUndeleteReason.value;
+            if (!add) return;
+            inputUndeleteReason.value = cur ? cur + "; " + add : add;
+            selUndeleteReason.selectedIndex = 0;
+            filterUndeleteReason.value = "";
+            filterUndeleteReason.dispatchEvent(new Event("input"));
+          });
+          const reasonWrapUndelete = document.createElement("div");
+          reasonWrapUndelete.className = "tng-reason-wrap";
+          const reasonTopUndelete = document.createElement("div");
+          reasonTopUndelete.className = "tng-reason-top";
+          reasonTopUndelete.appendChild(filteredWrapUndeleteReason);
+          reasonTopUndelete.appendChild(btnUndeleteAppend);
+          reasonWrapUndelete.appendChild(reasonTopUndelete);
+          reasonWrapUndelete.appendChild(inputUndeleteReason);
+          fieldUndeleteReason.appendChild(reasonWrapUndelete);
+          bodyUndelete.appendChild(rowUndeleteReason);
+
+          body.appendChild(secUndelete);
+
           // Page protection module injection setup
           const {
             section: secProtect,
@@ -4395,6 +4475,13 @@ $(function () {
                 true,
                 "special pages cannot be protected",
               );
+              applyModeLock(
+                secUndelete,
+                bodyUndelete,
+                chkUndelete,
+                true,
+                "special pages cannot be undeleted",
+              );
             } else {
               applyModeLock(secPagedel, bodyPagedel, chkPagedel, false);
               applyModeLock(secProtect, bodyProtect, chkProtect, false);
@@ -4404,6 +4491,7 @@ $(function () {
                 chkProtectRecreation,
                 false,
               );
+              applyModeLock(secUndelete, bodyUndelete, chkUndelete, false);
             }
           }
 
@@ -4565,6 +4653,7 @@ $(function () {
               chkRollback.checked ||
               chkBlock.checked ||
               chkPagedel.checked ||
+              chkUndelete.checked ||
               chkProtect.checked ||
               chkRevdel.checked ||
               chkWarn.checked
@@ -4575,6 +4664,7 @@ $(function () {
           chkRollback.addEventListener("change", updateStartBtn);
           chkBlock.addEventListener("change", updateStartBtn);
           chkPagedel.addEventListener("change", updateStartBtn);
+          chkUndelete.addEventListener("change", updateStartBtn);
           chkProtect.addEventListener("change", updateStartBtn);
           chkRevdel.addEventListener("change", updateStartBtn);
           chkWarn.addEventListener("change", updateStartBtn);
@@ -4653,6 +4743,11 @@ $(function () {
             function buildRevdelReason() {
               return inputRevdelReason.value.trim() || selRevdelReason.value;
             }
+            function buildUndeleteReason() {
+              return (
+                inputUndeleteReason.value.trim() || selUndeleteReason.value
+              );
+            }
             let rdHides = "";
             if (chkRdContent.checked) rdHides += "content|";
             if (chkRdSummary.checked) rdHides += "comment|";
@@ -4716,6 +4811,8 @@ $(function () {
                   ? inputPagedelProtectRecreationExpiry.value.trim() || "never"
                   : selPagedelProtectRecreationExpiry.value,
               massdelReason: buildPagedelReason() + suffix,
+              undelete: chkUndelete.checked && !chkUndelete.disabled,
+              undeleteReason: buildUndeleteReason() + suffix,
               protect: chkProtect.checked,
               protectEdit: selProtectEdit.value,
               protectMove: selProtectMove.value,
@@ -4847,6 +4944,7 @@ $(function () {
               const hasDelete = info.rights.indexOf("delete") !== -1;
               const hasProtect = info.rights.indexOf("protect") !== -1;
               const hasRevdel = info.rights.indexOf("deleterevision") !== -1;
+              const hasUndelete = info.rights.indexOf("undelete") !== -1;
               // Treat the user as sysop/admin if they are in the sysop group or hold
               // at least the three core admin rights (block, delete, protect).
               const hasSysop =
@@ -4897,6 +4995,7 @@ $(function () {
                 hasDelete,
                 hasProtect,
                 hasRevdel,
+                hasUndelete,
               };
 
               // If the user lacks the rollback right, automatically switch to undo.
@@ -4943,6 +5042,16 @@ $(function () {
                   chkRevdel,
                   "you do not have the deleterevision right on this wiki",
                 );
+
+              if (!hasUndelete) {
+                undeleteRightsLocked = true;
+                lockSection(
+                  secUndelete,
+                  bodyUndelete,
+                  chkUndelete,
+                  "you do not have the undelete right on this wiki",
+                );
+              }
 
               // Re-evaluate the start button in case locks changed the checked state
               updateStartBtn();
@@ -5277,6 +5386,18 @@ $(function () {
                 "loading",
                 "Enter a target to see protection status.",
               );
+              setNote(
+                divUndeleteStatus,
+                "loading",
+                "Enter a target to see deletion history.",
+              );
+              if (!undeleteRightsLocked) {
+                chkUndelete.disabled = true;
+                chkUndelete.checked = false;
+                secUndelete.classList.add("tng-disabled");
+                hdrUndelete.title =
+                  "Only available for pages with previous deletion log entries.";
+              }
               applyUnblockStatusLock(true, "no target has been specified");
               return;
             }
@@ -5293,6 +5414,18 @@ $(function () {
                 "loading",
                 "Not applicable in user mode.",
               );
+              setNote(
+                divUndeleteStatus,
+                "loading",
+                "Not applicable in user mode.",
+              );
+              if (!undeleteRightsLocked) {
+                chkUndelete.disabled = true;
+                chkUndelete.checked = false;
+                secUndelete.classList.add("tng-disabled");
+                hdrUndelete.title =
+                  "Only available in page mode for pages with previous deletion log entries.";
+              }
 
               // --- Block status ---
               setNote(divBlockStatus, "loading", "Loading block status...");
@@ -5567,15 +5700,34 @@ $(function () {
                   "loading",
                   "Not applicable — special pages cannot be protected.",
                 );
+                setNote(
+                  divUndeleteStatus,
+                  "loading",
+                  "Not applicable — special pages cannot be undeleted.",
+                );
+                if (!undeleteRightsLocked) {
+                  chkUndelete.disabled = true;
+                  chkUndelete.checked = false;
+                  secUndelete.classList.add("tng-disabled");
+                  hdrUndelete.title =
+                    "Only available for pages with previous deletion log entries.";
+                }
                 return;
               }
 
-              // --- Deletion history ---
+              // --- Deletion history (also drives page undeletion availability) ---
               setNote(
                 divPagedelStatus,
                 "loading",
                 "Loading deletion history...",
               );
+              if (!undeleteRightsLocked) {
+                setNote(
+                  divUndeleteStatus,
+                  "loading",
+                  "Loading deletion history...",
+                );
+              }
               (async function () {
                 try {
                   const logData = await apiGet({
@@ -5602,12 +5754,37 @@ $(function () {
                         " · Reason: " +
                         (e.comment || "(no reason given)"),
                     );
+                    if (!undeleteRightsLocked) {
+                      chkUndelete.disabled = false;
+                      secUndelete.classList.toggle(
+                        "tng-disabled",
+                        !chkUndelete.checked,
+                      );
+                      hdrUndelete.title = "";
+                      setNote(
+                        divUndeleteStatus,
+                        "active",
+                        "This page has previous deletion log entries and can be restored.",
+                      );
+                    }
                   } else {
                     setNote(
                       divPagedelStatus,
                       "inactive",
                       "No prior deletion history found.",
                     );
+                    if (!undeleteRightsLocked) {
+                      chkUndelete.disabled = true;
+                      chkUndelete.checked = false;
+                      secUndelete.classList.add("tng-disabled");
+                      hdrUndelete.title =
+                        "Unavailable: this page has no deletion log entries.";
+                      setNote(
+                        divUndeleteStatus,
+                        "inactive",
+                        "This page has no deletion log entries and cannot be restored.",
+                      );
+                    }
                   }
                 } catch (e) {
                   setNote(
@@ -5615,6 +5792,13 @@ $(function () {
                     "loading",
                     "Could not load deletion history.",
                   );
+                  if (!undeleteRightsLocked) {
+                    setNote(
+                      divUndeleteStatus,
+                      "loading",
+                      "Could not load deletion history.",
+                    );
+                  }
                 }
               })();
 

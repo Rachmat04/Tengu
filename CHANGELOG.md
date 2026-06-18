@@ -1,3 +1,22 @@
+## 2.34.0
+
+### Added
+
+* Added a new **Page undeletion** section, positioned immediately after **Page deletion**
+* Added a deletion-log check that determines whether the target page has been previously deleted, driving the section's availability
+* Added a dedicated status note explaining why page undeletion is unavailable for the current target (no deletion history, missing rights, or special page)
+* Added `UNDELETE_REASONS` to `Tengu-reasons.js`, providing a set of restoration reasons (deletion error, community discussion outcome, review outcome, underlying issues resolved, copyright clarified, technical reasons, sufficient new content, deletion rationale no longer applies, restoration request approved)
+* Added an `undelete` right check, locking the section for users without the right on this wiki
+
+### Changed
+
+* Extended the progress dialogue's summary line and final status to include an undeleted-page counter
+
+### Notes
+
+* Page undeletion is available only in page mode, since the action restores a single specific page
+* The deletion-log check and the page undeletion availability check share a single API request
+
 ## 2.33.5
 
 ### Added

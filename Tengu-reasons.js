@@ -4,7 +4,7 @@
  * All-in-one wiki moderation tool — Pre-populated reason sets
  * ============================================================================
  * PURPOSE:
- * This file contains pre-populated reason sets for rollbacks, page deletions, block actions, and revision deletions,
+ * This file contains pre-populated reason sets for rollbacks, page deletions, page undeletions, block actions, and revision deletions,
  * which are used to provide convenient dropdown options for moderators when performing these actions.
  *
  * The reason values are localised: Indonesian is used on wikis whose content language
@@ -976,6 +976,75 @@ window.TenguReasons = {
             "Berkas nonbebas yang tidak lagi digunakan pada halaman mana pun sehingga tidak lagi memenuhi persyaratan untuk dipertahankan",
           ),
           label: "Orphaned non-free file(s) deleted",
+        },
+      ],
+      UNDELETE_REASONS: [
+        {
+          value: "",
+          label: "Other:",
+        },
+        {
+          value: v(
+            "Restoring page; previous deletion was made in error",
+            "Memulihkan halaman; penghapusan sebelumnya dilakukan secara keliru",
+          ),
+          label: "Deletion error",
+        },
+        {
+          value: v(
+            "Restoring page in accordance with community consensus",
+            "Memulihkan halaman sesuai dengan konsensus komunitas",
+          ),
+          label: "Community discussion outcome",
+        },
+        {
+          value: v(
+            "Restoring page following review of the deletion decision",
+            "Memulihkan halaman setelah peninjauan terhadap keputusan penghapusan",
+          ),
+          label: "Review outcome",
+        },
+        {
+          value: v(
+            "Restoring page; the issues that led to deletion have been resolved",
+            "Memulihkan halaman; masalah yang menyebabkan penghapusan telah diselesaikan",
+          ),
+          label: "Underlying issues resolved",
+        },
+        {
+          value: v(
+            "Restoring page following verification of copyright status or permission",
+            "Memulihkan halaman setelah verifikasi status hak cipta atau izin",
+          ),
+          label: "Copyright clarified",
+        },
+        {
+          value: v(
+            "Restoring page for technical or administrative purposes",
+            "Memulihkan halaman untuk keperluan teknis atau administratif",
+          ),
+          label: "Technical reasons",
+        },
+        {
+          value: v(
+            "Restoring page; the new version no longer meets the previous deletion criteria",
+            "Memulihkan halaman; versi baru tidak lagi memenuhi kriteria penghapusan sebelumnya",
+          ),
+          label: "Sufficient new content",
+        },
+        {
+          value: v(
+            "Restoring page; the original basis for deletion is no longer applicable",
+            "Memulihkan halaman; dasar penghapusan awal tidak lagi berlaku",
+          ),
+          label: "Deletion rationale no longer applies",
+        },
+        {
+          value: v(
+            "Restoring page following approval of a restoration request",
+            "Memulihkan halaman setelah persetujuan permintaan pemulihan",
+          ),
+          label: "Restoration request approved",
         },
       ],
     };

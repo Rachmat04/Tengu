@@ -20,6 +20,7 @@ This tool combines multiple moderation tasks into one workflow:
 - User blocking
 - Page rollback
 - Page deletion
+- Page undeletion
 - Page protection
 - Revision deletion
 
@@ -40,6 +41,9 @@ The goal is to reduce the need to switch between different interfaces when perfo
 
 ### Page deletion
 - Mass-deletes pages created by a target user.
+
+### Page undeletion
+- Restores a page that has previously been deleted; only available for pages with existing deletion log entries.
 
 ### Page protection
 - Mass-protects pages created or edited by a target user.
