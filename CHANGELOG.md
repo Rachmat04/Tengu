@@ -1,3 +1,33 @@
+## 2.33.2
+
+### Added
+
+* Added a `hasBlockRights` permission check to determine whether the current user possesses the `block` right
+* Added a dedicated lock message for users without block permissions:
+  * `you do not have the block right on this wiki`
+
+### Changed
+
+* Updated Unblock section initialisation to fetch:
+  * Target block information (`apiGet`)
+  * Current user permissions (`rightsPromise`)
+  concurrently using `Promise.all()`.
+* Updated lock-state handling to display permission-specific messages when access is restricted due to missing rights
+* Refined the lock evaluation sequence so permission checks are incorporated into the Unblock section's availability logic
+
+### Fixed
+
+* Fixed unnecessary delays caused by sequential retrieval of block status and user rights
+* Fixed generic lock behaviour that did not clearly distinguish permission-related restrictions from other lock conditions
+* Fixed transient UI states that could briefly display incorrect lock messages before permission checks completed
+
+### Improved
+
+* Improved interface responsiveness by resolving block-status and rights information simultaneously
+* Improved user feedback through more specific lock explanations
+* Improved consistency between permission evaluation and section availability
+* Reduced UI flicker by preserving the loading state until all required data has been resolved
+
 ## 2.33.1
 
 ### Added

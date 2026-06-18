@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.33.1
+ * Version 2.33.2
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -5153,18 +5153,24 @@ $(function () {
 
               // --- Block status ---
               setNote(divBlockStatus, "loading", "Loading block status...");
+              // Keep this as "loading" so admins don't see a flashing permission error
               applyUnblockStatusLock(true, "block status is still loading");
 
               (async function () {
                 try {
-                  const data = await apiGet({
-                    action: "query",
-                    list: "users",
-                    usprop: "blockinfo",
-                    ususers: target,
-                  });
+                  const [data, myInfo] = await Promise.all([
+                    apiGet({
+                      action: "query",
+                      list: "users",
+                      usprop: "blockinfo",
+                      ususers: target,
+                    }),
+                    rightsPromise,
+                  ]);
+
                   const user =
                     data.query && data.query.users && data.query.users[0];
+                  const hasBlockRights = myInfo.rights.includes("block");
 
                   if (user && user.blockedby) {
                     const expiry =
@@ -5189,17 +5195,32 @@ $(function () {
 
                     // Pre-fill block controls with the active block's settings.
                     applyActiveBlockSettings(user);
-                    // Explicitly lift the loading status lock since an active block exists.
-                    applyUnblockStatusLock(false);
 
-                    // An active block exists — reveal the unblock control.
-                    divUnblock.classList.remove("tng-hidden");
+                    if (hasBlockRights) {
+                      applyUnblockStatusLock(false);
+                      divUnblock.classList.remove("tng-hidden");
+                    } else {
+                      // Lock explicitly for lack of rights (Unblock scenario)
+                      applyUnblockStatusLock(
+                        true,
+                        "you do not have the block right on this wiki",
+                      );
+                    }
                   } else {
-                    // Not currently blocked — check most recent block log entry
-                    applyUnblockStatusLock(
-                      true,
-                      "this account is not currently blocked",
-                    );
+                    // Not currently blocked
+                    if (!hasBlockRights) {
+                      // Lock explicitly for lack of rights (Block scenario)
+                      applyUnblockStatusLock(
+                        true,
+                        "you do not have the block right on this wiki",
+                      );
+                    } else {
+                      applyUnblockStatusLock(
+                        true,
+                        "this account is not currently blocked",
+                      );
+                    }
+
                     try {
                       const logData = await apiGet({
                         action: "query",
@@ -5239,13 +5260,11 @@ $(function () {
                     }
                   }
                 } catch (e) {
-                  // Changed state from "loading" to "error" (or "inactive" if "error" isn't defined in your CSS)
                   setNote(
                     divBlockStatus,
                     "error",
                     "Could not load block status.",
                   );
-                  // PATCH: Update the lock reason so it doesn't get stuck saying "loading"
                   applyUnblockStatusLock(true, "could not fetch block status");
                 }
               })();
