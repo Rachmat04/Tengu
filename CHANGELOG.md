@@ -1,3 +1,28 @@
+## 2.35.0
+
+### Changed
+
+* Merged the standalone account unblock action into the main Start button workflow, alongside Rollback, Block, Page deletion, Page undeletion, Page protection, and Revision deletion
+* Replaced the free-text-only unblock reason field with a dropdown of preset unblock reasons (with support for a custom reason), matching the reason-selection pattern used elsewhere in the interface
+
+### Added
+
+* Added `UNBLOCK_REASONS` to `Tengu-reasons.js`, providing a set of preset unblock reasons grouped under Administrative, Appeal accepted, Block has served its purpose, Community or administrative review, Changed circumstances, Account security, and General
+* Added an `unblock` counter to the progress dialogue's operation statistics
+
+### Removed
+
+* Removed the standalone "Unblock account" button and its dedicated progress dialogue
+* Removed the now-unused `.tng-unblock-row` and `.tng-unblock-controls` styles from `Tengu.css`
+
+### Fixed
+
+* Fixed the Unblock section not being locked to user mode when Tengu was opened directly in page mode (it was previously only mode-locked when switching modes after the dialogue had already opened)
+
+### Notes
+
+* Unblock remains available only in user mode, and only when the target account has an active block, consistent with previous behaviour
+
 ## 2.34.1
 
 ### Fixed

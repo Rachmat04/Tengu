@@ -303,6 +303,125 @@ window.TenguReasons = {
         },
       ],
 
+      UNBLOCK_REASONS: [
+        {
+          value: "",
+          label: "Other:",
+        },
+        {
+          group: "Administrative",
+          items: [
+            {
+              value: v(
+                "Lifting the block because it was applied in error, to the wrong account, or due to an administrative or technical error",
+                "Pencabutan blokir karena diterapkan secara keliru, pada akun yang salah, atau akibat kesalahan administratif maupun teknis",
+              ),
+              label: "Block applied in error",
+            },
+            {
+              value: v(
+                "Lifting the block because the circumstances or rationale underlying the block are no longer applicable",
+                "Pencabutan blokir karena keadaan atau alasan yang mendasari blokir tersebut tidak lagi berlaku",
+              ),
+              label: "Original reason no longer applies",
+            },
+          ],
+        },
+        {
+          group: "Appeal accepted",
+          items: [
+            {
+              value: v(
+                "Lifting the block following review and acceptance of the user's appeal, explanation, or clarification",
+                "Pencabutan blokir setelah peninjauan dan penerimaan terhadap permohonan, penjelasan, atau klarifikasi pengguna",
+              ),
+              label: "Appeal accepted",
+            },
+            {
+              value: v(
+                "Lifting the block after the user demonstrated an understanding of relevant policies and a willingness to comply with them",
+                "Pencabutan blokir setelah pengguna menunjukkan pemahaman terhadap kebijakan yang relevan dan kesediaan untuk mematuhinya",
+              ),
+              label: "Commitment to improved conduct",
+            },
+          ],
+        },
+        {
+          group: "Block has served its purpose",
+          items: [
+            {
+              value: v(
+                "Lifting the block because the preventative purpose of the block has been achieved and the risk of further disruption is considered reduced",
+                "Pencabutan blokir karena tujuan pencegahan dari blokir tersebut telah tercapai dan risiko gangguan lebih lanjut dianggap berkurang",
+              ),
+              label: "Block has served its purpose",
+            },
+          ],
+        },
+        {
+          group: "Community or administrative review",
+          items: [
+            {
+              value: v(
+                "Lifting the block in accordance with the outcome of a review, community discussion, consensus, or approved review request",
+                "Pencabutan blokir sesuai dengan hasil peninjauan, diskusi komunitas, konsensus, atau permintaan peninjauan yang telah disetujui",
+              ),
+              label: "Following review outcome",
+            },
+            {
+              value: v(
+                "Lifting the block at the discretion of an administrator based on the circumstances of the case",
+                "Pencabutan blokir atas kebijaksanaan pengurus berdasarkan keadaan kasus yang bersangkutan",
+              ),
+              label: "At administrator discretion",
+            },
+          ],
+        },
+        {
+          group: "Changed circumstances",
+          items: [
+            {
+              value: v(
+                "Lifting the block because relevant circumstances have changed since the block was imposed, including where a dispute has been resolved or an exception has been granted",
+                "Pencabutan blokir karena keadaan yang relevan telah berubah sejak blokir diterapkan, termasuk apabila perselisihan telah diselesaikan atau pengecualian telah diberikan",
+              ),
+              label: "Circumstances have changed",
+            },
+          ],
+        },
+        {
+          group: "Account security",
+          items: [
+            {
+              value: v(
+                "Lifting the block after account ownership or security concerns have been satisfactorily resolved",
+                "Pencabutan blokir setelah masalah kepemilikan akun atau keamanan telah diselesaikan secara memuaskan",
+              ),
+              label: "Account secured",
+            },
+          ],
+        },
+        {
+          group: "General",
+          items: [
+            {
+              value: v(
+                "Lifting the block following approval of a request for unblock",
+                "Pencabutan blokir setelah persetujuan permintaan pencabutan blokir",
+              ),
+              label: "Request granted",
+            },
+            {
+              value: v(
+                "Lifting the block because continued enforcement is no longer considered necessary",
+                "Pencabutan blokir karena penerapan lebih lanjut tidak lagi dianggap diperlukan",
+              ),
+              label: "No longer necessary",
+            },
+          ],
+        },
+      ],
+
       PAGE_DELETE_REASONS: [
         {
           value: "",

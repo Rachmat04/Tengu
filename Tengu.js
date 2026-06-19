@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.34.1
+ * Version 2.35.0
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -58,6 +58,7 @@ $(function () {
         const PROTECTION_REASONS = tenguReasonsObj.PROTECTION_REASONS;
         const REVDEL_REASONS = tenguReasonsObj.REVDEL_REASONS;
         const UNDELETE_REASONS = tenguReasonsObj.UNDELETE_REASONS;
+        const UNBLOCK_REASONS = tenguReasonsObj.UNBLOCK_REASONS;
 
         const tenguWarnObj = window.TenguWarn.get(useIndonesian);
         const WARN_MESSAGES = tenguWarnObj.WARN_MESSAGES;
@@ -520,6 +521,7 @@ $(function () {
           let isAborted = false;
           const stats = {
             block: 0,
+            unblock: 0,
             rollback: 0,
             revdel: 0,
             delete: 0,
@@ -770,6 +772,50 @@ $(function () {
                 }
               }
             } // end if (proceedWithBlock)
+          }
+
+          // --- Unblock ---
+          if (config.unblock && config.mode === "user" && !isAborted) {
+            try {
+              await apiPost({
+                action: "unblock",
+                user: targetVal,
+                reason: config.unblockReason + toolTag,
+              });
+              addLog(`[Unblock] Successfully unblocked ${targetVal}`);
+              stats.unblock++;
+
+              if (config.notifyUnblock) {
+                const talkTitle = new mw.Title(targetVal, 3).getPrefixedText();
+                const notifySummaryUnblock =
+                  (useIndonesian
+                    ? "Notifikasi: Pemberitahuan pencabutan pemblokiran"
+                    : "Notification: Account unblock notice") + toolTag;
+                const notice = useIndonesian
+                  ? `== Pemberitahuan pencabutan pemblokiran ==\nPemblokiran pada akun "${targetVal}" telah dicabut dengan alasan berikut: ${config.unblockReason}.\n\nPemberitahuan ini dikirimkan secara otomatis. Silakan sampaikan pertanyaan atau keberatan ke halaman pembicaraan saya. ~~~~`
+                  : `== Account unblock notice ==\nThe block on the account "${targetVal}" has been lifted due to the following reason: ${config.unblockReason}.\n\nThis notification was posted automatically. Please direct any questions or concerns to my user talk page. ~~~~`;
+                try {
+                  await apiPost({
+                    action: "edit",
+                    title: talkTitle,
+                    appendtext: "\n\n" + notice,
+                    summary: notifySummaryUnblock,
+                    bot: true,
+                  });
+                  addLog(`[Notify] Notification posted to: ${talkTitle}`);
+                } catch (e) {
+                  addLog(
+                    `[Notify] Failed to post unblock notification to ${talkTitle}: ${formatApiError(e)}`,
+                    "warn",
+                  );
+                }
+              }
+            } catch (e) {
+              addLog(
+                `[Unblock] Failed to unblock ${targetVal}: ${formatApiError(e)}`,
+                true,
+              );
+            }
           }
 
           // --- Page undeletion ---
@@ -3559,11 +3605,11 @@ $(function () {
 
           // ============================================================================
           // Unblock section — user mode only
-          // Lifts an active block on the target. Kept separate from the Block section
-          // since it is a standalone, immediate action rather than a configurable one
-          // queued for the Start button. Locked whenever the target has no active
-          // local block; updateSectionStatus() drives the lock/unlock as the target
-          // changes or the block is lifted.
+          // Lifts an active block on the target. Queued for execution via the Start
+          // button alongside the other action sections, rather than acting
+          // immediately. Locked whenever the target has no active local block;
+          // updateSectionStatus() drives the lock/unlock as the target changes or
+          // the block is lifted.
           // ============================================================================
           const {
             section: secUnblock,
@@ -3571,175 +3617,47 @@ $(function () {
             enableChk: chkUnblock,
           } = makeSection("Unblock", "🔓", false);
 
-          // Text box, button, and checkbox all sit inside this one row container.
-          const divUnblock = document.createElement("div");
-          divUnblock.className = "tng-unblock-row";
-
-          // Create a dedicated flex container to hold the input and button side-by-side
-          const unblockInputRow = document.createElement("div");
-          unblockInputRow.style.display = "flex";
-          unblockInputRow.style.gap = "8px"; // Adds a small visual gap between the elements
-          unblockInputRow.style.marginBottom = "8px"; // Separates the row from the checkbox below
-
-          const inputUnblockReason = makeInput("Unblock reason (optional)");
-          // Force the text box to occupy roughly 80% of the available space
-          inputUnblockReason.style.flex = "8";
-          inputUnblockReason.style.boxSizing = "border-box";
-
-          const btnUnblock = makeBtn("Unblock account", "destructive");
-          btnUnblock.className += " tng-btn-sm";
-          // Force the button to occupy roughly 20% of the available space
-          btnUnblock.style.flex = "2";
-          btnUnblock.style.boxSizing = "border-box";
-
-          // Append the input and button to the new flex row
-          unblockInputRow.appendChild(inputUnblockReason);
-          unblockInputRow.appendChild(btnUnblock);
+          const { row: rowUnblockReason, field: fieldUnblockReason } =
+            makeRow("Reason");
+          const selUnblockReason = makeSelect(UNBLOCK_REASONS);
+          const {
+            wrap: filteredWrapUnblockReason,
+            filter: filterUnblockReason,
+          } = makeFilteredSelect(selUnblockReason);
+          const inputUnblockReason = makeInput("Full reason to submit");
+          const btnUnblockAppend = makeBtn("Append", "quiet");
+          btnUnblockAppend.className += " tng-btn-sm";
+          btnUnblockAppend.addEventListener("click", function () {
+            const cur = inputUnblockReason.value;
+            const add = selUnblockReason.value;
+            if (!add) return;
+            inputUnblockReason.value = cur ? cur + "; " + add : add;
+            selUnblockReason.selectedIndex = 0;
+            filterUnblockReason.value = "";
+            filterUnblockReason.dispatchEvent(new Event("input"));
+          });
+          const reasonWrapUnblock = document.createElement("div");
+          reasonWrapUnblock.className = "tng-reason-wrap";
+          const reasonTopUnblock = document.createElement("div");
+          reasonTopUnblock.className = "tng-reason-top";
+          reasonTopUnblock.appendChild(filteredWrapUnblockReason);
+          reasonTopUnblock.appendChild(btnUnblockAppend);
+          reasonWrapUnblock.appendChild(reasonTopUnblock);
+          reasonWrapUnblock.appendChild(inputUnblockReason);
+          fieldUnblockReason.appendChild(reasonWrapUnblock);
+          bodyUnblock.appendChild(rowUnblockReason);
 
           const { wrap: wrapNotifyUnblock, chk: chkNotifyUnblock } =
             makeCheckbox("Send unblock notification to user talk page", true);
           wrapNotifyUnblock.title =
             "When ticked, a notification will be posted to the target user's talk page after the block is lifted.";
+          const checksUnblock = document.createElement("div");
+          checksUnblock.className = "tng-checks";
+          checksUnblock.style.paddingLeft = "0";
+          checksUnblock.appendChild(wrapNotifyUnblock);
+          bodyUnblock.appendChild(checksUnblock);
 
-          // Append the 80/20 flex row and the checkbox to the main container
-          divUnblock.appendChild(unblockInputRow);
-          divUnblock.appendChild(wrapNotifyUnblock);
-
-          bodyUnblock.appendChild(divUnblock);
           body.appendChild(secUnblock);
-
-          // Performs the unblock action immediately. Unlike Block, Rollback, etc.,
-          // this is a standalone action that runs on click rather than being
-          // queued through the Start button and work(). A small progress dialogue
-          // is shown so the unblock and notification steps are visible to the user.
-          btnUnblock.addEventListener("click", async function () {
-            const targetVal = inputTarget.value.trim();
-            if (!targetVal) return;
-
-            const toolTag = " — [[w:id:Pengguna:Rachmat04/Tengu.js|⛩️]]";
-            const reason = inputUnblockReason.value.trim();
-            const sendNotify = chkNotifyUnblock.checked;
-
-            btnUnblock.disabled = true;
-            const origLabel = btnUnblock.textContent;
-            btnUnblock.textContent = "Unblocking...";
-
-            const {
-              overlay: ubOverlay,
-              body: ubBody,
-              footer: ubFooter,
-            } = createDialog({
-              title: "Unblocking account",
-              icon: "🔓",
-            });
-
-            const ubLogBox = document.createElement("div");
-            ubLogBox.className = "tng-log-box";
-            ubBody.appendChild(ubLogBox);
-
-            let ubLogCount = 0;
-            const addUnblockLog = (msg, isErr) => {
-              const d = document.createElement("div");
-              ubLogCount++;
-              const _n = new Date();
-              const _ts =
-                _n.getUTCFullYear() +
-                "-" +
-                String(_n.getUTCMonth() + 1).padStart(2, "0") +
-                "-" +
-                String(_n.getUTCDate()).padStart(2, "0") +
-                " " +
-                String(_n.getUTCHours()).padStart(2, "0") +
-                ":" +
-                String(_n.getUTCMinutes()).padStart(2, "0") +
-                ":" +
-                String(_n.getUTCSeconds()).padStart(2, "0") +
-                " UTC";
-              d.textContent = ubLogCount + ". [" + _ts + "] " + msg;
-              if (isErr === "warn") {
-                d.className = "tng-log-warn";
-              } else if (isErr) {
-                d.className = "tng-log-err";
-              } else {
-                d.className = "tng-log-succ";
-              }
-              ubLogBox.appendChild(d);
-              ubLogBox.scrollTop = ubLogBox.scrollHeight;
-            };
-
-            const ubBtnClose = makeBtn("Close", "quiet");
-            ubBtnClose.disabled = true;
-            ubBtnClose.addEventListener("click", () =>
-              ubOverlay.closeHandler(),
-            );
-            ubFooter.appendChild(ubBtnClose);
-
-            addUnblockLog("⏳ Unblocking " + targetVal + "...");
-
-            try {
-              await apiPost({
-                action: "unblock",
-                user: targetVal,
-                reason: reason + toolTag,
-              });
-              addUnblockLog("[Unblock] Successfully unblocked " + targetVal);
-
-              if (sendNotify) {
-                const talkTitle = new mw.Title(targetVal, 3).getPrefixedText();
-                const reasonDisplay =
-                  reason ||
-                  (useIndonesian
-                    ? "(tidak ada alasan yang diberikan)"
-                    : "(no reason given)");
-                const notifySummaryUnblock =
-                  (useIndonesian
-                    ? "Notifikasi: Pemberitahuan pencabutan pemblokiran"
-                    : "Notification: Account unblock notice") + toolTag;
-                const notice = useIndonesian
-                  ? `== Pemberitahuan pencabutan pemblokiran ==\nPemblokiran pada akun "${targetVal}" telah dicabut dengan alasan berikut: ${reasonDisplay}.\n\nPemberitahuan ini dikirimkan secara otomatis. Silakan sampaikan pertanyaan atau keberatan ke halaman pembicaraan saya. ~~~~`
-                  : `== Account unblock notice ==\nThe block on the account "${targetVal}" has been lifted due to the following reason: ${reasonDisplay}.\n\nThis notification was posted automatically. Please direct any questions or concerns to my user talk page. ~~~~`;
-                try {
-                  await apiPost({
-                    action: "edit",
-                    title: talkTitle,
-                    appendtext: "\n\n" + notice,
-                    summary: notifySummaryUnblock,
-                    bot: true,
-                  });
-                  addUnblockLog(
-                    "[Notify] Notification posted to: " + talkTitle,
-                  );
-                } catch (e) {
-                  addUnblockLog(
-                    "[Notify] Failed to post unblock notification to " +
-                      talkTitle +
-                      ": " +
-                      formatApiError(e),
-                    "warn",
-                  );
-                }
-              }
-
-              addUnblockLog("✅ Unblock operation completed.");
-              inputUnblockReason.value = "";
-              btnUnblock.textContent = origLabel;
-              // Re-check block status so the section locks itself again
-              // (the account is no longer blocked) and the status note updates.
-              updateSectionStatus();
-            } catch (e) {
-              addUnblockLog(
-                "[Unblock] Failed to unblock " +
-                  targetVal +
-                  ": " +
-                  formatApiError(e),
-                true,
-              );
-              btnUnblock.textContent = origLabel;
-              btnUnblock.disabled = false;
-            }
-
-            ubBtnClose.disabled = false;
-          });
 
           // Reversible lock for this section, driven solely by the target's live
           // block status. Tracked separately from the mode lock (applyModeLock)
@@ -3769,9 +3687,6 @@ $(function () {
               unblockStatusLocked.add(chkUnblock);
               chkUnblock.checked = false;
               chkUnblock.disabled = true;
-              inputUnblockReason.disabled = true;
-              btnUnblock.disabled = true;
-              chkNotifyUnblock.disabled = true;
               secUnblock.classList.add("tng-disabled");
               bodyUnblock.classList.add("tng-hidden");
 
@@ -3787,9 +3702,6 @@ $(function () {
               if (!unblockStatusLocked.has(chkUnblock)) return; // Not status-locked
               unblockStatusLocked.delete(chkUnblock);
               chkUnblock.disabled = false;
-              inputUnblockReason.disabled = false;
-              btnUnblock.disabled = false;
-              chkNotifyUnblock.disabled = false;
               secUnblock.classList.toggle("tng-disabled", !chkUnblock.checked);
 
               if (arrow) {
@@ -4727,16 +4639,16 @@ $(function () {
               "Tengu is targeting a page, not a user.",
             );
             applyModeLock(
-              secWarn,
-              bodyWarn,
-              chkWarn,
+              secUnblock,
+              bodyUnblock,
+              chkUnblock,
               true,
               "Tengu is targeting a page, not a user.",
             );
             applyModeLock(
-              secRevdel,
-              bodyRevdel,
-              chkRevdel,
+              secWarn,
+              bodyWarn,
+              chkWarn,
               true,
               "Tengu is targeting a page, not a user.",
             );
@@ -4759,6 +4671,7 @@ $(function () {
             btnStart.disabled = !(
               chkRollback.checked ||
               chkBlock.checked ||
+              chkUnblock.checked ||
               chkPagedel.checked ||
               chkUndelete.checked ||
               chkProtect.checked ||
@@ -4770,6 +4683,7 @@ $(function () {
           // Bind monitoring handlers to state changes of operational modules
           chkRollback.addEventListener("change", updateStartBtn);
           chkBlock.addEventListener("change", updateStartBtn);
+          chkUnblock.addEventListener("change", updateStartBtn);
           chkPagedel.addEventListener("change", updateStartBtn);
           chkUndelete.addEventListener("change", updateStartBtn);
           chkProtect.addEventListener("change", updateStartBtn);
@@ -4841,6 +4755,9 @@ $(function () {
 
               return reason;
             }
+            function buildUnblockReason() {
+              return inputUnblockReason.value.trim() || selUnblockReason.value;
+            }
             function buildPagedelReason() {
               return inputPagedelReason.value.trim() || selPagedelReason.value;
             }
@@ -4905,6 +4822,9 @@ $(function () {
               blockTalk: chkTalk.checked,
               blockMail: chkMail.checked,
               blockHide: chkHidename.checked,
+              unblock: chkUnblock.checked && !chkUnblock.disabled,
+              unblockReason: buildUnblockReason() + suffix,
+              notifyUnblock: chkNotifyUnblock.checked,
               massdel: chkPagedel.checked,
               massdelTalk: chkPagedelTalk.checked,
               massdelRedirects: chkPagedelRedirects.checked,
@@ -5573,7 +5493,6 @@ $(function () {
 
                     if (hasBlockRights) {
                       applyUnblockStatusLock(false);
-                      divUnblock.classList.remove("tng-hidden");
                     } else {
                       // Lock explicitly for lack of rights (Unblock scenario)
                       applyUnblockStatusLock(
