@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.37.0
+ * Version 2.38.0
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -1026,14 +1026,18 @@ $(function () {
             const undoSummaryStr = config.rollbackReason
               ? config.rollbackReason + toolTag
               : config.rollbackShow
-                ? "Reverting edits by " + targetVal + toolTag
-                : "Revert edits" + toolTag;
+                ? (useIndonesian
+                    ? "Mengembalikan suntingan oleh " + targetVal
+                    : "Reverting edits by " + targetVal) + toolTag
+                : (useIndonesian ? "Mengembalikan suntingan" : "Revert edits") +
+                  toolTag;
 
             const rbSummaryStr = config.rollbackReason
               ? config.rollbackReason + toolTag
               : config.rollbackShow
                 ? ""
-                : "Revert edits" + toolTag;
+                : (useIndonesian ? "Mengembalikan suntingan" : "Revert edits") +
+                  toolTag;
 
             // Execute standard rollback or undo operation sequentially based on settings
             if (config.rollbackMethod === "undo") {

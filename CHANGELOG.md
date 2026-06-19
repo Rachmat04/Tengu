@@ -1,3 +1,13 @@
+## 2.38.0
+
+### Fixed
+
+* Fixed the rollback and undo fallback edit summaries always being generated in English regardless of wiki language. Indonesian-language wikis now receive "Mengembalikan suntingan" and "Mengembalikan suntingan oleh [username]" instead of "Revert edits" and "Reverting edits by [username]"
+
+### Notes
+
+* This only affects the fallback summary used when no custom rollback/undo reason is supplied. A user-supplied reason is unaffected, as it already passes through unchanged
+
 ## 2.37.0
 
 ### Changed
