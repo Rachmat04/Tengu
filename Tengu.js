@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.34.0
+ * Version 2.34.1
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -4036,10 +4036,7 @@ $(function () {
             enableChk: chkUndelete,
           } = makeSection("Page undeletion", "♻️", false);
 
-          chkUndelete.disabled = true;
           const hdrUndelete = secUndelete.querySelector(".tng-section-header");
-          hdrUndelete.title =
-            "Only available for pages with previous deletion log entries.";
 
           // Page undeletion status note — populated by updateSectionStatus() when the target changes
           const divUndeleteStatus = document.createElement("div");
@@ -4078,6 +4075,60 @@ $(function () {
           reasonWrapUndelete.appendChild(inputUndeleteReason);
           fieldUndeleteReason.appendChild(reasonWrapUndelete);
           bodyUndelete.appendChild(rowUndeleteReason);
+
+          // Reversible lock for this section, driven by the target's deletion
+          // history and the current mode. Tracked separately from the
+          // permanent rights lock (lockSection) via its own set, mirroring
+          // the pattern used by applyUnblockStatusLock().
+          const undeleteStatusLocked = new Set();
+          function applyUndeleteStatusLock(locked, reason) {
+            const arrow = secUndelete.querySelector(".tng-section-arrow");
+
+            if (locked) {
+              if (undeleteStatusLocked.has(chkUndelete)) {
+                hdrUndelete.title = "Unavailable: " + reason;
+                const existingBadge = hdrUndelete.querySelector(
+                  ".tng-undelete-lock-badge",
+                );
+                if (existingBadge)
+                  existingBadge.title = "Unavailable: " + reason;
+                return;
+              }
+              undeleteStatusLocked.add(chkUndelete);
+              chkUndelete.checked = false;
+              chkUndelete.disabled = true;
+              secUndelete.classList.add("tng-disabled");
+              bodyUndelete.classList.add("tng-hidden");
+              if (arrow) arrow.classList.add("tng-hidden");
+              hdrUndelete.title = "Unavailable: " + reason;
+              const badge = document.createElement("span");
+              badge.className = "tng-rights-lock tng-undelete-lock-badge";
+              badge.textContent = "🔒";
+              badge.title = "Unavailable: " + reason;
+              hdrUndelete.appendChild(badge);
+            } else {
+              if (!undeleteStatusLocked.has(chkUndelete)) return;
+              undeleteStatusLocked.delete(chkUndelete);
+              chkUndelete.disabled = false;
+              secUndelete.classList.toggle(
+                "tng-disabled",
+                !chkUndelete.checked,
+              );
+              if (arrow) {
+                arrow.classList.remove("tng-hidden");
+                arrow.classList.toggle(
+                  "tng-arrow-up",
+                  !bodyUndelete.classList.contains("tng-hidden"),
+                );
+              }
+              hdrUndelete.title = "";
+              const badge = hdrUndelete.querySelector(
+                ".tng-undelete-lock-badge",
+              );
+              if (badge) badge.remove();
+            }
+          }
+          applyUndeleteStatusLock(true, "no target has been specified");
 
           body.appendChild(secUndelete);
 
@@ -4229,13 +4280,9 @@ $(function () {
             enableChk: chkProtectRecreation,
           } = makeSection("Protect against recreation", "🚫", false);
 
-          // Disabled at construction time. Enabled only after the API confirms the page does not exist.
-          chkProtectRecreation.disabled = true;
           const hdrProtectRecreation = secProtectRecreation.querySelector(
             ".tng-section-header",
           );
-          hdrProtectRecreation.title =
-            "Only available when the target page does not exist.";
 
           const selProtectRecreationLevel = makeSelect([
             { value: "autoconfirmed", label: "Autoconfirmed users" },
@@ -4311,6 +4358,66 @@ $(function () {
             rowProtectRecreationLevel.style.opacity = enabled ? "" : "0.5";
             rowProtectRecreationExpiry.style.opacity = enabled ? "" : "0.5";
           });
+
+          // Reversible lock for this section, driven by whether the target
+          // page exists. Tracked separately from the mode lock
+          // (applyModeLock) via its own set, mirroring the pattern used by
+          // applyUnblockStatusLock().
+          const protectRecreationStatusLocked = new Set();
+          function applyProtectRecreationStatusLock(locked, reason) {
+            const arrow =
+              secProtectRecreation.querySelector(".tng-section-arrow");
+
+            if (locked) {
+              if (protectRecreationStatusLocked.has(chkProtectRecreation)) {
+                hdrProtectRecreation.title = "Unavailable: " + reason;
+                const existingBadge = hdrProtectRecreation.querySelector(
+                  ".tng-protectrecreation-lock-badge",
+                );
+                if (existingBadge)
+                  existingBadge.title = "Unavailable: " + reason;
+                return;
+              }
+              protectRecreationStatusLocked.add(chkProtectRecreation);
+              chkProtectRecreation.checked = false;
+              chkProtectRecreation.disabled = true;
+              secProtectRecreation.classList.add("tng-disabled");
+              bodyProtectRecreation.classList.add("tng-hidden");
+              if (arrow) arrow.classList.add("tng-hidden");
+              hdrProtectRecreation.title = "Unavailable: " + reason;
+              const badge = document.createElement("span");
+              badge.className =
+                "tng-rights-lock tng-protectrecreation-lock-badge";
+              badge.textContent = "🔒";
+              badge.title = "Unavailable: " + reason;
+              hdrProtectRecreation.appendChild(badge);
+            } else {
+              if (!protectRecreationStatusLocked.has(chkProtectRecreation))
+                return;
+              protectRecreationStatusLocked.delete(chkProtectRecreation);
+              chkProtectRecreation.disabled = false;
+              secProtectRecreation.classList.toggle(
+                "tng-disabled",
+                !chkProtectRecreation.checked,
+              );
+              if (arrow) {
+                arrow.classList.remove("tng-hidden");
+                arrow.classList.toggle(
+                  "tng-arrow-up",
+                  !bodyProtectRecreation.classList.contains("tng-hidden"),
+                );
+              }
+              hdrProtectRecreation.title = "";
+              const badge = hdrProtectRecreation.querySelector(
+                ".tng-protectrecreation-lock-badge",
+              );
+              if (badge) badge.remove();
+            }
+          }
+          applyProtectRecreationStatusLock(
+            true,
+            "no target has been specified",
+          );
 
           body.appendChild(secProtectRecreation);
 
@@ -5392,11 +5499,7 @@ $(function () {
                 "Enter a target to see deletion history.",
               );
               if (!undeleteRightsLocked) {
-                chkUndelete.disabled = true;
-                chkUndelete.checked = false;
-                secUndelete.classList.add("tng-disabled");
-                hdrUndelete.title =
-                  "Only available for pages with previous deletion log entries.";
+                applyUndeleteStatusLock(true, "no target has been specified");
               }
               applyUnblockStatusLock(true, "no target has been specified");
               return;
@@ -5420,11 +5523,7 @@ $(function () {
                 "Not applicable in user mode.",
               );
               if (!undeleteRightsLocked) {
-                chkUndelete.disabled = true;
-                chkUndelete.checked = false;
-                secUndelete.classList.add("tng-disabled");
-                hdrUndelete.title =
-                  "Only available in page mode for pages with previous deletion log entries.";
+                applyUndeleteStatusLock(true, "not applicable in user mode");
               }
 
               // --- Block status ---
@@ -5705,13 +5804,9 @@ $(function () {
                   "loading",
                   "Not applicable — special pages cannot be undeleted.",
                 );
-                if (!undeleteRightsLocked) {
-                  chkUndelete.disabled = true;
-                  chkUndelete.checked = false;
-                  secUndelete.classList.add("tng-disabled");
-                  hdrUndelete.title =
-                    "Only available for pages with previous deletion log entries.";
-                }
+                // Already padlock-locked via applySpecialPageLocks()/applyModeLock(),
+                // called before updateSectionStatus() on every target change; no
+                // further action needed here besides the status notes above.
                 return;
               }
 
@@ -5726,6 +5821,10 @@ $(function () {
                   divUndeleteStatus,
                   "loading",
                   "Loading deletion history...",
+                );
+                applyUndeleteStatusLock(
+                  true,
+                  "deletion history is still loading",
                 );
               }
               (async function () {
@@ -5755,12 +5854,7 @@ $(function () {
                         (e.comment || "(no reason given)"),
                     );
                     if (!undeleteRightsLocked) {
-                      chkUndelete.disabled = false;
-                      secUndelete.classList.toggle(
-                        "tng-disabled",
-                        !chkUndelete.checked,
-                      );
-                      hdrUndelete.title = "";
+                      applyUndeleteStatusLock(false);
                       setNote(
                         divUndeleteStatus,
                         "active",
@@ -5774,11 +5868,10 @@ $(function () {
                       "No prior deletion history found.",
                     );
                     if (!undeleteRightsLocked) {
-                      chkUndelete.disabled = true;
-                      chkUndelete.checked = false;
-                      secUndelete.classList.add("tng-disabled");
-                      hdrUndelete.title =
-                        "Unavailable: this page has no deletion log entries.";
+                      applyUndeleteStatusLock(
+                        true,
+                        "this page has no deletion log entries",
+                      );
                       setNote(
                         divUndeleteStatus,
                         "inactive",
@@ -5804,11 +5897,10 @@ $(function () {
 
               // Reset recreation-protection controls synchronously on every target change.
               // The async call below re-enables them only if the page is confirmed to be missing.
-              chkProtectRecreation.disabled = true;
-              chkProtectRecreation.checked = false;
-              secProtectRecreation.classList.add("tng-disabled");
-              hdrProtectRecreation.title =
-                "Only available when the target page does not exist.";
+              applyProtectRecreationStatusLock(
+                true,
+                "page existence has not yet been confirmed",
+              );
               selProtectRecreationLevel.disabled = true;
               selProtectRecreationExpiry.disabled = true;
               inputProtectRecreationExpiry.disabled = true;
@@ -5845,19 +5937,14 @@ $(function () {
                   // The synchronous reset above this IIFE already locks them for the existing-page
                   // case, but an explicit else branch is kept here to handle any out-of-order resolution.
                   if (pageIsMissing) {
-                    chkProtectRecreation.disabled = false;
-                    secProtectRecreation.classList.toggle(
-                      "tng-disabled",
-                      !chkProtectRecreation.checked,
-                    );
+                    applyProtectRecreationStatusLock(false);
                     hdrProtectRecreation.title =
                       "When ticked, the page will be protected against recreation using create-level protection.";
                   } else {
-                    chkProtectRecreation.disabled = true;
-                    chkProtectRecreation.checked = false;
-                    secProtectRecreation.classList.add("tng-disabled");
-                    hdrProtectRecreation.title =
-                      "Only available when the target page does not exist.";
+                    applyProtectRecreationStatusLock(
+                      true,
+                      "the target page exists",
+                    );
                     selProtectRecreationLevel.disabled = true;
                     selProtectRecreationExpiry.disabled = true;
                     inputProtectRecreationExpiry.disabled = true;

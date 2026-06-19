@@ -1,3 +1,14 @@
+## 2.34.1
+
+### Fixed
+
+* Fixed the chevron on the **Page undeletion** and **Protect against recreation** sections remaining visible and clickable when those features were unavailable, instead of being replaced by a padlock icon as with other locked sections
+* Added `applyUndeleteStatusLock()` and `applyProtectRecreationStatusLock()`, mirroring the existing `applyUnblockStatusLock()` pattern, so both sections now collapse, hide their chevron, and display a padlock with an explanatory tooltip whenever they are locked due to target status (no target specified, user mode, deletion history still loading, no deletion history found, or the target page existing)
+
+### Improved
+
+* Improved consistency of section-lock indicators across the interface
+
 ## 2.34.0
 
 ### Added
