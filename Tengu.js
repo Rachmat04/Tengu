@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.35.0
+ * Version 2.36.0
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -59,6 +59,8 @@ $(function () {
         const REVDEL_REASONS = tenguReasonsObj.REVDEL_REASONS;
         const UNDELETE_REASONS = tenguReasonsObj.UNDELETE_REASONS;
         const UNBLOCK_REASONS = tenguReasonsObj.UNBLOCK_REASONS;
+        const PROTECT_RECREATION_REASONS =
+          tenguReasonsObj.PROTECT_RECREATION_REASONS;
 
         const tenguWarnObj = window.TenguWarn.get(useIndonesian);
         const WARN_MESSAGES = tenguWarnObj.WARN_MESSAGES;
@@ -1383,7 +1385,7 @@ $(function () {
                       protections:
                         "create=" + config.massdelProtectRecreationLevel,
                       expiry: config.massdelProtectRecreationExpiry,
-                      reason: config.massdelReason + toolTag,
+                      reason: config.massdelProtectRecreationReason + toolTag,
                     });
                     addLog(
                       `[Protect] Protected deleted page against recreation: ${title}`,
@@ -1652,10 +1654,7 @@ $(function () {
                 title: targetVal,
                 protections: "create=" + config.protectRecreationLevel,
                 expiry: config.protectRecreationExpiry,
-                reason:
-                  (useIndonesian
-                    ? "Perlindungan terhadap pembuatan ulang"
-                    : "Protection against re-creation") + toolTag,
+                reason: config.protectRecreationReason + toolTag,
               });
               addLog(
                 "[Protect] Protected page against recreation: " + targetVal,
@@ -3925,13 +3924,74 @@ $(function () {
           rowRecreationExpiry.style.opacity = "0.5";
           wrapRecreationGroup.appendChild(rowRecreationExpiry);
 
+          // Reason for protecting the deleted page against recreation
+          const { row: rowRecreationReason, field: fieldRecreationReason } =
+            makeRow("Reason");
+          const selPagedelProtectRecreationReason = makeSelect(
+            PROTECT_RECREATION_REASONS,
+          );
+          selPagedelProtectRecreationReason.disabled = true;
+          const {
+            wrap: filteredWrapPagedelProtectRecreationReason,
+            filter: filterPagedelProtectRecreationReason,
+          } = makeFilteredSelect(selPagedelProtectRecreationReason);
+          const inputPagedelProtectRecreationReason = makeInput(
+            "Full reason to submit",
+          );
+          inputPagedelProtectRecreationReason.disabled = true;
+          const btnPagedelProtectRecreationReasonAppend = makeBtn(
+            "Append",
+            "quiet",
+          );
+          btnPagedelProtectRecreationReasonAppend.className += " tng-btn-sm";
+          btnPagedelProtectRecreationReasonAppend.addEventListener(
+            "click",
+            function () {
+              const cur = inputPagedelProtectRecreationReason.value;
+              const add = selPagedelProtectRecreationReason.value;
+              if (!add) return;
+              inputPagedelProtectRecreationReason.value = cur
+                ? cur + "; " + add
+                : add;
+              selPagedelProtectRecreationReason.selectedIndex = 0;
+              filterPagedelProtectRecreationReason.value = "";
+              filterPagedelProtectRecreationReason.dispatchEvent(
+                new Event("input"),
+              );
+            },
+          );
+          const reasonWrapPagedelProtectRecreation =
+            document.createElement("div");
+          reasonWrapPagedelProtectRecreation.className = "tng-reason-wrap";
+          const reasonTopPagedelProtectRecreation =
+            document.createElement("div");
+          reasonTopPagedelProtectRecreation.className = "tng-reason-top";
+          reasonTopPagedelProtectRecreation.appendChild(
+            filteredWrapPagedelProtectRecreationReason,
+          );
+          reasonTopPagedelProtectRecreation.appendChild(
+            btnPagedelProtectRecreationReasonAppend,
+          );
+          reasonWrapPagedelProtectRecreation.appendChild(
+            reasonTopPagedelProtectRecreation,
+          );
+          reasonWrapPagedelProtectRecreation.appendChild(
+            inputPagedelProtectRecreationReason,
+          );
+          fieldRecreationReason.appendChild(reasonWrapPagedelProtectRecreation);
+          rowRecreationReason.style.opacity = "0.5";
+          wrapRecreationGroup.appendChild(rowRecreationReason);
+
           chkPagedelProtectRecreation.addEventListener("change", function () {
             const enabled = chkPagedelProtectRecreation.checked;
             selPagedelProtectRecreationLevel.disabled = !enabled;
             selPagedelProtectRecreationExpiry.disabled = !enabled;
             inputPagedelProtectRecreationExpiry.disabled = !enabled;
+            selPagedelProtectRecreationReason.disabled = !enabled;
+            inputPagedelProtectRecreationReason.disabled = !enabled;
             rowRecreationLevel.style.opacity = enabled ? "" : "0.5";
             rowRecreationExpiry.style.opacity = enabled ? "" : "0.5";
+            rowRecreationReason.style.opacity = enabled ? "" : "0.5";
           });
 
           checksPagedel.appendChild(wrapRecreationGroup);
@@ -4261,14 +4321,64 @@ $(function () {
           rowProtectRecreationExpiry.style.opacity = "0.5";
           bodyProtectRecreation.appendChild(rowProtectRecreationExpiry);
 
+          // Reason for protecting the page against recreation
+          const {
+            row: rowProtectRecreationReason,
+            field: fieldProtectRecreationReason,
+          } = makeRow("Reason");
+          const selProtectRecreationReason = makeSelect(
+            PROTECT_RECREATION_REASONS,
+          );
+          selProtectRecreationReason.disabled = true;
+          const {
+            wrap: filteredWrapProtectRecreationReason,
+            filter: filterProtectRecreationReason,
+          } = makeFilteredSelect(selProtectRecreationReason);
+          const inputProtectRecreationReason = makeInput(
+            "Full reason to submit",
+          );
+          inputProtectRecreationReason.disabled = true;
+          const btnProtectRecreationReasonAppend = makeBtn("Append", "quiet");
+          btnProtectRecreationReasonAppend.className += " tng-btn-sm";
+          btnProtectRecreationReasonAppend.addEventListener(
+            "click",
+            function () {
+              const cur = inputProtectRecreationReason.value;
+              const add = selProtectRecreationReason.value;
+              if (!add) return;
+              inputProtectRecreationReason.value = cur ? cur + "; " + add : add;
+              selProtectRecreationReason.selectedIndex = 0;
+              filterProtectRecreationReason.value = "";
+              filterProtectRecreationReason.dispatchEvent(new Event("input"));
+            },
+          );
+          const reasonWrapProtectRecreation = document.createElement("div");
+          reasonWrapProtectRecreation.className = "tng-reason-wrap";
+          const reasonTopProtectRecreation = document.createElement("div");
+          reasonTopProtectRecreation.className = "tng-reason-top";
+          reasonTopProtectRecreation.appendChild(
+            filteredWrapProtectRecreationReason,
+          );
+          reasonTopProtectRecreation.appendChild(
+            btnProtectRecreationReasonAppend,
+          );
+          reasonWrapProtectRecreation.appendChild(reasonTopProtectRecreation);
+          reasonWrapProtectRecreation.appendChild(inputProtectRecreationReason);
+          fieldProtectRecreationReason.appendChild(reasonWrapProtectRecreation);
+          rowProtectRecreationReason.style.opacity = "0.5";
+          bodyProtectRecreation.appendChild(rowProtectRecreationReason);
+
           // Enable/disable the sub-controls when the checkbox is toggled.
           chkProtectRecreation.addEventListener("change", function () {
             const enabled = chkProtectRecreation.checked;
             selProtectRecreationLevel.disabled = !enabled;
             selProtectRecreationExpiry.disabled = !enabled;
             inputProtectRecreationExpiry.disabled = !enabled;
+            selProtectRecreationReason.disabled = !enabled;
+            inputProtectRecreationReason.disabled = !enabled;
             rowProtectRecreationLevel.style.opacity = enabled ? "" : "0.5";
             rowProtectRecreationExpiry.style.opacity = enabled ? "" : "0.5";
+            rowProtectRecreationReason.style.opacity = enabled ? "" : "0.5";
           });
 
           // Reversible lock for this section, driven by whether the target
@@ -4772,6 +4882,18 @@ $(function () {
                 inputUndeleteReason.value.trim() || selUndeleteReason.value
               );
             }
+            function buildPagedelProtectRecreationReason() {
+              const sel = selPagedelProtectRecreationReason.value;
+              const inp = inputPagedelProtectRecreationReason.value.trim();
+              if (sel && inp) return sel + ": " + inp;
+              return sel || inp;
+            }
+            function buildProtectRecreationReason() {
+              const sel = selProtectRecreationReason.value;
+              const inp = inputProtectRecreationReason.value.trim();
+              if (sel && inp) return sel + ": " + inp;
+              return sel || inp;
+            }
             let rdHides = "";
             if (chkRdContent.checked) rdHides += "content|";
             if (chkRdSummary.checked) rdHides += "comment|";
@@ -4837,6 +4959,8 @@ $(function () {
                 selPagedelProtectRecreationExpiry.value === "other"
                   ? inputPagedelProtectRecreationExpiry.value.trim() || "never"
                   : selPagedelProtectRecreationExpiry.value,
+              massdelProtectRecreationReason:
+                buildPagedelProtectRecreationReason() + suffix,
               massdelReason: buildPagedelReason() + suffix,
               undelete: chkUndelete.checked && !chkUndelete.disabled,
               undeleteReason: buildUndeleteReason() + suffix,
@@ -4857,6 +4981,7 @@ $(function () {
                 selProtectRecreationExpiry.value === "other"
                   ? inputProtectRecreationExpiry.value.trim() || "never"
                   : selProtectRecreationExpiry.value,
+              protectRecreationReason: buildProtectRecreationReason() + suffix,
               notifyBlock: chkNotifyBlock.checked,
               clearTalkPageBeforeNotify: chkClearTalkPageBeforeNotify.checked,
               notifyDelete: chkNotifyDelete.checked,

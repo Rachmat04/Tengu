@@ -1,3 +1,21 @@
+## 2.36.0
+
+### Added
+
+* Added `PROTECT_RECREATION_REASONS` to `Tengu-reasons.js`, providing five preset reasons for recreation-protection actions: repeated recreation, recreation contrary to community consensus, recreation of promotional or spam content, recreation of policy-ineligible content, and recreation of disruptive content
+* Added a **Reason** field to the standalone **Protect against recreation** section
+* Added a **Reason** field to the **Protect from recreation after deletion** option in the **Page deletion** section
+
+### Changed
+
+* The standalone recreation-protection action now submits the selected reason instead of a fixed English/Indonesian string
+* The post-deletion recreation-protection action now submits its own reason instead of reusing the page deletion reason
+
+### Notes
+
+* Both new reason fields use the same filterable-select-plus-append pattern as the other reason fields in Tengu
+* Packages do not currently set either new reason field; this matches the existing behaviour for the recreation-protection checkbox, level, and expiry controls
+
 ## 2.35.0
 
 ### Changed

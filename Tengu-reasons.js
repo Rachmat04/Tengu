@@ -1166,6 +1166,47 @@ window.TenguReasons = {
           label: "Restoration request approved",
         },
       ],
+      PROTECT_RECREATION_REASONS: [
+        {
+          value: "",
+          label: "Other:",
+        },
+        {
+          value: v(
+            "Protected from recreation following repeated recreation of deleted content",
+            "Dilindungi dari pembuatan ulang setelah konten yang dihapus berulang kali dibuat ulang",
+          ),
+          label: "Repeated recreation",
+        },
+        {
+          value: v(
+            "Protected from recreation after community consensus determined that the page should remain deleted",
+            "Dilindungi dari pembuatan ulang setelah konsensus komunitas menetapkan bahwa halaman tersebut harus tetap dihapus",
+          ),
+          label: "Recreation contrary to community consensus",
+        },
+        {
+          value: v(
+            "Protected from recreation following repeated recreation of promotional, advertising, or spam content",
+            "Dilindungi dari pembuatan ulang setelah konten promosi, iklan, atau spam berulang kali dibuat ulang",
+          ),
+          label: "Recreation of promotional or spam content",
+        },
+        {
+          value: v(
+            "Protected from recreation due to repeated attempts to recreate content that is clearly ineligible under project policies",
+            "Dilindungi dari pembuatan ulang karena upaya berulang untuk membuat ulang konten yang jelas tidak memenuhi kebijakan proyek",
+          ),
+          label: "Recreation of policy-ineligible content",
+        },
+        {
+          value: v(
+            "Protected from recreation following repeated recreation of hoax, attack, copyright-infringing, or otherwise disruptive content",
+            "Dilindungi dari pembuatan ulang setelah konten hoaks, serangan, pelanggaran hak cipta, atau konten disruptif lainnya berulang kali dibuat ulang",
+          ),
+          label: "Recreation of disruptive content",
+        },
+      ],
     };
   },
 };
