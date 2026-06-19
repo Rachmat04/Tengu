@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.36.0
+ * Version 2.37.0
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -446,7 +446,7 @@ $(function () {
           hdr.appendChild(arrow);
           const sectionBody = document.createElement("div");
           sectionBody.className = "tng-section-body tng-hidden";
-          sectionBody.style.maxHeight = "320px";
+          sectionBody.style.maxHeight = "360px";
           hdr.addEventListener("click", function () {
             const isHidden = sectionBody.classList.toggle("tng-hidden");
             arrow.classList.toggle("tng-arrow-up", !isHidden);
@@ -4994,40 +4994,70 @@ $(function () {
               os: chkOversight.checked,
             };
 
-            // Inject high-impact verification confirmation prompt modal for deletion and protection features
-            if (config.massdel || config.protect) {
-              const confirmDlg = createDialog({
-                title: "Confirm dangerous operations",
-                icon: "⚠️",
-              });
+            // Builds a list of every action that will run, based on the
+            // frozen config object. Used by the confirmation dialogue so
+            // the user can verify their selections before any action runs.
+            function buildEnabledFeaturesList() {
+              const features = [];
+              if (config.rollback) features.push("↩️ Rollback");
+              if (config.block) features.push("⛔️ Block");
+              if (config.unblock) features.push("🔓 Unblock");
+              if (config.warn) features.push("⚠️ User warning");
+              if (config.massdel) features.push("🗑️ Page deletion");
+              if (config.undelete) features.push("♻️ Page undeletion");
+              if (config.protect) features.push("🛡️ Page protection");
+              if (config.protectRecreation)
+                features.push("🚫 Protect against recreation");
+              if (config.rd) features.push("👁️ Revision deletion");
+              return features;
+            }
 
-              const warningMsg = document.createElement("p");
-              warningMsg.style.margin = "0 0 12px 0";
-              warningMsg.innerHTML =
-                "You have enabled <b>page deletion</b> or <b>page protection</b> tasks. These operations can modify multiple pages across the wiki simultaneously. Please confirm that you want to execute these tasks.";
-              confirmDlg.body.appendChild(warningMsg);
+            // Confirmation is now required before every execution, not only
+            // for deletion and protection, listing each enabled feature so
+            // the user can see exactly what Tengu is about to do.
+            const enabledFeatures = buildEnabledFeaturesList();
+            const confirmDlg = createDialog({
+              title: "Confirm selected operations",
+              icon: "⚠️",
+            });
 
-              const btnCancelConfirm = makeBtn("Cancel", "quiet");
-              btnCancelConfirm.addEventListener("click", function () {
-                confirmDlg.overlay.closeHandler();
-              });
+            const warningMsg = document.createElement("p");
+            warningMsg.style.margin = "0 0 8px 0";
+            warningMsg.innerHTML =
+              "Tengu will execute the following operation" +
+              (enabledFeatures.length === 1 ? "" : "s") +
+              " on <b>" +
+              mw.html.escape(config.target) +
+              "</b>. Please confirm before proceeding.";
+            confirmDlg.body.appendChild(warningMsg);
 
-              const btnProceedConfirm = makeBtn(
-                "Confirm and execute",
-                "destructive",
-              );
-              btnProceedConfirm.addEventListener("click", function () {
-                confirmDlg.overlay.closeHandler();
-                overlay.closeHandler();
-                work();
-              });
+            const featureList = document.createElement("ul");
+            featureList.style.margin = "0 0 4px 0";
+            featureList.style.paddingLeft = "20px";
+            for (const feature of enabledFeatures) {
+              const li = document.createElement("li");
+              li.textContent = feature;
+              featureList.appendChild(li);
+            }
+            confirmDlg.body.appendChild(featureList);
 
-              confirmDlg.footer.appendChild(btnCancelConfirm);
-              confirmDlg.footer.appendChild(btnProceedConfirm);
-            } else {
+            const btnCancelConfirm = makeBtn("Cancel", "quiet");
+            btnCancelConfirm.addEventListener("click", function () {
+              confirmDlg.overlay.closeHandler();
+            });
+
+            const btnProceedConfirm = makeBtn(
+              "Confirm and execute",
+              "destructive",
+            );
+            btnProceedConfirm.addEventListener("click", function () {
+              confirmDlg.overlay.closeHandler();
               overlay.closeHandler();
               work();
-            }
+            });
+
+            confirmDlg.footer.appendChild(btnCancelConfirm);
+            confirmDlg.footer.appendChild(btnProceedConfirm);
           });
 
           footer.appendChild(btnCancel);

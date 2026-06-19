@@ -1,3 +1,15 @@
+## 2.37.0
+
+### Changed
+
+* Confirmation before execution now applies to every feature, not only page deletion and page protection. Pressing the Start button always opens a confirmation dialogue
+* The confirmation dialogue now lists each enabled feature by name, so the user can verify their selections before any action runs
+* Increased `.tng-section-body` max-height from 400px to 460px, and the user/page info display-section max-height from 320px to 360px, to reduce the number of sections that show an internal scrollbar
+
+### Notes
+
+* The confirmation dialogue title was changed from "Confirm dangerous operations" to "Confirm selected operations" to reflect its expanded scope
+
 ## 2.36.0
 
 ### Added
