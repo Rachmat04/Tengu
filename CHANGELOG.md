@@ -1,3 +1,15 @@
+## 2.39.0
+
+### Added
+
+* Added an **Upload restriction** drop-down to the Page protection section, positioned beneath **Move restriction**
+* Added `isTargetFilePage()` and `updateUploadAvailability()`, which disable (without hiding) the new control whenever the target does not resolve to the File namespace
+* Added submission of upload-level protection (`upload=`) alongside edit and move restrictions for page protection requests where the target is a file page
+
+### Notes
+
+* Upload restriction only applies to pages in the File namespace; outside it, the control is disabled but remains visible, consistent with how other namespace-specific controls are handled elsewhere in Tengu
+
 ## 2.38.0
 
 ### Fixed

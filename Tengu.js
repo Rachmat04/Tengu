@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.38.0
+ * Version 2.39.0
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -1175,6 +1175,22 @@ $(function () {
 
           const notifyQueue = new Map();
 
+          // Builds the protections parameter for a page protection request, adding
+          // upload= for File-namespace pages. [Unverified] — assumes upload-level
+          // protection is submitted through the same action=protect call as edit/move;
+          // this has not been independently confirmed against the MediaWiki API.
+          function buildPageProtections(title) {
+            let protections = `edit=${config.protectEdit}|move=${config.protectMove}`;
+            try {
+              if (new mw.Title(title).getNamespaceId() === 6) {
+                protections += `|upload=${config.protectUpload}`;
+              }
+            } catch (e) {
+              // Skip if the title cannot be resolved
+            }
+            return protections;
+          }
+
           // Execute sequential page protections if enabled
           if (config.protect && pagesToProtect.size > 0) {
             for (const title of pagesToProtect) {
@@ -1183,7 +1199,7 @@ $(function () {
                 const protectData = {
                   action: "protect",
                   title: title,
-                  protections: `edit=${config.protectEdit}|move=${config.protectMove}`,
+                  protections: buildPageProtections(title),
                   expiry: config.protectExpiry,
                   reason: config.protectReason + toolTag,
                   ...(config.protectCascade ? { cascade: "" } : {}),
@@ -4143,6 +4159,23 @@ $(function () {
           fieldProtectMove.appendChild(wrapSelect(selProtectMove));
           bodyProtect.appendChild(rowProtectMove);
 
+          // Upload restriction — only applicable to file pages (File namespace).
+          // The control stays visible but disabled outside that namespace; see
+          // isTargetFilePage() / updateUploadAvailability() below.
+          const { row: rowProtectUpload, field: fieldProtectUpload } =
+            makeRow("Upload restriction");
+          const selProtectUpload = makeSelect([
+            { value: "all", label: "All users (unrestricted)" },
+            { value: "autoconfirmed", label: "Autoconfirmed users" },
+            { value: "sysop", label: "Administrators only" },
+          ]);
+          selProtectUpload.disabled = true;
+          fieldProtectUpload.appendChild(wrapSelect(selProtectUpload));
+          rowProtectUpload.style.opacity = "0.5";
+          rowProtectUpload.title =
+            "Only available when the target is a file page.";
+          bodyProtect.appendChild(rowProtectUpload);
+
           const { row: rowProtectExpiry, field: fieldProtectExpiry } =
             makeRow("Expiry");
           const selProtectExpiry = makeSelect([
@@ -4582,6 +4615,31 @@ $(function () {
             }
           }
 
+          // Returns true when in page mode and the current target input resolves to a
+          // file page (NS 6). Upload restriction only applies within the File namespace.
+          function isTargetFilePage() {
+            if (tenguMode !== "page") return false;
+            const title = inputTarget.value.trim();
+            if (!title) return false;
+            try {
+              return new mw.Title(title).getNamespaceId() === 6;
+            } catch (e) {
+              return /^(file|image):/i.test(title);
+            }
+          }
+
+          // Enables the upload restriction control only when the target resolves to a
+          // file page; disables it (without hiding it) otherwise.
+          function updateUploadAvailability() {
+            const isFilePage = isTargetFilePage();
+            selProtectUpload.disabled = !isFilePage;
+            rowProtectUpload.style.opacity = isFilePage ? "" : "0.5";
+            rowProtectUpload.title = isFilePage
+              ? ""
+              : "Only available when the target is a file page.";
+            if (!isFilePage) selProtectUpload.value = "all";
+          }
+
           // Applies or removes reversible mode locks on page deletion and protection
           // when the target is a special page. Delegates to applyModeLock() so locks
           // are cleared automatically when the target changes or mode is switched.
@@ -4732,6 +4790,7 @@ $(function () {
             // Apply or remove special page locks when switching to page mode
             if (!isUserModeNow) applySpecialPageLocks(targetIsSpecial);
 
+            updateUploadAvailability();
             updateStartBtn();
             updateSectionStatus();
           }
@@ -4971,6 +5030,7 @@ $(function () {
               protect: chkProtect.checked,
               protectEdit: selProtectEdit.value,
               protectMove: selProtectMove.value,
+              protectUpload: selProtectUpload.value,
               protectExpiry:
                 selProtectExpiry.value === "other"
                   ? inputProtectExpiry.value.trim() || "never"
@@ -5388,6 +5448,8 @@ $(function () {
             selProtectEdit.value = pt.edit || "all";
             updateCascadeAvailability();
             selProtectMove.value = pt.move || "all";
+            selProtectUpload.value = pt.upload || "all";
+            updateUploadAvailability();
             selProtectExpiry.value = pt.expiry || "1 day";
             inputProtectExpiry.value = "";
             inputProtectExpiry.classList.add("tng-hidden");
@@ -5498,10 +5560,17 @@ $(function () {
             const moveEntry = active.find(function (p) {
               return p.type === "move";
             });
+            const uploadEntry = active.find(function (p) {
+              return p.type === "upload";
+            });
 
             // Edit and move restriction levels.
             if (editEntry) selProtectEdit.value = editEntry.level || "all";
             if (moveEntry) selProtectMove.value = moveEntry.level || "all";
+            // Upload restriction level. Only meaningful for file pages; the control's
+            // enabled state is governed separately by updateUploadAvailability().
+            if (uploadEntry)
+              selProtectUpload.value = uploadEntry.level || "all";
 
             // Re-evaluate cascade availability after updating the edit level.
             updateCascadeAvailability();
@@ -5985,7 +6054,9 @@ $(function () {
               rowProtectRecreationLevel.style.opacity = "0.5";
               rowProtectRecreationExpiry.style.opacity = "0.5";
 
-              // --- Protection status ---
+              // Upload restriction availability can be determined from the title
+              // alone, so re-evaluate synchronously rather than waiting on the API.
+              updateUploadAvailability();
 
               // --- Protection status ---
               setNote(
@@ -6114,6 +6185,7 @@ $(function () {
               applySpecialPageLocks(targetIsSpecial);
               updateModeNotice(false, targetIsSpecial);
             }
+            updateUploadAvailability();
             updateSectionStatus();
           });
 
