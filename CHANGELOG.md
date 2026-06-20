@@ -1,3 +1,19 @@
+## 2.40.0
+
+### Changed
+
+* The "Also delete the talk page" and "Delete redirects to deleted page" options in the page deletion section now also apply to each subpage when "Delete subpages of deleted page" is enabled
+* Updated both checkboxes' tooltips to describe the expanded scope
+
+### Fixed
+
+* Subpages removed via "Delete subpages of deleted page" previously left their talk pages and any redirects pointing to them untouched, even when the talk-page and redirect deletion options were enabled
+
+### Notes
+
+* No new checkboxes were added; the existing talk-page and redirect-deletion options now apply consistently to every page removed in the operation, including subpages
+* This brings actual behaviour in line with the existing tooltip wording, which already described the options as applying to "each deleted page"
+
 ## 2.39.1
 
 ### Fixed

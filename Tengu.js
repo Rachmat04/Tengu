@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.39.1
+ * Version 2.40.0
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -1176,7 +1176,7 @@ $(function () {
           const notifyQueue = new Map();
 
           // Builds the protections parameter for a page protection request, adding
-          // upload= for File-namespace pages. [Unverified] — assumes upload-level
+          // upload= for File-namespace pages. Assumes upload-level
           // protection is submitted through the same action=protect call as edit/move;
           // this has not been independently confirmed against the MediaWiki API.
           function buildPageProtections(title) {
@@ -1535,6 +1535,7 @@ $(function () {
                   const subpages =
                     (spData.query && spData.query.allpages) || [];
                   for (const sp of subpages) {
+                    let subpageDeleted = false;
                     try {
                       await apiPost({
                         action: "delete",
@@ -1551,12 +1552,108 @@ $(function () {
                       );
                       stats.delete++;
                       updateStatusDisplay();
+                      subpageDeleted = true;
                     } catch (e) {
                       addLog(
                         `[Delete] Failed to delete subpage ${sp.title}: ${formatApiError(e)}`,
                         true,
                       );
                     }
+
+                    // Also delete the subpage's talk page, reusing the
+                    // 'Also delete the talk page' option applied to the main page.
+                    if (subpageDeleted && config.massdelTalk) {
+                      try {
+                        const spTitleObj = new mw.Title(sp.title);
+                        if (!spTitleObj.isTalkPage()) {
+                          const spTalkTitle = spTitleObj
+                            .getTalkPage()
+                            .getPrefixedText();
+                          const spTalkInfo = await apiGet({
+                            action: "query",
+                            titles: spTalkTitle,
+                            formatversion: 2,
+                          });
+                          if (
+                            spTalkInfo.query &&
+                            spTalkInfo.query.pages[0] &&
+                            !spTalkInfo.query.pages[0].missing
+                          ) {
+                            await apiPost({
+                              action: "delete",
+                              title: spTalkTitle,
+                              reason:
+                                (useIndonesian
+                                  ? "Halaman pembicaraan dari subhalaman yang dihapus: "
+                                  : "Associated talk page of deleted subpage: ") +
+                                config.massdelReason +
+                                toolTag,
+                            });
+                            addLog(
+                              `[Delete] Deleted associated talk page of subpage: ${spTalkTitle}`,
+                            );
+                            stats.delete++;
+                            updateStatusDisplay();
+                          }
+                        }
+                      } catch (e) {
+                        addLog(
+                          `[Delete] Failed to delete talk page for subpage ${sp.title}: ${formatApiError(e)}`,
+                          true,
+                        );
+                      }
+                      await new Promise((resolve) => setTimeout(resolve, 100));
+                    }
+
+                    // Also delete redirects pointing to the subpage, reusing the
+                    // 'Delete redirects to deleted page' option applied to the main page.
+                    if (subpageDeleted && config.massdelRedirects) {
+                      try {
+                        const spRdData = await apiGet({
+                          action: "query",
+                          list: "backlinks",
+                          bltitle: sp.title,
+                          blfilterredir: "redirects",
+                          bllimit: "max",
+                          formatversion: 2,
+                        });
+                        const spRedirectPages =
+                          (spRdData.query && spRdData.query.backlinks) || [];
+                        for (const rdPage of spRedirectPages) {
+                          try {
+                            await apiPost({
+                              action: "delete",
+                              title: rdPage.title,
+                              reason:
+                                (useIndonesian
+                                  ? "Pengalihan ke subhalaman yang dihapus: "
+                                  : "Redirect to deleted subpage: ") +
+                                config.massdelReason +
+                                toolTag,
+                            });
+                            addLog(
+                              `[Delete] Deleted redirect to deleted subpage: ${rdPage.title}`,
+                            );
+                            stats.delete++;
+                            updateStatusDisplay();
+                          } catch (e) {
+                            addLog(
+                              `[Delete] Failed to delete redirect ${rdPage.title}: ${formatApiError(e)}`,
+                              true,
+                            );
+                          }
+                          await new Promise((resolve) =>
+                            setTimeout(resolve, 100),
+                          );
+                        }
+                      } catch (e) {
+                        addLog(
+                          `[Delete] Failed to fetch redirects for subpage ${sp.title}: ${formatApiError(e)}`,
+                          true,
+                        );
+                      }
+                    }
+
                     await new Promise((resolve) => setTimeout(resolve, 100));
                   }
                 } catch (e) {
@@ -3834,7 +3931,7 @@ $(function () {
             false,
           );
           wrapPagedelTalk.title =
-            "When ticked, the talk page of each deleted page will also be deleted if it exists. Pages that are already talk pages are skipped.";
+            "When ticked, the talk page of each deleted page will also be deleted if it exists, including subpages when 'Delete subpages of deleted page' is enabled. Pages that are already talk pages are skipped.";
           const checksPagedel = document.createElement("div");
           checksPagedel.className = "tng-checks";
           checksPagedel.style.paddingLeft = "0";
@@ -3843,7 +3940,7 @@ $(function () {
           const { wrap: wrapPagedelRedirects, chk: chkPagedelRedirects } =
             makeCheckbox("Delete redirects to deleted page", true);
           wrapPagedelRedirects.title =
-            "When ticked, all redirects pointing to each deleted page are also deleted. Redirects to a non-existent target serve no purpose and are removed automatically.";
+            "When ticked, all redirects pointing to each deleted page are also deleted, including subpages when 'Delete subpages of deleted page' is enabled. Redirects to a non-existent target serve no purpose and are removed automatically.";
           checksPagedel.appendChild(wrapPagedelRedirects);
 
           // 'Delete subpages of deleted page' option
