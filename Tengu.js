@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.40.0
+ * Version 2.41.0
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -3083,6 +3083,34 @@ $(function () {
               });
           });
 
+          // Checks whether this wiki has the 'extendedconfirmed' protection level
+          // configured, via siprop=restrictions. This level does not exist on all
+          // wikis, so the corresponding option is only added to the Edit and Move
+          // restriction drop-downs once this has been confirmed.
+          const restrictionLevelsPromise = new Promise(function (resolve) {
+            rightsApi
+              .get({
+                action: "query",
+                meta: "siteinfo",
+                siprop: "restrictions",
+              })
+              .done(function (data) {
+                const levels =
+                  (data &&
+                    data.query &&
+                    data.query.restrictions &&
+                    data.query.restrictions.levels) ||
+                  [];
+                resolve({
+                  hasExtendedConfirmed:
+                    levels.indexOf("extendedconfirmed") !== -1,
+                });
+              })
+              .fail(function () {
+                resolve({ hasExtendedConfirmed: false });
+              });
+          });
+
           const defaultPackage = {
             tracingedits: { duration: 3600, indefregistered: true },
             rollback: {
@@ -4255,6 +4283,25 @@ $(function () {
           ]);
           fieldProtectMove.appendChild(wrapSelect(selProtectMove));
           bodyProtect.appendChild(rowProtectMove);
+
+          // Adds 'Extended confirmed users' between autoconfirmed and sysop on
+          // wikis where this protection level is configured. The group does not
+          // exist on all wikis, so the option is omitted entirely rather than
+          // shown disabled when unavailable. Applies only to Edit and Move
+          // restriction; Upload restriction and recreation-protection levels are
+          // unaffected.
+          restrictionLevelsPromise.then(function (info) {
+            if (!info.hasExtendedConfirmed) return;
+            [selProtectEdit, selProtectMove].forEach(function (sel) {
+              const opt = document.createElement("option");
+              opt.value = "extendedconfirmed";
+              opt.textContent = "Extended confirmed users";
+              const sysopOpt = Array.from(sel.options).find(function (o) {
+                return o.value === "sysop";
+              });
+              sel.insertBefore(opt, sysopOpt);
+            });
+          });
 
           // Upload restriction — only applicable to file pages (File namespace).
           // The control stays visible but disabled outside that namespace; see

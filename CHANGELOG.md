@@ -1,3 +1,15 @@
+## 2.41.0
+
+### Added
+
+* Added an "Extended confirmed users" option to the Edit restriction and Move restriction drop-downs in the Page protection section
+* Added a check via `siprop=restrictions` to determine whether the current wiki has the `extendedconfirmed` protection level configured
+
+### Notes
+
+* Extended confirmed is not configured on all wikis, so the option is omitted from the drop-downs entirely (rather than shown disabled) on wikis where it is unavailable
+* Upload restriction and the recreation-protection level drop-downs are unaffected; this change applies only to Edit restriction and Move restriction
+
 ## 2.40.0
 
 ### Changed
