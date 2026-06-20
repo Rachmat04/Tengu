@@ -1,3 +1,14 @@
+## 2.39.1
+
+### Fixed
+
+* Fixed the Revision deletion section remaining clickable in page mode when Tengu was opened directly on a page (outside the user or user talk namespace), instead of being locked as it is when switching modes via the toggle after the dialogue has already opened
+* Added the missing `applyModeLock()` call for the Revision deletion section to the initial mode-lock block in `init()`, matching the lock already applied by `applyModeRestrictions()`
+
+### Notes
+
+* Revision deletion remains available only in user mode, consistent with Rollback, Block, Unblock, and User warning
+
 ## 2.39.0
 
 ### Added

@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.39.0
+ * Version 2.39.1
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -4822,6 +4822,13 @@ $(function () {
               secWarn,
               bodyWarn,
               chkWarn,
+              true,
+              "Tengu is targeting a page, not a user.",
+            );
+            applyModeLock(
+              secRevdel,
+              bodyRevdel,
+              chkRevdel,
               true,
               "Tengu is targeting a page, not a user.",
             );
