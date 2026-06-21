@@ -1,3 +1,10 @@
+## 2.42.1
+
+### Changed
+
+* Added `GS_INELIGIBLE_HOSTS`, a static list of wikis known to fall outside the scope of the global sysops service, checked in `globalSysopsScopePromise` ahead of the CentralAuth `list=wikisets` lookup
+* The Report to global sysops section is now locked immediately, without an API round trip, whenever the current wiki's hostname appears on this list
+
 ## 2.42.0
 
 ### Added

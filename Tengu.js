@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.42.0
+ * Version 2.42.1
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -555,6 +555,106 @@ $(function () {
               );
           });
         }
+
+        async function submitGlobalSysopsReport(reportLine, toolTagText) {
+          const foreignApi = await getMetaForeignApi();
+          await new Promise((resolve, reject) => {
+            foreignApi
+              .postWithEditToken({
+                action: "edit",
+                title: "Global sysops/Requests",
+                appendtext: "\n" + reportLine,
+                summary: "Reporting account for urgent attention" + toolTagText,
+              })
+              .done(resolve)
+              .fail((code, err) =>
+                reject(
+                  code +
+                    (err && err.error && err.error.info
+                      ? ": " + err.error.info
+                      : ""),
+                ),
+              );
+          });
+        }
+
+        // Hostnames of wikis known to fall outside the scope of the global
+        // sysops service. Checked ahead of the CentralAuth wikiset lookup in
+        // globalSysopsScopePromise (Section 09), since that lookup matches a
+        // wikiset by name and has not been independently confirmed against a
+        // live wiki. This list takes precedence; the wikiset lookup remains
+        // as a fallback for wikis not listed here.
+        const GS_INELIGIBLE_HOSTS = new Set([
+          "an.wikipedia.org",
+          "ar.wikipedia.org",
+          "bg.wikipedia.org",
+          "bn.wikipedia.org",
+          "ca.wikipedia.org",
+          "cs.wikipedia.org",
+          "cy.wikipedia.org",
+          "da.wikipedia.org",
+          "de.wikipedia.org",
+          "el.wikipedia.org",
+          "en.wikipedia.org",
+          "eo.wikipedia.org",
+          "es.wikipedia.org",
+          "et.wikipedia.org",
+          "eu.wikipedia.org",
+          "fa.wikipedia.org",
+          "fi.wikipedia.org",
+          "fr.wikipedia.org",
+          "he.wikipedia.org",
+          "hr.wikipedia.org",
+          "hu.wikipedia.org",
+          "id.wikipedia.org",
+          "is.wikipedia.org",
+          "it.wikipedia.org",
+          "ja.wikipedia.org",
+          "ka.wikipedia.org",
+          "ko.wikipedia.org",
+          "lv.wikipedia.org",
+          "mk.wikipedia.org",
+          "ml.wikipedia.org",
+          "mr.wikipedia.org",
+          "nl.wikipedia.org",
+          "nn.wikipedia.org",
+          "no.wikipedia.org",
+          "pl.wikipedia.org",
+          "pt.wikipedia.org",
+          "ro.wikipedia.org",
+          "ru.wikipedia.org",
+          "simple.wikipedia.org",
+          "sk.wikipedia.org",
+          "sl.wikipedia.org",
+          "sv.wikipedia.org",
+          "ta.wikipedia.org",
+          "te.wikipedia.org",
+          "th.wikipedia.org",
+          "tr.wikipedia.org",
+          "ur.wikipedia.org",
+          "zh.wikipedia.org",
+          "zh-yue.wikipedia.org",
+          "cs.wiktionary.org",
+          "de.wiktionary.org",
+          "en.wiktionary.org",
+          "fr.wiktionary.org",
+          "nl.wiktionary.org",
+          "pl.wiktionary.org",
+          "de.wikisource.org",
+          "en.wikisource.org",
+          "fr.wikisource.org",
+          "he.wikisource.org",
+          "pl.wikisource.org",
+          "wikisource.org",
+          "de.wikivoyage.org",
+          "commons.wikimedia.org",
+          "www.wikidata.org",
+          "meta.wikimedia.org",
+          "login.wikimedia.org",
+          "pl.wikimedia.org",
+          "se.wikimedia.org",
+          "test.wikipedia.org",
+        ]);
 
         // ============================================================================
         // [Section 06] Dropdown list reasons
@@ -3180,10 +3280,19 @@ $(function () {
           });
 
           // Determines whether this wiki falls within the scope of the global
-          // sysops service, by inspecting CentralAuth wiki sets for one whose
-          // name matches "global sysop" and checking whether this wiki is
-          // included/excluded accordingly.
+          // sysops service. GS_INELIGIBLE_HOSTS is checked first, since it is
+          // a known-accurate reference list; the CentralAuth wikiset lookup
+          // below only runs as a fallback for wikis not on that list, and has
+          // not been independently confirmed against a live wiki.
           const globalSysopsScopePromise = new Promise(function (resolve) {
+            const currentHost = (mw.config.get("wgServer") || "").replace(
+              /^(?:https?:)?\/\//,
+              "",
+            );
+            if (GS_INELIGIBLE_HOSTS.has(currentHost)) {
+              resolve({ inScope: false, resolved: true });
+              return;
+            }
             rightsApi
               .get({
                 action: "query",
