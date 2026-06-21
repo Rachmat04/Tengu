@@ -1,3 +1,13 @@
+## 2.42.2
+
+### Changed
+
+* `globalSysopsScopePromise` now determines global sysops eligibility solely from `GS_INELIGIBLE_HOSTS`, resolving immediately instead of falling back to a CentralAuth `list=wikisets` lookup for wikis not on that list
+
+### Removed
+
+* Removed the `list=wikisets` API call previously used as a fallback eligibility check for wikis not listed in `GS_INELIGIBLE_HOSTS`
+
 ## 2.42.1
 
 ### Changed

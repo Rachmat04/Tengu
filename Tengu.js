@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.42.1
+ * Version 2.42.2
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -579,11 +579,15 @@ $(function () {
         }
 
         // Hostnames of wikis known to fall outside the scope of the global
-        // sysops service. Checked ahead of the CentralAuth wikiset lookup in
-        // globalSysopsScopePromise (Section 09), since that lookup matches a
-        // wikiset by name and has not been independently confirmed against a
-        // live wiki. This list takes precedence; the wikiset lookup remains
-        // as a fallback for wikis not listed here.
+        // sysops service. This is now the sole source of truth for global
+        // sysops eligibility, read directly by globalSysopsScopePromise
+        // (Section 09). A prior version fell back to a CentralAuth
+        // list=wikisets lookup for hosts not on this list, but that request
+        // returns the full wikisincluded array for every wikiset and was
+        // slow on every wiki not listed here — i.e. most eligible wikis —
+        // so it was removed in favour of relying on this list alone. Keep
+        // this list accurate and up to date, since there is no longer an
+        // API-based fallback to catch omissions.
         const GS_INELIGIBLE_HOSTS = new Set([
           "an.wikipedia.org",
           "ar.wikipedia.org",
@@ -3280,45 +3284,25 @@ $(function () {
           });
 
           // Determines whether this wiki falls within the scope of the global
-          // sysops service. GS_INELIGIBLE_HOSTS is checked first, since it is
-          // a known-accurate reference list; the CentralAuth wikiset lookup
-          // below only runs as a fallback for wikis not on that list, and has
-          // not been independently confirmed against a live wiki.
+          // sysops service. Resolved entirely from GS_INELIGIBLE_HOSTS: any
+          // host on that list is out of scope, every other host is treated as
+          // in scope. A prior version fell back to a CentralAuth
+          // list=wikisets lookup for hosts not on the list, but that request
+          // returns the full wikisincluded array for every wikiset, which is
+          // slow  — and ran on every wiki not listed in GS_INELIGIBLE_HOSTS, i.e. 
+          // on most eligible wikis, on every dialogue open. 
+          // Removing the API call means this resolves immediately, but eligibility
+          // now depends entirely on GS_INELIGIBLE_HOSTS being accurate; 
+          // there is no longer a fallback check.
           const globalSysopsScopePromise = new Promise(function (resolve) {
             const currentHost = (mw.config.get("wgServer") || "").replace(
               /^(?:https?:)?\/\//,
               "",
             );
-            if (GS_INELIGIBLE_HOSTS.has(currentHost)) {
-              resolve({ inScope: false, resolved: true });
-              return;
-            }
-            rightsApi
-              .get({
-                action: "query",
-                list: "wikisets",
-                wsprop: "type|wikisincluded",
-                wslimit: "max",
-              })
-              .done(function (data) {
-                const sets = (data && data.query && data.query.wikisets) || [];
-                const gsSet = sets.find(function (s) {
-                  return /global\s*sysop/i.test(s.name || "");
-                });
-                if (!gsSet) {
-                  resolve({ inScope: true, resolved: false });
-                  return;
-                }
-                const dbname = mw.config.get("wgDBname");
-                const included =
-                  (gsSet.wikisincluded || []).indexOf(dbname) !== -1;
-                const inScope =
-                  gsSet.type === "opt-in based" ? included : !included;
-                resolve({ inScope: inScope, resolved: true });
-              })
-              .fail(function () {
-                resolve({ inScope: true, resolved: false });
-              });
+            resolve({
+              inScope: !GS_INELIGIBLE_HOSTS.has(currentHost),
+              resolved: true,
+            });
           });
 
           const defaultPackage = {
@@ -5239,7 +5223,7 @@ $(function () {
                     secBlock,
                     bodyBlock,
                     chkBlock,
-                    "you do not have the block right on this wiki",
+                    "you do not have the block right on this wiki.",
                   );
                 }
                 if (!resolvedRights.hasRevdel) {
@@ -5247,7 +5231,7 @@ $(function () {
                     secRevdel,
                     bodyRevdel,
                     chkRevdel,
-                    "you do not have the deleterevision right on this wiki",
+                    "you do not have the deleterevision right on this wiki.",
                   );
                 }
               }
@@ -5798,13 +5782,13 @@ $(function () {
                   secBlock,
                   bodyBlock,
                   chkBlock,
-                  "you do not have the block right on this wiki",
+                  "you do not have the block right on this wiki.",
                 );
                 lockSection(
                   secUnblock,
                   bodyUnblock,
                   chkUnblock,
-                  "you do not have the block right on this wiki",
+                  "you do not have the block right on this wiki.",
                 );
               }
 
@@ -5813,7 +5797,7 @@ $(function () {
                   secPagedel,
                   bodyPagedel,
                   chkPagedel,
-                  "you do not have the delete right on this wiki",
+                  "you do not have the delete right on this wiki.",
                 );
 
               if (!hasProtect)
@@ -5821,7 +5805,7 @@ $(function () {
                   secProtect,
                   bodyProtect,
                   chkProtect,
-                  "you do not have the protect right on this wiki",
+                  "you do not have the protect right on this wiki.",
                 );
 
               if (!hasRevdel && tenguMode === "user")
@@ -5829,7 +5813,7 @@ $(function () {
                   secRevdel,
                   bodyRevdel,
                   chkRevdel,
-                  "you do not have the deleterevision right on this wiki",
+                  "you do not have the deleterevision right on this wiki.",
                 );
 
               if (!hasUndelete) {
@@ -5838,7 +5822,7 @@ $(function () {
                   secUndelete,
                   bodyUndelete,
                   chkUndelete,
-                  "you do not have the undelete right on this wiki",
+                  "you do not have the undelete right on this wiki.",
                 );
               }
 
@@ -6220,7 +6204,7 @@ $(function () {
                 "Not applicable in user mode.",
               );
               if (!undeleteRightsLocked) {
-                applyUndeleteStatusLock(true, "not applicable in user mode");
+                applyUndeleteStatusLock(true, "not applicable in user mode.");
               }
 
               // --- Global sysops report eligibility ---
@@ -6251,7 +6235,7 @@ $(function () {
                 );
                 applyGSStatusLock(
                   true,
-                  "this wiki is outside the scope of the global sysops service",
+                  "this wiki is outside the scope of the global sysops service.",
                 );
               }
 
@@ -6306,7 +6290,7 @@ $(function () {
                       // Lock explicitly for lack of rights (Unblock scenario)
                       applyUnblockStatusLock(
                         true,
-                        "you do not have the block right on this wiki",
+                        "you do not have the block right on this wiki.",
                       );
                     }
                   } else {
@@ -6315,12 +6299,12 @@ $(function () {
                       // Lock explicitly for lack of rights (Block scenario)
                       applyUnblockStatusLock(
                         true,
-                        "you do not have the block right on this wiki",
+                        "you do not have the block right on this wiki.",
                       );
                     } else {
                       applyUnblockStatusLock(
                         true,
-                        "this account is not currently blocked",
+                        "this account is not currently blocked.",
                       );
                     }
 
@@ -6674,7 +6658,7 @@ $(function () {
                   } else {
                     applyProtectRecreationStatusLock(
                       true,
-                      "the target page exists",
+                      "the target page exists.",
                     );
                     selProtectRecreationLevel.disabled = true;
                     selProtectRecreationExpiry.disabled = true;
