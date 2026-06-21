@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.41.0
+ * Version 2.42.0
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -61,6 +61,8 @@ $(function () {
         const UNBLOCK_REASONS = tenguReasonsObj.UNBLOCK_REASONS;
         const PROTECT_RECREATION_REASONS =
           tenguReasonsObj.PROTECT_RECREATION_REASONS;
+        const GLOBAL_SYSOPS_REPORT_REASONS =
+          tenguReasonsObj.GLOBAL_SYSOPS_REPORT_REASONS;
 
         const tenguWarnObj = window.TenguWarn.get(useIndonesian);
         const WARN_MESSAGES = tenguWarnObj.WARN_MESSAGES;
@@ -509,6 +511,51 @@ $(function () {
               );
           });
 
+        // Loads mw.ForeignApi and returns an instance pointed at Meta-Wiki.
+        function getMetaForeignApi() {
+          return new Promise((resolve, reject) => {
+            mw.loader.using(
+              "mediawiki.ForeignApi",
+              function () {
+                try {
+                  resolve(
+                    new mw.ForeignApi("https://meta.wikimedia.org/w/api.php"),
+                  );
+                } catch (e) {
+                  reject(e);
+                }
+              },
+              reject,
+            );
+          });
+        }
+
+        // Appends a pre-built report line to the bottom of Meta-Wiki's
+        // Global sysops/Requests page via action=edit + appendtext, avoiding
+        // a separate fetch-then-save round trip. Not marked as a bot edit, so
+        // the report stays visible in normal recent-changes views.
+        async function submitGlobalSysopsReport(reportLine, toolTagText) {
+          const foreignApi = await getMetaForeignApi();
+          await new Promise((resolve, reject) => {
+            foreignApi
+              .postWithEditToken({
+                action: "edit",
+                title: "Global sysops/Requests",
+                appendtext: "\n" + reportLine,
+                summary: "Reporting account for urgent attention" + toolTagText,
+              })
+              .done(resolve)
+              .fail((code, err) =>
+                reject(
+                  code +
+                    (err && err.error && err.error.info
+                      ? ": " + err.error.info
+                      : ""),
+                ),
+              );
+          });
+        }
+
         // ============================================================================
         // [Section 06] Dropdown list reasons
         // Houses pre-populated reason sets for rollbacks, page deletions, and block actions.
@@ -530,6 +577,7 @@ $(function () {
             undelete: 0,
             protect: 0,
             unlink: 0,
+            report: 0,
             error: 0,
           };
           const toolTag = " — [[w:id:Pengguna:Rachmat04/Tengu.js|⛩️]]";
@@ -546,13 +594,13 @@ $(function () {
           // Helper function to update status dynamically
           const updateStatusDisplay = () => {
             const statusText = isAborted ? "Aborted." : "Processing...";
-            const summaryLine = `<b>Status:</b> ${statusText}<br/>Summary: <b>${stats.rollback}</b> reverted | <b>${stats.delete}</b> deleted | <b>${stats.undelete}</b> undeleted | <b>${stats.unlink}</b> unlinked | <b>${stats.protect}</b> protected | <b>${stats.revdel}</b> hidden | <b>${stats.error}</b> errors.`;
+            const summaryLine = `<b>Status:</b> ${statusText}<br/>Summary: <b>${stats.rollback}</b> reverted | <b>${stats.delete}</b> deleted | <b>${stats.undelete}</b> undeleted | <b>${stats.unlink}</b> unlinked | <b>${stats.protect}</b> protected | <b>${stats.revdel}</b> hidden | <b>${stats.report}</b> reported | <b>${stats.error}</b> errors.`;
             statusLbl.innerHTML = summaryLine;
           };
 
           const statusLbl = document.createElement("div");
           statusLbl.innerHTML =
-            "<b>Status:</b> Processing...<br/>Summary: <b>0</b> reverted | <b>0</b> deleted | <b>0</b> undeleted | <b>0</b> unlinked | <b>0</b> protected | <b>0</b> hidden | <b>0</b> errors.";
+            "<b>Status:</b> Processing...<br/>Summary: <b>0</b> reverted | <b>0</b> deleted | <b>0</b> undeleted | <b>0</b> unlinked | <b>0</b> protected | <b>0</b> hidden | <b>0</b> reported | <b>0</b> errors.";
           statusLbl.style.marginBottom = "8px";
 
           const logBox = document.createElement("div");
@@ -815,6 +863,23 @@ $(function () {
             } catch (e) {
               addLog(
                 `[Unblock] Failed to unblock ${targetVal}: ${formatApiError(e)}`,
+                true,
+              );
+            }
+          }
+
+          // --- Report to global sysops ---
+          if (config.reportGS && config.mode === "user" && !isAborted) {
+            try {
+              await submitGlobalSysopsReport(config.reportGSLine, toolTag);
+              addLog(
+                `[Report] Submitted report to Global sysops/Requests for ${targetVal}`,
+              );
+              stats.report++;
+              updateStatusDisplay();
+            } catch (e) {
+              addLog(
+                `[Report] Failed to submit report to Global sysops/Requests: ${formatApiError(e)}`,
                 true,
               );
             }
@@ -2099,7 +2164,7 @@ $(function () {
             config.rollbackMethod === "undo" ? "undone" : "reverted";
           const statusWord = isAborted ? "Aborted." : "Completed.";
           const statusPrefix = `<b>Status: ${statusWord}</b><br/>`;
-          const finalStatus = `${statusPrefix}Summary: <b>${stats.rollback}</b> ${methodTxt} | <b>${stats.delete}</b> deleted | <b>${stats.undelete}</b> undeleted | <b>${stats.unlink}</b> unlinked | <b>${stats.protect}</b> protected | <b>${stats.revdel}</b> hidden | <b>${stats.error}</b> errors.`;
+          const finalStatus = `${statusPrefix}Summary: <b>${stats.rollback}</b> ${methodTxt} | <b>${stats.delete}</b> deleted | <b>${stats.undelete}</b> undeleted | <b>${stats.unlink}</b> unlinked | <b>${stats.protect}</b> protected | <b>${stats.revdel}</b> hidden | <b>${stats.report}</b> reported | <b>${stats.error}</b> errors.`;
           statusLbl.innerHTML = finalStatus;
           isAborted = false;
 
@@ -3040,6 +3105,9 @@ $(function () {
           // right; guards the dynamic per-target enable/disable logic in
           // updateSectionStatus() so a permanent rights lock is never undone.
           let undeleteRightsLocked = false;
+          // Set when globalSysopsScopePromise settles; read by updateSectionStatus()
+          // to decide whether the Report to global sysops section is available.
+          let gsScopeInfo = null;
 
           // Fetch the current user's rights and groups immediately so the result is
           // ready (or very close to ready) by the time the dialogue finishes building.
@@ -3108,6 +3176,39 @@ $(function () {
               })
               .fail(function () {
                 resolve({ hasExtendedConfirmed: false });
+              });
+          });
+
+          // Determines whether this wiki falls within the scope of the global
+          // sysops service, by inspecting CentralAuth wiki sets for one whose
+          // name matches "global sysop" and checking whether this wiki is
+          // included/excluded accordingly.
+          const globalSysopsScopePromise = new Promise(function (resolve) {
+            rightsApi
+              .get({
+                action: "query",
+                list: "wikisets",
+                wsprop: "type|wikisincluded",
+                wslimit: "max",
+              })
+              .done(function (data) {
+                const sets = (data && data.query && data.query.wikisets) || [];
+                const gsSet = sets.find(function (s) {
+                  return /global\s*sysop/i.test(s.name || "");
+                });
+                if (!gsSet) {
+                  resolve({ inScope: true, resolved: false });
+                  return;
+                }
+                const dbname = mw.config.get("wgDBname");
+                const included =
+                  (gsSet.wikisincluded || []).indexOf(dbname) !== -1;
+                const inScope =
+                  gsSet.type === "opt-in based" ? included : !included;
+                resolve({ inScope: inScope, resolved: true });
+              })
+              .fail(function () {
+                resolve({ inScope: true, resolved: false });
               });
           });
 
@@ -3908,6 +4009,110 @@ $(function () {
           bodyWarn.appendChild(checksWarn);
 
           body.appendChild(secWarn);
+
+          // ============================================================================
+          // Report to global sysops section — user mode only.
+          // Lets a Tengu user without local admin rights file an urgent cross-wiki
+          // report on Meta-Wiki's Global sysops/Requests page. Locked when the
+          // current wiki appears to be outside the scope of the global sysops
+          // service; see applyGSStatusLock() and globalSysopsScopePromise above.
+          // ============================================================================
+          const {
+            section: secGS,
+            sectionBody: bodyGS,
+            enableChk: chkGS,
+          } = makeSection("Report to global sysops", "🚩", false);
+
+          const divGSStatus = document.createElement("div");
+          divGSStatus.className = "tng-status-note tng-status-note-loading";
+          divGSStatus.textContent =
+            "Checking global sysops eligibility for this wiki...";
+          bodyGS.appendChild(divGSStatus);
+
+          const checksGSReasons = document.createElement("div");
+          checksGSReasons.className = "tng-checks";
+          checksGSReasons.style.paddingLeft = "0";
+          const gsReasonChecks = [];
+          for (const r of GLOBAL_SYSOPS_REPORT_REASONS) {
+            const { wrap: wrapGSReason, chk: chkGSReason } = makeCheckbox(
+              r.label,
+              false,
+            );
+            checksGSReasons.appendChild(wrapGSReason);
+            gsReasonChecks.push({ chk: chkGSReason, label: r.label });
+          }
+          bodyGS.appendChild(checksGSReasons);
+
+          const { row: rowGSDetails, field: fieldGSDetails } =
+            makeRow("Additional details");
+          const inputGSDetails = makeInput("Diffs or further context");
+          fieldGSDetails.appendChild(inputGSDetails);
+          bodyGS.appendChild(rowGSDetails);
+
+          const helpGSDetails = document.createElement("div");
+          helpGSDetails.className = "tng-help";
+          helpGSDetails.textContent =
+            "Submitted directly to Meta-Wiki's Global sysops/Requests page. Select at least one reason above, or add details here.";
+          bodyGS.appendChild(helpGSDetails);
+
+          body.appendChild(secGS);
+
+          // Reversible lock for this section, driven by whether the current wiki
+          // appears to be within the scope of the global sysops service. Tracked
+          // separately from the mode lock (applyModeLock) via its own set,
+          // mirroring the pattern used by applyUnblockStatusLock().
+          const gsStatusLocked = new Set();
+          function applyGSStatusLock(locked, reason) {
+            const arrow = secGS.querySelector(".tng-section-arrow");
+            const hdr = secGS.querySelector(".tng-section-header");
+
+            if (locked) {
+              if (gsStatusLocked.has(chkGS)) {
+                hdr.title = "Unavailable: " + reason;
+                const existingBadge = hdr.querySelector(".tng-gs-lock-badge");
+                if (existingBadge)
+                  existingBadge.title = "Unavailable: " + reason;
+                return;
+              }
+              gsStatusLocked.add(chkGS);
+              chkGS.checked = false;
+              chkGS.disabled = true;
+              secGS.classList.add("tng-disabled");
+              bodyGS.classList.add("tng-hidden");
+              if (arrow) arrow.classList.add("tng-hidden");
+              hdr.title = "Unavailable: " + reason;
+              const badge = document.createElement("span");
+              badge.className = "tng-rights-lock tng-gs-lock-badge";
+              badge.textContent = "🔒";
+              badge.title = "Unavailable: " + reason;
+              hdr.appendChild(badge);
+            } else {
+              if (!gsStatusLocked.has(chkGS)) return;
+              gsStatusLocked.delete(chkGS);
+              chkGS.disabled = false;
+              secGS.classList.toggle("tng-disabled", !chkGS.checked);
+              if (arrow) {
+                arrow.classList.remove("tng-hidden");
+                arrow.classList.toggle(
+                  "tng-arrow-up",
+                  !bodyGS.classList.contains("tng-hidden"),
+                );
+              }
+              hdr.title = "";
+              const badge = hdr.querySelector(".tng-gs-lock-badge");
+              if (badge) badge.remove();
+            }
+          }
+          applyGSStatusLock(
+            true,
+            "checking global sysops eligibility for this wiki",
+          );
+
+          // Re-evaluates the section's lock state once eligibility is known.
+          globalSysopsScopePromise.then(function (info) {
+            gsScopeInfo = info;
+            updateSectionStatus();
+          });
 
           const {
             section: secPagedel,
@@ -4900,6 +5105,13 @@ $(function () {
                 true,
                 "Tengu is targeting a page, not a user.",
               );
+              applyModeLock(
+                secGS,
+                bodyGS,
+                chkGS,
+                true,
+                "Tengu is targeting a page, not a user.",
+              );
             } else {
               // Remove mode locks first to enable features
               applyModeLock(secRollback, bodyRollback, chkRollback, false);
@@ -4907,6 +5119,7 @@ $(function () {
               applyModeLock(secUnblock, bodyUnblock, chkUnblock, false);
               applyModeLock(secWarn, bodyWarn, chkWarn, false);
               applyModeLock(secRevdel, bodyRevdel, chkRevdel, false);
+              applyModeLock(secGS, bodyGS, chkGS, false);
               // Remove any special page locks that were active while in page mode
               applySpecialPageLocks(false);
 
@@ -4976,6 +5189,13 @@ $(function () {
               true,
               "Tengu is targeting a page, not a user.",
             );
+            applyModeLock(
+              secGS,
+              bodyGS,
+              chkGS,
+              true,
+              "Tengu is targeting a page, not a user.",
+            );
             // Lock deletion and protection on initial load when the current page is a special page
             if (isSpecialPage) {
               applySpecialPageLocks(true);
@@ -5000,7 +5220,8 @@ $(function () {
               chkUndelete.checked ||
               chkProtect.checked ||
               chkRevdel.checked ||
-              chkWarn.checked
+              chkWarn.checked ||
+              chkGS.checked
             );
           }
 
@@ -5013,6 +5234,7 @@ $(function () {
           chkProtect.addEventListener("change", updateStartBtn);
           chkRevdel.addEventListener("change", updateStartBtn);
           chkWarn.addEventListener("change", updateStartBtn);
+          chkGS.addEventListener("change", updateStartBtn);
 
           btnStart.addEventListener("click", function () {
             const targetVal = inputTarget.value.trim();
@@ -5029,6 +5251,21 @@ $(function () {
               inputTarget.focus();
               return;
             }
+
+            if (chkGS.checked && !chkGS.disabled) {
+              const hasGSReason = gsReasonChecks.some(function (c) {
+                return c.chk.checked;
+              });
+              if (!hasGSReason && !inputGSDetails.value.trim()) {
+                showNotification(
+                  fieldGSDetails,
+                  "Select at least one reason, or add details below.",
+                );
+                inputGSDetails.focus();
+                return;
+              }
+            }
+
             const suffix = selSuffix.value;
             const isIP = mw.util.isIPAddress(targetVal);
             let endtime = selEndtime.value;
@@ -5108,6 +5345,49 @@ $(function () {
               if (sel && inp) return sel + ": " + inp;
               return sel || inp;
             }
+            // Assembles the wikitext line submitted to Meta-Wiki's Global
+            // sysops/Requests page. Uses {{LockHide|1=Username}} for registered
+            // accounts (per existing usage on Meta steward-request pages — exact
+            // parameter syntax not independently confirmed) and a direct
+            // contributions URL for IPs, since IPs cannot be locked.
+            function buildGSReportLine() {
+              const dbname = mw.config.get("wgDBname") || "";
+              const siteName = mw.config.get("wgSiteName") || dbname;
+              const server = mw.config.get("wgServer") || "";
+              const contribsUrl =
+                server + mw.util.getUrl("Special:Contributions/" + targetVal);
+              const pickedReasons = gsReasonChecks
+                .filter(function (c) {
+                  return c.chk.checked;
+                })
+                .map(function (c) {
+                  return c.label;
+                });
+              const details = inputGSDetails.value.trim();
+              const reasonParts = [];
+              if (pickedReasons.length)
+                reasonParts.push(pickedReasons.join(", "));
+              if (details) reasonParts.push(details);
+              const reasonText = reasonParts.join(" — ");
+              const userLink = isIP
+                ? "[" + contribsUrl + " " + targetVal + "]"
+                : "{{LockHide|1=" +
+                  targetVal +
+                  "}} ([" +
+                  contribsUrl +
+                  " contributions])";
+              return (
+                "* Please block " +
+                userLink +
+                " on " +
+                siteName +
+                " (" +
+                dbname +
+                ") — " +
+                reasonText +
+                " ~~~~"
+              );
+            }
             let rdHides = "";
             if (chkRdContent.checked) rdHides += "content|";
             if (chkRdSummary.checked) rdHides += "comment|";
@@ -5161,6 +5441,8 @@ $(function () {
               unblock: chkUnblock.checked && !chkUnblock.disabled,
               unblockReason: buildUnblockReason() + suffix,
               notifyUnblock: chkNotifyUnblock.checked,
+              reportGS: chkGS.checked && !chkGS.disabled,
+              reportGSLine: buildGSReportLine(),
               massdel: chkPagedel.checked,
               massdelTalk: chkPagedelTalk.checked,
               massdelRedirects: chkPagedelRedirects.checked,
@@ -5218,6 +5500,7 @@ $(function () {
               if (config.block) features.push("⛔️ Block");
               if (config.unblock) features.push("🔓 Unblock");
               if (config.warn) features.push("⚠️ User warning");
+              if (config.reportGS) features.push("🚩 Report to global sysops");
               if (config.massdel) features.push("🗑️ Page deletion");
               if (config.undelete) features.push("♻️ Page undeletion");
               if (config.protect) features.push("🛡️ Page protection");
@@ -5801,6 +6084,12 @@ $(function () {
                 applyUndeleteStatusLock(true, "no target has been specified");
               }
               applyUnblockStatusLock(true, "no target has been specified");
+              setNote(
+                divGSStatus,
+                "loading",
+                "Enter a target to see global sysops eligibility.",
+              );
+              applyGSStatusLock(true, "no target has been specified");
               return;
             }
 
@@ -5823,6 +6112,38 @@ $(function () {
               );
               if (!undeleteRightsLocked) {
                 applyUndeleteStatusLock(true, "not applicable in user mode");
+              }
+
+              // --- Global sysops report eligibility ---
+              if (!gsScopeInfo) {
+                setNote(
+                  divGSStatus,
+                  "loading",
+                  "Checking global sysops eligibility for this wiki...",
+                );
+                applyGSStatusLock(
+                  true,
+                  "checking global sysops eligibility for this wiki",
+                );
+              } else if (gsScopeInfo.inScope) {
+                setNote(
+                  divGSStatus,
+                  gsScopeInfo.resolved ? "inactive" : "loading",
+                  gsScopeInfo.resolved
+                    ? "This wiki appears to be within the scope of the global sysops service."
+                    : "Could not confirm global sysops eligibility for this wiki; reporting remains available.",
+                );
+                applyGSStatusLock(false);
+              } else {
+                setNote(
+                  divGSStatus,
+                  "active",
+                  "This wiki appears to be outside the scope of the global sysops service.",
+                );
+                applyGSStatusLock(
+                  true,
+                  "this wiki is outside the scope of the global sysops service",
+                );
               }
 
               // --- Block status ---
@@ -6084,6 +6405,7 @@ $(function () {
                 "loading",
                 "Not applicable in page mode.",
               );
+              setNote(divGSStatus, "loading", "Not applicable in page mode.");
 
               // Special pages have no deletion or protection history worth querying
               if (isTargetSpecialPage()) {

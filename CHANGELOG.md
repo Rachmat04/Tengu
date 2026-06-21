@@ -1,3 +1,13 @@
+## 2.42.0
+
+### Added
+
+* Added a new **Report to global sysops** section (user mode only), letting a Tengu user without local admin rights file an urgent cross-wiki report on Meta-Wiki's Global sysops/Requests page
+* Added `GLOBAL_SYSOPS_REPORT_REASONS` to `Tengu-reasons.js`: quick-select reasons (Vandalism, Spam, Long-term abuse (LTA), Cross-wiki vandalism, Page-move vandalism, Inappropriate username) plus a free-text additional-details field, with validation requiring at least one of the two
+* Added an eligibility check using the CentralAuth `list=wikisets` API to determine whether the current wiki falls within the scope of the global sysops service, driving a new `applyGSStatusLock()`
+* Added cross-wiki submission via `mw.ForeignApi`, authenticated through the user's existing SUL session, using `action=edit` with `appendtext` against `meta.wikimedia.org`
+* Added a `report` counter to the progress dialogue's operation statistics
+
 ## 2.41.0
 
 ### Added

@@ -1038,6 +1038,7 @@ window.TenguReasons = {
           ],
         },
       ],
+      
       REVDEL_REASONS: [
         {
           value: v(
@@ -1097,6 +1098,7 @@ window.TenguReasons = {
           label: "Orphaned non-free file(s) deleted",
         },
       ],
+
       UNDELETE_REASONS: [
         {
           value: "",
@@ -1166,6 +1168,7 @@ window.TenguReasons = {
           label: "Restoration request approved",
         },
       ],
+
       PROTECT_RECREATION_REASONS: [
         {
           value: "",
@@ -1206,6 +1209,20 @@ window.TenguReasons = {
           ),
           label: "Recreation of disruptive content",
         },
+      ],
+
+      // Quick-select reasons for the "Report to global sysops" feature.
+      // Unlike the reason sets above, these are not run through v() and stay
+      // in English regardless of useIndonesian: reports built from this list
+      // are submitted to Meta-Wiki's Global sysops/Requests page, where the
+      // audience is global and predominantly English-speaking.
+      GLOBAL_SYSOPS_REPORT_REASONS: [
+        { id: "vandalism", label: "Vandalism" },
+        { id: "spam", label: "Spam" },
+        { id: "lta", label: "Long-term abuse (LTA)" },
+        { id: "crosswiki", label: "Cross-wiki vandalism" },
+        { id: "pagemove", label: "Page-move vandalism" },
+        { id: "username", label: "Inappropriate username" },
       ],
     };
   },
