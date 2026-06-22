@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.43.0
+ * Version 2.44.0
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -534,7 +534,9 @@ $(function () {
         // Global sysops/Requests page via action=edit + appendtext, avoiding
         // a separate fetch-then-save round trip. Not marked as a bot edit, so
         // the report stays visible in normal recent-changes views.
-        async function submitGlobalSysopsReport(reportLine, toolTagText) {
+        // summaryText is built by the caller so it can reflect whether an
+        // account or a page is being reported.
+        async function submitGlobalSysopsReport(reportLine, summaryText) {
           const foreignApi = await getMetaForeignApi();
           await new Promise((resolve, reject) => {
             foreignApi
@@ -542,29 +544,7 @@ $(function () {
                 action: "edit",
                 title: "Global sysops/Requests",
                 appendtext: "\n" + reportLine,
-                summary: "Reporting account for urgent attention" + toolTagText,
-              })
-              .done(resolve)
-              .fail((code, err) =>
-                reject(
-                  code +
-                    (err && err.error && err.error.info
-                      ? ": " + err.error.info
-                      : ""),
-                ),
-              );
-          });
-        }
-
-        async function submitGlobalSysopsReport(reportLine, toolTagText) {
-          const foreignApi = await getMetaForeignApi();
-          await new Promise((resolve, reject) => {
-            foreignApi
-              .postWithEditToken({
-                action: "edit",
-                title: "Global sysops/Requests",
-                appendtext: "\n" + reportLine,
-                summary: "Reporting account for urgent attention" + toolTagText,
+                summary: summaryText,
               })
               .done(resolve)
               .fail((code, err) =>
@@ -974,10 +954,17 @@ $(function () {
 
           // --- Report to global sysops ---
           // Available in both user mode (reporting an account) and page mode
-          // (reporting a page for urgent deletion or attention).
+          // (reporting a page for global sysops' attention).
           if (config.reportGS && !isAborted) {
             try {
-              await submitGlobalSysopsReport(config.reportGSLine, toolTag);
+              const reportGSSummary =
+                (config.mode === "page"
+                  ? "Reporting page for global sysops' attention"
+                  : "Reporting account for global sysops' attention") + toolTag;
+              await submitGlobalSysopsReport(
+                config.reportGSLine,
+                reportGSSummary,
+              );
               addLog(
                 `[Report] Submitted report to Global sysops/Requests for ${targetVal}`,
               );
@@ -4128,19 +4115,49 @@ $(function () {
             "Checking global sysops eligibility for this wiki...";
           bodyGS.appendChild(divGSStatus);
 
-          const checksGSReasons = document.createElement("div");
-          checksGSReasons.className = "tng-checks";
-          checksGSReasons.style.paddingLeft = "0";
-          const gsReasonChecks = [];
-          for (const r of GLOBAL_SYSOPS_REPORT_REASONS) {
+          // Account-report reasons (user mode) and page-report reasons (page
+          // mode) are rendered into separate containers so the two reason
+          // sets are never shown — or submitted — together. Only the
+          // container matching the current mode is visible; applyModeRestrictions()
+          // toggles visibility and clears both sets whenever the mode changes.
+          const checksGSReasonsAccount = document.createElement("div");
+          checksGSReasonsAccount.className =
+            "tng-checks" + (tenguMode === "page" ? " tng-hidden" : "");
+          checksGSReasonsAccount.style.paddingLeft = "0";
+          const gsReasonChecksAccount = [];
+          for (const r of GLOBAL_SYSOPS_REPORT_REASONS.ACCOUNT) {
             const { wrap: wrapGSReason, chk: chkGSReason } = makeCheckbox(
               r.label,
               false,
             );
-            checksGSReasons.appendChild(wrapGSReason);
-            gsReasonChecks.push({ chk: chkGSReason, label: r.label });
+            checksGSReasonsAccount.appendChild(wrapGSReason);
+            gsReasonChecksAccount.push({ chk: chkGSReason, label: r.label });
           }
-          bodyGS.appendChild(checksGSReasons);
+          bodyGS.appendChild(checksGSReasonsAccount);
+
+          const checksGSReasonsPage = document.createElement("div");
+          checksGSReasonsPage.className =
+            "tng-checks" + (tenguMode === "page" ? "" : " tng-hidden");
+          checksGSReasonsPage.style.paddingLeft = "0";
+          const gsReasonChecksPage = [];
+          for (const r of GLOBAL_SYSOPS_REPORT_REASONS.PAGE) {
+            const { wrap: wrapGSReason, chk: chkGSReason } = makeCheckbox(
+              r.label,
+              false,
+            );
+            checksGSReasonsPage.appendChild(wrapGSReason);
+            gsReasonChecksPage.push({ chk: chkGSReason, label: r.label });
+          }
+          bodyGS.appendChild(checksGSReasonsPage);
+
+          // Returns the reason-checkbox set matching the current mode, so
+          // validation and report-building logic do not need to repeat the
+          // mode check inline.
+          function activeGSReasonChecks() {
+            return tenguMode === "page"
+              ? gsReasonChecksPage
+              : gsReasonChecksAccount;
+          }
 
           const { row: rowGSDetails, field: fieldGSDetails } =
             makeRow("Additional details");
@@ -5148,6 +5165,21 @@ $(function () {
             const targetIsSpecial = !isUserModeNow && isTargetSpecialPage();
             updateModeNotice(isUserModeNow, targetIsSpecial);
 
+            // Show only the reason checkboxes matching the new mode, and
+            // clear both groups so a reason picked under the previous mode
+            // is never carried over into a report submitted under the new one.
+            checksGSReasonsAccount.classList.toggle(
+              "tng-hidden",
+              !isUserModeNow,
+            );
+            checksGSReasonsPage.classList.toggle("tng-hidden", isUserModeNow);
+            gsReasonChecksAccount.forEach(function (c) {
+              c.chk.checked = false;
+            });
+            gsReasonChecksPage.forEach(function (c) {
+              c.chk.checked = false;
+            });
+
             // Update target row label, placeholder, and get info tooltip
             rowTarget.querySelector(".tng-label").textContent = isUserModeNow
               ? "Target user"
@@ -5345,7 +5377,7 @@ $(function () {
             }
 
             if (chkGS.checked && !chkGS.disabled) {
-              const hasGSReason = gsReasonChecks.some(function (c) {
+              const hasGSReason = activeGSReasonChecks().some(function (c) {
                 return c.chk.checked;
               });
               if (!hasGSReason && !inputGSDetails.value.trim()) {
@@ -5450,7 +5482,7 @@ $(function () {
               const dbname = mw.config.get("wgDBname") || "";
               const siteName = mw.config.get("wgSiteName") || dbname;
               const server = mw.config.get("wgServer") || "";
-              const pickedReasons = gsReasonChecks
+              const pickedReasons = activeGSReasonChecks()
                 .filter(function (c) {
                   return c.chk.checked;
                 })

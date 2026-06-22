@@ -1,3 +1,20 @@
+## 2.44.0
+
+### Changed
+
+* The edit summary used when submitting a report to Global sysops/Requests no longer reads "Reporting account for urgent attention" regardless of mode. It now reads "Reporting account for global sysops' attention" in user mode and "Reporting page for global sysops' attention" in page mode, since a page report is not necessarily urgent
+
+### Added
+
+* Split `GLOBAL_SYSOPS_REPORT_REASONS` in `Tengu-reasons.js` into separate `ACCOUNT` and `PAGE` reason sets, so account-report reasons and page-report reasons are never shown — or submitted — together
+* Added "Bot or automated spam account" to the account-report reason set
+* Added "Attack page", "Blatant copyright violation", "Cross-wiki spam", and "Hoax page" to the new page-report reason set
+* Added `activeGSReasonChecks()`, returning the reason-checkbox set matching the current mode, used by both Start button validation and `buildGSReportLine()`
+
+### Fixed
+
+* Removed a duplicate definition of `submitGlobalSysopsReport()`. The second definition silently overrode the first at runtime, so this had no effect on behaviour, but left two identical copies of the function in the script
+
 ## 2.43.0
 
 ### Added

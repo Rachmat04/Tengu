@@ -1038,7 +1038,7 @@ window.TenguReasons = {
           ],
         },
       ],
-      
+
       REVDEL_REASONS: [
         {
           value: v(
@@ -1216,14 +1216,29 @@ window.TenguReasons = {
       // in English regardless of useIndonesian: reports built from this list
       // are submitted to Meta-Wiki's Global sysops/Requests page, where the
       // audience is global and predominantly English-speaking.
-      GLOBAL_SYSOPS_REPORT_REASONS: [
-        { id: "vandalism", label: "Vandalism" },
-        { id: "spam", label: "Spam" },
-        { id: "lta", label: "Long-term abuse (LTA)" },
-        { id: "crosswiki", label: "Cross-wiki vandalism" },
-        { id: "pagemove", label: "Page-move vandalism" },
-        { id: "username", label: "Inappropriate username" },
-      ],
+      //
+      // Split into ACCOUNT and PAGE sets so account-report reasons and
+      // page-report reasons are never shown — or submitted — together.
+      // Tengu.js shows ACCOUNT in user mode and PAGE in page mode.
+      GLOBAL_SYSOPS_REPORT_REASONS: {
+        ACCOUNT: [
+          { id: "vandalism", label: "Vandalism" },
+          { id: "spam", label: "Spam" },
+          { id: "lta", label: "Long-term abuse (LTA)" },
+          { id: "crosswiki", label: "Cross-wiki vandalism" },
+          { id: "pagemove", label: "Page-move vandalism" },
+          { id: "username", label: "Inappropriate username" },
+          { id: "botaccount", label: "Bot or automated spam account" },
+        ],
+        PAGE: [
+          { id: "pagevandalism", label: "Vandalism" },
+          { id: "pagespam", label: "Spam" },
+          { id: "attackpage", label: "Attack page" },
+          { id: "copyvio", label: "Blatant copyright violation" },
+          { id: "crosswikispam", label: "Cross-wiki spam" },
+          { id: "hoax", label: "Hoax page" },
+        ],
+      },
     };
   },
 };
