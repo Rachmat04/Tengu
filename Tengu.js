@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.42.2
+ * Version 2.43.0
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -973,7 +973,9 @@ $(function () {
           }
 
           // --- Report to global sysops ---
-          if (config.reportGS && config.mode === "user" && !isAborted) {
+          // Available in both user mode (reporting an account) and page mode
+          // (reporting a page for urgent deletion or attention).
+          if (config.reportGS && !isAborted) {
             try {
               await submitGlobalSysopsReport(config.reportGSLine, toolTag);
               addLog(
@@ -3289,10 +3291,10 @@ $(function () {
           // in scope. A prior version fell back to a CentralAuth
           // list=wikisets lookup for hosts not on the list, but that request
           // returns the full wikisincluded array for every wikiset, which is
-          // slow  — and ran on every wiki not listed in GS_INELIGIBLE_HOSTS, i.e. 
-          // on most eligible wikis, on every dialogue open. 
+          // slow  — and ran on every wiki not listed in GS_INELIGIBLE_HOSTS, i.e.
+          // on most eligible wikis, on every dialogue open.
           // Removing the API call means this resolves immediately, but eligibility
-          // now depends entirely on GS_INELIGIBLE_HOSTS being accurate; 
+          // now depends entirely on GS_INELIGIBLE_HOSTS being accurate;
           // there is no longer a fallback check.
           const globalSysopsScopePromise = new Promise(function (resolve) {
             const currentHost = (mw.config.get("wgServer") || "").replace(
@@ -4104,11 +4106,15 @@ $(function () {
           body.appendChild(secWarn);
 
           // ============================================================================
-          // Report to global sysops section — user mode only.
-          // Lets a Tengu user without local admin rights file an urgent cross-wiki
-          // report on Meta-Wiki's Global sysops/Requests page. Locked when the
-          // current wiki appears to be outside the scope of the global sysops
-          // service; see applyGSStatusLock() and globalSysopsScopePromise above.
+          // Report to global sysops section — available in both user and page mode.
+          // In user mode, lets a Tengu user without local admin rights file an
+          // urgent cross-wiki report against an account on Meta-Wiki's Global
+          // sysops/Requests page. In page mode, files an equivalent report
+          // requesting urgent deletion of, or attention to, the target page.
+          // Locked when the current wiki appears to be outside the scope of the
+          // global sysops service, or when the page-mode target is a special
+          // page; see applyGSStatusLock(), applySpecialPageLocks(), and
+          // globalSysopsScopePromise above.
           // ============================================================================
           const {
             section: secGS,
@@ -5115,6 +5121,13 @@ $(function () {
                 true,
                 "special pages cannot be undeleted",
               );
+              applyModeLock(
+                secGS,
+                bodyGS,
+                chkGS,
+                true,
+                "special pages cannot be reported",
+              );
             } else {
               applyModeLock(secPagedel, bodyPagedel, chkPagedel, false);
               applyModeLock(secProtect, bodyProtect, chkProtect, false);
@@ -5125,6 +5138,7 @@ $(function () {
                 false,
               );
               applyModeLock(secUndelete, bodyUndelete, chkUndelete, false);
+              applyModeLock(secGS, bodyGS, chkGS, false);
             }
           }
 
@@ -5198,13 +5212,6 @@ $(function () {
                 true,
                 "Tengu is targeting a page, not a user.",
               );
-              applyModeLock(
-                secGS,
-                bodyGS,
-                chkGS,
-                true,
-                "Tengu is targeting a page, not a user.",
-              );
             } else {
               // Remove mode locks first to enable features
               applyModeLock(secRollback, bodyRollback, chkRollback, false);
@@ -5212,7 +5219,6 @@ $(function () {
               applyModeLock(secUnblock, bodyUnblock, chkUnblock, false);
               applyModeLock(secWarn, bodyWarn, chkWarn, false);
               applyModeLock(secRevdel, bodyRevdel, chkRevdel, false);
-              applyModeLock(secGS, bodyGS, chkGS, false);
               // Remove any special page locks that were active while in page mode
               applySpecialPageLocks(false);
 
@@ -5279,13 +5285,6 @@ $(function () {
               secRevdel,
               bodyRevdel,
               chkRevdel,
-              true,
-              "Tengu is targeting a page, not a user.",
-            );
-            applyModeLock(
-              secGS,
-              bodyGS,
-              chkGS,
               true,
               "Tengu is targeting a page, not a user.",
             );
@@ -5439,16 +5438,18 @@ $(function () {
               return sel || inp;
             }
             // Assembles the wikitext line submitted to Meta-Wiki's Global
-            // sysops/Requests page. Uses {{LockHide|1=Username}} for registered
-            // accounts (per existing usage on Meta steward-request pages — exact
-            // parameter syntax not independently confirmed) and a direct
-            // contributions URL for IPs, since IPs cannot be locked.
+            // sysops/Requests page. User mode uses {{LockHide|1=Username}} for
+            // registered accounts (per existing usage on Meta steward-request
+            // pages — exact parameter syntax not independently confirmed) and a
+            // direct contributions URL for IPs, since IPs cannot be locked.
+            // Page mode links directly to the target page instead, and opens
+            // with "Please delete" rather than "Please block" — exact wikitext
+            // conventions for page-deletion requests on this page have not been
+            // independently confirmed.
             function buildGSReportLine() {
               const dbname = mw.config.get("wgDBname") || "";
               const siteName = mw.config.get("wgSiteName") || dbname;
               const server = mw.config.get("wgServer") || "";
-              const contribsUrl =
-                server + mw.util.getUrl("Special:Contributions/" + targetVal);
               const pickedReasons = gsReasonChecks
                 .filter(function (c) {
                   return c.chk.checked;
@@ -5461,7 +5462,34 @@ $(function () {
               if (pickedReasons.length)
                 reasonParts.push(pickedReasons.join(", "));
               if (details) reasonParts.push(details);
-              const reasonText = reasonParts.join(" — ");
+              let reasonText = reasonParts.join(" — ");
+              // Ensure the request sentence always ends with a full stop before
+              // the signature. Previously, selecting reasons only from the
+              // checkboxes (with no free-text details) produced a line with no
+              // terminating punctuation before "~~~~".
+              if (reasonText && !/[.!?]$/.test(reasonText)) {
+                reasonText += ".";
+              }
+
+              if (tenguMode === "page") {
+                const pageUrl = server + mw.util.getUrl(targetVal);
+                return (
+                  "* Please delete [" +
+                  pageUrl +
+                  " " +
+                  targetVal +
+                  "] on " +
+                  siteName +
+                  " (" +
+                  dbname +
+                  "): " +
+                  reasonText +
+                  " ~~~~"
+                );
+              }
+
+              const contribsUrl =
+                server + mw.util.getUrl("Special:Contributions/" + targetVal);
               const userLink = isIP
                 ? "[" + contribsUrl + " " + targetVal + "]"
                 : "{{LockHide|1=" +
@@ -5476,7 +5504,7 @@ $(function () {
                 siteName +
                 " (" +
                 dbname +
-                ") — " +
+                "): " +
                 reasonText +
                 " ~~~~"
               );
@@ -6186,6 +6214,46 @@ $(function () {
               return;
             }
 
+            // --- Global sysops report eligibility (available in both user and page mode) ---
+            if (isTargetSpecialPage()) {
+              setNote(
+                divGSStatus,
+                "loading",
+                "Not applicable — special pages cannot be reported.",
+              );
+              // Already padlock-locked via applySpecialPageLocks()/applyModeLock(),
+              // called before updateSectionStatus() on every target change.
+            } else if (!gsScopeInfo) {
+              setNote(
+                divGSStatus,
+                "loading",
+                "Checking global sysops eligibility for this wiki...",
+              );
+              applyGSStatusLock(
+                true,
+                "checking global sysops eligibility for this wiki",
+              );
+            } else if (gsScopeInfo.inScope) {
+              setNote(
+                divGSStatus,
+                gsScopeInfo.resolved ? "inactive" : "loading",
+                gsScopeInfo.resolved
+                  ? "This wiki appears to be within the scope of the global sysops service."
+                  : "Could not confirm global sysops eligibility for this wiki; reporting remains available.",
+              );
+              applyGSStatusLock(false);
+            } else {
+              setNote(
+                divGSStatus,
+                "active",
+                "This wiki appears to be outside the scope of the global sysops service.",
+              );
+              applyGSStatusLock(
+                true,
+                "this wiki is outside the scope of the global sysops service.",
+              );
+            }
+
             if (tenguMode === "user") {
               const isTargetIP = mw.util.isIPAddress(target);
               setNote(
@@ -6205,38 +6273,6 @@ $(function () {
               );
               if (!undeleteRightsLocked) {
                 applyUndeleteStatusLock(true, "not applicable in user mode.");
-              }
-
-              // --- Global sysops report eligibility ---
-              if (!gsScopeInfo) {
-                setNote(
-                  divGSStatus,
-                  "loading",
-                  "Checking global sysops eligibility for this wiki...",
-                );
-                applyGSStatusLock(
-                  true,
-                  "checking global sysops eligibility for this wiki",
-                );
-              } else if (gsScopeInfo.inScope) {
-                setNote(
-                  divGSStatus,
-                  gsScopeInfo.resolved ? "inactive" : "loading",
-                  gsScopeInfo.resolved
-                    ? "This wiki appears to be within the scope of the global sysops service."
-                    : "Could not confirm global sysops eligibility for this wiki; reporting remains available.",
-                );
-                applyGSStatusLock(false);
-              } else {
-                setNote(
-                  divGSStatus,
-                  "active",
-                  "This wiki appears to be outside the scope of the global sysops service.",
-                );
-                applyGSStatusLock(
-                  true,
-                  "this wiki is outside the scope of the global sysops service.",
-                );
               }
 
               // --- Block status ---
@@ -6498,7 +6534,6 @@ $(function () {
                 "loading",
                 "Not applicable in page mode.",
               );
-              setNote(divGSStatus, "loading", "Not applicable in page mode.");
 
               // Special pages have no deletion or protection history worth querying
               if (isTargetSpecialPage()) {

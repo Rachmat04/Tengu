@@ -1,3 +1,19 @@
+## 2.43.0
+
+### Added
+
+* Extended the **Report to global sysops** section to page mode, letting a Tengu user file an urgent cross-wiki report requesting deletion of, or attention to, a specific page rather than an account, on Meta-Wiki's Global sysops/Requests page
+* Added a page-mode report line, opening with "Please delete" followed by a link to the target page, the wiki's site name and database name, and the selected reason
+
+### Changed
+
+* `applySpecialPageLocks()` now also locks the Report to global sysops section when the page-mode target is a special page, since special pages cannot be reported for deletion
+* The Report to global sysops section is no longer locked by the user/page mode toggle; availability is now governed solely by wiki eligibility (`globalSysopsScopePromise`) and, in page mode, by whether the target is a special page
+
+### Fixed
+
+* Fixed the global sysops report line missing a full stop before the closing signature (`~~~~`) when the reason was built solely from the preset reason checkboxes with no free-text additional details
+
 ## 2.42.2
 
 ### Changed
