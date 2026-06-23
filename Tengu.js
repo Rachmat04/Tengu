@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.45.0
+ * Version 2.45.1
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -6020,9 +6020,22 @@ $(function () {
             // for deletion and protection, listing each enabled feature so
             // the user can see exactly what Tengu is about to do.
             const enabledFeatures = buildEnabledFeaturesList();
+
+            // Holds the keydown handler bound below, so the onClose callback
+            // can remove it regardless of which path closed the dialogue
+            // (Cancel, Confirm and execute, the close button, clicking
+            // outside the dialogue, or Escape).
+            let handleConfirmKeydown;
             const confirmDlg = createDialog({
               title: "Confirm selected operations",
               icon: "⚠️",
+              onClose: function () {
+                document.removeEventListener(
+                  "keydown",
+                  handleConfirmKeydown,
+                  true,
+                );
+              },
             });
 
             const warningMsg = document.createElement("p");
@@ -6062,6 +6075,26 @@ $(function () {
 
             confirmDlg.footer.appendChild(btnCancelConfirm);
             confirmDlg.footer.appendChild(btnProceedConfirm);
+
+            // Enter confirms, Escape cancels, while this dialogue is open.
+            // Registered on document in the capture phase, ahead of
+            // whichever element still has focus underneath (e.g. the Start
+            // button). Calling preventDefault() here stops that element's
+            // default Enter-to-click behaviour, which is what previously
+            // caused a second, overlapping confirmation dialogue to appear
+            // when a user pressed Enter at this stage.
+            handleConfirmKeydown = function (e) {
+              if (e.key === "Enter") {
+                e.preventDefault();
+                e.stopPropagation();
+                btnProceedConfirm.click();
+              } else if (e.key === "Escape") {
+                e.preventDefault();
+                e.stopPropagation();
+                confirmDlg.overlay.closeHandler();
+              }
+            };
+            document.addEventListener("keydown", handleConfirmKeydown, true);
           });
 
           footer.appendChild(btnCancel);
@@ -7003,7 +7036,7 @@ $(function () {
                     if (!undeleteRightsLocked) {
                       applyUndeleteStatusLock(
                         true,
-                        "this page has no deletion log entries",
+                        "this page has no deletion log entries.",
                       );
                       setNote(
                         divUndeleteStatus,
