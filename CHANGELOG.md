@@ -1,3 +1,10 @@
+## 2.45.1
+
+### Fixed
+
+* Fixed pressing Enter at the "Confirm selected operations" stage re-triggering the Start button instead of confirming, which opened a second, overlapping confirmation dialogue
+* Added explicit Enter (confirm) and Escape (cancel) key handling scoped to the confirmation dialogue, registered while it is open and removed once it closes
+
 ## 2.45.0
 
 ### Added
