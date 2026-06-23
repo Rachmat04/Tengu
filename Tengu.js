@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.44.0
+ * Version 2.45.0
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -63,6 +63,7 @@ $(function () {
           tenguReasonsObj.PROTECT_RECREATION_REASONS;
         const GLOBAL_SYSOPS_REPORT_REASONS =
           tenguReasonsObj.GLOBAL_SYSOPS_REPORT_REASONS;
+        const SRG_REPORT_REASONS = tenguReasonsObj.SRG_REPORT_REASONS;
 
         const tenguWarnObj = window.TenguWarn.get(useIndonesian);
         const WARN_MESSAGES = tenguWarnObj.WARN_MESSAGES;
@@ -558,6 +559,122 @@ $(function () {
           });
         }
 
+        // Fetches a promisified GET response from Meta-Wiki via
+        // mw.ForeignApi. Used to read page content for duplicate-report
+        // checks before submitting to a cross-wiki venue, since the local
+        // apiGet() helper above only talks to the current wiki.
+        async function foreignApiGet(params) {
+          const foreignApi = await getMetaForeignApi();
+          return new Promise((resolve, reject) => {
+            foreignApi
+              .get(params)
+              .done(resolve)
+              .fail((code, err) =>
+                reject(
+                  code +
+                    (err && err.error && err.error.info
+                      ? ": " + err.error.info
+                      : ""),
+                ),
+              );
+          });
+        }
+
+        // Title of the Steward requests/Global (SRG) page on Meta-Wiki.
+        const SRG_PAGE_TITLE = "Steward requests/Global";
+
+        // Section headings used as insertion anchors on the SRG page. A new
+        // global block request is inserted immediately above the heading
+        // that starts the lock section (i.e. at the end of the block
+        // section); a new global lock request is inserted immediately above
+        // the "See also" heading near the foot of the page (i.e. at the end
+        // of the lock section).
+        const SRG_INSERT_BEFORE = {
+          block: "== Requests for global (un)lock and (un)hiding ==",
+          lock: "== See also ==",
+        };
+
+        // Submits a report to Steward requests/Global, inserting the new
+        // section immediately above the relevant anchor heading rather than
+        // appending to the bottom of the page (cf. submitGlobalSysopsReport()
+        // above, which appends to the very end of Global sysops/Requests).
+        // Throws, without submitting, if a report referencing the same
+        // target already appears to be open, to reduce the chance of
+        // duplicate filings.
+        async function submitSRGReport(
+          kind,
+          target,
+          sectionWikitext,
+          summaryText,
+        ) {
+          const data = await foreignApiGet({
+            action: "query",
+            prop: "revisions",
+            titles: SRG_PAGE_TITLE,
+            rvslots: "main",
+            rvprop: "content",
+            formatversion: 2,
+          });
+          const page = data.query && data.query.pages && data.query.pages[0];
+          const content =
+            (page &&
+              page.revisions &&
+              page.revisions[0] &&
+              page.revisions[0].slots &&
+              page.revisions[0].slots.main &&
+              page.revisions[0].slots.main.content) ||
+            "";
+
+          const escapedTarget = target.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+          const dupRe = new RegExp(
+            "\\{\\{(?:Status|LockHide|MultiLock|Luxotool)[^}]*\\b" +
+              escapedTarget +
+              "\\b",
+            "i",
+          );
+          if (dupRe.test(content)) {
+            throw new Error(
+              "a report for this target already appears to be open on Steward requests/Global",
+            );
+          }
+
+          const anchor = SRG_INSERT_BEFORE[kind];
+          const anchorIndex = content.indexOf(anchor);
+          let newContent;
+          if (anchorIndex === -1) {
+            // Anchor heading not found; fall back to appending at the end
+            // rather than failing outright.
+            newContent =
+              content.replace(/\s*$/, "") + "\n\n" + sectionWikitext + "\n";
+          } else {
+            newContent =
+              content.slice(0, anchorIndex) +
+              sectionWikitext +
+              "\n\n" +
+              content.slice(anchorIndex);
+          }
+
+          const foreignApi = await getMetaForeignApi();
+          await new Promise((resolve, reject) => {
+            foreignApi
+              .postWithEditToken({
+                action: "edit",
+                title: SRG_PAGE_TITLE,
+                text: newContent,
+                summary: summaryText,
+              })
+              .done(resolve)
+              .fail((code, err) =>
+                reject(
+                  code +
+                    (err && err.error && err.error.info
+                      ? ": " + err.error.info
+                      : ""),
+                ),
+              );
+          });
+        }
+
         // Hostnames of wikis known to fall outside the scope of the global
         // sysops service. This is now the sole source of truth for global
         // sysops eligibility, read directly by globalSysopsScopePromise
@@ -973,6 +1090,35 @@ $(function () {
             } catch (e) {
               addLog(
                 `[Report] Failed to submit report to Global sysops/Requests: ${formatApiError(e)}`,
+                true,
+              );
+            }
+          }
+
+          // --- Report to Steward requests/Global ---
+          // User mode only. Files a global block request when the target is
+          // an IP address, or a global lock request when the target is a
+          // registered account, on Meta-Wiki's Steward requests/Global page.
+          if (config.reportSRG && !isAborted) {
+            try {
+              const srgSummary =
+                (config.reportSRGKind === "block"
+                  ? "Reporting IP for global block"
+                  : "Reporting account for global lock") + toolTag;
+              await submitSRGReport(
+                config.reportSRGKind,
+                targetVal,
+                config.reportSRGSection,
+                srgSummary,
+              );
+              addLog(
+                `[Report] Submitted ${config.reportSRGKind === "block" ? "global block" : "global lock"} report to Steward requests/Global for ${targetVal}`,
+              );
+              stats.report++;
+              updateStatusDisplay();
+            } catch (e) {
+              addLog(
+                `[Report] Failed to submit report to Steward requests/Global: ${formatApiError(e)}`,
                 true,
               );
             }
@@ -4230,6 +4376,120 @@ $(function () {
             updateSectionStatus();
           });
 
+          // ============================================================================
+          // Report to Steward requests/Global section — user mode only.
+          // Files a report on Meta-Wiki's Steward requests/Global (SRG) page:
+          // a global block request when the target is an IP address, or a
+          // global lock request when the target is a registered account.
+          // Locked in page mode via applyModeLock(), since both report types
+          // require a user or IP target rather than a page.
+          // ============================================================================
+          const {
+            section: secSRG,
+            sectionBody: bodySRG,
+            enableChk: chkSRG,
+          } = makeSection("Report to Steward requests/Global", "📌", false);
+
+          const divSRGStatus = document.createElement("div");
+          divSRGStatus.className = "tng-status-note tng-status-note-inactive";
+          divSRGStatus.textContent =
+            "Enter a target to see whether this will file as a global block or a global lock request.";
+          bodySRG.appendChild(divSRGStatus);
+
+          // Block-report reasons (IP targets) and lock-report reasons
+          // (registered account targets) are rendered into separate
+          // containers, mirroring the account/page split used by the Report
+          // to global sysops section. Only the container matching the
+          // current target type is shown; updateSRGFormForTarget() toggles
+          // visibility whenever the target changes.
+          const checksSRGReasonsBlock = document.createElement("div");
+          checksSRGReasonsBlock.className = "tng-checks";
+          checksSRGReasonsBlock.style.paddingLeft = "0";
+          const srgReasonChecksBlock = [];
+          for (const r of SRG_REPORT_REASONS.BLOCK) {
+            const { wrap: wrapSRGReason, chk: chkSRGReason } = makeCheckbox(
+              r.label,
+              false,
+            );
+            checksSRGReasonsBlock.appendChild(wrapSRGReason);
+            srgReasonChecksBlock.push({ chk: chkSRGReason, label: r.label });
+          }
+          bodySRG.appendChild(checksSRGReasonsBlock);
+
+          const checksSRGReasonsLock = document.createElement("div");
+          checksSRGReasonsLock.className = "tng-checks tng-hidden";
+          checksSRGReasonsLock.style.paddingLeft = "0";
+          const srgReasonChecksLock = [];
+          for (const r of SRG_REPORT_REASONS.LOCK) {
+            const { wrap: wrapSRGReason, chk: chkSRGReason } = makeCheckbox(
+              r.label,
+              false,
+            );
+            checksSRGReasonsLock.appendChild(wrapSRGReason);
+            srgReasonChecksLock.push({ chk: chkSRGReason, label: r.label });
+          }
+          bodySRG.appendChild(checksSRGReasonsLock);
+
+          // "Also request the username be hidden" — lock requests only.
+          // Corresponds to a combined "lock and hide" steward action,
+          // typically used for policy-violating or offensive usernames.
+          const { wrap: wrapSRGHideUsername, chk: chkSRGHideUsername } =
+            makeCheckbox(
+              "Also request the username be hidden (lock and hide)",
+              false,
+            );
+          wrapSRGHideUsername.title =
+            "Only applicable to global lock requests for registered accounts.";
+          const checksSRGOptions = document.createElement("div");
+          checksSRGOptions.className = "tng-checks tng-hidden";
+          checksSRGOptions.style.paddingLeft = "0";
+          checksSRGOptions.appendChild(wrapSRGHideUsername);
+          bodySRG.appendChild(checksSRGOptions);
+
+          // Returns true when the current target is an IP address — i.e.
+          // when this section will file a global block request rather than
+          // a global lock request.
+          function isSRGBlockTarget() {
+            return mw.util.isIPAddress(inputTarget.value.trim());
+          }
+
+          // Returns the reason-checkbox set matching the current target
+          // type, so validation and report-building logic do not need to
+          // repeat the IP check inline.
+          function activeSRGReasonChecks() {
+            return isSRGBlockTarget()
+              ? srgReasonChecksBlock
+              : srgReasonChecksLock;
+          }
+
+          // Switches the visible reason set, the "Hide username" option,
+          // and the status note whenever the target changes between an IP
+          // address and a registered account.
+          function updateSRGFormForTarget() {
+            const isBlock = isSRGBlockTarget();
+            checksSRGReasonsBlock.classList.toggle("tng-hidden", !isBlock);
+            checksSRGReasonsLock.classList.toggle("tng-hidden", isBlock);
+            checksSRGOptions.classList.toggle("tng-hidden", isBlock);
+            if (isBlock) chkSRGHideUsername.checked = false;
+            divSRGStatus.textContent = isBlock
+              ? "This will be filed as a global block request, since the target is an IP address."
+              : "This will be filed as a global lock request, since the target is a registered account.";
+          }
+
+          const { row: rowSRGDetails, field: fieldSRGDetails } =
+            makeRow("Additional details");
+          const inputSRGDetails = makeInput("Diffs or further context");
+          fieldSRGDetails.appendChild(inputSRGDetails);
+          bodySRG.appendChild(rowSRGDetails);
+
+          const helpSRGDetails = document.createElement("div");
+          helpSRGDetails.className = "tng-help";
+          helpSRGDetails.textContent =
+            "Submitted directly to Meta-Wiki's Steward requests/Global page. Select at least one reason above, or add details here.";
+          bodySRG.appendChild(helpSRGDetails);
+
+          body.appendChild(secSRG);
+
           const {
             section: secPagedel,
             sectionBody: bodyPagedel,
@@ -5244,6 +5504,13 @@ $(function () {
                 true,
                 "Tengu is targeting a page, not a user.",
               );
+              applyModeLock(
+                secSRG,
+                bodySRG,
+                chkSRG,
+                true,
+                "Tengu is targeting a page, not a user.",
+              );
             } else {
               // Remove mode locks first to enable features
               applyModeLock(secRollback, bodyRollback, chkRollback, false);
@@ -5251,6 +5518,7 @@ $(function () {
               applyModeLock(secUnblock, bodyUnblock, chkUnblock, false);
               applyModeLock(secWarn, bodyWarn, chkWarn, false);
               applyModeLock(secRevdel, bodyRevdel, chkRevdel, false);
+              applyModeLock(secSRG, bodySRG, chkSRG, false);
               // Remove any special page locks that were active while in page mode
               applySpecialPageLocks(false);
 
@@ -5320,6 +5588,13 @@ $(function () {
               true,
               "Tengu is targeting a page, not a user.",
             );
+            applyModeLock(
+              secSRG,
+              bodySRG,
+              chkSRG,
+              true,
+              "Tengu is targeting a page, not a user.",
+            );
             // Lock deletion and protection on initial load when the current page is a special page
             if (isSpecialPage) {
               applySpecialPageLocks(true);
@@ -5345,7 +5620,8 @@ $(function () {
               chkProtect.checked ||
               chkRevdel.checked ||
               chkWarn.checked ||
-              chkGS.checked
+              chkGS.checked ||
+              chkSRG.checked
             );
           }
 
@@ -5359,6 +5635,7 @@ $(function () {
           chkRevdel.addEventListener("change", updateStartBtn);
           chkWarn.addEventListener("change", updateStartBtn);
           chkGS.addEventListener("change", updateStartBtn);
+          chkSRG.addEventListener("change", updateStartBtn);
 
           btnStart.addEventListener("click", function () {
             const targetVal = inputTarget.value.trim();
@@ -5386,6 +5663,20 @@ $(function () {
                   "Select at least one reason, or add details below.",
                 );
                 inputGSDetails.focus();
+                return;
+              }
+            }
+
+            if (chkSRG.checked && !chkSRG.disabled) {
+              const hasSRGReason = activeSRGReasonChecks().some(function (c) {
+                return c.chk.checked;
+              });
+              if (!hasSRGReason && !inputSRGDetails.value.trim()) {
+                showNotification(
+                  fieldSRGDetails,
+                  "Select at least one reason, or add details below.",
+                );
+                inputSRGDetails.focus();
                 return;
               }
             }
@@ -5541,6 +5832,63 @@ $(function () {
                 " ~~~~"
               );
             }
+            // Assembles the wikitext section submitted to Meta-Wiki's
+            // Steward requests/Global page. IP targets are filed as global
+            // block requests using {{Luxotool}}; registered accounts are
+            // filed as global lock requests using {{LockHide}}, optionally
+            // combined with a username-hide request.
+            function buildSRGReportLine() {
+              const isBlock = isSRGBlockTarget();
+              const pickedReasons = activeSRGReasonChecks()
+                .filter(function (c) {
+                  return c.chk.checked;
+                })
+                .map(function (c) {
+                  return c.label;
+                });
+              const details = inputSRGDetails.value.trim();
+              const reasonParts = [];
+              if (pickedReasons.length)
+                reasonParts.push(pickedReasons.join(", "));
+              if (details) reasonParts.push(details);
+              let reasonText = reasonParts.join(" — ");
+              if (reasonText && !/[.!?]$/.test(reasonText)) {
+                reasonText += ".";
+              }
+
+              if (isBlock) {
+                const contribsUrl =
+                  (mw.config.get("wgServer") || "") +
+                  mw.util.getUrl("Special:Contributions/" + targetVal);
+                return (
+                  "=== Global block for [" +
+                  contribsUrl +
+                  " " +
+                  targetVal +
+                  "] ===\n" +
+                  "{{Status}}\n" +
+                  "{{Luxotool|1=" +
+                  targetVal +
+                  "}}\n" +
+                  reasonText +
+                  " ~~~~"
+                );
+              }
+
+              const lockTemplate = chkSRGHideUsername.checked
+                ? "{{LockHide|1=" + targetVal + "|hide=1}}"
+                : "{{LockHide|1=" + targetVal + "}}";
+              return (
+                "=== Global lock for " +
+                targetVal +
+                " ===\n" +
+                "{{Status}}\n" +
+                lockTemplate +
+                "\n" +
+                reasonText +
+                " ~~~~"
+              );
+            }
             let rdHides = "";
             if (chkRdContent.checked) rdHides += "content|";
             if (chkRdSummary.checked) rdHides += "comment|";
@@ -5596,6 +5944,9 @@ $(function () {
               notifyUnblock: chkNotifyUnblock.checked,
               reportGS: chkGS.checked && !chkGS.disabled,
               reportGSLine: buildGSReportLine(),
+              reportSRG: chkSRG.checked && !chkSRG.disabled,
+              reportSRGKind: isSRGBlockTarget() ? "block" : "lock",
+              reportSRGSection: buildSRGReportLine(),
               massdel: chkPagedel.checked,
               massdelTalk: chkPagedelTalk.checked,
               massdelRedirects: chkPagedelRedirects.checked,
@@ -5654,6 +6005,8 @@ $(function () {
               if (config.unblock) features.push("🔓 Unblock");
               if (config.warn) features.push("⚠️ User warning");
               if (config.reportGS) features.push("🚩 Report to global sysops");
+              if (config.reportSRG)
+                features.push("📌 Report to Steward requests/Global");
               if (config.massdel) features.push("🗑️ Page deletion");
               if (config.undelete) features.push("♻️ Page undeletion");
               if (config.protect) features.push("🛡️ Page protection");
@@ -6808,6 +7161,7 @@ $(function () {
             const isTempAccount = /^~\d{4}-\d+-\d+$/.test(targetVal);
             wrapHardblock.style.display = isIP ? "" : "none";
             wrapAutoblock.style.display = isIP ? "none" : "";
+            updateSRGFormForTarget();
             if (isTempAccount) {
               selBlockDur.value = "3 months";
               inputBlockDur.classList.add("tng-hidden");

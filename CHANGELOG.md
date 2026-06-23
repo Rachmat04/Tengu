@@ -1,3 +1,19 @@
+## 2.45.0
+
+### Added
+
+* Added a new **Report to Steward requests/Global** section (user mode only), letting a Tengu user file a global block request (IP targets) or a global lock request (registered account targets) directly on Meta-Wiki's Steward requests/Global page
+* Added `SRG_REPORT_REASONS` to `Tengu-reasons.js`, split into `BLOCK` and `LOCK` quick-select reason sets, following the same English-only convention as `GLOBAL_SYSOPS_REPORT_REASONS` since Steward requests/Global is a global English venue
+* Added an "Also request the username be hidden (lock and hide)" option, shown only for global lock requests
+* Added `submitSRGReport()` and `foreignApiGet()` in `Tengu.js`, which fetch the current Steward requests/Global wikitext, check for an existing report referencing the same target, and insert the new report section above the relevant anchor heading rather than appending to the bottom of the page
+* The section automatically switches between the global block reason set and the global lock reason set as the target field is edited, based on whether the target resolves to an IP address
+
+### Notes
+
+* Reporting multiple accounts in a single request (via `{{MultiLock}}` and the `{{Collapse top}}`/`{{Collapse bottom}}` wrapping used on the live page) is not implemented, since Tengu currently operates on one target at a time
+* The `report` operation counter in the progress dialogue is shared between this feature and the existing Report to global sysops feature
+* The section reuses the existing single target field rather than adding separate IP/username inputs, consistent with how the rest of Tengu handles targets
+
 ## 2.44.0
 
 ### Changed

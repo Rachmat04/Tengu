@@ -1239,6 +1239,35 @@ window.TenguReasons = {
           { id: "hoax", label: "Hoax page" },
         ],
       },
+
+      // Quick-select reasons for the "Report to Steward requests/Global"
+      // feature. Like GLOBAL_SYSOPS_REPORT_REASONS above, these are not run
+      // through v() and stay in English regardless of useIndonesian: reports
+      // built from this list are submitted to Meta-Wiki's Steward
+      // requests/Global page, where the audience is global and
+      // predominantly English-speaking.
+      //
+      // Split into BLOCK and LOCK sets, since global blocks apply to IP
+      // addresses and global locks apply to registered accounts. Tengu.js
+      // shows BLOCK when the target resolves to an IP address and LOCK
+      // otherwise.
+      SRG_REPORT_REASONS: {
+        BLOCK: [
+          { id: "openproxy", label: "Open proxy or web host" },
+          { id: "crosswikiabuse", label: "Cross-wiki abuse" },
+          { id: "spambot", label: "Spambot" },
+          { id: "lta", label: "Long-term abuse (LTA)" },
+          { id: "compromised", label: "Compromised IP address" },
+        ],
+        LOCK: [
+          { id: "crosswikiabuse", label: "Cross-wiki abuse" },
+          { id: "vandalismonly", label: "Vandalism-only account" },
+          { id: "spambot", label: "Spambot" },
+          { id: "lta", label: "Long-term abuse (LTA)" },
+          { id: "compromised", label: "Compromised account" },
+          { id: "username", label: "Inappropriate username" },
+        ],
+      },
     };
   },
 };
