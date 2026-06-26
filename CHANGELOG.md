@@ -1,3 +1,9 @@
+## 2.45.2
+
+### Fixed
+
+* Fixed the global lock request line built by `buildSRGReportLine()` (Report to Steward requests/Global) missing a leading bullet (`*`) before `{{LockHide}}`, which was inconsistent with the bulleted format used by other report lines on that page
+
 ## 2.45.1
 
 ### Fixed
