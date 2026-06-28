@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.46.0
+ * Version 2.46.1
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -809,7 +809,9 @@ $(function () {
             title: "Processing Tengu tasks",
             icon: "⛩️",
             onClose: () => {
-              window.location.reload();
+              window.location.href = mw.util.getUrl(
+                mw.config.get("wgPageName"),
+              );
             },
           });
 

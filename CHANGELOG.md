@@ -1,3 +1,10 @@
+## 2.46.1
+
+### Fixed
+
+* Fixed the dialogue's close behaviour (close button, clicking outside, Escape, and "Close and reload") reloading the literal current URL after operations completed. If that URL included `diff=`, `oldid=`, or `curid=` parameters referencing a revision or page that no longer existed after the operation (for example, a deleted diff), the reload showed the wiki's "this revision has been deleted" error instead of the page itself
+* The dialogue's `onClose` handler now navigates to `mw.util.getUrl(mw.config.get("wgPageName"))` instead of calling `window.location.reload()`. This applies to every feature, not only page deletion, and in both user mode and page mode, since `wgPageName` reflects the actual page being viewed independently of Tengu's mode toggle
+
 ## 2.46.0
 
 ### Added
