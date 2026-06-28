@@ -26,7 +26,7 @@
 
 /* --- Dialogue container --- */
 .tng-dialog {
-  background: #fff;
+  background: #faf9f6;
   color: #202122;
   border: 1px solid #a2a9b1;
   border-radius: 8px;
@@ -703,225 +703,224 @@
   }
 }
 
-/* --- Dark mode --- */
-@media (prefers-color-scheme: dark) {
-  .tng-dialog {
-    background: #1e1e1e;
-    color: #eaecf0;
-    border-color: #54595d;
-  }
-  .tng-dialog-header,
-  .tng-dialog-footer {
-    background: #2a2a2a;
-    border-color: #3a3a3a;
-  }
-  .tng-dialog-close {
-    color: #a2a9b1;
-  }
-  .tng-dialog-close:hover {
-    color: #eaecf0;
-  }
-  .tng-section {
-    border-color: #3a3a3a;
-  }
-  .tng-section-header {
-    background: #252525;
-    border-color: #3a3a3a;
-  }
-  .tng-section-header:hover {
-    background: #2e2e2e;
-  }
-  .tng-row label.tng-label,
-  .tng-help,
-  .tng-optgroup-label {
-    color: #a2a9b1;
-  }
-  .tng-inline-label {
-    color: #a2a9b1;
-  }
-  .tng-recreation-group {
-    border-color: #3a3a3a;
-  }
-  .tng-input,
-  .tng-select {
-    background: #2a2a2a;
-    color: #eaecf0;
-    border-color: #54595d;
-  }
-  .tng-input:focus,
-  .tng-select:focus {
-    border-color: #6699ff;
-  }
-  .tng-btn-quiet {
-    color: #eaecf0;
-    border-color: #54595d;
-  }
-  .tng-btn-quiet:hover {
-    background: #2a2a35;
-  }
-
-  /* Dark mode for rights panel */
-  .tng-rights-panel {
-    background: #252525;
-    border-color: #3a3a3a;
-  }
-  .tng-rights-title {
-    color: #a2a9b1;
-  }
-  .tng-rights-subtitle {
-    color: #6a6a6a;
-  }
-  .tng-rights-sep {
-    background: #4a4a4a;
-  }
-  .tng-rights-have {
-    background: #1a3a24;
-    color: #75c987;
-    border-color: #2d6a3f;
-  }
-  .tng-rights-lack {
-    background: #3a1a1e;
-    color: #f08080;
-    border-color: #6a2d33;
-  }
-  .tng-rights-loading {
-    background: #2a2a2a;
-    color: #8a8a8a;
-    border-color: #3a3a3a;
-  }
-
-  /* Dark mode for progress log */
-  .tng-log-box {
-    background: #2a2a2a;
-    border-color: #54595d;
-    color: #eaecf0;
-  }
-  .tng-log-err {
-    color: #ff6b6b;
-  }
-  .tng-log-warn {
-    color: #e8a04d;
-  }
-  .tng-log-succ {
-    color: #00af89;
-  }
-
-  /* Dark mode for inline field error */
-  .tng-input-error {
-    border-color: #ff6b6b !important;
-    box-shadow: 0 0 0 2px rgba(255, 107, 107, 0.22) !important;
-  }
-  .tng-input-error::placeholder {
-    color: #ff6b6b;
-  }
-
-  /* Dark mode for section status notes */
-  .tng-status-note-active {
-    background: #3d2b00;
-    color: #ffe082;
-    border-color: #8a6900;
-  }
-  .tng-status-note-inactive {
-    background: #1a3a1f;
-    color: #a5d6a7;
-    border-color: #2e7d32;
-  }
-  .tng-status-note-loading {
-    background: #2a2a2a;
-    color: #8a8a8a;
-    border-color: #3a3a3a;
-  }
-
-  /* Dark mode for user info panel entries */
-  .tng-info-entry {
-    background: #252525;
-    border-color: #3a3a3a;
-  }
-  .tng-info-loading,
-  .tng-info-empty {
-    color: #8a8a8a;
-  }
-
-  /* Dark mode for target user rights card */
-  .tng-user-rights-card {
-    border-color: #3a3a3a;
-  }
-  .tng-user-rights-header {
-    background: #252525;
-    border-color: #3a3a3a;
-  }
-  .tng-user-rights-scope {
-    color: #a2a9b1;
-  }
-  .tng-user-rights-divider {
-    border-color: #3a3a3a;
-  }
-  .tng-rights-badge-group {
-    background: #1a3060;
-    color: #80aaff;
-    border-color: #2a5090;
-  }
-  .tng-rights-badge-none {
-    background: #2a2a2a;
-    color: #8a8a8a;
-    border-color: #3a3a3a;
-  }
-  .tng-user-rights-list {
-    background: #2a2a2a;
-    color: #a2a9b1;
-    border-color: #3a3a3a;
-  }
-
-  /* Dark mode for section arrow */
-  .tng-section-arrow {
-    border-color: #a2a9b1;
-  }
-
-  /* Dark mode for custom select chevron */
-  .tng-select-wrap::after {
-    border-color: #a2a9b1;
-  }
-
-  /* Dark mode for mode toggle */
-  .tng-mode-toggle {
-    border-color: #54595d;
-  }
-  .tng-mode-btn {
-    color: #a2a9b1;
-  }
-  .tng-mode-btn:hover:not(.tng-mode-btn-active) {
-    background: #2a2a35;
-  }
-
-  /* Dark mode for mode notice */
-  .tng-mode-notice {
-    background: #1a3060;
-    color: #80aaff;
-    border-color: #2a5090;
-  }
-  .tng-mode-notice-user {
-    background: #2e2a40;
-    color: #bcb0e0;
-    border-color: #4a4268;
-  }
-  .tng-mode-notice-page {
-    background: #1f332b;
-    color: #9ecbb3;
-    border-color: #33503f;
-  }
-
-  /* Dark mode for mode badge */
-  .tng-mode-badge-user {
-    background: #2e2a40;
-    color: #bcb0e0;
-    border-color: #4a4268;
-  }
-  .tng-mode-badge-page {
-    background: #1f332b;
-    color: #9ecbb3;
-    border-color: #33503f;
-  }
+/* --- Dark mode (manual toggle via .tng-theme-dark on .tng-overlay) --- */
+.tng-theme-dark .tng-dialog {
+  background: #1e1e1e;
+  color: #eaecf0;
+  border-color: #54595d;
 }
+.tng-theme-dark .tng-dialog-header,
+.tng-theme-dark .tng-dialog-footer {
+  background: #2a2a2a;
+  border-color: #3a3a3a;
+}
+.tng-theme-dark .tng-dialog-close {
+  color: #a2a9b1;
+}
+.tng-theme-dark .tng-dialog-close:hover {
+  color: #eaecf0;
+}
+.tng-theme-dark .tng-section {
+  border-color: #3a3a3a;
+}
+.tng-theme-dark .tng-section-header {
+  background: #252525;
+  border-color: #3a3a3a;
+}
+.tng-theme-dark .tng-section-header:hover {
+  background: #2e2e2e;
+}
+.tng-theme-dark .tng-row label.tng-label,
+.tng-theme-dark .tng-help,
+.tng-theme-dark .tng-optgroup-label {
+  color: #a2a9b1;
+}
+.tng-theme-dark .tng-inline-label {
+  color: #a2a9b1;
+}
+.tng-theme-dark .tng-recreation-group {
+  border-color: #3a3a3a;
+}
+.tng-theme-dark .tng-input,
+.tng-theme-dark .tng-select {
+  background: #2a2a2a;
+  color: #eaecf0;
+  border-color: #54595d;
+}
+.tng-theme-dark .tng-input:focus,
+.tng-theme-dark .tng-select:focus {
+  border-color: #6699ff;
+}
+.tng-theme-dark .tng-btn-quiet {
+  color: #eaecf0;
+  border-color: #54595d;
+}
+.tng-theme-dark .tng-btn-quiet:hover {
+  background: #2a2a35;
+}
+
+/* Dark mode for rights panel */
+.tng-theme-dark .tng-rights-panel {
+  background: #252525;
+  border-color: #3a3a3a;
+}
+.tng-theme-dark .tng-rights-title {
+  color: #a2a9b1;
+}
+.tng-theme-dark .tng-rights-subtitle {
+  color: #6a6a6a;
+}
+.tng-theme-dark .tng-rights-sep {
+  background: #4a4a4a;
+}
+.tng-theme-dark .tng-rights-have {
+  background: #1a3a24;
+  color: #75c987;
+  border-color: #2d6a3f;
+}
+.tng-theme-dark .tng-rights-lack {
+  background: #3a1a1e;
+  color: #f08080;
+  border-color: #6a2d33;
+}
+.tng-theme-dark .tng-rights-loading {
+  background: #2a2a2a;
+  color: #8a8a8a;
+  border-color: #3a3a3a;
+}
+
+/* Dark mode for progress log */
+.tng-theme-dark .tng-log-box {
+  background: #2a2a2a;
+  border-color: #54595d;
+  color: #eaecf0;
+}
+.tng-theme-dark .tng-log-err {
+  color: #ff6b6b;
+}
+.tng-theme-dark .tng-log-warn {
+  color: #e8a04d;
+}
+.tng-theme-dark .tng-log-succ {
+  color: #00af89;
+}
+
+/* Dark mode for inline field error */
+.tng-theme-dark .tng-input-error {
+  border-color: #ff6b6b !important;
+  box-shadow: 0 0 0 2px rgba(255, 107, 107, 0.22) !important;
+}
+.tng-theme-dark .tng-input-error::placeholder {
+  color: #ff6b6b;
+}
+
+/* Dark mode for section status notes */
+.tng-theme-dark .tng-status-note-active {
+  background: #3d2b00;
+  color: #ffe082;
+  border-color: #8a6900;
+}
+.tng-theme-dark .tng-status-note-inactive {
+  background: #1a3a1f;
+  color: #a5d6a7;
+  border-color: #2e7d32;
+}
+.tng-theme-dark .tng-status-note-loading {
+  background: #2a2a2a;
+  color: #8a8a8a;
+  border-color: #3a3a3a;
+}
+
+/* Dark mode for user info panel entries */
+.tng-theme-dark .tng-info-entry {
+  background: #252525;
+  border-color: #3a3a3a;
+}
+.tng-theme-dark .tng-info-loading,
+.tng-theme-dark .tng-info-empty {
+  color: #8a8a8a;
+}
+
+/* Dark mode for target user rights card */
+.tng-theme-dark .tng-user-rights-card {
+  border-color: #3a3a3a;
+}
+.tng-theme-dark .tng-user-rights-header {
+  background: #252525;
+  border-color: #3a3a3a;
+}
+.tng-theme-dark .tng-user-rights-scope {
+  color: #a2a9b1;
+}
+.tng-theme-dark .tng-user-rights-divider {
+  border-color: #3a3a3a;
+}
+.tng-theme-dark .tng-rights-badge-group {
+  background: #1a3060;
+  color: #80aaff;
+  border-color: #2a5090;
+}
+.tng-theme-dark .tng-rights-badge-none {
+  background: #2a2a2a;
+  color: #8a8a8a;
+  border-color: #3a3a3a;
+}
+.tng-theme-dark .tng-user-rights-list {
+  background: #2a2a2a;
+  color: #a2a9b1;
+  border-color: #3a3a3a;
+}
+
+/* Dark mode for section arrow */
+.tng-theme-dark .tng-section-arrow {
+  border-color: #a2a9b1;
+}
+
+/* Dark mode for custom select chevron */
+.tng-theme-dark .tng-select-wrap::after {
+  border-color: #a2a9b1;
+}
+
+/* Dark mode for mode toggle */
+.tng-theme-dark .tng-mode-toggle {
+  border-color: #54595d;
+}
+.tng-theme-dark .tng-mode-btn {
+  color: #a2a9b1;
+}
+.tng-theme-dark .tng-mode-btn:hover:not(.tng-mode-btn-active) {
+  background: #2a2a35;
+}
+
+/* Dark mode for mode notice */
+.tng-theme-dark .tng-mode-notice {
+  background: #1a3060;
+  color: #80aaff;
+  border-color: #2a5090;
+}
+.tng-theme-dark .tng-mode-notice-user {
+  background: #2e2a40;
+  color: #bcb0e0;
+  border-color: #4a4268;
+}
+.tng-theme-dark .tng-mode-notice-page {
+  background: #1f332b;
+  color: #9ecbb3;
+  border-color: #33503f;
+}
+
+/* Dark mode for mode badge */
+.tng-theme-dark .tng-mode-badge-user {
+  background: #2e2a40;
+  color: #bcb0e0;
+  border-color: #4a4268;
+}
+.tng-theme-dark .tng-mode-badge-page {
+  background: #1f332b;
+  color: #9ecbb3;
+  border-color: #33503f;
+}
+
 /* Filter text box above filterable <select> dropdowns */
 .tng-filtered-select {
   display: flex;

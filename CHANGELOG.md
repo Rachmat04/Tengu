@@ -1,3 +1,15 @@
+## 2.48.0
+
+### Added
+
+* Added a manual light/dark mode toggle button, placed on the same row as the User mode / Page mode toggle. Shows a crescent moon icon in light mode (selecting it switches to dark mode) and a sun icon in dark mode (selecting it switches to light mode)
+* The selected theme is saved via `localStorage` and reapplied the next time Tengu is opened. If no saved preference exists yet, Tengu falls back to the browser's `prefers-color-scheme` setting, matching the previous automatic-only behaviour
+
+### Changed
+
+* Softened the light-mode dialogue background from pure white (`#fff`) to a less glaring off-white (`#faf9f6`)
+* Replaced the dialogue's `@media (prefers-color-scheme: dark)` CSS block with an equivalent `.tng-theme-dark` class-based block, since dark mode is now driven by the `theme` state in `Tengu.js` rather than read directly from the media query at render time
+
 ## 2.47.0
 
 ### Added

@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.47.0
+ * Version 2.48.0
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -77,6 +77,26 @@ $(function () {
         let cssInited = false; // CSS injected once on first dialogue open
         let escListenerBound = false; // Escape key listener registered once on first overlay
 
+        // Light/dark theme. Defaults to a saved preference if one exists,
+        // otherwise falls back to the browser's prefers-color-scheme setting.
+        // [Inference] Assumes localStorage and matchMedia are available;
+        // wrapped in try/catch since some browser privacy settings block
+        // localStorage access entirely.
+        let theme = "light";
+        try {
+          const storedTheme = localStorage.getItem("tengu-theme");
+          if (storedTheme === "dark" || storedTheme === "light") {
+            theme = storedTheme;
+          } else if (
+            window.matchMedia &&
+            window.matchMedia("(prefers-color-scheme: dark)").matches
+          ) {
+            theme = "dark";
+          }
+        } catch (e) {
+          // Storage unavailable; keep the "light" default.
+        }
+
         // ============================================================================
         // [Section 01] Stylesheet
         // The CSS components were moved to an external file, [[Pengguna:Rachmat04/Tengu.css]], to allow easier maintenance and quicker iteration without needing to edit the main script.
@@ -92,7 +112,8 @@ $(function () {
 
         function createOverlay() {
           const overlay = document.createElement("div");
-          overlay.className = "tng-overlay";
+          overlay.className =
+            "tng-overlay" + (theme === "dark" ? " tng-theme-dark" : "");
           document.body.appendChild(overlay);
 
           overlay.closeHandler = function () {
@@ -123,6 +144,23 @@ $(function () {
           }
 
           return overlay;
+        }
+
+        // Updates the active theme, persists the choice, and immediately
+        // re-themes every currently open dialogue (overlayStack may hold
+        // more than one if a confirmation or info dialogue is stacked above
+        // the main one).
+        function setTheme(newTheme) {
+          theme = newTheme === "dark" ? "dark" : "light";
+          try {
+            localStorage.setItem("tengu-theme", theme);
+          } catch (e) {
+            // Storage unavailable (e.g. private browsing); the choice still
+            // applies for the rest of this session, just not persisted.
+          }
+          for (const ov of overlayStack) {
+            ov.classList.toggle("tng-theme-dark", theme === "dark");
+          }
         }
 
         // ============================================================================
@@ -3834,6 +3872,28 @@ $(function () {
           modeToggle.appendChild(btnModeUser);
           modeToggle.appendChild(btnModePage);
           fieldMode.appendChild(modeToggle);
+
+          // Manual light/dark mode toggle — same row as the mode toggle
+          // buttons. Shows the icon for the mode a click will switch *to*
+          // (crescent moon in light mode, sun in dark mode).
+          const btnThemeToggle = makeBtn("🌙", "quiet");
+          btnThemeToggle.className += " tng-btn-sm tng-theme-toggle-btn";
+          function updateThemeToggleBtn() {
+            if (theme === "dark") {
+              btnThemeToggle.textContent = "☀️";
+              btnThemeToggle.title = "Switch to light mode";
+            } else {
+              btnThemeToggle.textContent = "🌙";
+              btnThemeToggle.title = "Switch to dark mode";
+            }
+          }
+          updateThemeToggleBtn();
+          btnThemeToggle.addEventListener("click", function () {
+            setTheme(theme === "dark" ? "light" : "dark");
+            updateThemeToggleBtn();
+          });
+          fieldMode.appendChild(btnThemeToggle);
+
           topSection.appendChild(rowMode);
 
           // Mode notice — Informs users how deletion and protection behave in the current mode
