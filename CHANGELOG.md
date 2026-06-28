@@ -1,3 +1,13 @@
+## 2.46.0
+
+### Added
+
+* Added `pageExists()`, a shared helper that checks whether a page currently exists, used before posting talk-page notifications
+
+### Changed
+
+* Notifications posted via `appendtext` (user warning, block, unblock, page protection, and page deletion notices) no longer prepend two blank lines when the target talk page does not yet exist. The two-line separator is now only added when the talk page already has content, so a freshly created talk page no longer starts with leading blank lines
+
 ## 2.45.2
 
 ### Fixed

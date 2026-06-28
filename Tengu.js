@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.45.2
+ * Version 2.46.0
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -512,6 +512,27 @@ $(function () {
               );
           });
 
+        // Checks whether a page currently exists. Used before posting a
+        // notification to a talk page: an existing page may already contain
+        // earlier discussion, so two blank lines keep the new notice visually
+        // separated from it, but a page that does not exist yet should not
+        // start with leading blank lines.
+        const pageExists = async (title) => {
+          try {
+            const data = await apiGet({
+              action: "query",
+              titles: title,
+              formatversion: 2,
+            });
+            const page = data.query && data.query.pages && data.query.pages[0];
+            return !!(page && !page.missing);
+          } catch (e) {
+            // If the check fails, assume the page exists so the existing
+            // separator behaviour is kept rather than risking a malformed post.
+            return true;
+          }
+        };
+
         // Loads mw.ForeignApi and returns an instance pointed at Meta-Wiki.
         function getMetaForeignApi() {
           return new Promise((resolve, reject) => {
@@ -894,10 +915,11 @@ $(function () {
             const talkTitle = new mw.Title(targetVal, 3).getPrefixedText();
             const notice = config.warnNotice;
             try {
+              const talkExists = await pageExists(talkTitle);
               await apiPost({
                 action: "edit",
                 title: talkTitle,
-                appendtext: "\n\n" + notice,
+                appendtext: (talkExists ? "\n\n" : "") + notice,
                 summary: notifySummaryWarn,
                 bot: true,
               });
@@ -1007,7 +1029,8 @@ $(function () {
                   if (shouldReplace) {
                     editParams.text = notice;
                   } else {
-                    editParams.appendtext = "\n\n" + notice;
+                    const talkExists = await pageExists(talkTitle);
+                    editParams.appendtext = (talkExists ? "\n\n" : "") + notice;
                   }
                   await apiPost(editParams);
                   addLog(
@@ -1046,10 +1069,11 @@ $(function () {
                   ? `== Pemberitahuan pencabutan pemblokiran ==\nPemblokiran pada akun "${targetVal}" telah dicabut dengan alasan berikut: ${config.unblockReason}.\n\nPemberitahuan ini dikirimkan secara otomatis. Silakan sampaikan pertanyaan atau keberatan ke halaman pembicaraan saya. ~~~~`
                   : `== Account unblock notice ==\nThe block on the account "${targetVal}" has been lifted due to the following reason: ${config.unblockReason}.\n\nThis notification was posted automatically. Please direct any questions or concerns to my user talk page. ~~~~`;
                 try {
+                  const talkExists = await pageExists(talkTitle);
                   await apiPost({
                     action: "edit",
                     title: talkTitle,
-                    appendtext: "\n\n" + notice,
+                    appendtext: (talkExists ? "\n\n" : "") + notice,
                     summary: notifySummaryUnblock,
                     bot: true,
                   });
@@ -1587,6 +1611,7 @@ $(function () {
             for (const [talkTitle, titles] of notifyQueue) {
               if (isAborted) break;
               try {
+                const talkExists = await pageExists(talkTitle);
                 let notice;
                 const isProtectIndef = config.protectExpiry === "never";
                 if (titles.length === 1) {
@@ -1607,7 +1632,7 @@ $(function () {
                 await apiPost({
                   action: "edit",
                   title: talkTitle,
-                  appendtext: "\n\n" + notice,
+                  appendtext: (talkExists ? "\n\n" : "") + notice,
                   summary: notifySummaryProtect,
                   bot: true,
                 });
@@ -1988,6 +2013,7 @@ $(function () {
           ) {
             const talkTitle = new mw.Title(targetVal, 3).getPrefixedText();
             try {
+              const talkExists = await pageExists(talkTitle);
               let notice;
               if (deletedTitles.length === 1) {
                 notice = useIndonesian
@@ -2002,7 +2028,7 @@ $(function () {
               await apiPost({
                 action: "edit",
                 title: talkTitle,
-                appendtext: "\n\n" + notice,
+                appendtext: (talkExists ? "\n\n" : "") + notice,
                 summary: notifySummaryDelete,
                 bot: true,
               });
@@ -2029,6 +2055,7 @@ $(function () {
               if (isAborted) break;
               const talkTitle = new mw.Title(creator, 3).getPrefixedText();
               try {
+                const talkExists = await pageExists(talkTitle);
                 let notice;
                 if (titles.length === 1) {
                   notice = useIndonesian
@@ -2043,7 +2070,7 @@ $(function () {
                 await apiPost({
                   action: "edit",
                   title: talkTitle,
-                  appendtext: "\n\n" + notice,
+                  appendtext: (talkExists ? "\n\n" : "") + notice,
                   summary: notifySummaryDelete,
                   bot: true,
                 });
