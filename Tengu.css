@@ -70,6 +70,7 @@
   display: flex;
   align-items: center;
   gap: 7px;
+  flex-wrap: wrap;
 }
 .tng-dialog-close {
   background: none;
@@ -372,6 +373,16 @@
   color: #1a4a8a;
   line-height: 1.5;
 }
+.tng-mode-notice-user {
+  border-color: #cfc7e8;
+  background: #ece9f7;
+  color: #4b3f7a;
+}
+.tng-mode-notice-page {
+  border-color: #bfdccb;
+  background: #e6f0ea;
+  color: #2f5d4f;
+}
 
 .tng-hidden {
   display: none !important;
@@ -639,8 +650,35 @@
   background: #f0f2f5;
 }
 .tng-mode-btn.tng-mode-btn-active {
-  background: #3366cc;
   color: #fff;
+}
+.tng-mode-btn-active-user {
+  background: #7b6fb8;
+}
+.tng-mode-btn-active-page {
+  background: #4f9b8e;
+}
+
+/* --- Mode badge (dialogue header) --- */
+.tng-mode-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 9px;
+  border-radius: 10px;
+  font-size: 0.78em;
+  font-weight: 600;
+  white-space: nowrap;
+  border: 1px solid transparent;
+}
+.tng-mode-badge-user {
+  background: #ece9f7;
+  color: #4b3f7a;
+  border-color: #cfc7e8;
+}
+.tng-mode-badge-page {
+  background: #e6f0ea;
+  color: #2f5d4f;
+  border-color: #bfdccb;
 }
 
 /* --- Animations --- */
@@ -860,6 +898,28 @@
     background: #1a3060;
     color: #80aaff;
     border-color: #2a5090;
+  }
+  .tng-mode-notice-user {
+    background: #2e2a40;
+    color: #bcb0e0;
+    border-color: #4a4268;
+  }
+  .tng-mode-notice-page {
+    background: #1f332b;
+    color: #9ecbb3;
+    border-color: #33503f;
+  }
+
+  /* Dark mode for mode badge */
+  .tng-mode-badge-user {
+    background: #2e2a40;
+    color: #bcb0e0;
+    border-color: #4a4268;
+  }
+  .tng-mode-badge-page {
+    background: #1f332b;
+    color: #9ecbb3;
+    border-color: #33503f;
   }
 }
 /* Filter text box above filterable <select> dropdowns */

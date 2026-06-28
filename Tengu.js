@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.46.1
+ * Version 2.47.0
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -3740,6 +3740,24 @@ $(function () {
             icon: "⛩️",
           });
 
+          // Mode badge — shown in the dialogue header rather than the
+          // scrollable body, so the active mode stays visible at all times,
+          // even after the user has scrolled past the mode toggle or mode
+          // notice further down the dialogue.
+          const modeBadge = document.createElement("span");
+          function updateModeBadge(isUserModeNow) {
+            modeBadge.className =
+              "tng-mode-badge " +
+              (isUserModeNow ? "tng-mode-badge-user" : "tng-mode-badge-page");
+            modeBadge.textContent = isUserModeNow
+              ? "👤 User mode"
+              : "📄 Page mode";
+          }
+          updateModeBadge(tenguMode === "user");
+          dialog
+            .querySelector(".tng-dialog-header-left")
+            .appendChild(modeBadge);
+
           const topSection = document.createElement("div");
           topSection.style.cssText =
             "display:flex;flex-direction:column;gap:10px;";
@@ -3759,9 +3777,15 @@ $(function () {
 
           // Dynamically map default execution target indicators on activation context
           if (tenguMode === "user") {
-            btnModeUser.classList.add("tng-mode-btn-active");
+            btnModeUser.classList.add(
+              "tng-mode-btn-active",
+              "tng-mode-btn-active-user",
+            );
           } else {
-            btnModePage.classList.add("tng-mode-btn-active");
+            btnModePage.classList.add(
+              "tng-mode-btn-active",
+              "tng-mode-btn-active-page",
+            );
           }
 
           // Restrict user mode selection if current workspace context sits outside standard user profile areas
@@ -3782,16 +3806,28 @@ $(function () {
           } else {
             btnModeUser.addEventListener("click", function () {
               if (tenguMode === "user") return;
-              btnModeUser.classList.add("tng-mode-btn-active");
-              btnModePage.classList.remove("tng-mode-btn-active");
+              btnModeUser.classList.add(
+                "tng-mode-btn-active",
+                "tng-mode-btn-active-user",
+              );
+              btnModePage.classList.remove(
+                "tng-mode-btn-active",
+                "tng-mode-btn-active-page",
+              );
               applyModeRestrictions(true);
             });
           }
 
           btnModePage.addEventListener("click", function () {
             if (tenguMode === "page") return;
-            btnModePage.classList.add("tng-mode-btn-active");
-            btnModeUser.classList.remove("tng-mode-btn-active");
+            btnModePage.classList.add(
+              "tng-mode-btn-active",
+              "tng-mode-btn-active-page",
+            );
+            btnModeUser.classList.remove(
+              "tng-mode-btn-active",
+              "tng-mode-btn-active-user",
+            );
             applyModeRestrictions(false);
           });
 
@@ -3805,6 +3841,9 @@ $(function () {
           divModeNotice.className = "tng-mode-notice";
           // isSpecialTarget: true when in page mode and the target resolves to a special page
           function updateModeNotice(isUser, isSpecialTarget) {
+            divModeNotice.className =
+              "tng-mode-notice " +
+              (isUser ? "tng-mode-notice-user" : "tng-mode-notice-page");
             if (isUser) {
               divModeNotice.innerHTML =
                 "<b>User mode</b> — deletion and protection apply to all pages recently edited by the target user, not a single page. To target one specific page instead, switch to page mode.";
@@ -5453,6 +5492,7 @@ $(function () {
             tenguMode = isUserModeNow ? "user" : "page";
             const targetIsSpecial = !isUserModeNow && isTargetSpecialPage();
             updateModeNotice(isUserModeNow, targetIsSpecial);
+            updateModeBadge(isUserModeNow);
 
             // Show only the reason checkboxes matching the new mode, and
             // clear both groups so a reason picked under the previous mode

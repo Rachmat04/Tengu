@@ -1,3 +1,15 @@
+## 2.47.0
+
+### Added
+
+* Added a mode badge ("👤 User mode" / "📄 Page mode") to the dialogue header, so the active mode stays visible at all times, including after scrolling past the mode toggle or mode notice further down the dialogue
+* Added soft, low-contrast colours for each mode — lavender for user mode, sage green for page mode — applied consistently across the new header badge, the existing mode notice, and the active state of the mode toggle buttons
+
+### Changed
+
+* `updateModeNotice()` now also sets a mode-specific colour class (`tng-mode-notice-user` or `tng-mode-notice-page`) on the mode notice element, replacing the single shared blue colour used previously
+* The active mode toggle button (`tng-mode-btn-active`) now also receives a mode-specific colour class (`tng-mode-btn-active-user` or `tng-mode-btn-active-page`) instead of a single shared blue background
+
 ## 2.46.1
 
 ### Fixed
