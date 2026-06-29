@@ -1,3 +1,10 @@
+## 2.49.0
+
+### Changed
+
+* Improved the default Undo edit summary — used when "Use undo instead of rollback" is selected, no custom reason is supplied, and "Show username in summary" is ticked — to also name the author of the revision being restored, e.g. "Revert ExampleUser's edits to the previous edit by PreviousUser", making it clearer which revision the page was reverted to
+* Added the equivalent Indonesian-language wording for the same case
+
 ## 2.48.0
 
 ### Added

@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.48.0
+ * Version 2.49.0
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -79,9 +79,6 @@ $(function () {
 
         // Light/dark theme. Defaults to a saved preference if one exists,
         // otherwise falls back to the browser's prefers-color-scheme setting.
-        // [Inference] Assumes localStorage and matchMedia are available;
-        // wrapped in try/catch since some browser privacy settings block
-        // localStorage access entirely.
         let theme = "light";
         try {
           const storedTheme = localStorage.getItem("tengu-theme");
@@ -1346,6 +1343,11 @@ $(function () {
             let mediainfoNeedsRevert = false;
             let goodMediaInfo = null;
             let pageId = null;
+            // Username of the author of the revision being reverted to (the
+            // parent of the target's earliest edit in this batch). Used below
+            // to make the undo edit summary clearer about which revision was
+            // restored.
+            let previousEditorUser = null;
 
             try {
               const revidsToFetch = info.oldestParent
@@ -1355,7 +1357,7 @@ $(function () {
                 action: "query",
                 prop: "revisions",
                 revids: revidsToFetch,
-                rvprop: "ids|content",
+                rvprop: "ids|content|user",
                 rvslots: "mediainfo",
               });
 
@@ -1367,6 +1369,9 @@ $(function () {
                   let latestMI = null;
                   let oldestMI = null;
                   for (const r of revs) {
+                    if (r.revid === info.oldestParent) {
+                      previousEditorUser = r.user || null;
+                    }
                     if (r.slots && r.slots.mediainfo) {
                       if (r.revid === info.latest)
                         latestMI = r.slots.mediainfo["*"];
@@ -1386,25 +1391,37 @@ $(function () {
             } catch (e) {
               // Gracefully ignore on wikis without Wikibase/MediaInfo configured,
               // or on pages/namespaces where the mediainfo slot is fundamentally unavailable.
+              // previousEditorUser remains null in this case; the undo summary
+              // falls back to its previous wording below.
             }
 
             let standardRevertSuccess = false;
             let standardErr = null;
 
+            // When no custom reason is supplied and the username is shown,
+            // name both the reverted user and the author of the revision
+            // being restored, where known, so it is clear which revision the
+            // page was reverted to. Falls back to the previous wording when
+            // the previous editor could not be determined (e.g. the lookup
+            // above failed, or there is no parent revision).
             const undoSummaryStr = config.rollbackReason
               ? config.rollbackReason + toolTag
               : config.rollbackShow
-                ? (useIndonesian
-                    ? "Mengembalikan suntingan oleh " + targetVal
-                    : "Reverting edits by " + targetVal) + toolTag
-                : (useIndonesian ? "Mengembalikan suntingan" : "Revert edits") +
+                ? (previousEditorUser
+                    ? useIndonesian
+                      ? `Membatalkan suntingan ${targetVal} ke suntingan sebelumnya oleh ${previousEditorUser}`
+                      : `Revert ${targetVal}'s edits to the previous edit by ${previousEditorUser}`
+                    : useIndonesian
+                      ? "Membatalkan suntingan oleh " + targetVal
+                      : "Reverting edits by " + targetVal) + toolTag
+                : (useIndonesian ? "Membatalkan suntingan" : "Revert edits") +
                   toolTag;
 
             const rbSummaryStr = config.rollbackReason
               ? config.rollbackReason + toolTag
               : config.rollbackShow
                 ? ""
-                : (useIndonesian ? "Mengembalikan suntingan" : "Revert edits") +
+                : (useIndonesian ? "Membatalkan suntingan" : "Revert edits") +
                   toolTag;
 
             // Execute standard rollback or undo operation sequentially based on settings
