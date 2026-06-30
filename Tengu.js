@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.49.0
+ * Version 2.50.0
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -26,6 +26,11 @@ $(function () {
       .then(function () {
         return mw.loader.getScript(
           "https://id.wikipedia.org/w/index.php?title=Pengguna:Rachmat04/Tengu-warn.js&action=raw&ctype=text/javascript",
+        );
+      })
+      .then(function () {
+        return mw.loader.getScript(
+          "https://id.wikipedia.org/w/index.php?title=Pengguna:Rachmat04/Tengu-packages.js&action=raw&ctype=text/javascript",
         );
       })
       .then(function () {
@@ -67,6 +72,9 @@ $(function () {
 
         const tenguWarnObj = window.TenguWarn.get(useIndonesian);
         const WARN_MESSAGES = tenguWarnObj.WARN_MESSAGES;
+        const tenguPackagesObj = window.TenguPackages.get();
+        const DEFAULT_PACKAGE = tenguPackagesObj.DEFAULT_PACKAGE;
+        const NATIVE_PRESETS = tenguPackagesObj.NATIVE_PRESETS;
 
         // ============================================================================
         // [Section 00] State
@@ -3524,44 +3532,6 @@ $(function () {
             });
           });
 
-          const defaultPackage = {
-            tracingedits: { duration: 3600, indefregistered: true },
-            rollback: {
-              enabled: false,
-              bot: false,
-              showname: true,
-              reason: "",
-            },
-            block: {
-              enabled: false,
-              duration: "1 day",
-              indefregistered: true,
-              reason: "",
-              autoblock: true,
-              hardblock: false,
-              create: true,
-              talk: false,
-              mail: false,
-              hidename: false,
-            },
-            pagedelete: { enabled: false, reason: "" },
-            pageprotection: {
-              enabled: false,
-              edit: "all",
-              move: "all",
-              expiry: "1 day",
-              reason: "",
-            },
-            revisiondelete: {
-              enabled: false,
-              content: true,
-              summary: true,
-              username: false,
-              reason: "",
-              oversight: false,
-            },
-          };
-
           if (typeof p4js_all_in_one === "undefined")
             window.p4js_all_in_one = {};
           const aioConf = window.p4js_all_in_one;
@@ -3572,222 +3542,17 @@ $(function () {
             " (global rollbackers action)",
           ];
 
+          // Default package and native presets are now sourced from
+          // Tengu-packages.js (see window.TenguPackages.get() above).
+          const defaultPackage = DEFAULT_PACKAGE;
+
           let packages = aioConf.packages || {};
           if (!packages.Default) packages.Default = defaultPackage;
 
-          // Native presets
-          if (!packages["Severe vandalism"]) {
-            packages["Severe vandalism"] = {
-              tracingedits: { duration: 86400, indefregistered: false },
-              rollback: {
-                enabled: true,
-                bot: false,
-                showname: true,
-                reason: "Vandalism",
-              },
-              block: {
-                enabled: true,
-                duration: "3 days",
-                indefregistered: false,
-                reason: "Vandalism",
-                autoblock: true,
-                hardblock: true,
-                create: true,
-                talk: true,
-                mail: false,
-                hidename: false,
-              },
-              pagedelete: { enabled: false, reason: "" },
-              pageprotection: { enabled: false },
-              revisiondelete: { enabled: false },
-            };
-          }
-
-          if (!packages["Bot attack or automated spam"]) {
-            packages["Bot attack or automated spam"] = {
-              tracingedits: { duration: "inf", indefregistered: true },
-              rollback: {
-                enabled: true,
-                bot: true,
-                showname: true,
-                reason: "Vandalism",
-              },
-              block: {
-                enabled: true,
-                duration: "never",
-                indefregistered: true,
-                reason: "Abusing multiple accounts",
-                autoblock: true,
-                hardblock: false,
-                create: true,
-                talk: true,
-                mail: true,
-                hidename: false,
-              },
-              pagedelete: { enabled: false, reason: "" },
-              pageprotection: { enabled: false },
-              revisiondelete: { enabled: false },
-            };
-          }
-
-          if (!packages["Severe privacy violation or doxxing"]) {
-            packages["Severe privacy violation or doxxing"] = {
-              tracingedits: { duration: "inf", indefregistered: true },
-              rollback: {
-                enabled: true,
-                bot: false,
-                showname: false,
-                reason: "Vandalism",
-              },
-              block: {
-                enabled: true,
-                duration: "never",
-                indefregistered: true,
-                reason: "Personal attacks or harassment policy violations",
-                autoblock: true,
-                hardblock: false,
-                create: true,
-                talk: true,
-                mail: true,
-                hidename: true,
-              },
-              pagedelete: { enabled: false, reason: "" },
-              pageprotection: { enabled: false },
-              revisiondelete: {
-                enabled: true,
-                content: true,
-                summary: true,
-                username: true,
-                reason: "Grossly insulting, degrading, or offensive material",
-                oversight: false,
-              },
-            };
-          }
-
-          if (!packages["Mass page creation or spam"]) {
-            packages["Mass page creation or spam"] = {
-              tracingedits: { duration: 604800, indefregistered: false },
-              rollback: {
-                enabled: true,
-                bot: false,
-                showname: true,
-                reason:
-                  "Promotional editing or editing with a conflict of interest",
-              },
-              block: {
-                enabled: true,
-                duration: "never",
-                indefregistered: true,
-                reason: "Using Wikipedia for promotion or advertising purposes",
-                autoblock: true,
-                hardblock: false,
-                create: true,
-                talk: false,
-                mail: false,
-                hidename: false,
-              },
-              pagedelete: {
-                enabled: true,
-                reason: "Purely promotional content",
-              },
-              pageprotection: { enabled: false },
-              revisiondelete: { enabled: false },
-            };
-          }
-
-          if (!packages["Edit warring or 3RR violation"]) {
-            packages["Edit warring or 3RR violation"] = {
-              tracingedits: { duration: 259200, indefregistered: false },
-              rollback: {
-                enabled: true,
-                bot: false,
-                showname: true,
-                reason: "Edit warring prevention",
-              },
-              block: {
-                enabled: true,
-                duration: "31 hours",
-                indefregistered: false,
-                reason: "Violation of the three-revert rule",
-                autoblock: true,
-                hardblock: false,
-                create: false,
-                talk: false,
-                mail: false,
-                hidename: false,
-              },
-              pagedelete: { enabled: false, reason: "" },
-              pageprotection: { enabled: false },
-              revisiondelete: { enabled: false },
-            };
-          }
-
-          if (!packages["Mass copyright infringement"]) {
-            packages["Mass copyright infringement"] = {
-              tracingedits: { duration: 2592000, indefregistered: false },
-              rollback: {
-                enabled: true,
-                bot: false,
-                showname: true,
-                reason: "Copyright violations",
-              },
-              block: {
-                enabled: true,
-                duration: "1 week",
-                indefregistered: false,
-                reason: "Copyright infringement",
-                autoblock: true,
-                hardblock: false,
-                create: true,
-                talk: false,
-                mail: false,
-                hidename: false,
-              },
-              pagedelete: {
-                enabled: true,
-                reason: "Clear copyright infringement",
-              },
-              pageprotection: { enabled: false },
-              revisiondelete: {
-                enabled: true,
-                content: true,
-                summary: true,
-                username: false,
-                reason: "Violations of copyright policy",
-                oversight: false,
-              },
-            };
-          }
-
-          if (!packages["Sockpuppetry or block evasion"]) {
-            packages["Sockpuppetry or block evasion"] = {
-              tracingedits: { duration: "inf", indefregistered: true },
-              rollback: {
-                enabled: true,
-                bot: false,
-                showname: true,
-                reason: "Block evasion or use of sockpuppet accounts",
-              },
-              block: {
-                enabled: true,
-                duration: "never",
-                indefregistered: true,
-                reason: "Sockpuppetry",
-                autoblock: true,
-                hardblock: false,
-                create: true,
-                talk: true,
-                mail: false,
-                hidename: false,
-              },
-              pagedelete: {
-                enabled: true,
-                reason:
-                  "Creation by a banned or blocked user in violation of ban or block",
-              },
-              pageprotection: { enabled: false },
-              revisiondelete: { enabled: false },
-            };
+          for (const presetName of Object.keys(NATIVE_PRESETS)) {
+            if (!packages[presetName]) {
+              packages[presetName] = NATIVE_PRESETS[presetName];
+            }
           }
 
           const { overlay, dialog, body, footer } = createDialog({

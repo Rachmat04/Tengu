@@ -1,3 +1,11 @@
+## 2.50.0
+
+### Changed
+
+* Moved the default package and the seven native preset packages (previously defined inline in `init()`) out of `Tengu.js` and into a new `Tengu-packages.js` module, following the same pattern already used for `Tengu-reasons.js` and `Tengu-warn.js`
+* `Tengu-packages.js` exposes `window.TenguPackages.get()`, returning `{ DEFAULT_PACKAGE, NATIVE_PRESETS }`
+* `init()` now merges `NATIVE_PRESETS` into the `packages` object via a loop instead of seven separate inline `if (!packages[...])` blocks
+
 ## 2.49.0
 
 ### Changed
