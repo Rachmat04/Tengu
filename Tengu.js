@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.50.0
+ * Version 2.51.0
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -4163,7 +4163,7 @@ $(function () {
             section: secGS,
             sectionBody: bodyGS,
             enableChk: chkGS,
-          } = makeSection("Report to global sysops", "🚩", false);
+          } = makeSection("Report to Global sysops/Requests", "🚩", false);
 
           const divGSStatus = document.createElement("div");
           divGSStatus.className = "tng-status-note tng-status-note-loading";
@@ -4736,7 +4736,7 @@ $(function () {
               if (badge) badge.remove();
             }
           }
-          applyUndeleteStatusLock(true, "no target has been specified");
+          applyUndeleteStatusLock(true, "no target has been specified.");
 
           body.appendChild(secUndelete);
 
@@ -5110,7 +5110,7 @@ $(function () {
           }
           applyProtectRecreationStatusLock(
             true,
-            "no target has been specified",
+            "no target has been specified.",
           );
 
           body.appendChild(secProtectRecreation);
@@ -5285,35 +5285,35 @@ $(function () {
                 bodyPagedel,
                 chkPagedel,
                 true,
-                "special pages cannot be deleted",
+                "special pages cannot be deleted.",
               );
               applyModeLock(
                 secProtect,
                 bodyProtect,
                 chkProtect,
                 true,
-                "special pages cannot be protected",
+                "special pages cannot be protected.",
               );
               applyModeLock(
                 secProtectRecreation,
                 bodyProtectRecreation,
                 chkProtectRecreation,
                 true,
-                "special pages cannot be protected",
+                "special pages cannot be protected.",
               );
               applyModeLock(
                 secUndelete,
                 bodyUndelete,
                 chkUndelete,
                 true,
-                "special pages cannot be undeleted",
+                "special pages cannot be undeleted.",
               );
               applyModeLock(
                 secGS,
                 bodyGS,
                 chkGS,
                 true,
-                "special pages cannot be reported",
+                "special pages cannot be reported.",
               );
             } else {
               applyModeLock(secPagedel, bodyPagedel, chkPagedel, false);
@@ -5916,7 +5916,7 @@ $(function () {
               if (config.block) features.push("⛔️ Block");
               if (config.unblock) features.push("🔓 Unblock");
               if (config.warn) features.push("⚠️ User warning");
-              if (config.reportGS) features.push("🚩 Report to global sysops");
+              if (config.reportGS) features.push("🚩 Report to Global sysops/Requests");
               if (config.reportSRG)
                 features.push("📌 Report to Steward requests/Global");
               if (config.massdel) features.push("🗑️ Page deletion");
@@ -6532,15 +6532,15 @@ $(function () {
                 "Enter a target to see deletion history.",
               );
               if (!undeleteRightsLocked) {
-                applyUndeleteStatusLock(true, "no target has been specified");
+                applyUndeleteStatusLock(true, "no target has been specified.");
               }
-              applyUnblockStatusLock(true, "no target has been specified");
+              applyUnblockStatusLock(true, "no target has been specified.");
               setNote(
                 divGSStatus,
                 "loading",
                 "Enter a target to see global sysops eligibility.",
               );
-              applyGSStatusLock(true, "no target has been specified");
+              applyGSStatusLock(true, "no target has been specified.");
               return;
             }
 
@@ -6561,7 +6561,7 @@ $(function () {
               );
               applyGSStatusLock(
                 true,
-                "checking global sysops eligibility for this wiki",
+                "checking global sysops eligibility for this wiki.",
               );
             } else if (gsScopeInfo.inScope) {
               setNote(
@@ -7152,7 +7152,7 @@ $(function () {
             "#",
             "⛩️ Tengu",
             "ca-tengu",
-            "Open Tengu, all-in-one moderation tools",
+            "Open Tengu, your all-in-one moderation tools",
           ),
         ).on("click", function (e) {
           e.preventDefault();

@@ -113,17 +113,17 @@ window.TenguReasons = {
           items: [
             {
               value: v(
-                "Vandalism or other deliberate actions that damage content, disrupt workflows, or undermine the project's normal operation",
-                "Vandalisme atau tindakan sengaja lainnya yang merusak konten, mengganggu proses kerja, atau menghambat jalannya proyek",
+                "Vandalising content or engaging in other deliberate actions that damage content, disrupt workflows, or undermine the project's normal operation",
+                "Melakukan vandalisme atau tindakan sengaja lainnya yang merusak konten, mengganggu proses kerja, atau menghambat jalannya proyek",
               ),
-              label: "Vandalism",
+              label: "Vandalising content",
             },
             {
               value: v(
-                "Copyright infringement or a pattern of adding material that is not compatible with copyright or licensing requirements",
-                "Pelanggaran hak cipta atau pola penambahan materi yang tidak sesuai dengan ketentuan hak cipta maupun lisensi",
+                "Infringing copyright or repeatedly adding material that is not compatible with copyright or licensing requirements",
+                "Melanggar hak cipta atau berulang kali menambahkan materi yang tidak sesuai dengan ketentuan hak cipta maupun lisensi",
               ),
-              label: "Copyright infringement",
+              label: "Infringing copyright",
             },
             {
               value: v(
@@ -134,24 +134,24 @@ window.TenguReasons = {
             },
             {
               value: v(
-                "Content or conduct that does not comply with the biographies of living persons policy and may pose a risk of harm to living individuals",
-                "Konten atau tindakan yang tidak sesuai dengan kebijakan biografi tokoh yang masih hidup dan berpotensi merugikan individu yang masih hidup",
+                "Violating the biographies of living persons policy through content or conduct that may pose a risk of harm to living individuals",
+                "Melanggar kebijakan biografi tokoh yang masih hidup melalui konten atau tindakan yang berpotensi merugikan individu yang masih hidup",
               ),
-              label: "Violations of the biographies of living persons policy",
+              label: "Violating the biographies of living persons policy",
             },
             {
               value: v(
-                "Repeated addition of information that cannot be verified, lacks reliable sourcing, or has previously been challenged and removed",
-                "Penambahan berulang informasi yang tidak dapat diverifikasi, tidak didukung sumber tepercaya, atau sebelumnya telah dipersoalkan dan dihapus",
+                "Repeatedly adding information that cannot be verified, lacks reliable sourcing, or has previously been challenged and removed",
+                "Berulang kali menambahkan informasi yang tidak dapat diverifikasi, tidak didukung sumber tepercaya, atau sebelumnya telah dipersoalkan dan dihapus",
               ),
-              label: "Repeated addition of unsourced content",
+              label: "Repeatedly adding unsourced content",
             },
             {
               value: v(
-                "Creating pages consisting of nonsense, fabricated information, hoaxes, or other content unsuitable for the project",
-                "Membuat halaman yang berisi omong kosong, informasi palsu, hoaks, atau konten lain yang tidak sesuai untuk proyek ini",
+                "Engaging in edit warring or repeatedly restoring disputed changes instead of seeking consensus through discussion",
+                "Melakukan perang suntingan atau berulang kali mengembalikan perubahan yang diperselisihkan alih-alih mencari konsensus melalui diskusi",
               ),
-              label: "Creating nonsense or other inappropriate pages",
+              label: "Engaging in edit warring",
             },
             {
               value: v(
@@ -172,42 +172,42 @@ window.TenguReasons = {
                 "Exceeding or otherwise violating the three-revert rule on a page or related set of pages",
                 "Melebihi atau melanggar aturan tiga pembatalan pada suatu halaman atau serangkaian halaman yang berkaitan",
               ),
-              label: "Violation of the three-revert rule",
+              label: "Violating the three-revert rule",
             },
             {
               value: v(
-                "Editing patterns that are disruptive to collaboration, consensus-building, or the overall functioning of the project",
-                "Pola penyuntingan yang mengganggu kolaborasi, pembentukan konsensus, atau keberlangsungan proyek secara keseluruhan",
+                "Editing in a manner that is disruptive to collaboration, consensus-building, or the overall functioning of the project",
+                "Menyunting dengan cara yang mengganggu kolaborasi, pembentukan konsensus, atau keberlangsungan proyek secara keseluruhan",
               ),
-              label: "Disruptive editing",
+              label: "Editing disruptively",
             },
             {
               value: v(
-                "Personal attacks, harassment, intimidation, or other conduct that undermines a respectful and collaborative environment",
-                "Serangan pribadi, pelecehan, intimidasi, atau perilaku lain yang merusak suasana kolaboratif dan saling menghormati",
+                "Making personal attacks, engaging in harassment or intimidation, or other conduct that undermines a respectful and collaborative environment",
+                "Melakukan serangan pribadi, pelecehan, intimidasi, atau perilaku lain yang merusak suasana kolaboratif dan saling menghormati",
               ),
-              label: "Personal attacks or harassment policy violations",
+              label: "Making personal attacks or violating harassment policy",
             },
             {
               value: v(
-                "Action taken to enforce a decision, remedy, or restriction established through the arbitration process",
-                "Tindakan yang diambil untuk menegakkan keputusan, ketentuan, atau pembatasan yang ditetapkan melalui proses arbitrase",
+                "Violating a decision, remedy, or restriction established through the arbitration process",
+                "Melanggar keputusan, ketentuan, atau pembatasan yang ditetapkan melalui proses arbitrase",
               ),
-              label: "Arbitration enforcement",
+              label: "Violating an arbitration decision",
             },
             {
               value: v(
                 "Editing in a contentious topic area in a manner that violates applicable restrictions or sanctions",
-                "Penyuntingan pada topik kontroversial yang melanggar pembatasan atau sanksi yang berlaku",
+                "Menyunting topik kontroversial dengan cara yang melanggar pembatasan atau sanksi yang berlaku",
               ),
-              label: "Contentious topic restriction",
+              label: "Violating a contentious topic restriction",
             },
             {
               value: v(
                 "Attempting to bypass an active block, ban, sanction, or other community-imposed restriction",
-                "Upaya menghindari blokir, pelarangan, sanksi, atau pembatasan lain yang sedang berlaku",
+                "Berupaya menghindari blokir, pelarangan, sanksi, atau pembatasan lain yang sedang berlaku",
               ),
-              label: "Block evasion",
+              label: "Evading a block",
             },
             {
               value: v(
@@ -225,25 +225,24 @@ window.TenguReasons = {
             },
             {
               value: v(
-                "Improper use of sockpuppet accounts to mislead, influence outcomes, or circumvent community processes",
-                "Penggunaan akun boneka secara tidak semestinya untuk menyesatkan, memengaruhi hasil, atau menghindari proses komunitas",
+                "Misusing sockpuppet accounts to mislead, influence outcomes, or circumvent community processes",
+                "Menyalahgunakan akun boneka untuk menyesatkan, memengaruhi hasil, atau menghindari proses komunitas",
               ),
-              label: "Sockpuppetry",
+              label: "Misusing sockpuppet accounts",
             },
             {
               value: v(
-                "Revocation of talk page access due to misuse of user talk page privileges while blocked",
-                "Pencabutan akses halaman pembicaraan karena penyalahgunaan hak penggunaan halaman pembicaraan selama masa pemblokiran",
+                "Misusing user talk page privileges while blocked, resulting in revocation of talk page access",
+                "Menyalahgunakan hak penggunaan halaman pembicaraan selama masa pemblokiran, sehingga mengakibatkan pencabutan akses halaman pembicaraan",
               ),
-              label:
-                "Revoking talk page access: Inappropriate use of user talk page whilst blocked",
+              label: "Misusing talk page access while blocked",
             },
             {
               value: v(
-                "Account used exclusively or primarily for vandalism, disruption, or other non-constructive activities",
-                "Akun yang digunakan secara eksklusif atau terutama untuk vandalisme, gangguan, atau kegiatan lain yang tidak bersifat membangun",
+                "Using the account exclusively or primarily for vandalism, disruption, or other non-constructive activities",
+                "Menggunakan akun secara eksklusif atau terutama untuk vandalisme, gangguan, atau kegiatan lain yang tidak bersifat membangun",
               ),
-              label: "Account used solely for vandalism",
+              label: "Using the account solely for vandalism",
             },
           ],
         },
@@ -252,52 +251,53 @@ window.TenguReasons = {
           items: [
             {
               value: v(
-                "Username does not comply with the username policy and may require a different name to continue participating",
-                "Nama pengguna tidak sesuai dengan kebijakan nama pengguna dan mungkin perlu diganti agar dapat terus berpartisipasi",
+                "Using a username that does not comply with the username policy and may require a different name to continue participating",
+                "Menggunakan nama pengguna yang tidak sesuai dengan kebijakan nama pengguna dan mungkin perlu diganti agar dapat terus berpartisipasi",
               ),
-              label: "Username violates the username policy",
+              label: "Using a username that violates policy",
             },
             {
               value: v(
-                "Username suggests authorised bot status or automated activity without appropriate approval or designation",
-                "Nama pengguna memberikan kesan sebagai bot resmi atau akun otomatis tanpa persetujuan maupun penandaan yang sesuai",
+                "Using a username that suggests authorised bot status or automated activity without appropriate approval or designation",
+                "Menggunakan nama pengguna yang memberikan kesan sebagai bot resmi atau akun otomatis tanpa persetujuan maupun penandaan yang sesuai",
               ),
-              label: "Username indicates use of a bot without authorisation",
+              label: "Using a username indicating unauthorised bot status",
             },
             {
               value: v(
-                "Username appears to be intended for promotion, advertising, marketing, or public relations purposes rather than collaborative editing",
-                "Nama pengguna tampaknya ditujukan untuk promosi, periklanan, pemasaran, atau hubungan masyarakat, bukan untuk kegiatan penyuntingan kolaboratif",
+                "Using a username that appears to be intended for promotion, advertising, marketing, or public relations purposes rather than collaborative editing",
+                "Menggunakan nama pengguna yang tampaknya ditujukan untuk promosi, periklanan, pemasaran, atau hubungan masyarakat, bukan untuk kegiatan penyuntingan kolaboratif",
               ),
-              label: "Username is promotional or advertising in nature",
+              label: "Using a promotional or advertising username",
             },
             {
               value: v(
-                "Username is sufficiently similar to another user's name that it may cause confusion about identity or account ownership",
-                "Nama pengguna cukup mirip dengan nama pengguna lain sehingga dapat menimbulkan kebingungan mengenai identitas atau kepemilikan akun",
+                "Using a username that is sufficiently similar to another user's name that it may cause confusion about identity or account ownership",
+                "Menggunakan nama pengguna yang cukup mirip dengan nama pengguna lain sehingga dapat menimbulkan kebingungan mengenai identitas atau kepemilikan akun",
               ),
-              label: "Username is too similar to that of another user",
+              label: "Using a username too similar to another user's",
             },
             {
               value: v(
-                "Username may mislead others into believing that the account belongs to, represents, or is operated by another user",
-                "Nama pengguna dapat menyesatkan pengguna lain sehingga mengira akun tersebut dimiliki, mewakili, atau dioperasikan oleh pengguna lain",
+                "Using a username that may mislead others into believing that the account belongs to, represents, or is operated by another user",
+                "Menggunakan nama pengguna yang dapat menyesatkan pengguna lain sehingga mengira akun tersebut dimiliki, mewakili, atau dioperasikan oleh pengguna lain",
               ),
-              label: "Username impersonates another user",
+              label: "Using a username that impersonates another user",
             },
             {
               value: v(
-                "Username may create the false impression that the account belongs to, represents, or is endorsed by a public figure",
-                "Nama pengguna dapat menimbulkan kesan yang keliru bahwa akun tersebut dimiliki, mewakili, atau didukung oleh seorang tokoh publik",
+                "Using a username that may create the false impression that the account belongs to, represents, or is endorsed by a public figure",
+                "Menggunakan nama pengguna yang dapat menimbulkan kesan yang keliru bahwa akun tersebut dimiliki, mewakili, atau didukung oleh seorang tokoh publik",
               ),
-              label: "Username impersonates a famous figure",
+              label: "Using a username that impersonates a famous figure",
             },
             {
               value: v(
-                "Username may create the false impression that the account is affiliated with, represents, or is authorised by an organisation",
-                "Nama pengguna dapat menimbulkan kesan yang keliru bahwa akun tersebut berafiliasi dengan, mewakili, atau mendapat wewenang dari suatu organisasi",
+                "Using a username that may create the false impression that the account is affiliated with, represents, or is authorised by an organisation",
+                "Menggunakan nama pengguna yang dapat menimbulkan kesan yang keliru bahwa akun tersebut berafiliasi dengan, mewakili, atau mendapat wewenang dari suatu organisasi",
               ),
-              label: "Username impersonates a (non-)profit organisation",
+              label:
+                "Using a username that impersonates a (non-)profit organisation",
             },
           ],
         },

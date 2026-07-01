@@ -1,3 +1,10 @@
+## 2.51.0
+
+### Changed
+
+* Reworded all 26 entries in `BLOCK_REASONS` (`Tengu-reasons.js`) — both the "Common block reasons" and "Username policy violations" groups, in English and Indonesian — so each reason and its dropdown label begins with a verb describing the action taken by the account (e.g. "Vandalism" → "Vandalising content"; "Username violates the username policy" → "Using a username that violates policy"), rather than a noun phrase
+* Entries that already began with a verb ("Creating attack pages", "Creating nonsense or other inappropriate pages", "Using Wikipedia for promotion or advertising purposes", "Abusing multiple accounts", "Repeatedly triggering the edit filter") were left unchanged
+
 ## 2.50.0
 
 ### Changed
