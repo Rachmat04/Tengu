@@ -4,9 +4,10 @@
  * All-in-one wiki moderation tool — Predefined packages
  * ============================================================================
  * PURPOSE:
- * This file contains the default package and the native preset packages
- * (quick-select bundles of rollback/block/deletion/protection/revdel
- * settings) used to populate the Package dropdown.
+ * This file contains the default package, the native preset packages used
+ * in user mode, and a set of page-mode-only preset packages (quick-select
+ * bundles of rollback/block/deletion/protection/revdel settings) used to
+ * populate the Package dropdown.
  *
  * Package reason values must match the option values defined in
  * Tengu-reasons.js exactly, since they are matched against that list when a
@@ -66,13 +67,15 @@ window.TenguPackages = {
           enabled: true,
           bot: false,
           showname: true,
-          reason: "Vandalism",
+          reason:
+            "Vandalism or other disruptive changes that reduce the quality, accuracy, or usefulness of the content",
         },
         block: {
           enabled: true,
           duration: "3 days",
           indefregistered: false,
-          reason: "Vandalism",
+          reason:
+            "Vandalising content or engaging in other deliberate actions that damage content, disrupt workflows, or undermine the project's normal operation",
           autoblock: true,
           hardblock: true,
           create: true,
@@ -91,13 +94,15 @@ window.TenguPackages = {
           enabled: true,
           bot: true,
           showname: true,
-          reason: "Vandalism",
+          reason:
+            "Vandalism or other disruptive changes that reduce the quality, accuracy, or usefulness of the content",
         },
         block: {
           enabled: true,
           duration: "never",
           indefregistered: true,
-          reason: "Abusing multiple accounts",
+          reason:
+            "Using multiple accounts in a deceptive or disruptive manner, including to influence discussions or evade scrutiny",
           autoblock: true,
           hardblock: false,
           create: true,
@@ -116,13 +121,15 @@ window.TenguPackages = {
           enabled: true,
           bot: false,
           showname: false,
-          reason: "Vandalism",
+          reason:
+            "Vandalism or other disruptive changes that reduce the quality, accuracy, or usefulness of the content",
         },
         block: {
           enabled: true,
           duration: "never",
           indefregistered: true,
-          reason: "Personal attacks or harassment policy violations",
+          reason:
+            "Making personal attacks, engaging in harassment or intimidation, or other conduct that undermines a respectful and collaborative environment",
           autoblock: true,
           hardblock: false,
           create: true,
@@ -137,7 +144,8 @@ window.TenguPackages = {
           content: true,
           summary: true,
           username: true,
-          reason: "Grossly insulting, degrading, or offensive material",
+          reason:
+            "Material containing grossly insulting, degrading, abusive, or otherwise seriously offensive content",
           oversight: false,
         },
       },
@@ -148,13 +156,15 @@ window.TenguPackages = {
           enabled: true,
           bot: false,
           showname: true,
-          reason: "Promotional editing or editing with a conflict of interest",
+          reason:
+            "Promotional content or editing that may be affected by a conflict of interest",
         },
         block: {
           enabled: true,
           duration: "never",
           indefregistered: true,
-          reason: "Using Wikipedia for promotion or advertising purposes",
+          reason:
+            "Using Wikipedia primarily for promotion, advertising, public relations, advocacy, or other non-encyclopedic purposes",
           autoblock: true,
           hardblock: false,
           create: true,
@@ -164,7 +174,8 @@ window.TenguPackages = {
         },
         pagedelete: {
           enabled: true,
-          reason: "Purely promotional content",
+          reason:
+            "Content created primarily for promotion, advertising, marketing, or public relations purposes",
         },
         pageprotection: { enabled: false },
         revisiondelete: { enabled: false },
@@ -176,13 +187,15 @@ window.TenguPackages = {
           enabled: true,
           bot: false,
           showname: true,
-          reason: "Edit warring prevention",
+          reason:
+            "Edit warring prevention; please discuss substantial disagreements before restoring the change",
         },
         block: {
           enabled: true,
           duration: "31 hours",
           indefregistered: false,
-          reason: "Violation of the three-revert rule",
+          reason:
+            "Exceeding or otherwise violating the three-revert rule on a page or related set of pages",
           autoblock: true,
           hardblock: false,
           create: false,
@@ -201,13 +214,15 @@ window.TenguPackages = {
           enabled: true,
           bot: false,
           showname: true,
-          reason: "Copyright violations",
+          reason:
+            "Material that may violate copyright, licensing requirements, or reuse conditions",
         },
         block: {
           enabled: true,
           duration: "1 week",
           indefregistered: false,
-          reason: "Copyright infringement",
+          reason:
+            "Infringing copyright or repeatedly adding material that is not compatible with copyright or licensing requirements",
           autoblock: true,
           hardblock: false,
           create: true,
@@ -217,7 +232,8 @@ window.TenguPackages = {
         },
         pagedelete: {
           enabled: true,
-          reason: "Clear copyright infringement",
+          reason:
+            "Content that clearly infringes copyright and cannot be retained under applicable licensing requirements",
         },
         pageprotection: { enabled: false },
         revisiondelete: {
@@ -225,7 +241,8 @@ window.TenguPackages = {
           content: true,
           summary: true,
           username: false,
-          reason: "Violations of copyright policy",
+          reason:
+            "Material that violates copyright requirements and cannot be retained in the page history",
           oversight: false,
         },
       },
@@ -236,13 +253,15 @@ window.TenguPackages = {
           enabled: true,
           bot: false,
           showname: true,
-          reason: "Block evasion or use of sockpuppet accounts",
+          reason:
+            "Block evasion, sockpuppetry, or other attempts to bypass community restrictions",
         },
         block: {
           enabled: true,
           duration: "never",
           indefregistered: true,
-          reason: "Sockpuppetry",
+          reason:
+            "Misusing sockpuppet accounts to mislead, influence outcomes, or circumvent community processes",
           autoblock: true,
           hardblock: false,
           create: true,
@@ -253,13 +272,123 @@ window.TenguPackages = {
         pagedelete: {
           enabled: true,
           reason:
-            "Creation by a banned or blocked user in violation of ban or block",
+            "Page created in violation of an active block, ban, or other editing restriction",
         },
         pageprotection: { enabled: false },
         revisiondelete: { enabled: false },
       },
     };
 
-    return { DEFAULT_PACKAGE, NATIVE_PRESETS };
+    // ------------------------------------------------------------------------
+    // Page-mode native presets
+    // ------------------------------------------------------------------------
+    // Unlike NATIVE_PRESETS above, these presets are only shown in the
+    // Package dropdown when Tengu is operating in page mode. Only the
+    // pagedelete and pageprotection sections are meaningful in page mode,
+    // since rollback, block, and revision deletion require a user target.
+    // As with NATIVE_PRESETS, every reason value below must match an option
+    // value defined in Tengu-reasons.js exactly.
+    const PAGE_NATIVE_PRESETS = {
+      "Delete talk page only": {
+        tracingedits: { duration: 3600, indefregistered: false },
+        rollback: { enabled: false, bot: false, showname: true, reason: "" },
+        block: {
+          enabled: false,
+          duration: "1 day",
+          indefregistered: false,
+          reason: "",
+          autoblock: true,
+          hardblock: false,
+          create: true,
+          talk: false,
+          mail: false,
+          hidename: false,
+        },
+        pagedelete: {
+          enabled: true,
+          reason:
+            "Technical deletion performed as part of routine, non-controversial maintenance",
+        },
+        pageprotection: { enabled: false },
+        revisiondelete: { enabled: false },
+      },
+
+      "Speedy deletion — vandalism or test page": {
+        tracingedits: { duration: 3600, indefregistered: false },
+        rollback: { enabled: false, bot: false, showname: true, reason: "" },
+        block: {
+          enabled: false,
+          duration: "1 day",
+          indefregistered: false,
+          reason: "",
+          autoblock: true,
+          hardblock: false,
+          create: true,
+          talk: false,
+          mail: false,
+          hidename: false,
+        },
+        pagedelete: {
+          enabled: true,
+          reason:
+            "Vandalism or other deliberate actions intended to damage, disrupt, or undermine the project",
+        },
+        pageprotection: { enabled: false },
+        revisiondelete: { enabled: false },
+      },
+
+      "Promotional or spam page deletion": {
+        tracingedits: { duration: 3600, indefregistered: false },
+        rollback: { enabled: false, bot: false, showname: true, reason: "" },
+        block: {
+          enabled: false,
+          duration: "1 day",
+          indefregistered: false,
+          reason: "",
+          autoblock: true,
+          hardblock: false,
+          create: true,
+          talk: false,
+          mail: false,
+          hidename: false,
+        },
+        pagedelete: {
+          enabled: true,
+          reason:
+            "Content created primarily for promotion, advertising, marketing, or public relations purposes",
+        },
+        pageprotection: { enabled: false },
+        revisiondelete: { enabled: false },
+      },
+
+      "Protect against persistent vandalism": {
+        tracingedits: { duration: 3600, indefregistered: false },
+        rollback: { enabled: false, bot: false, showname: true, reason: "" },
+        block: {
+          enabled: false,
+          duration: "1 day",
+          indefregistered: false,
+          reason: "",
+          autoblock: true,
+          hardblock: false,
+          create: true,
+          talk: false,
+          mail: false,
+          hidename: false,
+        },
+        pagedelete: { enabled: false, reason: "" },
+        pageprotection: {
+          enabled: true,
+          edit: "sysop",
+          move: "sysop",
+          expiry: "1 month",
+          reason:
+            "Persistent vandalism that continues despite warnings, reverts, or other attempts to address the issue",
+        },
+        revisiondelete: { enabled: false },
+      },
+    };
+
+    return { DEFAULT_PACKAGE, NATIVE_PRESETS, PAGE_NATIVE_PRESETS };
   },
 };

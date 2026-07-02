@@ -1,3 +1,20 @@
+## 2.52.0
+
+### Added
+
+* Added package support to page mode. The Package dropdown was previously disabled outside user mode; it is now available whenever Tengu is open, showing a mode-appropriate set of presets
+* Added `PAGE_NATIVE_PRESETS` to `Tengu-packages.js`, four page-mode-only presets:
+  * **Delete talk page only** — enables page deletion with a routine-maintenance reason, for use when the target itself is a talk page and the associated article should not be touched
+  * **Speedy deletion — vandalism or test page**
+  * **Promotional or spam page deletion**
+  * **Protect against persistent vandalism** — enables page protection at administrators-only, 1 month
+* Added `rebuildPackageOptions()` in `Tengu.js`, which repopulates the Package dropdown with the correct preset list whenever the mode toggle is used, resetting the selection to Default
+
+### Fixed
+
+* Fixed every reason value in the seven existing `NATIVE_PRESETS` packages (`Tengu-packages.js`) referencing dropdown *label* text (e.g. `"Vandalism"`, `"Sockpuppetry"`) instead of the corresponding option *value* text defined in `Tengu-reasons.js`. Since package application matches reasons by value, most preset reasons were previously applied as free text via the "Other:" option instead of selecting the matching dropdown entry
+* Fixed `applyPackage()`'s page protection reason handling always inserting the package reason as free text and resetting the reason dropdown to "Other:", instead of matching it against the dropdown's option values first, matching the pattern already used for rollback, block, page deletion, and revision deletion reasons
+
 ## 2.51.0
 
 ### Changed

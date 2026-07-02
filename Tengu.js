@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.51.0
+ * Version 2.52.0
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -75,6 +75,7 @@ $(function () {
         const tenguPackagesObj = window.TenguPackages.get();
         const DEFAULT_PACKAGE = tenguPackagesObj.DEFAULT_PACKAGE;
         const NATIVE_PRESETS = tenguPackagesObj.NATIVE_PRESETS;
+        const PAGE_NATIVE_PRESETS = tenguPackagesObj.PAGE_NATIVE_PRESETS;
 
         // ============================================================================
         // [Section 00] State
@@ -3547,11 +3548,22 @@ $(function () {
           const defaultPackage = DEFAULT_PACKAGE;
 
           let packages = aioConf.packages || {};
+          // Names of any custom packages supplied via aioConf.packages,
+          // captured before the native presets are merged in below. Since
+          // Tengu cannot know whether a custom package is meant for user
+          // mode, page mode, or both, custom packages are shown in the
+          // Package dropdown regardless of mode.
+          const customPackageNames = Object.keys(packages);
           if (!packages.Default) packages.Default = defaultPackage;
 
           for (const presetName of Object.keys(NATIVE_PRESETS)) {
             if (!packages[presetName]) {
               packages[presetName] = NATIVE_PRESETS[presetName];
+            }
+          }
+          for (const presetName of Object.keys(PAGE_NATIVE_PRESETS)) {
+            if (!packages[presetName]) {
+              packages[presetName] = PAGE_NATIVE_PRESETS[presetName];
             }
           }
 
@@ -3769,13 +3781,35 @@ $(function () {
           fieldEdits.appendChild(editGroup);
           topSection.appendChild(rowEdits);
           const { row: rowPkg, field: fieldPkg } = makeRow("Package");
-          const selPackage = makeSelect(
-            Object.keys(packages).map(function (k) {
-              return { value: k, label: k };
-            }),
-          );
+          // Options are populated by rebuildPackageOptions() below rather
+          // than fixed at construction time, since the set of relevant
+          // presets differs between user mode and page mode.
+          const selPackage = makeSelect([]);
           fieldPkg.appendChild(wrapSelect(selPackage));
           topSection.appendChild(rowPkg);
+
+          // Rebuilds the Package dropdown's option list for the given mode.
+          // "Default" and any custom packages supplied via aioConf.packages
+          // are always shown; the native preset names shown depend on
+          // whether Tengu is currently in user mode or page mode, since most
+          // presets only make sense for one or the other.
+          function rebuildPackageOptions(isUserModeNow) {
+            const modeNames = isUserModeNow
+              ? Object.keys(NATIVE_PRESETS)
+              : Object.keys(PAGE_NATIVE_PRESETS);
+            const names = ["Default"].concat(customPackageNames, modeNames);
+            const seen = new Set();
+            selPackage.innerHTML = "";
+            for (const name of names) {
+              if (seen.has(name)) continue;
+              seen.add(name);
+              const opt = document.createElement("option");
+              opt.value = name;
+              opt.textContent = name;
+              selPackage.appendChild(opt);
+            }
+          }
+          rebuildPackageOptions(tenguMode === "user");
           const { row: rowSuffix, field: fieldSuffix } = makeRow("Suffix");
           const selSuffix = makeSelect(
             suffixes.map(function (s) {
@@ -3786,14 +3820,14 @@ $(function () {
           topSection.appendChild(rowSuffix);
 
           if (tenguMode === "page") {
-            // Show edits and package rows but disable their controls — not applicable in page mode
+            // Show the edits row but disable its controls — not applicable
+            // in page mode. Unlike edits, the Package row remains usable in
+            // page mode: rebuildPackageOptions() above already populated it
+            // with the page-mode preset list.
             selEndtime.disabled = true;
             inputEndtime.disabled = true;
-            selPackage.disabled = true;
             rowEdits.style.opacity = "0.5";
             rowEdits.title = "Not applicable in page mode";
-            rowPkg.style.opacity = "0.5";
-            rowPkg.title = "Not applicable in page mode";
           }
           body.appendChild(topSection);
 
@@ -5369,14 +5403,19 @@ $(function () {
             clearInputError(inputTarget);
             btnGetInfo.disabled = !inputTarget.value.trim();
 
-            // Edits and package rows: only applicable in user mode
+            // Edits row: only applicable in user mode
             selEndtime.disabled = !isUserModeNow;
             inputEndtime.disabled = !isUserModeNow;
-            selPackage.disabled = !isUserModeNow;
             rowEdits.style.opacity = isUserModeNow ? "" : "0.5";
             rowEdits.title = isUserModeNow ? "" : "Not applicable in page mode";
-            rowPkg.style.opacity = isUserModeNow ? "" : "0.5";
-            rowPkg.title = isUserModeNow ? "" : "Not applicable in page mode";
+
+            // Package row: available in both modes. The preset list is
+            // mode-specific, so rebuild it and reset to Default whenever the
+            // mode changes — a package chosen under the previous mode may
+            // not exist under the new one.
+            rebuildPackageOptions(isUserModeNow);
+            selPackage.value = "Default";
+            applyPackage("Default");
 
             // Lock or unlock user-mode-only sections
             if (!isUserModeNow) {
@@ -5916,7 +5955,8 @@ $(function () {
               if (config.block) features.push("⛔️ Block");
               if (config.unblock) features.push("🔓 Unblock");
               if (config.warn) features.push("⚠️ User warning");
-              if (config.reportGS) features.push("🚩 Report to Global sysops/Requests");
+              if (config.reportGS)
+                features.push("🚩 Report to Global sysops/Requests");
               if (config.reportSRG)
                 features.push("📌 Report to Steward requests/Global");
               if (config.massdel) features.push("🗑️ Page deletion");
@@ -6338,8 +6378,25 @@ $(function () {
             selProtectExpiry.value = pt.expiry || "1 day";
             inputProtectExpiry.value = "";
             inputProtectExpiry.classList.add("tng-hidden");
-            inputProtectReason.value = pt.reason || "";
-            selProtectReason.selectedIndex = 0;
+            // Match the package reason against the reason dropdown's option
+            // values, mirroring the pattern already used for rollback,
+            // block, page deletion, and revision deletion reasons, rather
+            // than always falling back to free text.
+            const ptr = pt.reason || "";
+            let foundPtr = false;
+            for (const opt of selProtectReason.options) {
+              if (opt.value === ptr) {
+                foundPtr = true;
+                break;
+              }
+            }
+            if (foundPtr) {
+              selProtectReason.value = ptr;
+              inputProtectReason.value = "";
+            } else {
+              selProtectReason.selectedIndex = 0;
+              inputProtectReason.value = ptr;
+            }
             chkProtectTalk.checked = !!pt.protectTalk;
 
             const rd = pkg.revisiondelete || {};
