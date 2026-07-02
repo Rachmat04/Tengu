@@ -1,3 +1,16 @@
+## 2.53.0
+
+### Changed
+
+* `TenguPackages.get()` now accepts a `useIndonesian` boolean parameter, following the same pattern as `TenguReasons.get()` and `TenguWarn.get()`
+* Added a `v(en, id)` helper inside `TenguPackages.get()` to select the correct language variant for each reason value
+* All reason values in `NATIVE_PRESETS` and `PAGE_NATIVE_PRESETS` are now wrapped in `v()` calls, so Indonesian-language wikis receive Indonesian reason strings that match the option values defined in `Tengu-reasons.js`
+* Updated the `window.TenguPackages.get()` call in `Tengu.js` to pass `useIndonesian`
+
+### Fixed
+
+* Fixed package reasons not matching the reason dropdown option values on Indonesian-language wikis. Because `Tengu-packages.js` previously used hardcoded English strings while `Tengu-reasons.js` returns Indonesian values on those wikis, `applyPackage()` could not find a matching option and fell back to free text for every preset reason. Package reasons now resolve to the same language as the dropdown, so the correct option is selected
+
 ## 2.52.0
 
 ### Added

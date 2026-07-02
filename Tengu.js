@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.52.0
+ * Version 2.53.0
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -72,7 +72,7 @@ $(function () {
 
         const tenguWarnObj = window.TenguWarn.get(useIndonesian);
         const WARN_MESSAGES = tenguWarnObj.WARN_MESSAGES;
-        const tenguPackagesObj = window.TenguPackages.get();
+        const tenguPackagesObj = window.TenguPackages.get(useIndonesian);
         const DEFAULT_PACKAGE = tenguPackagesObj.DEFAULT_PACKAGE;
         const NATIVE_PRESETS = tenguPackagesObj.NATIVE_PRESETS;
         const PAGE_NATIVE_PRESETS = tenguPackagesObj.PAGE_NATIVE_PRESETS;
