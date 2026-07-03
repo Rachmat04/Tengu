@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.53.0
+ * Version 2.54.0
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -3763,10 +3763,19 @@ $(function () {
             { value: "1209600", label: "In the last 2 weeks" },
             { value: "2592000", label: "In the last 1 month" },
             { value: "inf", label: "All edits" },
-            { value: "other", label: "Other (seconds):" },
+            { value: "other", label: "Custom date and time:" },
           ]);
-          const inputEndtime = makeInput("seconds");
-          inputEndtime.classList.add("tng-hidden");
+          const inputEndtime = document.createElement("input");
+          inputEndtime.type = "datetime-local";
+          inputEndtime.className = "tng-input tng-hidden";
+          // Set max to the current local time so only past datetimes are selectable.
+          // Refreshed here at dialogue-open time; not updated dynamically while open,
+          // but acceptable for a moderation tool where sessions are short.
+          inputEndtime.max = new Date(
+            Date.now() - new Date().getTimezoneOffset() * 60000,
+          )
+            .toISOString()
+            .slice(0, 16);
           selEndtime.addEventListener("change", function () {
             inputEndtime.classList.toggle(
               "tng-hidden",
@@ -5634,8 +5643,17 @@ $(function () {
             const suffix = selSuffix.value;
             const isIP = mw.util.isIPAddress(targetVal);
             let endtime = selEndtime.value;
-            if (endtime === "other")
-              endtime = inputEndtime.value.trim() || "3600";
+            if (endtime === "other") {
+              const _dtVal = inputEndtime.value.trim();
+              if (_dtVal) {
+                const _dtSecs = Math.floor(
+                  (Date.now() - new Date(_dtVal).getTime()) / 1000,
+                );
+                endtime = _dtSecs > 0 ? String(_dtSecs) : "3600";
+              } else {
+                endtime = "3600";
+              }
+            }
 
             function buildRollbackReason() {
               const sel = selRbReason.value;
@@ -6248,7 +6266,14 @@ $(function () {
                 inputEndtime.classList.add("tng-hidden");
               } else {
                 selEndtime.value = "other";
-                inputEndtime.value = dur;
+                const _pkgDate = new Date(
+                  Date.now() - parseInt(dur, 10) * 1000,
+                );
+                inputEndtime.value = new Date(
+                  _pkgDate.getTime() - _pkgDate.getTimezoneOffset() * 60000,
+                )
+                  .toISOString()
+                  .slice(0, 16);
                 inputEndtime.classList.remove("tng-hidden");
               }
             }

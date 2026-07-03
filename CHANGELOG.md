@@ -1,3 +1,11 @@
+## 2.54.0
+
+### Changed
+
+* Replaced the free-text seconds input shown when "Custom date and time:" is selected in the Edits dropdown with a `datetime-local` date and time picker. The selected datetime is converted to a seconds-ago value at the point the Start button is pressed
+* Renamed the "Other (seconds):" option label to "Custom date and time:" to match the new control
+* Updated `applyPackage()` to convert a package's numeric duration to a local datetime string when falling back to the custom option, so the picker shows the correct date rather than a raw number
+
 ## 2.53.0
 
 ### Changed
