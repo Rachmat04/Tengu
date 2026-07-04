@@ -1211,6 +1211,62 @@ window.TenguReasons = {
         },
       ],
 
+      MOVE_TO_SANDBOX_REASONS: [
+        {
+          value: "",
+          label: "Other:",
+        },
+        {
+          value: v(
+            "Article requires significant improvement before it meets inclusion criteria",
+            "Artikel membutuhkan perbaikan yang signifikan sebelum memenuhi kriteria kelayakan",
+          ),
+          label: "Requires significant improvement",
+        },
+        {
+          value: v(
+            "Article appears to be an autobiography or content primarily about its creator",
+            "Artikel tampaknya merupakan otobiografi atau konten yang terutama tentang pembuatnya",
+          ),
+          label: "Appears to be an autobiography",
+        },
+        {
+          value: v(
+            "Article was created in article space but is not yet ready for inclusion",
+            "Artikel dibuat di ruang artikel tetapi belum siap untuk menjadi sebagai artikel yang layak dimasukkan",
+          ),
+          label: "Not yet ready for article space",
+        },
+        {
+          value: v(
+            "Article lacks reliable sources and requires further development",
+            "Artikel tidak memiliki sumber tepercaya dan membutuhkan pengembangan lebih lanjut",
+          ),
+          label: "Lacks reliable sources",
+        },
+        {
+          value: v(
+            "Article does not meet notability guidelines and requires improvement before resubmission",
+            "Artikel tidak memenuhi panduan kelayakan dan perlu diperbaiki sebelum diajukan kembali",
+          ),
+          label: "Does not meet notability guidelines",
+        },
+        {
+          value: v(
+            "Moving to user space to allow the creator to continue developing the article",
+            "Memindahkan ke ruang pengguna agar pembuat dapat melanjutkan pengembangan artikel",
+          ),
+          label: "Allow creator to continue development",
+        },
+        {
+          value: v(
+            "Article created by a new user who may benefit from developing it further in their user space",
+            "Artikel dibuat oleh pengguna baru yang dapat memperoleh manfaat dari pengembangan lebih lanjut di ruang penggunanya",
+          ),
+          label: "New user article requiring development",
+        },
+      ],
+
       // Quick-select reasons for the "Report to global sysops" feature.
       // Unlike the reason sets above, these are not run through v() and stay
       // in English regardless of useIndonesian: reports built from this list

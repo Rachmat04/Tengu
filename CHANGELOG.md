@@ -1,3 +1,17 @@
+## 2.58.0
+
+### Added
+
+* Added a new **Move to user's sandbox** section (page mode only), allowing an administrator to move the target page directly into a user's subpage (e.g. `User:[username]/[subpage]`) without leaving the Tengu interface
+* The section provides a "Move to user" field for the destination username, a "Subpage name" field pre-filled with the target page's title (without namespace prefix), a filterable reason dropdown, and a "Suppress redirect" checkbox (ticked by default; requires the `suppressredirect` right)
+* Added `MOVE_TO_SANDBOX_REASONS` to `Tengu-reasons.js`, providing eight preset move reasons in English and Indonesian: requires significant improvement, appears to be an autobiography, not yet ready for article space, lacks reliable sources, does not meet notability guidelines, allow creator to continue development, new user article requiring development, and other
+* Added a `move` counter to the progress dialogue's operation statistics
+
+### Changed
+
+* The subpage name field is automatically populated with the target page's title (without namespace prefix) whenever the target changes in page mode, or when switching to page mode via the mode toggle
+* The "Move to user's sandbox" section is locked in user mode (since there is no page target to move), and locked when the page-mode target resolves to a special page (since special pages cannot be moved)
+
 ## 2.57.0
 
 ### Added

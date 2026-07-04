@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.57.0
+ * Version 2.58.0
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -66,6 +66,7 @@ $(function () {
         const UNBLOCK_REASONS = tenguReasonsObj.UNBLOCK_REASONS;
         const PROTECT_RECREATION_REASONS =
           tenguReasonsObj.PROTECT_RECREATION_REASONS;
+        const MOVE_TO_SANDBOX_REASONS = tenguReasonsObj.MOVE_TO_SANDBOX_REASONS;
         const GLOBAL_SYSOPS_REPORT_REASONS =
           tenguReasonsObj.GLOBAL_SYSOPS_REPORT_REASONS;
         const SRG_REPORT_REASONS = tenguReasonsObj.SRG_REPORT_REASONS;
@@ -841,6 +842,7 @@ $(function () {
             revdel: 0,
             delete: 0,
             undelete: 0,
+            move: 0,
             protect: 0,
             unlink: 0,
             report: 0,
@@ -862,13 +864,13 @@ $(function () {
           // Helper function to update status dynamically
           const updateStatusDisplay = () => {
             const statusText = isAborted ? "Aborted." : "Processing...";
-            const summaryLine = `<b>Status:</b> ${statusText}<br/>Summary: <b>${stats.rollback}</b> reverted | <b>${stats.delete}</b> deleted | <b>${stats.undelete}</b> undeleted | <b>${stats.unlink}</b> unlinked | <b>${stats.protect}</b> protected | <b>${stats.revdel}</b> hidden | <b>${stats.report}</b> reported | <b>${stats.error}</b> errors.`;
+            const summaryLine = `<b>Status:</b> ${statusText}<br/>Summary: <b>${stats.rollback}</b> reverted | <b>${stats.delete}</b> deleted | <b>${stats.undelete}</b> undeleted | <b>${stats.move}</b> moved | <b>${stats.unlink}</b> unlinked | <b>${stats.protect}</b> protected | <b>${stats.revdel}</b> hidden | <b>${stats.report}</b> reported | <b>${stats.error}</b> errors.`;
             statusLbl.innerHTML = summaryLine;
           };
 
           const statusLbl = document.createElement("div");
           statusLbl.innerHTML =
-            "<b>Status:</b> Processing...<br/>Summary: <b>0</b> reverted | <b>0</b> deleted | <b>0</b> undeleted | <b>0</b> unlinked | <b>0</b> protected | <b>0</b> hidden | <b>0</b> reported | <b>0</b> errors.";
+            "<b>Status:</b> Processing...<br/>Summary: <b>0</b> reverted | <b>0</b> deleted | <b>0</b> undeleted | <b>0</b> moved | <b>0</b> unlinked | <b>0</b> protected | <b>0</b> hidden | <b>0</b> reported | <b>0</b> errors.";
           statusLbl.style.marginBottom = "8px";
 
           const logBox = document.createElement("div");
@@ -879,7 +881,7 @@ $(function () {
 
           const btnAbort = document.createElement("button");
           btnAbort.className = "tng-btn tng-btn-destructive";
-          btnAbort.textContent = "⏹️ Abort operations";
+          btnAbort.textContent = "Abort operations";
           btnAbort.addEventListener("click", () => {
             if (!isAborted) {
               isAborted = true;
@@ -892,7 +894,7 @@ $(function () {
 
           const btnClose = document.createElement("button");
           btnClose.className = "tng-btn tng-btn-primary";
-          btnClose.textContent = "🔄 Close and reload";
+          btnClose.textContent = "Close and reload";
           btnClose.disabled = true; // Disabled until all tasks are complete
           btnClose.addEventListener("click", () => overlay.closeHandler());
           footer.appendChild(btnClose);
@@ -995,12 +997,12 @@ $(function () {
                 });
                 body.innerHTML =
                   "<p>You are about to block your own account. Are you certain you wish to proceed?</p>";
-                const btnCancel = makeBtn("✖️ Cancel", "quiet");
+                const btnCancel = makeBtn("Cancel", "quiet");
                 btnCancel.addEventListener("click", () => {
                   overlay.closeHandler();
                   resolve(false);
                 });
-                const btnConfirm = makeBtn("✅ Proceed", "destructive");
+                const btnConfirm = makeBtn("Proceed", "destructive");
                 btnConfirm.addEventListener("click", () => {
                   overlay.closeHandler();
                   resolve(true);
@@ -1208,6 +1210,30 @@ $(function () {
             } catch (e) {
               addLog(
                 `[Undelete] Failed to restore ${targetVal}: ${formatApiError(e)}`,
+                true,
+              );
+            }
+          }
+
+          // --- Move to user's sandbox ---
+          if (config.moveSandbox && config.mode === "page" && !isAborted) {
+            const moveParams = {
+              action: "move",
+              from: targetVal,
+              to: config.moveSandboxDest,
+              reason: config.moveSandboxReason + toolTag,
+            };
+            if (config.moveSandboxNoRedirect) moveParams.noredirect = 1;
+            try {
+              await apiPost(moveParams);
+              addLog(
+                `[Move] Moved "${targetVal}" to "${config.moveSandboxDest}"`,
+              );
+              stats.move++;
+              updateStatusDisplay();
+            } catch (e) {
+              addLog(
+                `[Move] Failed to move "${targetVal}" to "${config.moveSandboxDest}": ${formatApiError(e)}`,
                 true,
               );
             }
@@ -2527,19 +2553,19 @@ $(function () {
             config.rollbackMethod === "undo" ? "undone" : "reverted";
           const statusWord = isAborted ? "Aborted." : "Completed.";
           const statusPrefix = `<b>Status: ${statusWord}</b><br/>`;
-          const finalStatus = `${statusPrefix}Summary: <b>${stats.rollback}</b> ${methodTxt} | <b>${stats.delete}</b> deleted | <b>${stats.undelete}</b> undeleted | <b>${stats.unlink}</b> unlinked | <b>${stats.protect}</b> protected | <b>${stats.revdel}</b> hidden | <b>${stats.report}</b> reported | <b>${stats.error}</b> errors.`;
+          const finalStatus = `${statusPrefix}Summary: <b>${stats.rollback}</b> ${methodTxt} | <b>${stats.delete}</b> deleted | <b>${stats.undelete}</b> undeleted | <b>${stats.move}</b> moved | <b>${stats.unlink}</b> unlinked | <b>${stats.protect}</b> protected | <b>${stats.revdel}</b> hidden | <b>${stats.report}</b> reported | <b>${stats.error}</b> errors.`;
           statusLbl.innerHTML = finalStatus;
           isAborted = false;
 
           if (isAborted) {
-            addLog("⛔ Operations aborted by user");
+            addLog("⏹️ Operations aborted by user");
           } else {
             addLog("✅ All operations have been completed successfully");
           }
           btnClose.disabled = false;
 
           // Insert "Copy this log" button once all operations are complete
-          const btnCopyLog = makeBtn("📋 Copy this log", "quiet");
+          const btnCopyLog = makeBtn("Copy this log", "quiet");
           btnCopyLog.addEventListener("click", function () {
             const lines = Array.from(logBox.children)
               .map(function (el) {
@@ -4129,7 +4155,7 @@ $(function () {
             filter: filterUnblockReason,
           } = makeFilteredSelect(selUnblockReason);
           const inputUnblockReason = makeInput("Full reason to submit");
-          const btnUnblockAppend = makeBtn("➕ Append", "quiet");
+          const btnUnblockAppend = makeBtn("Append", "quiet");
           btnUnblockAppend.className += " tng-btn-sm";
           btnUnblockAppend.addEventListener("click", function () {
             const cur = inputUnblockReason.value;
@@ -4543,7 +4569,7 @@ $(function () {
             filter: filterPagedelReason,
           } = makeFilteredSelect(selPagedelReason);
           const inputPagedelReason = makeInput("Full reason to submit");
-          const btnPagedelAppend = makeBtn("➕ Append", "quiet");
+          const btnPagedelAppend = makeBtn("Append", "quiet");
           btnPagedelAppend.className += " tng-btn-sm";
           btnPagedelAppend.addEventListener("click", function () {
             const cur = inputPagedelReason.value;
@@ -4783,7 +4809,7 @@ $(function () {
             filter: filterUndeleteReason,
           } = makeFilteredSelect(selUndeleteReason);
           const inputUndeleteReason = makeInput("Full reason to submit");
-          const btnUndeleteAppend = makeBtn("➕ Append", "quiet");
+          const btnUndeleteAppend = makeBtn("Append", "quiet");
           btnUndeleteAppend.className += " tng-btn-sm";
           btnUndeleteAppend.addEventListener("click", function () {
             const cur = inputUndeleteReason.value;
@@ -4860,6 +4886,86 @@ $(function () {
           applyUndeleteStatusLock(true, "no target has been specified.");
 
           body.appendChild(secUndelete);
+
+          // ============================================================================
+          // Move to user's sandbox section — page mode only.
+          // Moves the target page into a specified user's subpage, e.g.
+          // User:[username]/[subpage], using action=move. The redirect is
+          // suppressed when the "Suppress redirect" option is ticked,
+          // which requires the suppressredirect right.
+          // ============================================================================
+          const {
+            section: secMoveSandbox,
+            sectionBody: bodyMoveSandbox,
+            enableChk: chkMoveSandbox,
+          } = makeSection("Move to user's sandbox", "✂️", false);
+
+          const { row: rowMoveSandboxUser, field: fieldMoveSandboxUser } =
+            makeRow("Move to user");
+          const inputMoveSandboxUser = makeInput("Username");
+          fieldMoveSandboxUser.appendChild(inputMoveSandboxUser);
+          bodyMoveSandbox.appendChild(rowMoveSandboxUser);
+
+          const { row: rowMoveSandboxSubpage, field: fieldMoveSandboxSubpage } =
+            makeRow("Subpage name");
+          const inputMoveSandboxSubpage = makeInput(
+            "Subpage (e.g. Draft article)",
+          );
+          fieldMoveSandboxSubpage.appendChild(inputMoveSandboxSubpage);
+          bodyMoveSandbox.appendChild(rowMoveSandboxSubpage);
+
+          const helpMoveSandbox = document.createElement("div");
+          helpMoveSandbox.className = "tng-help";
+          helpMoveSandbox.textContent =
+            'The page will be moved to "User:[username]/[subpage name]". Suppressing the redirect requires the suppressredirect right.';
+          bodyMoveSandbox.appendChild(helpMoveSandbox);
+
+          const { row: rowMoveSandboxReason, field: fieldMoveSandboxReason } =
+            makeRow("Reason");
+          const selMoveSandboxReason = makeSelect(MOVE_TO_SANDBOX_REASONS);
+          const {
+            wrap: filteredWrapMoveSandboxReason,
+            filter: filterMoveSandboxReason,
+          } = makeFilteredSelect(selMoveSandboxReason);
+          const inputMoveSandboxReason = makeInput("Full reason to submit");
+          const btnMoveSandboxAppend = makeBtn("Append", "quiet");
+          btnMoveSandboxAppend.className += " tng-btn-sm";
+          btnMoveSandboxAppend.addEventListener("click", function () {
+            const cur = inputMoveSandboxReason.value;
+            const add = selMoveSandboxReason.value;
+            if (!add) return;
+            inputMoveSandboxReason.value = cur ? cur + "; " + add : add;
+            selMoveSandboxReason.selectedIndex = 0;
+            filterMoveSandboxReason.value = "";
+            filterMoveSandboxReason.dispatchEvent(new Event("input"));
+          });
+          const reasonWrapMoveSandbox = document.createElement("div");
+          reasonWrapMoveSandbox.className = "tng-reason-wrap";
+          const reasonTopMoveSandbox = document.createElement("div");
+          reasonTopMoveSandbox.className = "tng-reason-top";
+          reasonTopMoveSandbox.appendChild(filteredWrapMoveSandboxReason);
+          reasonTopMoveSandbox.appendChild(btnMoveSandboxAppend);
+          reasonWrapMoveSandbox.appendChild(reasonTopMoveSandbox);
+          reasonWrapMoveSandbox.appendChild(inputMoveSandboxReason);
+          fieldMoveSandboxReason.appendChild(reasonWrapMoveSandbox);
+          bodyMoveSandbox.appendChild(rowMoveSandboxReason);
+
+          const {
+            wrap: wrapMoveSandboxNoRedirect,
+            chk: chkMoveSandboxNoRedirect,
+          } = makeCheckbox(
+            "Suppress redirect (requires the suppressredirect right)",
+            true,
+          );
+          wrapMoveSandboxNoRedirect.title =
+            "When ticked, no redirect is left at the original title after the move. Requires the suppressredirect right; the move will fail if you do not hold this right and this option is selected.";
+          const checksMoveSandbox = document.createElement("div");
+          checksMoveSandbox.className = "tng-checks";
+          checksMoveSandbox.style.paddingLeft = "0";
+          checksMoveSandbox.appendChild(wrapMoveSandboxNoRedirect);
+          bodyMoveSandbox.appendChild(checksMoveSandbox);
+
+          body.appendChild(secMoveSandbox);
 
           // Page protection module injection setup
           const {
@@ -4971,7 +5077,7 @@ $(function () {
             filter: filterProtectReason,
           } = makeFilteredSelect(selProtectReason);
           const inputProtectReason = makeInput("Full reason to submit");
-          const btnProtectAppend = makeBtn("➕ Append", "quiet");
+          const btnProtectAppend = makeBtn("Append", "quiet");
           btnProtectAppend.className += " tng-btn-sm";
           btnProtectAppend.addEventListener("click", function () {
             const cur = inputProtectReason.value;
@@ -5132,7 +5238,7 @@ $(function () {
           );
           inputProtectRecreationReason.disabled = true;
           const btnProtectRecreationReasonAppend = makeBtn(
-            "➕ Append",
+            "Append",
             "quiet",
           );
           btnProtectRecreationReasonAppend.className += " tng-btn-sm";
@@ -5277,7 +5383,7 @@ $(function () {
           const { wrap: filteredWrapRevdelReason, filter: filterRevdelReason } =
             makeFilteredSelect(selRevdelReason);
           const inputRevdelReason = makeInput("Full reason to submit");
-          const btnRevdelAppend = makeBtn("➕ Append", "quiet");
+          const btnRevdelAppend = makeBtn("Append", "quiet");
           btnRevdelAppend.className += " tng-btn-sm";
           btnRevdelAppend.addEventListener("click", function () {
             const cur = inputRevdelReason.value;
@@ -5439,6 +5545,13 @@ $(function () {
                 true,
                 "special pages cannot be reported.",
               );
+              applyModeLock(
+                secMoveSandbox,
+                bodyMoveSandbox,
+                chkMoveSandbox,
+                true,
+                "special pages cannot be moved.",
+              );
             } else {
               applyModeLock(secPagedel, bodyPagedel, chkPagedel, false);
               applyModeLock(secProtect, bodyProtect, chkProtect, false);
@@ -5450,6 +5563,12 @@ $(function () {
               );
               applyModeLock(secUndelete, bodyUndelete, chkUndelete, false);
               applyModeLock(secGS, bodyGS, chkGS, false);
+              applyModeLock(
+                secMoveSandbox,
+                bodyMoveSandbox,
+                chkMoveSandbox,
+                false,
+              );
             }
           }
 
@@ -5553,6 +5672,26 @@ $(function () {
                 true,
                 "Tengu is targeting a page, not a user.",
               );
+              // Move to sandbox is available in page mode; unlock it
+              applyModeLock(
+                secMoveSandbox,
+                bodyMoveSandbox,
+                chkMoveSandbox,
+                false,
+              );
+              // Auto-fill subpage name with the page title (without namespace)
+              const _pageTargetForMove = inputTarget.value.trim();
+              if (_pageTargetForMove) {
+                try {
+                  inputMoveSandboxSubpage.value = new mw.Title(
+                    _pageTargetForMove,
+                  )
+                    .getMain()
+                    .replace(/_/g, " ");
+                } catch (e) {
+                  // Title could not be parsed; leave the subpage field as-is
+                }
+              }
             } else {
               // Remove mode locks first to enable features
               applyModeLock(secRollback, bodyRollback, chkRollback, false);
@@ -5561,6 +5700,14 @@ $(function () {
               applyModeLock(secWarn, bodyWarn, chkWarn, false);
               applyModeLock(secRevdel, bodyRevdel, chkRevdel, false);
               applyModeLock(secSRG, bodySRG, chkSRG, false);
+              // Move to sandbox is page-mode only; lock it when switching to user mode
+              applyModeLock(
+                secMoveSandbox,
+                bodyMoveSandbox,
+                chkMoveSandbox,
+                true,
+                "Move to user's sandbox is only available in page mode.",
+              );
               // Remove any special page locks that were active while in page mode
               applySpecialPageLocks(false);
 
@@ -5591,6 +5738,18 @@ $(function () {
             updateUploadAvailability();
             updateStartBtn();
             updateSectionStatus();
+          }
+
+          // Lock the move-to-sandbox section when starting in user mode
+          // (it is only applicable in page mode)
+          if (tenguMode === "user") {
+            applyModeLock(
+              secMoveSandbox,
+              bodyMoveSandbox,
+              chkMoveSandbox,
+              true,
+              "Move to user's sandbox is only available in page mode.",
+            );
           }
 
           // Automatically lock user mode features if executed in page mode due to page namespace context
@@ -5644,12 +5803,12 @@ $(function () {
             }
           }
 
-          const btnCancel = makeBtn("✖️ Cancel", "quiet");
+          const btnCancel = makeBtn("Cancel", "quiet");
           btnCancel.addEventListener("click", function () {
             overlay.closeHandler();
           });
 
-          const btnStart = makeBtn("▶️ Start", "destructive");
+          const btnStart = makeBtn("Start", "destructive");
 
           // Evaluation routine to dynamically handle the start button state
           function updateStartBtn() {
@@ -5659,6 +5818,7 @@ $(function () {
               chkUnblock.checked ||
               chkPagedel.checked ||
               chkUndelete.checked ||
+              chkMoveSandbox.checked ||
               chkProtect.checked ||
               chkRevdel.checked ||
               chkWarn.checked ||
@@ -5678,6 +5838,7 @@ $(function () {
           chkWarn.addEventListener("change", updateStartBtn);
           chkGS.addEventListener("change", updateStartBtn);
           chkSRG.addEventListener("change", updateStartBtn);
+          chkMoveSandbox.addEventListener("change", updateStartBtn);
 
           btnStart.addEventListener("click", function () {
             const targetVal = inputTarget.value.trim();
@@ -5719,6 +5880,25 @@ $(function () {
                   "Select at least one reason, or add details below.",
                 );
                 inputSRGDetails.focus();
+                return;
+              }
+            }
+
+            if (chkMoveSandbox.checked && !chkMoveSandbox.disabled) {
+              if (!inputMoveSandboxUser.value.trim()) {
+                showNotification(
+                  fieldMoveSandboxUser,
+                  "Please enter a username.",
+                );
+                inputMoveSandboxUser.focus();
+                return;
+              }
+              if (!inputMoveSandboxSubpage.value.trim()) {
+                showNotification(
+                  fieldMoveSandboxSubpage,
+                  "Please enter a subpage name.",
+                );
+                inputMoveSandboxSubpage.focus();
                 return;
               }
             }
@@ -5821,6 +6001,12 @@ $(function () {
               const inp = inputProtectRecreationReason.value.trim();
               if (sel && inp) return sel + ": " + inp;
               return sel || inp;
+            }
+            function buildMoveSandboxReason() {
+              return (
+                inputMoveSandboxReason.value.trim() ||
+                selMoveSandboxReason.value
+              );
             }
             // Assembles the wikitext line submitted to Meta-Wiki's Global
             // sysops/Requests page. User mode uses {{LockHide|1=Username}} for
@@ -6040,6 +6226,16 @@ $(function () {
               massdelReason: buildPagedelReason() + suffix,
               undelete: chkUndelete.checked && !chkUndelete.disabled,
               undeleteReason: buildUndeleteReason() + suffix,
+              moveSandbox: chkMoveSandbox.checked && !chkMoveSandbox.disabled,
+              moveSandboxUser: inputMoveSandboxUser.value.trim(),
+              moveSandboxSubpage: inputMoveSandboxSubpage.value.trim(),
+              moveSandboxDest:
+                "User:" +
+                inputMoveSandboxUser.value.trim() +
+                "/" +
+                inputMoveSandboxSubpage.value.trim(),
+              moveSandboxReason: buildMoveSandboxReason() + suffix,
+              moveSandboxNoRedirect: chkMoveSandboxNoRedirect.checked,
               protect: chkProtect.checked,
               protectEdit: selProtectEdit.value,
               protectMove: selProtectMove.value,
@@ -6086,6 +6282,8 @@ $(function () {
                 features.push("📌 Report to Steward requests/Global");
               if (config.massdel) features.push("🗑️ Page deletion");
               if (config.undelete) features.push("♻️ Page undeletion");
+              if (config.moveSandbox)
+                features.push("✂️ Move to user's sandbox");
               if (config.protect) features.push("🛡️ Page protection");
               if (config.protectRecreation)
                 features.push("🚫 Protect against recreation");
@@ -6135,7 +6333,7 @@ $(function () {
             }
             confirmDlg.body.appendChild(featureList);
 
-            const btnCancelConfirm = makeBtn("✖️ Cancel", "quiet");
+            const btnCancelConfirm = makeBtn("Cancel", "quiet");
             btnCancelConfirm.addEventListener("click", function () {
               confirmDlg.overlay.closeHandler();
             });
@@ -7308,6 +7506,16 @@ $(function () {
               const targetIsSpecial = isTargetSpecialPage();
               applySpecialPageLocks(targetIsSpecial);
               updateModeNotice(false, targetIsSpecial);
+            }
+            // Auto-fill subpage name with the page title (without namespace)
+            if (tenguMode === "page" && targetVal) {
+              try {
+                inputMoveSandboxSubpage.value = new mw.Title(targetVal)
+                  .getMain()
+                  .replace(/_/g, " ");
+              } catch (e) {
+                // Title could not be parsed; leave the subpage field as-is
+              }
             }
             updateUploadAvailability();
             updateSectionStatus();
