@@ -1,3 +1,10 @@
+## 2.55.2
+
+### Fixed
+
+* Fixed multiple selected reasons in the Report to global sysops section being joined with commas, which left subsequent reasons with their original capitalisation in an awkward mid-sentence position. Reasons are now separated by full stops, making each one a discrete sentence
+* Fixed the additional details field in both sections being joined to the selected reasons with an en dash. The field is now introduced with "Additional details:" and separated from the preceding reasons by a full stop
+
 ## 2.55.1
 
 ### Fixed

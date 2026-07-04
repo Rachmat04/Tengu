@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.55.1
+ * Version 2.55.2
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -5813,15 +5813,18 @@ $(function () {
                   return c.label;
                 });
               const details = inputGSDetails.value.trim();
-              const reasonParts = [];
-              if (pickedReasons.length)
-                reasonParts.push(pickedReasons.join(", "));
-              if (details) reasonParts.push(details);
-              let reasonText = reasonParts.join(" — ");
-              // Ensure the request sentence always ends with a full stop before
-              // the signature. Previously, selecting reasons only from the
-              // checkboxes (with no free-text details) produced a line with no
-              // terminating punctuation before "~~~~".
+              const pickedReasonsText = pickedReasons.length
+                ? pickedReasons.join(". ")
+                : "";
+              let reasonText = "";
+              if (pickedReasonsText && details) {
+                reasonText =
+                  pickedReasonsText + ". Additional details: " + details;
+              } else if (pickedReasonsText) {
+                reasonText = pickedReasonsText;
+              } else if (details) {
+                reasonText = "Additional details: " + details;
+              }
               if (reasonText && !/[.!?]$/.test(reasonText)) {
                 reasonText += ".";
               }
