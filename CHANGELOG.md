@@ -1,3 +1,13 @@
+## 2.57.0
+
+### Added
+
+* Added detection of the `zobject` content model used by Wikifunctions pages; when the undo method is selected and the page uses this content model, Tengu now automatically falls back to native rollback and logs a warning, since the undo path relies on a wikitext three-way merge that may not work for JSON-structured ZObject content
+
+### Changed
+
+* Added `contentmodel` to the `rvprop` parameter of the existing revision fetch in the rollback loop, so the page's content model is retrieved alongside revision metadata in the same API call rather than a separate request
+
 ## 2.56.0
 
 ### Changed

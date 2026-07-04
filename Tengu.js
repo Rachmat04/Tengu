@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.56.0
+ * Version 2.57.0
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -1357,6 +1357,13 @@ $(function () {
             let mediainfoNeedsRevert = false;
             let goodMediaInfo = null;
             let pageId = null;
+            // Content model of the current page's main slot. Set during the
+            // revision fetch below; used to detect ZObject pages (Wikifunctions)
+            // and choose the appropriate revert method.
+            // ZObjects may not be reliably reverted via action=edit undo, since
+            // the undo path depends on a wikitext three-way merge that may not
+            // work for JSON-structured content.
+            let pageContentModel = null;
             // Username of the author of the revision being reverted to (the
             // parent of the target's earliest edit in this batch). Used below
             // to make the undo edit summary clearer about which revision was
@@ -1371,7 +1378,7 @@ $(function () {
                 action: "query",
                 prop: "revisions",
                 revids: revidsToFetch,
-                rvprop: "ids|content|user",
+                rvprop: "ids|content|user|contentmodel",
                 rvslots: "mediainfo",
               });
 
@@ -1385,6 +1392,9 @@ $(function () {
                   for (const r of revs) {
                     if (r.revid === info.oldestParent) {
                       previousEditorUser = r.user || null;
+                    }
+                    if (r.revid === info.latest) {
+                      pageContentModel = r.contentmodel || null;
                     }
                     if (r.slots && r.slots.mediainfo) {
                       if (r.revid === info.latest)
@@ -1405,8 +1415,24 @@ $(function () {
             } catch (e) {
               // Gracefully ignore on wikis without Wikibase/MediaInfo configured,
               // or on pages/namespaces where the mediainfo slot is fundamentally unavailable.
+              // This also covers ZObject pages on Wikifunctions, where the mediainfo
+              // slot is absent; pageContentModel is set within the same try block and
+              // is used separately below to choose the appropriate revert method.
               // previousEditorUser remains null in this case; the undo summary
               // falls back to its previous wording below.
+            }
+
+            // ZObjects (Wikifunctions content model "zobject") are stored as JSON
+            // and cannot be reliably reverted via action=edit undo, since the undo
+            // path performs a wikitext three-way merge. When undo is selected and a
+            // ZObject page is detected, Tengu falls back to native rollback, which
+            // operates at the database level and is not content-model-specific.
+            const isZObject = pageContentModel === "zobject";
+            if (isZObject && config.rollbackMethod === "undo") {
+              addLog(
+                `[Rollback] ZObject content model detected at ${title}: undo is not supported for this content model. Falling back to native rollback.`,
+                "warn",
+              );
             }
 
             let standardRevertSuccess = false;
@@ -1439,7 +1465,7 @@ $(function () {
                   toolTag;
 
             // Execute standard rollback or undo operation sequentially based on settings
-            if (config.rollbackMethod === "undo") {
+            if (config.rollbackMethod === "undo" && !isZObject) {
               const undoData = {
                 action: "edit",
                 title: title,
