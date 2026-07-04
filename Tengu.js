@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.55.2
+ * Version 2.56.0
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -879,7 +879,7 @@ $(function () {
 
           const btnAbort = document.createElement("button");
           btnAbort.className = "tng-btn tng-btn-destructive";
-          btnAbort.textContent = "Abort operations";
+          btnAbort.textContent = "⏹️ Abort operations";
           btnAbort.addEventListener("click", () => {
             if (!isAborted) {
               isAborted = true;
@@ -892,7 +892,7 @@ $(function () {
 
           const btnClose = document.createElement("button");
           btnClose.className = "tng-btn tng-btn-primary";
-          btnClose.textContent = "Close and reload";
+          btnClose.textContent = "🔄 Close and reload";
           btnClose.disabled = true; // Disabled until all tasks are complete
           btnClose.addEventListener("click", () => overlay.closeHandler());
           footer.appendChild(btnClose);
@@ -995,12 +995,12 @@ $(function () {
                 });
                 body.innerHTML =
                   "<p>You are about to block your own account. Are you certain you wish to proceed?</p>";
-                const btnCancel = makeBtn("Cancel", "quiet");
+                const btnCancel = makeBtn("✖️ Cancel", "quiet");
                 btnCancel.addEventListener("click", () => {
                   overlay.closeHandler();
                   resolve(false);
                 });
-                const btnConfirm = makeBtn("Proceed", "destructive");
+                const btnConfirm = makeBtn("✅ Proceed", "destructive");
                 btnConfirm.addEventListener("click", () => {
                   overlay.closeHandler();
                   resolve(true);
@@ -2513,7 +2513,7 @@ $(function () {
           btnClose.disabled = false;
 
           // Insert "Copy this log" button once all operations are complete
-          const btnCopyLog = makeBtn("Copy this log", "quiet");
+          const btnCopyLog = makeBtn("📋 Copy this log", "quiet");
           btnCopyLog.addEventListener("click", function () {
             const lines = Array.from(logBox.children)
               .map(function (el) {
@@ -3691,6 +3691,7 @@ $(function () {
             setTheme(theme === "dark" ? "light" : "dark");
             updateThemeToggleBtn();
           });
+          btnThemeToggle.style.marginLeft = "auto";
           fieldMode.appendChild(btnThemeToggle);
 
           topSection.appendChild(rowMode);
@@ -4102,7 +4103,7 @@ $(function () {
             filter: filterUnblockReason,
           } = makeFilteredSelect(selUnblockReason);
           const inputUnblockReason = makeInput("Full reason to submit");
-          const btnUnblockAppend = makeBtn("Append", "quiet");
+          const btnUnblockAppend = makeBtn("➕ Append", "quiet");
           btnUnblockAppend.className += " tng-btn-sm";
           btnUnblockAppend.addEventListener("click", function () {
             const cur = inputUnblockReason.value;
@@ -4516,7 +4517,7 @@ $(function () {
             filter: filterPagedelReason,
           } = makeFilteredSelect(selPagedelReason);
           const inputPagedelReason = makeInput("Full reason to submit");
-          const btnPagedelAppend = makeBtn("Append", "quiet");
+          const btnPagedelAppend = makeBtn("➕ Append", "quiet");
           btnPagedelAppend.className += " tng-btn-sm";
           btnPagedelAppend.addEventListener("click", function () {
             const cur = inputPagedelReason.value;
@@ -4756,7 +4757,7 @@ $(function () {
             filter: filterUndeleteReason,
           } = makeFilteredSelect(selUndeleteReason);
           const inputUndeleteReason = makeInput("Full reason to submit");
-          const btnUndeleteAppend = makeBtn("Append", "quiet");
+          const btnUndeleteAppend = makeBtn("➕ Append", "quiet");
           btnUndeleteAppend.className += " tng-btn-sm";
           btnUndeleteAppend.addEventListener("click", function () {
             const cur = inputUndeleteReason.value;
@@ -4944,7 +4945,7 @@ $(function () {
             filter: filterProtectReason,
           } = makeFilteredSelect(selProtectReason);
           const inputProtectReason = makeInput("Full reason to submit");
-          const btnProtectAppend = makeBtn("Append", "quiet");
+          const btnProtectAppend = makeBtn("➕ Append", "quiet");
           btnProtectAppend.className += " tng-btn-sm";
           btnProtectAppend.addEventListener("click", function () {
             const cur = inputProtectReason.value;
@@ -5104,7 +5105,10 @@ $(function () {
             "Full reason to submit",
           );
           inputProtectRecreationReason.disabled = true;
-          const btnProtectRecreationReasonAppend = makeBtn("Append", "quiet");
+          const btnProtectRecreationReasonAppend = makeBtn(
+            "➕ Append",
+            "quiet",
+          );
           btnProtectRecreationReasonAppend.className += " tng-btn-sm";
           btnProtectRecreationReasonAppend.addEventListener(
             "click",
@@ -5247,7 +5251,7 @@ $(function () {
           const { wrap: filteredWrapRevdelReason, filter: filterRevdelReason } =
             makeFilteredSelect(selRevdelReason);
           const inputRevdelReason = makeInput("Full reason to submit");
-          const btnRevdelAppend = makeBtn("Append", "quiet");
+          const btnRevdelAppend = makeBtn("➕ Append", "quiet");
           btnRevdelAppend.className += " tng-btn-sm";
           btnRevdelAppend.addEventListener("click", function () {
             const cur = inputRevdelReason.value;
@@ -5614,12 +5618,12 @@ $(function () {
             }
           }
 
-          const btnCancel = makeBtn("Cancel", "quiet");
+          const btnCancel = makeBtn("✖️ Cancel", "quiet");
           btnCancel.addEventListener("click", function () {
             overlay.closeHandler();
           });
 
-          const btnStart = makeBtn("Start", "destructive");
+          const btnStart = makeBtn("▶️ Start", "destructive");
 
           // Evaluation routine to dynamically handle the start button state
           function updateStartBtn() {
@@ -6105,13 +6109,13 @@ $(function () {
             }
             confirmDlg.body.appendChild(featureList);
 
-            const btnCancelConfirm = makeBtn("Cancel", "quiet");
+            const btnCancelConfirm = makeBtn("✖️ Cancel", "quiet");
             btnCancelConfirm.addEventListener("click", function () {
               confirmDlg.overlay.closeHandler();
             });
 
             const btnProceedConfirm = makeBtn(
-              "Confirm and execute",
+              "✅ Confirm and execute",
               "destructive",
             );
             btnProceedConfirm.addEventListener("click", function () {

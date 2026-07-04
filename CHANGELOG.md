@@ -1,3 +1,14 @@
+## 2.56.0
+
+### Changed
+
+* Moved the light/dark mode toggle button to the far right of the mode row by applying `margin-left: auto`, separating it visually from the user/page mode toggle
+* Added descriptive emojis to all action buttons throughout the interface
+
+### Fixed
+
+* Fixed checkboxes not reflecting the active theme. Added `accent-color` to `.tng-checkrow input[type="checkbox"]` so ticked checkboxes render in the interface blue (`#3366cc` in light mode, `#6699ff` in dark mode) rather than the browser default, which was visually inconsistent with the rest of the themed interface
+
 ## 2.55.2
 
 ### Fixed

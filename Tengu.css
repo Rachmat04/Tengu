@@ -200,6 +200,7 @@
 }
 .tng-checkrow input[type="checkbox"] {
   cursor: pointer;
+  accent-color: #3366cc;
 }
 
 .tng-checks {
@@ -750,6 +751,9 @@
 .tng-theme-dark .tng-input:focus,
 .tng-theme-dark .tng-select:focus {
   border-color: #6699ff;
+}
+.tng-theme-dark .tng-checkrow input[type="checkbox"] {
+  accent-color: #6699ff;
 }
 .tng-theme-dark .tng-btn-quiet {
   color: #eaecf0;
