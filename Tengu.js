@@ -1219,22 +1219,27 @@ $(function () {
           const pagesToProtect = new Set();
 
           if (config.mode === "user") {
-            let untildate = new Date();
-            if (config.endtime === "inf") {
-              untildate = null;
-            } else {
-              untildate.setSeconds(
-                untildate.getSeconds() - parseInt(config.endtime),
-              );
-            }
-
             const contribParams = {
               action: "query",
               list: "usercontribs",
               ucuser: targetVal,
               uclimit: "max",
             };
-            if (untildate) contribParams.ucend = untildate.toISOString();
+            if (config.betweenMode) {
+              // Between-dates mode: ucend is the older (from) boundary;
+              // ucstart is the newer (to) boundary. Either may be null if
+              // the user left that picker blank, in which case the API
+              // returns edits up to or from the filled-in date with no
+              // constraint on the other end.
+              if (config.betweenFrom) contribParams.ucend = config.betweenFrom;
+              if (config.betweenTo) contribParams.ucstart = config.betweenTo;
+            } else if (config.endtime !== "inf") {
+              const untildate = new Date();
+              untildate.setSeconds(
+                untildate.getSeconds() - parseInt(config.endtime),
+              );
+              contribParams.ucend = untildate.toISOString();
+            }
 
             let contribs = [];
             let hasMore = true;
@@ -3764,6 +3769,7 @@ $(function () {
             { value: "2592000", label: "In the last 1 month" },
             { value: "inf", label: "All edits" },
             { value: "other", label: "Custom date and time:" },
+            { value: "other-between", label: "Between two dates:" },
           ]);
           const inputEndtime = document.createElement("input");
           inputEndtime.type = "datetime-local";
@@ -3776,17 +3782,60 @@ $(function () {
           )
             .toISOString()
             .slice(0, 16);
+
+          const inputBetweenFrom = document.createElement("input");
+          inputBetweenFrom.type = "datetime-local";
+          inputBetweenFrom.className = "tng-input";
+          inputBetweenFrom.max = inputEndtime.max;
+          inputBetweenFrom.style.flex = "1";
+
+          const inputBetweenTo = document.createElement("input");
+          inputBetweenTo.type = "datetime-local";
+          inputBetweenTo.className = "tng-input";
+          inputBetweenTo.max = inputEndtime.max;
+          inputBetweenTo.style.flex = "1";
+
           selEndtime.addEventListener("change", function () {
             inputEndtime.classList.toggle(
               "tng-hidden",
               selEndtime.value !== "other",
             );
+            editGroupBetween.classList.toggle(
+              "tng-hidden",
+              selEndtime.value !== "other-between",
+            );
           });
+
           const editGroup = document.createElement("div");
-          editGroup.style.cssText = "display: flex; gap: 6px; width: 100%;";
+          editGroup.style.cssText =
+            "display: flex; flex-direction: column; gap: 6px; width: 100%;";
+
+          const editGroupTop = document.createElement("div");
+          editGroupTop.style.cssText = "display: flex; gap: 6px; width: 100%;";
           inputEndtime.style.flex = "1";
-          editGroup.appendChild(wrapSelect(selEndtime, "1"));
-          editGroup.appendChild(inputEndtime);
+          editGroupTop.appendChild(wrapSelect(selEndtime, "1"));
+          editGroupTop.appendChild(inputEndtime);
+
+          const editGroupBetween = document.createElement("div");
+          editGroupBetween.className = "tng-hidden";
+          editGroupBetween.style.cssText =
+            "display: flex; gap: 6px; align-items: center; width: 100%;";
+
+          const lblBetweenFrom = document.createElement("span");
+          lblBetweenFrom.className = "tng-inline-label";
+          lblBetweenFrom.textContent = "From:";
+
+          const lblBetweenTo = document.createElement("span");
+          lblBetweenTo.className = "tng-inline-label";
+          lblBetweenTo.textContent = "To:";
+
+          editGroupBetween.appendChild(lblBetweenFrom);
+          editGroupBetween.appendChild(inputBetweenFrom);
+          editGroupBetween.appendChild(lblBetweenTo);
+          editGroupBetween.appendChild(inputBetweenTo);
+
+          editGroup.appendChild(editGroupTop);
+          editGroup.appendChild(editGroupBetween);
           fieldEdits.appendChild(editGroup);
           topSection.appendChild(rowEdits);
           const { row: rowPkg, field: fieldPkg } = makeRow("Package");
@@ -3835,6 +3884,8 @@ $(function () {
             // with the page-mode preset list.
             selEndtime.disabled = true;
             inputEndtime.disabled = true;
+            inputBetweenFrom.disabled = true;
+            inputBetweenTo.disabled = true;
             rowEdits.style.opacity = "0.5";
             rowEdits.title = "Not applicable in page mode";
           }
@@ -5415,6 +5466,8 @@ $(function () {
             // Edits row: only applicable in user mode
             selEndtime.disabled = !isUserModeNow;
             inputEndtime.disabled = !isUserModeNow;
+            inputBetweenFrom.disabled = !isUserModeNow;
+            inputBetweenTo.disabled = !isUserModeNow;
             rowEdits.style.opacity = isUserModeNow ? "" : "0.5";
             rowEdits.title = isUserModeNow ? "" : "Not applicable in page mode";
 
@@ -5643,6 +5696,9 @@ $(function () {
             const suffix = selSuffix.value;
             const isIP = mw.util.isIPAddress(targetVal);
             let endtime = selEndtime.value;
+            let betweenMode = false;
+            let betweenFrom = null;
+            let betweenTo = null;
             if (endtime === "other") {
               const _dtVal = inputEndtime.value.trim();
               if (_dtVal) {
@@ -5653,6 +5709,14 @@ $(function () {
               } else {
                 endtime = "3600";
               }
+            } else if (endtime === "other-between") {
+              betweenMode = true;
+              const _fromVal = inputBetweenFrom.value.trim();
+              const _toVal = inputBetweenTo.value.trim();
+              betweenFrom = _fromVal ? new Date(_fromVal).toISOString() : null;
+              betweenTo = _toVal ? new Date(_toVal).toISOString() : null;
+              // endtime is not used when betweenMode is active
+              endtime = "inf";
             }
 
             function buildRollbackReason() {
@@ -5891,6 +5955,9 @@ $(function () {
               suffix: suffix,
               isIP: isIP,
               endtime: endtime,
+              betweenMode: betweenMode,
+              betweenFrom: betweenFrom,
+              betweenTo: betweenTo,
               rollback: chkRollback.checked,
               rollbackMethod: chkUndo.checked ? "undo" : "rollback",
               rollbackBot: chkBot.checked,
@@ -6255,6 +6322,7 @@ $(function () {
             if (trac.indefregistered && !isIP) {
               selEndtime.value = "inf";
               inputEndtime.classList.add("tng-hidden");
+              editGroupBetween.classList.add("tng-hidden");
             } else {
               const dur = String(trac.duration || 3600);
               if (
@@ -6264,6 +6332,7 @@ $(function () {
               ) {
                 selEndtime.value = dur;
                 inputEndtime.classList.add("tng-hidden");
+                editGroupBetween.classList.add("tng-hidden");
               } else {
                 selEndtime.value = "other";
                 const _pkgDate = new Date(
@@ -6275,6 +6344,7 @@ $(function () {
                   .toISOString()
                   .slice(0, 16);
                 inputEndtime.classList.remove("tng-hidden");
+                editGroupBetween.classList.add("tng-hidden");
               }
             }
 

@@ -1,3 +1,15 @@
+## 2.55.0
+
+### Added
+
+* Added a "Between two dates:" option to the Edits dropdown, showing two `datetime-local` pickers labelled "From:" and "To:" when selected. This allows contributions to be filtered within a specific time window rather than only from a fixed point back to now
+* When only one picker is filled in, the constraint still applies to that boundary alone: "From:" without "To:" fetches all edits since that date; "To:" without "From:" fetches all edits up to that date
+* The between pickers are hidden and disabled in page mode, matching the existing behaviour of the rest of the Edits row
+
+### Changed
+
+* Refactored the contrib-params block in `work()` to build `ucstart`/`ucend` from the resolved config rather than computing `untildate` inline, which removes a variable that is now only needed in one branch
+
 ## 2.54.0
 
 ### Changed
