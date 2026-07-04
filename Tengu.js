@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.54.0
+ * Version 2.55.1
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -5879,11 +5879,18 @@ $(function () {
                   return c.label;
                 });
               const details = inputSRGDetails.value.trim();
-              const reasonParts = [];
-              if (pickedReasons.length)
-                reasonParts.push(pickedReasons.join(", "));
-              if (details) reasonParts.push(details);
-              let reasonText = reasonParts.join(" — ");
+              const pickedReasonsText = pickedReasons.length
+                ? pickedReasons.join(". ")
+                : "";
+              let reasonText = "";
+              if (pickedReasonsText && details) {
+                reasonText =
+                  pickedReasonsText + ". Additional details: " + details;
+              } else if (pickedReasonsText) {
+                reasonText = pickedReasonsText;
+              } else if (details) {
+                reasonText = "Additional details: " + details;
+              }
               if (reasonText && !/[.!?]$/.test(reasonText)) {
                 reasonText += ".";
               }
