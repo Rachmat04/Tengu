@@ -1,3 +1,17 @@
+## 2.59.0
+
+### Added
+
+* Added a **"Same as page creator"** checkbox to the "Move to user" field in the Move to user's sandbox section. When ticked, the username field is automatically populated by fetching the first revision's author for the target page, saving the need to type it manually. The field is disabled while the checkbox is active; unticking it clears and re-enables the field. If the target changes while the checkbox is ticked, the creator is re-fetched automatically
+* Added an **"Also move the talk page"** checkbox. When ticked, the talk page associated with the target page is moved to `User talk:[username]/[subpage name]` using the same reason and suppress-redirect settings as the main move. The move is skipped if the target is already a talk page or if no talk page exists, with a warning logged in either case
+* Added `moveSandboxTalk` and `moveSandboxTalkDest` to the config object
+
+### Changed
+
+* The **"Suppress redirect"** checkbox is now disabled at construction time and enabled only when the rights check confirms the current user holds the `suppressredirect` right (typically sysops). Users without this right can no longer inadvertently tick the option and cause the move to fail
+* Updated the Move to user's sandbox help text to describe the talk page move destination and the suppressredirect requirement
+* When switching to page mode via the mode toggle, the same-as-creator checkbox is reset to unticked and the username field is re-enabled, so a stale username from a previous session is not silently carried over
+
 ## 2.58.0
 
 ### Added

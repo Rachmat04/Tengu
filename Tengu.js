@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.58.0
+ * Version 2.59.0
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -1236,6 +1236,58 @@ $(function () {
                 `[Move] Failed to move "${targetVal}" to "${config.moveSandboxDest}": ${formatApiError(e)}`,
                 true,
               );
+            }
+
+            // Move the associated talk page if the option was selected.
+            if (config.moveSandboxTalk && !isAborted) {
+              try {
+                const sourceTitleObj = new mw.Title(targetVal);
+                if (sourceTitleObj.isTalkPage()) {
+                  addLog(
+                    "[Move] Skipped talk page move: target is already a talk page.",
+                    "warn",
+                  );
+                } else {
+                  const sourceTalkTitle = sourceTitleObj
+                    .getTalkPage()
+                    .getPrefixedText();
+                  const talkExistData = await apiGet({
+                    action: "query",
+                    titles: sourceTalkTitle,
+                    formatversion: 2,
+                  });
+                  const talkPage =
+                    talkExistData.query &&
+                    talkExistData.query.pages &&
+                    talkExistData.query.pages[0];
+                  if (talkPage && !talkPage.missing) {
+                    const talkMoveParams = {
+                      action: "move",
+                      from: sourceTalkTitle,
+                      to: config.moveSandboxTalkDest,
+                      reason: config.moveSandboxReason + toolTag,
+                    };
+                    if (config.moveSandboxNoRedirect)
+                      talkMoveParams.noredirect = 1;
+                    await apiPost(talkMoveParams);
+                    addLog(
+                      `[Move] Moved talk page "${sourceTalkTitle}" to "${config.moveSandboxTalkDest}"`,
+                    );
+                    stats.move++;
+                    updateStatusDisplay();
+                  } else {
+                    addLog(
+                      `[Move] Skipped talk page move: "${sourceTalkTitle}" does not exist.`,
+                      "warn",
+                    );
+                  }
+                }
+              } catch (e) {
+                addLog(
+                  `[Move] Failed to move talk page to "${config.moveSandboxTalkDest}": ${formatApiError(e)}`,
+                  true,
+                );
+              }
             }
           }
 
@@ -4902,9 +4954,78 @@ $(function () {
 
           const { row: rowMoveSandboxUser, field: fieldMoveSandboxUser } =
             makeRow("Move to user");
+
+          // Stack the username input and the same-as-creator option vertically.
+          const moveSandboxUserGroup = document.createElement("div");
+          moveSandboxUserGroup.style.cssText =
+            "display:flex;flex-direction:column;gap:4px;width:100%;";
           const inputMoveSandboxUser = makeInput("Username");
-          fieldMoveSandboxUser.appendChild(inputMoveSandboxUser);
+          moveSandboxUserGroup.appendChild(inputMoveSandboxUser);
+
+          const {
+            wrap: wrapMoveSandboxSameAsCreator,
+            chk: chkMoveSandboxSameAsCreator,
+          } = makeCheckbox("Same as page creator", false);
+          wrapMoveSandboxSameAsCreator.title =
+            "When ticked, the username field is automatically populated with the page creator's username. The target page must be set before ticking this option.";
+          moveSandboxUserGroup.appendChild(wrapMoveSandboxSameAsCreator);
+
+          fieldMoveSandboxUser.appendChild(moveSandboxUserGroup);
           bodyMoveSandbox.appendChild(rowMoveSandboxUser);
+
+          // Fetches the first revision's author for the current target page and
+          // populates the username field. Only applies the result when the checkbox
+          // is still ticked at the time the API response arrives, so a fast
+          // user interaction (tick → untick before the response returns) does not
+          // overwrite a manually entered username.
+          async function fetchAndApplyPageCreator() {
+            const target = inputTarget.value.trim();
+            if (!target) {
+              chkMoveSandboxSameAsCreator.checked = false;
+              inputMoveSandboxUser.disabled = false;
+              return;
+            }
+            try {
+              const data = await apiGet({
+                action: "query",
+                prop: "revisions",
+                titles: target,
+                rvdir: "newer",
+                rvlimit: 1,
+                rvprop: "user",
+                formatversion: 2,
+              });
+              if (!chkMoveSandboxSameAsCreator.checked) return;
+              const page =
+                data.query && data.query.pages && data.query.pages[0];
+              const creator =
+                (page &&
+                  !page.missing &&
+                  page.revisions &&
+                  page.revisions[0] &&
+                  page.revisions[0].user) ||
+                null;
+              if (creator) {
+                inputMoveSandboxUser.value = creator;
+              } else {
+                chkMoveSandboxSameAsCreator.checked = false;
+                inputMoveSandboxUser.disabled = false;
+              }
+            } catch (e) {
+              chkMoveSandboxSameAsCreator.checked = false;
+              inputMoveSandboxUser.disabled = false;
+            }
+          }
+
+          chkMoveSandboxSameAsCreator.addEventListener("change", function () {
+            if (chkMoveSandboxSameAsCreator.checked) {
+              inputMoveSandboxUser.disabled = true;
+              fetchAndApplyPageCreator();
+            } else {
+              inputMoveSandboxUser.disabled = false;
+              inputMoveSandboxUser.value = "";
+            }
+          });
 
           const { row: rowMoveSandboxSubpage, field: fieldMoveSandboxSubpage } =
             makeRow("Subpage name");
@@ -4917,7 +5038,7 @@ $(function () {
           const helpMoveSandbox = document.createElement("div");
           helpMoveSandbox.className = "tng-help";
           helpMoveSandbox.textContent =
-            'The page will be moved to "User:[username]/[subpage name]". Suppressing the redirect requires the suppressredirect right.';
+            'The page will be moved to "User:[username]/[subpage name]". When "Also move the talk page" is ticked, the talk page is moved to "User talk:[username]/[subpage name]". Suppressing the redirect requires the suppressredirect right (sysops only).';
           bodyMoveSandbox.appendChild(helpMoveSandbox);
 
           const { row: rowMoveSandboxReason, field: fieldMoveSandboxReason } =
@@ -4955,14 +5076,25 @@ $(function () {
             chk: chkMoveSandboxNoRedirect,
           } = makeCheckbox(
             "Suppress redirect (requires the suppressredirect right)",
-            true,
+            false,
           );
           wrapMoveSandboxNoRedirect.title =
             "When ticked, no redirect is left at the original title after the move. Requires the suppressredirect right; the move will fail if you do not hold this right and this option is selected.";
+          // Disabled by default; enabled by rightsPromise when the suppressredirect right is confirmed.
+          chkMoveSandboxNoRedirect.disabled = true;
+          wrapMoveSandboxNoRedirect.style.opacity = "0.5";
+          wrapMoveSandboxNoRedirect.style.cursor = "not-allowed";
+
+          const { wrap: wrapMoveSandboxTalk, chk: chkMoveSandboxTalk } =
+            makeCheckbox("Also move the talk page", false);
+          wrapMoveSandboxTalk.title =
+            "When ticked, the talk page associated with the target page will also be moved to the corresponding talk page of the destination (e.g. User talk:[username]/[subpage name]). Skipped if the target is already a talk page or if no talk page exists.";
+
           const checksMoveSandbox = document.createElement("div");
           checksMoveSandbox.className = "tng-checks";
           checksMoveSandbox.style.paddingLeft = "0";
           checksMoveSandbox.appendChild(wrapMoveSandboxNoRedirect);
+          checksMoveSandbox.appendChild(wrapMoveSandboxTalk);
           bodyMoveSandbox.appendChild(checksMoveSandbox);
 
           body.appendChild(secMoveSandbox);
@@ -5237,10 +5369,7 @@ $(function () {
             "Full reason to submit",
           );
           inputProtectRecreationReason.disabled = true;
-          const btnProtectRecreationReasonAppend = makeBtn(
-            "Append",
-            "quiet",
-          );
+          const btnProtectRecreationReasonAppend = makeBtn("Append", "quiet");
           btnProtectRecreationReasonAppend.className += " tng-btn-sm";
           btnProtectRecreationReasonAppend.addEventListener(
             "click",
@@ -5679,6 +5808,10 @@ $(function () {
                 chkMoveSandbox,
                 false,
               );
+              // Reset the same-as-creator option when entering page mode so a
+              // stale username from a previous session is not silently reused.
+              chkMoveSandboxSameAsCreator.checked = false;
+              inputMoveSandboxUser.disabled = false;
               // Auto-fill subpage name with the page title (without namespace)
               const _pageTargetForMove = inputTarget.value.trim();
               if (_pageTargetForMove) {
@@ -6234,8 +6367,14 @@ $(function () {
                 inputMoveSandboxUser.value.trim() +
                 "/" +
                 inputMoveSandboxSubpage.value.trim(),
+              moveSandboxTalkDest:
+                "User talk:" +
+                inputMoveSandboxUser.value.trim() +
+                "/" +
+                inputMoveSandboxSubpage.value.trim(),
               moveSandboxReason: buildMoveSandboxReason() + suffix,
               moveSandboxNoRedirect: chkMoveSandboxNoRedirect.checked,
+              moveSandboxTalk: chkMoveSandboxTalk.checked,
               protect: chkProtect.checked,
               protectEdit: selProtectEdit.value,
               protectMove: selProtectMove.value,
@@ -6339,7 +6478,7 @@ $(function () {
             });
 
             const btnProceedConfirm = makeBtn(
-              "✅ Confirm and execute",
+              "Confirm and execute",
               "destructive",
             );
             btnProceedConfirm.addEventListener("click", function () {
@@ -6545,6 +6684,18 @@ $(function () {
                   chkUndelete,
                   "you do not have the undelete right on this wiki.",
                 );
+              }
+
+              // Enable suppress redirect only when the user holds the suppressredirect right
+              // (typically sysops). The checkbox is disabled at construction time and
+              // unlocked here once rights are confirmed.
+              const hasSuppressRedirect =
+                info.rights.indexOf("suppressredirect") !== -1;
+              if (hasSuppressRedirect) {
+                chkMoveSandboxNoRedirect.checked = true;
+                chkMoveSandboxNoRedirect.disabled = false;
+                wrapMoveSandboxNoRedirect.style.opacity = "";
+                wrapMoveSandboxNoRedirect.style.cursor = "";
               }
 
               // Re-evaluate the start button in case locks changed the checked state
@@ -7516,6 +7667,11 @@ $(function () {
               } catch (e) {
                 // Title could not be parsed; leave the subpage field as-is
               }
+            }
+            // Re-fetch the page creator when the target changes and the
+            // same-as-creator option is active.
+            if (tenguMode === "page" && chkMoveSandboxSameAsCreator.checked) {
+              fetchAndApplyPageCreator();
             }
             updateUploadAvailability();
             updateSectionStatus();
