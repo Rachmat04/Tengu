@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.60.0
+ * Version 2.61.0
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -1096,6 +1096,131 @@ $(function () {
             } // end if (proceedWithBlock)
           }
 
+          // --- Block related temporary accounts ---
+          // CheckUser API parameters (action=checkuser, cutype=userips/ipusers)
+          // and response format reflect the CheckUser extension API as documented at the time
+          // of writing. Response shape varies across MediaWiki versions; both string arrays
+          // and object arrays are handled defensively below.
+          if (
+            config.block &&
+            config.blockRelatedTemp &&
+            config.mode === "user" &&
+            stats.block > 0 &&
+            !isAborted
+          ) {
+            addLog(
+              "[Block] Searching for related temporary accounts via shared IP address (CheckUser)...",
+            );
+            addLog(
+              "[Block] ⚠️ Verify all related accounts carefully before proceeding — IP addresses are frequently shared by unrelated users.",
+              "warn",
+            );
+            try {
+              const userIPsData = await apiGet({
+                action: "checkuser",
+                cutype: "userips",
+                cutarget: targetVal,
+                culimit: "max",
+              });
+              const rawIPEntries =
+                (userIPsData.checkuser && userIPsData.checkuser.userips) || [];
+              const ipList = rawIPEntries
+                .map(function (e) {
+                  return typeof e === "string" ? e : e.ip || e.address || "";
+                })
+                .filter(Boolean);
+
+              if (!ipList.length) {
+                addLog(
+                  "[Block] No IP addresses found for this account via CheckUser.",
+                  "warn",
+                );
+              } else {
+                addLog(
+                  `[Block] Found ${ipList.length} associated IP address(es). Checking for related temporary accounts...`,
+                );
+                const relatedTempAccounts = new Set();
+                for (const ip of ipList) {
+                  if (isAborted) break;
+                  try {
+                    const ipUsersData = await apiGet({
+                      action: "checkuser",
+                      cutype: "ipusers",
+                      cutarget: ip,
+                      culimit: "max",
+                    });
+                    const rawUserEntries =
+                      (ipUsersData.checkuser &&
+                        ipUsersData.checkuser.ipusers) ||
+                      [];
+                    for (const e of rawUserEntries) {
+                      const username =
+                        typeof e === "string" ? e : e.user || e.name || "";
+                      if (
+                        username &&
+                        username !== targetVal &&
+                        /^~\d{4}-\d+-\d+$/.test(username)
+                      ) {
+                        relatedTempAccounts.add(username);
+                      }
+                    }
+                  } catch (ipErr) {
+                    addLog(
+                      `[Block] Could not fetch accounts for IP ${ip}: ${formatApiError(ipErr)}`,
+                      "warn",
+                    );
+                  }
+                  await new Promise((resolve) => setTimeout(resolve, 100));
+                }
+
+                if (!relatedTempAccounts.size) {
+                  addLog(
+                    "[Block] No related temporary accounts found on shared IP addresses.",
+                  );
+                } else {
+                  addLog(
+                    `[Block] Found ${relatedTempAccounts.size} related temporary account(s). Proceeding with blocks...`,
+                  );
+                  for (const relatedUser of relatedTempAccounts) {
+                    if (isAborted) break;
+                    try {
+                      const relBlockData = {
+                        action: "block",
+                        user: relatedUser,
+                        expiry: config.blockDur,
+                        reason: config.blockReason + toolTag,
+                      };
+                      if (config.blockCreate) relBlockData.nocreate = 1;
+                      if (!config.blockTalk) relBlockData.allowusertalk = 1;
+                      // Autoblock and hardblock are omitted for related temporary account blocks
+                      await apiPost(relBlockData);
+                      addLog(
+                        `[Block] Blocked related temporary account: ${relatedUser}`,
+                      );
+                      stats.block++;
+                      updateStatusDisplay();
+                    } catch (relErr) {
+                      addLog(
+                        `[Block] Failed to block ${relatedUser}: ${formatApiError(relErr)}`,
+                        true,
+                      );
+                    }
+                    await new Promise((resolve) => setTimeout(resolve, 100));
+                  }
+                }
+              }
+            } catch (e) {
+              addLog(
+                `[Block] Could not access the CheckUser API: ${formatApiError(e)}`,
+                "warn",
+              );
+              addLog(
+                "[Block] Verify that you hold the checkuser right on this wiki.",
+                "warn",
+              );
+            }
+          }
+
           // --- Unblock ---
           if (config.unblock && config.mode === "user" && !isAborted) {
             try {
@@ -1265,7 +1390,11 @@ $(function () {
                       action: "move",
                       from: sourceTalkTitle,
                       to: config.moveSandboxTalkDest,
-                      reason: config.moveSandboxReason + toolTag,
+                      reason:
+                        (useIndonesian
+                          ? `Memindahkan halaman pembicaraan karena halaman utama yang terkait telah dipindahkan: ${config.moveSandboxReason}`
+                          : `Moving the talk page because its associated main page has been moved: ${config.moveSandboxReason}`) +
+                        toolTag,
                     };
                     if (config.moveSandboxNoRedirect)
                       talkMoveParams.noredirect = 1;
@@ -1538,7 +1667,13 @@ $(function () {
             const rbSummaryStr = config.rollbackReason
               ? config.rollbackReason + toolTag
               : config.rollbackShow
-                ? ""
+                ? (previousEditorUser
+                    ? useIndonesian
+                      ? `Membatalkan suntingan ${targetVal} ke suntingan sebelumnya oleh ${previousEditorUser}`
+                      : `Revert ${targetVal}'s edits to the previous edit by ${previousEditorUser}`
+                    : useIndonesian
+                      ? "Membatalkan suntingan oleh " + targetVal
+                      : "Reverting edits by " + targetVal) + toolTag
                 : (useIndonesian ? "Membatalkan suntingan" : "Revert edits") +
                   toolTag;
 
@@ -4171,6 +4306,20 @@ $(function () {
           wrapClearTalkPageBeforeNotify.title =
             "When ticked and the block is indefinite, the user's talk page will be emptied before the block notification is posted. The notification will replace any previous discussion.";
           checksBlock.appendChild(wrapClearTalkPageBeforeNotify);
+
+          // 'Also block related temporary accounts' — visible only when the target is a temp account.
+          // [Need confirmation] Uses the CheckUser API; parameters and response shape should be verified
+          // against the target wiki's CheckUser extension version before relying on this feature.
+          const { wrap: wrapBlockRelatedTemp, chk: chkBlockRelatedTemp } =
+            makeCheckbox(
+              "Also block related temporary accounts (via shared IP) (BETA feature)",
+              false,
+            );
+          wrapBlockRelatedTemp.title =
+            "When ticked, Tengu uses the CheckUser API to find other temporary accounts that shared an IP address with this account, then blocks them with the same expiry, reason, and flags. Requires the checkuser right. Verify all results carefully. IP addresses are frequently shared by unrelated users.";
+          wrapBlockRelatedTemp.style.display = "none";
+          checksBlock.appendChild(wrapBlockRelatedTemp);
+
           // Disable the clear-talk-page option unless the block expiry is indefinite.
           function updateClearTalkState() {
             const isIndef = selBlockDur.value === "never";
@@ -4183,6 +4332,12 @@ $(function () {
           }
           selBlockDur.addEventListener("change", updateClearTalkState);
           bodyBlock.appendChild(checksBlock);
+          const divBlockRelatedTempHelp = document.createElement("div");
+          divBlockRelatedTempHelp.className = "tng-help";
+          divBlockRelatedTempHelp.style.display = "none";
+          divBlockRelatedTempHelp.textContent =
+            "⚠️ CheckUser data may include temporary accounts unrelated to the target. Verify all results carefully before enabling this option.";
+          bodyBlock.appendChild(divBlockRelatedTempHelp);
           body.appendChild(secBlock);
 
           // ============================================================================
@@ -5740,6 +5895,17 @@ $(function () {
               : mw.config.get("wgPageName").replace(/_/g, " ");
             clearInputError(inputTarget);
             btnGetInfo.disabled = !inputTarget.value.trim();
+            // Update temp account block controls after the target field is reset by the mode switch
+            const _modeTarget = inputTarget.value.trim();
+            const _isTempAccountAfterSwitch =
+              isUserModeNow && /^~\d{4}-\d+-\d+$/.test(_modeTarget);
+            wrapBlockRelatedTemp.style.display = _isTempAccountAfterSwitch
+              ? ""
+              : "none";
+            divBlockRelatedTempHelp.style.display = _isTempAccountAfterSwitch
+              ? ""
+              : "none";
+            if (!_isTempAccountAfterSwitch) chkBlockRelatedTemp.checked = false;
 
             // Edits row: only applicable in user mode
             selEndtime.disabled = !isUserModeNow;
@@ -6328,6 +6494,7 @@ $(function () {
                   ? inputBlockDur.value.trim()
                   : selBlockDur.value,
               blockReason: buildBlockReason() + suffix,
+              blockRelatedTemp: chkBlockRelatedTemp.checked,
               blockAnon: chkHardblock.checked,
               blockAuto: !isIP && chkAutoblock.checked,
               blockCreate: chkCreate.checked,
@@ -7652,6 +7819,14 @@ $(function () {
               selBlockDur.value = "3 months";
               inputBlockDur.classList.add("tng-hidden");
             }
+            const showTempBlockCtrl = isTempAccount && tenguMode === "user";
+            wrapBlockRelatedTemp.style.display = showTempBlockCtrl
+              ? ""
+              : "none";
+            divBlockRelatedTempHelp.style.display = showTempBlockCtrl
+              ? ""
+              : "none";
+            if (!showTempBlockCtrl) chkBlockRelatedTemp.checked = false;
             // Re-evaluate special page restriction when the target changes in page mode
             if (tenguMode === "page") {
               const targetIsSpecial = isTargetSpecialPage();

@@ -1,3 +1,14 @@
+## 2.61.0
+
+### Added
+
+* [BETA feature] Added an **"Also block related temporary accounts (via shared IP)"** checkbox to the Block section. The checkbox is visible only when the target matches the temporary account name pattern (`~YYYY-…`). When ticked, Tengu queries the CheckUser API to find temporary accounts that shared an IP address with the target, then blocks each of them using the same expiry, reason, and block flags. A notice is shown in the interface and a warning is logged in the progress dialogue reminding users to verify the results carefully, since IP addresses are frequently shared by unrelated users. Requires the `checkuser` right. Autoblock and hardblock are not applied to related account blocks.
+
+### Changed
+
+* The native rollback edit summary now uses the same explicit summary logic as undo when no custom reason is provided: when "Show username in summary" is ticked, the summary reads "Revert [username]'s edits to the previous edit by [previous editor]" (or "Reverting edits by [username]" when the previous editor is not known). Previously, rollback passed an empty summary string, which caused MediaWiki to generate its own default summary rather than a Tengu-controlled one
+* The talk page move edit summary in the Move to user's sandbox section now reads "Moving the talk page because its associated main page has been moved: [move reason]" in English and "Memindahkan halaman pembicaraan karena halaman utama yang terkait telah dipindahkan: [move reason]" in Indonesian, rather than reusing the same reason string as the main page move
+
 ## 2.60.0
 
 ### Changed
