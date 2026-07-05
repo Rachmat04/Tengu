@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.61.0
+ * Version 2.62.0
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -4310,15 +4310,118 @@ $(function () {
           // 'Also block related temporary accounts' — visible only when the target is a temp account.
           // [Need confirmation] Uses the CheckUser API; parameters and response shape should be verified
           // against the target wiki's CheckUser extension version before relying on this feature.
+          // The section is shown before execution so the user can review accounts before pressing Start.
+          const wrapBlockRelatedTempSection = document.createElement("div");
+          wrapBlockRelatedTempSection.className = "tng-recreation-group";
+          wrapBlockRelatedTempSection.style.display = "none";
           const { wrap: wrapBlockRelatedTemp, chk: chkBlockRelatedTemp } =
             makeCheckbox(
               "Also block related temporary accounts (via shared IP) (BETA feature)",
               false,
             );
           wrapBlockRelatedTemp.title =
-            "When ticked, Tengu uses the CheckUser API to find other temporary accounts that shared an IP address with this account, then blocks them with the same expiry, reason, and flags. Requires the checkuser right. Verify all results carefully. IP addresses are frequently shared by unrelated users.";
-          wrapBlockRelatedTemp.style.display = "none";
-          checksBlock.appendChild(wrapBlockRelatedTemp);
+            "When ticked, Tengu queries the CheckUser API to find temporary accounts that shared an IP address with this account and lists them here for review. Each account can be opened in a new tab before blocking. Requires the checkuser right. IP addresses are frequently shared by unrelated users.";
+          wrapBlockRelatedTempSection.appendChild(wrapBlockRelatedTemp);
+
+          const divBlockRelatedTempList = document.createElement("div");
+          divBlockRelatedTempList.style.display = "none";
+          divBlockRelatedTempList.style.marginTop = "6px";
+          divBlockRelatedTempList.style.fontSize = "0.87em";
+          divBlockRelatedTempList.style.lineHeight = "1.7";
+          wrapBlockRelatedTempSection.appendChild(divBlockRelatedTempList);
+
+          chkBlockRelatedTemp.addEventListener("change", async function () {
+            if (!chkBlockRelatedTemp.checked) {
+              divBlockRelatedTempList.style.display = "none";
+              divBlockRelatedTempList.innerHTML = "";
+              return;
+            }
+            const target = inputTarget.value.trim();
+            if (!target) return;
+            divBlockRelatedTempList.style.display = "";
+            divBlockRelatedTempList.textContent =
+              "Loading related temporary accounts via CheckUser...";
+            try {
+              const userIPsData = await apiGet({
+                action: "checkuser",
+                cutype: "userips",
+                cutarget: target,
+                culimit: "max",
+              });
+              const rawIPEntries =
+                (userIPsData.checkuser && userIPsData.checkuser.userips) || [];
+              const ipList = rawIPEntries
+                .map(function (e) {
+                  return typeof e === "string" ? e : e.ip || e.address || "";
+                })
+                .filter(Boolean);
+              if (!ipList.length) {
+                divBlockRelatedTempList.textContent =
+                  "No IP addresses found for this account via CheckUser.";
+                return;
+              }
+              const relatedTempAccounts = new Set();
+              for (const ip of ipList) {
+                try {
+                  const ipUsersData = await apiGet({
+                    action: "checkuser",
+                    cutype: "ipusers",
+                    cutarget: ip,
+                    culimit: "max",
+                  });
+                  const rawUserEntries =
+                    (ipUsersData.checkuser && ipUsersData.checkuser.ipusers) ||
+                    [];
+                  for (const e of rawUserEntries) {
+                    const username =
+                      typeof e === "string" ? e : e.user || e.name || "";
+                    if (
+                      username &&
+                      username !== target &&
+                      /^~\d{4}-\d+-\d+$/.test(username)
+                    ) {
+                      relatedTempAccounts.add(username);
+                    }
+                  }
+                } catch (e) {
+                  // Continue if one IP lookup fails
+                }
+                await new Promise(function (r) {
+                  return setTimeout(r, 100);
+                });
+              }
+              divBlockRelatedTempList.innerHTML = "";
+              if (!relatedTempAccounts.size) {
+                divBlockRelatedTempList.textContent =
+                  "No related temporary accounts found on shared IP addresses.";
+              } else {
+                const header = document.createElement("div");
+                header.style.marginBottom = "4px";
+                header.textContent =
+                  "Found " +
+                  relatedTempAccounts.size +
+                  " related temporary account(s). Click each to review contributions before blocking:";
+                divBlockRelatedTempList.appendChild(header);
+                for (const username of relatedTempAccounts) {
+                  const entry = document.createElement("div");
+                  const link = document.createElement("a");
+                  link.href = mw.util.getUrl(
+                    "Special:Contributions/" + username,
+                  );
+                  link.textContent = username;
+                  link.target = "_blank";
+                  link.rel = "noopener noreferrer";
+                  entry.appendChild(link);
+                  divBlockRelatedTempList.appendChild(entry);
+                }
+              }
+            } catch (e) {
+              divBlockRelatedTempList.textContent =
+                "Could not access the CheckUser API. Verify that you hold the checkuser right on this wiki.";
+            }
+          });
+
+          checksBlock.appendChild(wrapBlockRelatedTempSection);
 
           // Disable the clear-talk-page option unless the block expiry is indefinite.
           function updateClearTalkState() {
@@ -4337,7 +4440,6 @@ $(function () {
           divBlockRelatedTempHelp.style.display = "none";
           divBlockRelatedTempHelp.textContent =
             "⚠️ CheckUser data may include temporary accounts unrelated to the target. Verify all results carefully before enabling this option.";
-          bodyBlock.appendChild(divBlockRelatedTempHelp);
           body.appendChild(secBlock);
 
           // ============================================================================
@@ -5899,13 +6001,13 @@ $(function () {
             const _modeTarget = inputTarget.value.trim();
             const _isTempAccountAfterSwitch =
               isUserModeNow && /^~\d{4}-\d+-\d+$/.test(_modeTarget);
-            wrapBlockRelatedTemp.style.display = _isTempAccountAfterSwitch
-              ? ""
-              : "none";
-            divBlockRelatedTempHelp.style.display = _isTempAccountAfterSwitch
-              ? ""
-              : "none";
-            if (!_isTempAccountAfterSwitch) chkBlockRelatedTemp.checked = false;
+            wrapBlockRelatedTempSection.style.display =
+              _isTempAccountAfterSwitch ? "" : "none";
+            if (!_isTempAccountAfterSwitch) {
+              chkBlockRelatedTemp.checked = false;
+              divBlockRelatedTempList.style.display = "none";
+              divBlockRelatedTempList.innerHTML = "";
+            }
 
             // Edits row: only applicable in user mode
             selEndtime.disabled = !isUserModeNow;
@@ -7820,13 +7922,14 @@ $(function () {
               inputBlockDur.classList.add("tng-hidden");
             }
             const showTempBlockCtrl = isTempAccount && tenguMode === "user";
-            wrapBlockRelatedTemp.style.display = showTempBlockCtrl
+            wrapBlockRelatedTempSection.style.display = showTempBlockCtrl
               ? ""
               : "none";
-            divBlockRelatedTempHelp.style.display = showTempBlockCtrl
-              ? ""
-              : "none";
-            if (!showTempBlockCtrl) chkBlockRelatedTemp.checked = false;
+            // Always reset the list and checkbox when the target changes —
+            // results from the previous target must not carry over.
+            chkBlockRelatedTemp.checked = false;
+            divBlockRelatedTempList.style.display = "none";
+            divBlockRelatedTempList.innerHTML = "";
             // Re-evaluate special page restriction when the target changes in page mode
             if (tenguMode === "page") {
               const targetIsSpecial = isTargetSpecialPage();

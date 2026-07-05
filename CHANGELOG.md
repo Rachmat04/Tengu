@@ -1,3 +1,12 @@
+## 2.62.0
+
+### Changed
+
+* The "Also block related temporary accounts (via shared IP) (BETA feature)" checkbox in the Block section is now presented inside a separate bordered sub-section, visually distinct from the other block options
+* When the checkbox is ticked, Tengu queries the CheckUser API immediately and lists all related temporary accounts found — each displayed as a clickable link that opens the account's contributions page in a new tab, so accounts can be reviewed before the Start button is pressed
+* The list is cleared and the checkbox is reset whenever the target field changes, preventing stale results from a previous target being carried over
+* Removed the inline help note "CheckUser data may include temporary accounts unrelated to the target. Verify all results carefully before enabling this option." from the block section body; the checkbox tooltip now describes the lookup and review behaviour instead
+
 ## 2.61.0
 
 ### Added
