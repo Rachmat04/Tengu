@@ -93,8 +93,16 @@ window.TenguWarn = {
                 (isFinal ? finalSentence(true) : "") +
                 `\n\nJika Anda merasa peringatan ini diberikan secara keliru, silakan tinggalkan pesan di halaman pembicaraan saya. ` +
                 `~`.repeat(4);
-              const en = withExtra(headingEn + "\n" + bodyEn, extra, false);
-              const id = withExtra(headingId + "\n" + bodyId, extra, true);
+              const en = withExtra(
+                headingEn + "\n" + "Hello " + target + ",\n\n" + bodyEn,
+                extra,
+                false,
+              );
+              const id = withExtra(
+                headingId + "\n" + "Halo " + target + ",\n\n" + bodyId,
+                extra,
+                true,
+              );
               return useIndonesian ? id : en;
             },
           },
@@ -122,8 +130,16 @@ window.TenguWarn = {
                 (isFinal ? finalSentence(true) : "") +
                 `\n\nJika Anda merasa peringatan ini diberikan secara keliru, silakan tinggalkan pesan di halaman pembicaraan saya. ` +
                 `~`.repeat(4);
-              const en = withExtra(headingEn + "\n" + bodyEn, extra, false);
-              const id = withExtra(headingId + "\n" + bodyId, extra, true);
+              const en = withExtra(
+                headingEn + "\n" + "Hello " + target + ",\n\n" + bodyEn,
+                extra,
+                false,
+              );
+              const id = withExtra(
+                headingId + "\n" + "Halo " + target + ",\n\n" + bodyId,
+                extra,
+                true,
+              );
               return useIndonesian ? id : en;
             },
           },
@@ -151,8 +167,16 @@ window.TenguWarn = {
                 (isFinal ? finalSentence(true) : "") +
                 `\n\nJika Anda merasa pemberitahuan ini diberikan secara keliru, silakan tinggalkan pesan di halaman pembicaraan saya. ` +
                 `~`.repeat(4);
-              const en = withExtra(headingEn + "\n" + bodyEn, extra, false);
-              const id = withExtra(headingId + "\n" + bodyId, extra, true);
+              const en = withExtra(
+                headingEn + "\n" + "Hello " + target + ",\n\n" + bodyEn,
+                extra,
+                false,
+              );
+              const id = withExtra(
+                headingId + "\n" + "Halo " + target + ",\n\n" + bodyId,
+                extra,
+                true,
+              );
               return useIndonesian ? id : en;
             },
           },
@@ -180,8 +204,16 @@ window.TenguWarn = {
                 (isFinal ? finalSentence(true) : "") +
                 `\n\nJika Anda merasa peringatan ini diberikan secara keliru, silakan tinggalkan pesan di halaman pembicaraan saya. ` +
                 `~`.repeat(4);
-              const en = withExtra(headingEn + "\n" + bodyEn, extra, false);
-              const id = withExtra(headingId + "\n" + bodyId, extra, true);
+              const en = withExtra(
+                headingEn + "\n" + "Hello " + target + ",\n\n" + bodyEn,
+                extra,
+                false,
+              );
+              const id = withExtra(
+                headingId + "\n" + "Halo " + target + ",\n\n" + bodyId,
+                extra,
+                true,
+              );
               return useIndonesian ? id : en;
             },
           },
@@ -215,8 +247,16 @@ window.TenguWarn = {
                 (isFinal ? finalSentence(true) : "") +
                 `\n\nJika Anda merasa peringatan ini diberikan secara keliru, silakan tinggalkan pesan di halaman pembicaraan saya. ` +
                 `~`.repeat(4);
-              const en = withExtra(headingEn + "\n" + bodyEn, extra, false);
-              const id = withExtra(headingId + "\n" + bodyId, extra, true);
+              const en = withExtra(
+                headingEn + "\n" + "Hello " + target + ",\n\n" + bodyEn,
+                extra,
+                false,
+              );
+              const id = withExtra(
+                headingId + "\n" + "Halo " + target + ",\n\n" + bodyId,
+                extra,
+                true,
+              );
               return useIndonesian ? id : en;
             },
           },
@@ -245,8 +285,16 @@ window.TenguWarn = {
                 (isFinal ? finalSentence(true) : "") +
                 `\n\nJika Anda merasa peringatan ini diberikan secara keliru, silakan tinggalkan pesan di halaman pembicaraan saya. ` +
                 `~`.repeat(4);
-              const en = withExtra(headingEn + "\n" + bodyEn, extra, false);
-              const id = withExtra(headingId + "\n" + bodyId, extra, true);
+              const en = withExtra(
+                headingEn + "\n" + "Hello " + target + ",\n\n" + bodyEn,
+                extra,
+                false,
+              );
+              const id = withExtra(
+                headingId + "\n" + "Halo " + target + ",\n\n" + bodyId,
+                extra,
+                true,
+              );
               return useIndonesian ? id : en;
             },
           },
@@ -274,8 +322,16 @@ window.TenguWarn = {
                 (isFinal ? finalSentence(true) : "") +
                 `\n\nJika Anda merasa peringatan ini diberikan secara keliru, silakan tinggalkan pesan di halaman pembicaraan saya. ` +
                 `~`.repeat(4);
-              const en = withExtra(headingEn + "\n" + bodyEn, extra, false);
-              const id = withExtra(headingId + "\n" + bodyId, extra, true);
+              const en = withExtra(
+                headingEn + "\n" + "Hello " + target + ",\n\n" + bodyEn,
+                extra,
+                false,
+              );
+              const id = withExtra(
+                headingId + "\n" + "Halo " + target + ",\n\n" + bodyId,
+                extra,
+                true,
+              );
               return useIndonesian ? id : en;
             },
           },
@@ -303,8 +359,16 @@ window.TenguWarn = {
                 (isFinal ? finalSentence(true) : "") +
                 `\n\nJika Anda merasa peringatan ini diberikan secara keliru, silakan tinggalkan pesan di halaman pembicaraan saya. ` +
                 `~`.repeat(4);
-              const en = withExtra(headingEn + "\n" + bodyEn, extra, false);
-              const id = withExtra(headingId + "\n" + bodyId, extra, true);
+              const en = withExtra(
+                headingEn + "\n" + "Hello " + target + ",\n\n" + bodyEn,
+                extra,
+                false,
+              );
+              const id = withExtra(
+                headingId + "\n" + "Halo " + target + ",\n\n" + bodyId,
+                extra,
+                true,
+              );
               return useIndonesian ? id : en;
             },
           },
@@ -332,8 +396,16 @@ window.TenguWarn = {
                 (isFinal ? finalSentence(true) : "") +
                 `\n\nJika Anda merasa peringatan ini diberikan secara keliru, silakan tinggalkan pesan di halaman pembicaraan saya. ` +
                 `~`.repeat(4);
-              const en = withExtra(headingEn + "\n" + bodyEn, extra, false);
-              const id = withExtra(headingId + "\n" + bodyId, extra, true);
+              const en = withExtra(
+                headingEn + "\n" + "Hello " + target + ",\n\n" + bodyEn,
+                extra,
+                false,
+              );
+              const id = withExtra(
+                headingId + "\n" + "Halo " + target + ",\n\n" + bodyId,
+                extra,
+                true,
+              );
               return useIndonesian ? id : en;
             },
           },
@@ -362,8 +434,16 @@ window.TenguWarn = {
                 (isFinal ? finalSentence(true) : "") +
                 `\n\nJika Anda merasa peringatan ini diberikan secara keliru, silakan tinggalkan pesan di halaman pembicaraan saya. ` +
                 `~`.repeat(4);
-              const en = withExtra(headingEn + "\n" + bodyEn, extra, false);
-              const id = withExtra(headingId + "\n" + bodyId, extra, true);
+              const en = withExtra(
+                headingEn + "\n" + "Hello " + target + ",\n\n" + bodyEn,
+                extra,
+                false,
+              );
+              const id = withExtra(
+                headingId + "\n" + "Halo " + target + ",\n\n" + bodyId,
+                extra,
+                true,
+              );
               return useIndonesian ? id : en;
             },
           },
@@ -391,8 +471,16 @@ window.TenguWarn = {
                 (isFinal ? finalSentence(true) : "") +
                 `\n\nJika Anda merasa peringatan ini diberikan secara keliru, silakan tinggalkan pesan di halaman pembicaraan saya. ` +
                 `~`.repeat(4);
-              const en = withExtra(headingEn + "\n" + bodyEn, extra, false);
-              const id = withExtra(headingId + "\n" + bodyId, extra, true);
+              const en = withExtra(
+                headingEn + "\n" + "Hello " + target + ",\n\n" + bodyEn,
+                extra,
+                false,
+              );
+              const id = withExtra(
+                headingId + "\n" + "Halo " + target + ",\n\n" + bodyId,
+                extra,
+                true,
+              );
               return useIndonesian ? id : en;
             },
           },
@@ -420,8 +508,16 @@ window.TenguWarn = {
                 (isFinal ? finalSentence(true) : "") +
                 `\n\nJika Anda merasa peringatan ini diberikan secara keliru, silakan tinggalkan pesan di halaman pembicaraan saya. ` +
                 `~`.repeat(4);
-              const en = withExtra(headingEn + "\n" + bodyEn, extra, false);
-              const id = withExtra(headingId + "\n" + bodyId, extra, true);
+              const en = withExtra(
+                headingEn + "\n" + "Hello " + target + ",\n\n" + bodyEn,
+                extra,
+                false,
+              );
+              const id = withExtra(
+                headingId + "\n" + "Halo " + target + ",\n\n" + bodyId,
+                extra,
+                true,
+              );
               return useIndonesian ? id : en;
             },
           },
@@ -449,8 +545,16 @@ window.TenguWarn = {
                 (isFinal ? finalSentence(true) : "") +
                 `\n\nJika Anda merasa peringatan ini diberikan secara keliru, silakan tinggalkan pesan di halaman pembicaraan saya. ` +
                 `~`.repeat(4);
-              const en = withExtra(headingEn + "\n" + bodyEn, extra, false);
-              const id = withExtra(headingId + "\n" + bodyId, extra, true);
+              const en = withExtra(
+                headingEn + "\n" + "Hello " + target + ",\n\n" + bodyEn,
+                extra,
+                false,
+              );
+              const id = withExtra(
+                headingId + "\n" + "Halo " + target + ",\n\n" + bodyId,
+                extra,
+                true,
+              );
               return useIndonesian ? id : en;
             },
           },
@@ -478,8 +582,16 @@ window.TenguWarn = {
                 (isFinal ? finalSentence(true) : "") +
                 `\n\nJika Anda merasa peringatan ini diberikan secara keliru, silakan tinggalkan pesan di halaman pembicaraan saya. ` +
                 `~`.repeat(4);
-              const en = withExtra(headingEn + "\n" + bodyEn, extra, false);
-              const id = withExtra(headingId + "\n" + bodyId, extra, true);
+              const en = withExtra(
+                headingEn + "\n" + "Hello " + target + ",\n\n" + bodyEn,
+                extra,
+                false,
+              );
+              const id = withExtra(
+                headingId + "\n" + "Halo " + target + ",\n\n" + bodyId,
+                extra,
+                true,
+              );
               return useIndonesian ? id : en;
             },
           },
@@ -507,8 +619,16 @@ window.TenguWarn = {
                 (isFinal ? finalSentence(true) : "") +
                 `\n\nJika Anda merasa peringatan ini diberikan secara keliru, silakan tinggalkan pesan di halaman pembicaraan saya. ` +
                 `~`.repeat(4);
-              const en = withExtra(headingEn + "\n" + bodyEn, extra, false);
-              const id = withExtra(headingId + "\n" + bodyId, extra, true);
+              const en = withExtra(
+                headingEn + "\n" + "Hello " + target + ",\n\n" + bodyEn,
+                extra,
+                false,
+              );
+              const id = withExtra(
+                headingId + "\n" + "Halo " + target + ",\n\n" + bodyId,
+                extra,
+                true,
+              );
               return useIndonesian ? id : en;
             },
           },
@@ -536,8 +656,16 @@ window.TenguWarn = {
                 (isFinal ? finalSentence(true) : "") +
                 `\n\nJika Anda merasa peringatan ini diberikan secara keliru, silakan tinggalkan pesan di halaman pembicaraan saya. ` +
                 `~`.repeat(4);
-              const en = withExtra(headingEn + "\n" + bodyEn, extra, false);
-              const id = withExtra(headingId + "\n" + bodyId, extra, true);
+              const en = withExtra(
+                headingEn + "\n" + "Hello " + target + ",\n\n" + bodyEn,
+                extra,
+                false,
+              );
+              const id = withExtra(
+                headingId + "\n" + "Halo " + target + ",\n\n" + bodyId,
+                extra,
+                true,
+              );
               return useIndonesian ? id : en;
             },
           },
@@ -565,8 +693,16 @@ window.TenguWarn = {
                 (isFinal ? finalSentence(true) : "") +
                 `\n\nJika Anda merasa peringatan ini diberikan secara keliru, silakan tinggalkan pesan di halaman pembicaraan saya. ` +
                 `~`.repeat(4);
-              const en = withExtra(headingEn + "\n" + bodyEn, extra, false);
-              const id = withExtra(headingId + "\n" + bodyId, extra, true);
+              const en = withExtra(
+                headingEn + "\n" + "Hello " + target + ",\n\n" + bodyEn,
+                extra,
+                false,
+              );
+              const id = withExtra(
+                headingId + "\n" + "Halo " + target + ",\n\n" + bodyId,
+                extra,
+                true,
+              );
               return useIndonesian ? id : en;
             },
           },
@@ -594,8 +730,16 @@ window.TenguWarn = {
                 (isFinal ? finalSentence(true) : "") +
                 `\n\nJika Anda merasa peringatan ini diberikan secara keliru, silakan tinggalkan pesan di halaman pembicaraan saya. ` +
                 `~`.repeat(4);
-              const en = withExtra(headingEn + "\n" + bodyEn, extra, false);
-              const id = withExtra(headingId + "\n" + bodyId, extra, true);
+              const en = withExtra(
+                headingEn + "\n" + "Hello " + target + ",\n\n" + bodyEn,
+                extra,
+                false,
+              );
+              const id = withExtra(
+                headingId + "\n" + "Halo " + target + ",\n\n" + bodyId,
+                extra,
+                true,
+              );
               return useIndonesian ? id : en;
             },
           },
@@ -623,8 +767,16 @@ window.TenguWarn = {
                 (isFinal ? finalSentence(true) : "") +
                 `\n\nJika Anda merasa peringatan ini diberikan secara keliru, silakan tinggalkan pesan di halaman pembicaraan saya. ` +
                 `~`.repeat(4);
-              const en = withExtra(headingEn + "\n" + bodyEn, extra, false);
-              const id = withExtra(headingId + "\n" + bodyId, extra, true);
+              const en = withExtra(
+                headingEn + "\n" + "Hello " + target + ",\n\n" + bodyEn,
+                extra,
+                false,
+              );
+              const id = withExtra(
+                headingId + "\n" + "Halo " + target + ",\n\n" + bodyId,
+                extra,
+                true,
+              );
               return useIndonesian ? id : en;
             },
           },
@@ -652,8 +804,16 @@ window.TenguWarn = {
                 (isFinal ? finalSentence(true) : "") +
                 `\n\nJika Anda merasa peringatan ini diberikan secara keliru, silakan tinggalkan pesan di halaman pembicaraan saya. ` +
                 `~`.repeat(4);
-              const en = withExtra(headingEn + "\n" + bodyEn, extra, false);
-              const id = withExtra(headingId + "\n" + bodyId, extra, true);
+              const en = withExtra(
+                headingEn + "\n" + "Hello " + target + ",\n\n" + bodyEn,
+                extra,
+                false,
+              );
+              const id = withExtra(
+                headingId + "\n" + "Halo " + target + ",\n\n" + bodyId,
+                extra,
+                true,
+              );
               return useIndonesian ? id : en;
             },
           },
@@ -687,8 +847,16 @@ window.TenguWarn = {
                 (isFinal ? finalSentence(true) : "") +
                 `\n\nJika Anda merasa peringatan ini diberikan secara keliru, silakan tinggalkan pesan di halaman pembicaraan saya. ` +
                 `~`.repeat(4);
-              const en = withExtra(headingEn + "\n" + bodyEn, extra, false);
-              const id = withExtra(headingId + "\n" + bodyId, extra, true);
+              const en = withExtra(
+                headingEn + "\n" + "Hello " + target + ",\n\n" + bodyEn,
+                extra,
+                false,
+              );
+              const id = withExtra(
+                headingId + "\n" + "Halo " + target + ",\n\n" + bodyId,
+                extra,
+                true,
+              );
               return useIndonesian ? id : en;
             },
           },
@@ -716,8 +884,16 @@ window.TenguWarn = {
                 (isFinal ? finalSentence(true) : "") +
                 `\n\nJika Anda merasa peringatan ini diberikan secara keliru, silakan tinggalkan pesan di halaman pembicaraan saya. ` +
                 `~`.repeat(4);
-              const en = withExtra(headingEn + "\n" + bodyEn, extra, false);
-              const id = withExtra(headingId + "\n" + bodyId, extra, true);
+              const en = withExtra(
+                headingEn + "\n" + "Hello " + target + ",\n\n" + bodyEn,
+                extra,
+                false,
+              );
+              const id = withExtra(
+                headingId + "\n" + "Halo " + target + ",\n\n" + bodyId,
+                extra,
+                true,
+              );
               return useIndonesian ? id : en;
             },
           },
@@ -746,8 +922,16 @@ window.TenguWarn = {
                 (isFinal ? finalSentence(true) : "") +
                 `\n\nJika Anda merasa peringatan ini diberikan secara keliru, silakan tinggalkan pesan di halaman pembicaraan saya. ` +
                 `~`.repeat(4);
-              const en = withExtra(headingEn + "\n" + bodyEn, extra, false);
-              const id = withExtra(headingId + "\n" + bodyId, extra, true);
+              const en = withExtra(
+                headingEn + "\n" + "Hello " + target + ",\n\n" + bodyEn,
+                extra,
+                false,
+              );
+              const id = withExtra(
+                headingId + "\n" + "Halo " + target + ",\n\n" + bodyId,
+                extra,
+                true,
+              );
               return useIndonesian ? id : en;
             },
           },
@@ -775,8 +959,16 @@ window.TenguWarn = {
                 (isFinal ? finalSentence(true) : "") +
                 `\n\nJika Anda merasa peringatan ini diberikan secara keliru, silakan tinggalkan pesan di halaman pembicaraan saya. ` +
                 `~`.repeat(4);
-              const en = withExtra(headingEn + "\n" + bodyEn, extra, false);
-              const id = withExtra(headingId + "\n" + bodyId, extra, true);
+              const en = withExtra(
+                headingEn + "\n" + "Hello " + target + ",\n\n" + bodyEn,
+                extra,
+                false,
+              );
+              const id = withExtra(
+                headingId + "\n" + "Halo " + target + ",\n\n" + bodyId,
+                extra,
+                true,
+              );
               return useIndonesian ? id : en;
             },
           },
@@ -810,8 +1002,16 @@ window.TenguWarn = {
                 (isFinal ? finalSentence(true) : "") +
                 `\n\nJika Anda merasa pemberitahuan ini diberikan secara keliru, silakan tinggalkan pesan di halaman pembicaraan saya. ` +
                 `~`.repeat(4);
-              const en = withExtra(headingEn + "\n" + bodyEn, extra, false);
-              const id = withExtra(headingId + "\n" + bodyId, extra, true);
+              const en = withExtra(
+                headingEn + "\n" + "Hello " + target + ",\n\n" + bodyEn,
+                extra,
+                false,
+              );
+              const id = withExtra(
+                headingId + "\n" + "Halo " + target + ",\n\n" + bodyId,
+                extra,
+                true,
+              );
               return useIndonesian ? id : en;
             },
           },
@@ -839,8 +1039,16 @@ window.TenguWarn = {
                 (isFinal ? finalSentence(true) : "") +
                 `\n\nJika Anda merasa pemberitahuan ini diberikan secara keliru, silakan tinggalkan pesan di halaman pembicaraan saya. ` +
                 `~`.repeat(4);
-              const en = withExtra(headingEn + "\n" + bodyEn, extra, false);
-              const id = withExtra(headingId + "\n" + bodyId, extra, true);
+              const en = withExtra(
+                headingEn + "\n" + "Hello " + target + ",\n\n" + bodyEn,
+                extra,
+                false,
+              );
+              const id = withExtra(
+                headingId + "\n" + "Halo " + target + ",\n\n" + bodyId,
+                extra,
+                true,
+              );
               return useIndonesian ? id : en;
             },
           },
@@ -868,8 +1076,16 @@ window.TenguWarn = {
                 (isFinal ? finalSentence(true) : "") +
                 `\n\nJika Anda merasa pemberitahuan ini diberikan secara keliru, silakan tinggalkan pesan di halaman pembicaraan saya. ` +
                 `~`.repeat(4);
-              const en = withExtra(headingEn + "\n" + bodyEn, extra, false);
-              const id = withExtra(headingId + "\n" + bodyId, extra, true);
+              const en = withExtra(
+                headingEn + "\n" + "Hello " + target + ",\n\n" + bodyEn,
+                extra,
+                false,
+              );
+              const id = withExtra(
+                headingId + "\n" + "Halo " + target + ",\n\n" + bodyId,
+                extra,
+                true,
+              );
               return useIndonesian ? id : en;
             },
           },
@@ -897,8 +1113,16 @@ window.TenguWarn = {
                 (isFinal ? finalSentence(true) : "") +
                 `\n\nJika Anda merasa pemberitahuan ini diberikan secara keliru, silakan tinggalkan pesan di halaman pembicaraan saya. ` +
                 `~`.repeat(4);
-              const en = withExtra(headingEn + "\n" + bodyEn, extra, false);
-              const id = withExtra(headingId + "\n" + bodyId, extra, true);
+              const en = withExtra(
+                headingEn + "\n" + "Hello " + target + ",\n\n" + bodyEn,
+                extra,
+                false,
+              );
+              const id = withExtra(
+                headingId + "\n" + "Halo " + target + ",\n\n" + bodyId,
+                extra,
+                true,
+              );
               return useIndonesian ? id : en;
             },
           },
@@ -926,8 +1150,16 @@ window.TenguWarn = {
                 (isFinal ? finalSentence(true) : "") +
                 `\n\nJika Anda merasa pemberitahuan ini diberikan secara keliru, silakan tinggalkan pesan di halaman pembicaraan saya. ` +
                 `~`.repeat(4);
-              const en = withExtra(headingEn + "\n" + bodyEn, extra, false);
-              const id = withExtra(headingId + "\n" + bodyId, extra, true);
+              const en = withExtra(
+                headingEn + "\n" + "Hello " + target + ",\n\n" + bodyEn,
+                extra,
+                false,
+              );
+              const id = withExtra(
+                headingId + "\n" + "Halo " + target + ",\n\n" + bodyId,
+                extra,
+                true,
+              );
               return useIndonesian ? id : en;
             },
           },
@@ -955,8 +1187,16 @@ window.TenguWarn = {
                 (isFinal ? finalSentence(true) : "") +
                 `\n\nJika Anda merasa pemberitahuan ini diberikan secara keliru, silakan tinggalkan pesan di halaman pembicaraan saya. ` +
                 `~`.repeat(4);
-              const en = withExtra(headingEn + "\n" + bodyEn, extra, false);
-              const id = withExtra(headingId + "\n" + bodyId, extra, true);
+              const en = withExtra(
+                headingEn + "\n" + "Hello " + target + ",\n\n" + bodyEn,
+                extra,
+                false,
+              );
+              const id = withExtra(
+                headingId + "\n" + "Halo " + target + ",\n\n" + bodyId,
+                extra,
+                true,
+              );
               return useIndonesian ? id : en;
             },
           },
@@ -984,8 +1224,16 @@ window.TenguWarn = {
                 (isFinal ? finalSentence(true) : "") +
                 `\n\nJika Anda merasa pemberitahuan ini diberikan secara keliru, silakan tinggalkan pesan di halaman pembicaraan saya. ` +
                 `~`.repeat(4);
-              const en = withExtra(headingEn + "\n" + bodyEn, extra, false);
-              const id = withExtra(headingId + "\n" + bodyId, extra, true);
+              const en = withExtra(
+                headingEn + "\n" + "Hello " + target + ",\n\n" + bodyEn,
+                extra,
+                false,
+              );
+              const id = withExtra(
+                headingId + "\n" + "Halo " + target + ",\n\n" + bodyId,
+                extra,
+                true,
+              );
               return useIndonesian ? id : en;
             },
           },
@@ -1013,8 +1261,16 @@ window.TenguWarn = {
                 (isFinal ? finalSentence(true) : "") +
                 `\n\nJika Anda merasa pemberitahuan ini diberikan secara keliru, silakan tinggalkan pesan di halaman pembicaraan saya. ` +
                 `~`.repeat(4);
-              const en = withExtra(headingEn + "\n" + bodyEn, extra, false);
-              const id = withExtra(headingId + "\n" + bodyId, extra, true);
+              const en = withExtra(
+                headingEn + "\n" + "Hello " + target + ",\n\n" + bodyEn,
+                extra,
+                false,
+              );
+              const id = withExtra(
+                headingId + "\n" + "Halo " + target + ",\n\n" + bodyId,
+                extra,
+                true,
+              );
               return useIndonesian ? id : en;
             },
           },
@@ -1042,8 +1298,16 @@ window.TenguWarn = {
                 (isFinal ? finalSentence(true) : "") +
                 `\n\nJika Anda merasa pemberitahuan ini diberikan secara keliru, silakan tinggalkan pesan di halaman pembicaraan saya. ` +
                 `~`.repeat(4);
-              const en = withExtra(headingEn + "\n" + bodyEn, extra, false);
-              const id = withExtra(headingId + "\n" + bodyId, extra, true);
+              const en = withExtra(
+                headingEn + "\n" + "Hello " + target + ",\n\n" + bodyEn,
+                extra,
+                false,
+              );
+              const id = withExtra(
+                headingId + "\n" + "Halo " + target + ",\n\n" + bodyId,
+                extra,
+                true,
+              );
               return useIndonesian ? id : en;
             },
           },
@@ -1071,8 +1335,16 @@ window.TenguWarn = {
                 (isFinal ? finalSentence(true) : "") +
                 `\n\nJika Anda merasa pemberitahuan ini diberikan secara keliru, silakan tinggalkan pesan di halaman pembicaraan saya. ` +
                 `~`.repeat(4);
-              const en = withExtra(headingEn + "\n" + bodyEn, extra, false);
-              const id = withExtra(headingId + "\n" + bodyId, extra, true);
+              const en = withExtra(
+                headingEn + "\n" + "Hello " + target + ",\n\n" + bodyEn,
+                extra,
+                false,
+              );
+              const id = withExtra(
+                headingId + "\n" + "Halo " + target + ",\n\n" + bodyId,
+                extra,
+                true,
+              );
               return useIndonesian ? id : en;
             },
           },
@@ -1100,8 +1372,16 @@ window.TenguWarn = {
                 (isFinal ? finalSentence(true) : "") +
                 `\n\nJika Anda merasa pemberitahuan ini diberikan secara keliru, silakan tinggalkan pesan di halaman pembicaraan saya. ` +
                 `~`.repeat(4);
-              const en = withExtra(headingEn + "\n" + bodyEn, extra, false);
-              const id = withExtra(headingId + "\n" + bodyId, extra, true);
+              const en = withExtra(
+                headingEn + "\n" + "Hello " + target + ",\n\n" + bodyEn,
+                extra,
+                false,
+              );
+              const id = withExtra(
+                headingId + "\n" + "Halo " + target + ",\n\n" + bodyId,
+                extra,
+                true,
+              );
               return useIndonesian ? id : en;
             },
           },
@@ -1129,8 +1409,16 @@ window.TenguWarn = {
                 (isFinal ? finalSentence(true) : "") +
                 `\n\nJika Anda merasa pemberitahuan ini diberikan secara keliru, silakan tinggalkan pesan di halaman pembicaraan saya. ` +
                 `~`.repeat(4);
-              const en = withExtra(headingEn + "\n" + bodyEn, extra, false);
-              const id = withExtra(headingId + "\n" + bodyId, extra, true);
+              const en = withExtra(
+                headingEn + "\n" + "Hello " + target + ",\n\n" + bodyEn,
+                extra,
+                false,
+              );
+              const id = withExtra(
+                headingId + "\n" + "Halo " + target + ",\n\n" + bodyId,
+                extra,
+                true,
+              );
               return useIndonesian ? id : en;
             },
           },
@@ -1158,8 +1446,16 @@ window.TenguWarn = {
                 (isFinal ? finalSentence(true) : "") +
                 `\n\nJika Anda merasa pemberitahuan ini diberikan secara keliru, silakan tinggalkan pesan di halaman pembicaraan saya. ` +
                 `~`.repeat(4);
-              const en = withExtra(headingEn + "\n" + bodyEn, extra, false);
-              const id = withExtra(headingId + "\n" + bodyId, extra, true);
+              const en = withExtra(
+                headingEn + "\n" + "Hello " + target + ",\n\n" + bodyEn,
+                extra,
+                false,
+              );
+              const id = withExtra(
+                headingId + "\n" + "Halo " + target + ",\n\n" + bodyId,
+                extra,
+                true,
+              );
               return useIndonesian ? id : en;
             },
           },
@@ -1187,8 +1483,16 @@ window.TenguWarn = {
                 (isFinal ? finalSentence(true) : "") +
                 `\n\nJika Anda merasa pemberitahuan ini diberikan secara keliru, silakan tinggalkan pesan di halaman pembicaraan saya. ` +
                 `~`.repeat(4);
-              const en = withExtra(headingEn + "\n" + bodyEn, extra, false);
-              const id = withExtra(headingId + "\n" + bodyId, extra, true);
+              const en = withExtra(
+                headingEn + "\n" + "Hello " + target + ",\n\n" + bodyEn,
+                extra,
+                false,
+              );
+              const id = withExtra(
+                headingId + "\n" + "Halo " + target + ",\n\n" + bodyId,
+                extra,
+                true,
+              );
               return useIndonesian ? id : en;
             },
           },
@@ -1216,8 +1520,16 @@ window.TenguWarn = {
                 (isFinal ? finalSentence(true) : "") +
                 `\n\nJika Anda merasa pemberitahuan ini diberikan secara keliru, silakan tinggalkan pesan di halaman pembicaraan saya. ` +
                 `~`.repeat(4);
-              const en = withExtra(headingEn + "\n" + bodyEn, extra, false);
-              const id = withExtra(headingId + "\n" + bodyId, extra, true);
+              const en = withExtra(
+                headingEn + "\n" + "Hello " + target + ",\n\n" + bodyEn,
+                extra,
+                false,
+              );
+              const id = withExtra(
+                headingId + "\n" + "Halo " + target + ",\n\n" + bodyId,
+                extra,
+                true,
+              );
               return useIndonesian ? id : en;
             },
           },
@@ -1245,8 +1557,16 @@ window.TenguWarn = {
                 (isFinal ? finalSentence(true) : "") +
                 `\n\nJika Anda merasa pemberitahuan ini diberikan secara keliru, silakan tinggalkan pesan di halaman pembicaraan saya. ` +
                 `~`.repeat(4);
-              const en = withExtra(headingEn + "\n" + bodyEn, extra, false);
-              const id = withExtra(headingId + "\n" + bodyId, extra, true);
+              const en = withExtra(
+                headingEn + "\n" + "Hello " + target + ",\n\n" + bodyEn,
+                extra,
+                false,
+              );
+              const id = withExtra(
+                headingId + "\n" + "Halo " + target + ",\n\n" + bodyId,
+                extra,
+                true,
+              );
               return useIndonesian ? id : en;
             },
           },
@@ -1274,8 +1594,16 @@ window.TenguWarn = {
                 (isFinal ? finalSentence(true) : "") +
                 `\n\nJika Anda merasa pemberitahuan ini diberikan secara keliru, silakan tinggalkan pesan di halaman pembicaraan saya. ` +
                 `~`.repeat(4);
-              const en = withExtra(headingEn + "\n" + bodyEn, extra, false);
-              const id = withExtra(headingId + "\n" + bodyId, extra, true);
+              const en = withExtra(
+                headingEn + "\n" + "Hello " + target + ",\n\n" + bodyEn,
+                extra,
+                false,
+              );
+              const id = withExtra(
+                headingId + "\n" + "Halo " + target + ",\n\n" + bodyId,
+                extra,
+                true,
+              );
               return useIndonesian ? id : en;
             },
           },
@@ -1303,8 +1631,16 @@ window.TenguWarn = {
                 (isFinal ? finalSentence(true) : "") +
                 `\n\nJika Anda merasa pemberitahuan ini diberikan secara keliru, silakan tinggalkan pesan di halaman pembicaraan saya. ` +
                 `~`.repeat(4);
-              const en = withExtra(headingEn + "\n" + bodyEn, extra, false);
-              const id = withExtra(headingId + "\n" + bodyId, extra, true);
+              const en = withExtra(
+                headingEn + "\n" + "Hello " + target + ",\n\n" + bodyEn,
+                extra,
+                false,
+              );
+              const id = withExtra(
+                headingId + "\n" + "Halo " + target + ",\n\n" + bodyId,
+                extra,
+                true,
+              );
               return useIndonesian ? id : en;
             },
           },
@@ -1332,8 +1668,16 @@ window.TenguWarn = {
                 (isFinal ? finalSentence(true) : "") +
                 `\n\nJika Anda merasa pemberitahuan ini diberikan secara keliru, silakan tinggalkan pesan di halaman pembicaraan saya. ` +
                 `~`.repeat(4);
-              const en = withExtra(headingEn + "\n" + bodyEn, extra, false);
-              const id = withExtra(headingId + "\n" + bodyId, extra, true);
+              const en = withExtra(
+                headingEn + "\n" + "Hello " + target + ",\n\n" + bodyEn,
+                extra,
+                false,
+              );
+              const id = withExtra(
+                headingId + "\n" + "Halo " + target + ",\n\n" + bodyId,
+                extra,
+                true,
+              );
               return useIndonesian ? id : en;
             },
           },
@@ -1362,8 +1706,16 @@ window.TenguWarn = {
                 (isFinal ? finalSentence(true) : "") +
                 `\n\nJika Anda merasa pemberitahuan ini diberikan secara keliru, silakan tinggalkan pesan di halaman pembicaraan saya. ` +
                 `~`.repeat(4);
-              const en = withExtra(headingEn + "\n" + bodyEn, extra, false);
-              const id = withExtra(headingId + "\n" + bodyId, extra, true);
+              const en = withExtra(
+                headingEn + "\n" + "Hello " + target + ",\n\n" + bodyEn,
+                extra,
+                false,
+              );
+              const id = withExtra(
+                headingId + "\n" + "Halo " + target + ",\n\n" + bodyId,
+                extra,
+                true,
+              );
               return useIndonesian ? id : en;
             },
           },
@@ -1391,8 +1743,16 @@ window.TenguWarn = {
                 (isFinal ? finalSentence(true) : "") +
                 `\n\nJika Anda merasa pemberitahuan ini diberikan secara keliru, silakan tinggalkan pesan di halaman pembicaraan saya. ` +
                 `~`.repeat(4);
-              const en = withExtra(headingEn + "\n" + bodyEn, extra, false);
-              const id = withExtra(headingId + "\n" + bodyId, extra, true);
+              const en = withExtra(
+                headingEn + "\n" + "Hello " + target + ",\n\n" + bodyEn,
+                extra,
+                false,
+              );
+              const id = withExtra(
+                headingId + "\n" + "Halo " + target + ",\n\n" + bodyId,
+                extra,
+                true,
+              );
               return useIndonesian ? id : en;
             },
           },
@@ -1420,8 +1780,16 @@ window.TenguWarn = {
                 (isFinal ? finalSentence(true) : "") +
                 `\n\nJika Anda merasa pemberitahuan ini diberikan secara keliru, silakan tinggalkan pesan di halaman pembicaraan saya. ` +
                 `~`.repeat(4);
-              const en = withExtra(headingEn + "\n" + bodyEn, extra, false);
-              const id = withExtra(headingId + "\n" + bodyId, extra, true);
+              const en = withExtra(
+                headingEn + "\n" + "Hello " + target + ",\n\n" + bodyEn,
+                extra,
+                false,
+              );
+              const id = withExtra(
+                headingId + "\n" + "Halo " + target + ",\n\n" + bodyId,
+                extra,
+                true,
+              );
               return useIndonesian ? id : en;
             },
           },
@@ -1450,8 +1818,16 @@ window.TenguWarn = {
                 (isFinal ? finalSentence(true) : "") +
                 `\n\nJika Anda merasa pemberitahuan ini diberikan secara keliru, silakan tinggalkan pesan di halaman pembicaraan saya. ` +
                 `~`.repeat(4);
-              const en = withExtra(headingEn + "\n" + bodyEn, extra, false);
-              const id = withExtra(headingId + "\n" + bodyId, extra, true);
+              const en = withExtra(
+                headingEn + "\n" + "Hello " + target + ",\n\n" + bodyEn,
+                extra,
+                false,
+              );
+              const id = withExtra(
+                headingId + "\n" + "Halo " + target + ",\n\n" + bodyId,
+                extra,
+                true,
+              );
               return useIndonesian ? id : en;
             },
           },
@@ -1479,8 +1855,16 @@ window.TenguWarn = {
                 (isFinal ? finalSentence(true) : "") +
                 `\n\nJika Anda merasa pemberitahuan ini diberikan secara keliru, silakan tinggalkan pesan di halaman pembicaraan saya. ` +
                 `~`.repeat(4);
-              const en = withExtra(headingEn + "\n" + bodyEn, extra, false);
-              const id = withExtra(headingId + "\n" + bodyId, extra, true);
+              const en = withExtra(
+                headingEn + "\n" + "Hello " + target + ",\n\n" + bodyEn,
+                extra,
+                false,
+              );
+              const id = withExtra(
+                headingId + "\n" + "Halo " + target + ",\n\n" + bodyId,
+                extra,
+                true,
+              );
               return useIndonesian ? id : en;
             },
           },
@@ -1508,8 +1892,16 @@ window.TenguWarn = {
                 (isFinal ? finalSentence(true) : "") +
                 `\n\nJika Anda merasa pemberitahuan ini diberikan secara keliru, silakan tinggalkan pesan di halaman pembicaraan saya. ` +
                 `~`.repeat(4);
-              const en = withExtra(headingEn + "\n" + bodyEn, extra, false);
-              const id = withExtra(headingId + "\n" + bodyId, extra, true);
+              const en = withExtra(
+                headingEn + "\n" + "Hello " + target + ",\n\n" + bodyEn,
+                extra,
+                false,
+              );
+              const id = withExtra(
+                headingId + "\n" + "Halo " + target + ",\n\n" + bodyId,
+                extra,
+                true,
+              );
               return useIndonesian ? id : en;
             },
           },
@@ -1538,8 +1930,16 @@ window.TenguWarn = {
                 (isFinal ? finalSentence(true) : "") +
                 `\n\nJika Anda merasa pemberitahuan ini diberikan secara keliru, silakan tinggalkan pesan di halaman pembicaraan saya. ` +
                 `~`.repeat(4);
-              const en = withExtra(headingEn + "\n" + bodyEn, extra, false);
-              const id = withExtra(headingId + "\n" + bodyId, extra, true);
+              const en = withExtra(
+                headingEn + "\n" + "Hello " + target + ",\n\n" + bodyEn,
+                extra,
+                false,
+              );
+              const id = withExtra(
+                headingId + "\n" + "Halo " + target + ",\n\n" + bodyId,
+                extra,
+                true,
+              );
               return useIndonesian ? id : en;
             },
           },
@@ -1568,8 +1968,16 @@ window.TenguWarn = {
                 (isFinal ? finalSentence(true) : "") +
                 `\n\nJika Anda merasa pemberitahuan ini diberikan secara keliru, silakan tinggalkan pesan di halaman pembicaraan saya. ` +
                 `~`.repeat(4);
-              const en = withExtra(headingEn + "\n" + bodyEn, extra, false);
-              const id = withExtra(headingId + "\n" + bodyId, extra, true);
+              const en = withExtra(
+                headingEn + "\n" + "Hello " + target + ",\n\n" + bodyEn,
+                extra,
+                false,
+              );
+              const id = withExtra(
+                headingId + "\n" + "Halo " + target + ",\n\n" + bodyId,
+                extra,
+                true,
+              );
               return useIndonesian ? id : en;
             },
           },
@@ -1597,8 +2005,16 @@ window.TenguWarn = {
                 (isFinal ? finalSentence(true) : "") +
                 `\n\nJika Anda merasa pemberitahuan ini diberikan secara keliru, silakan tinggalkan pesan di halaman pembicaraan saya. ` +
                 `~`.repeat(4);
-              const en = withExtra(headingEn + "\n" + bodyEn, extra, false);
-              const id = withExtra(headingId + "\n" + bodyId, extra, true);
+              const en = withExtra(
+                headingEn + "\n" + "Hello " + target + ",\n\n" + bodyEn,
+                extra,
+                false,
+              );
+              const id = withExtra(
+                headingId + "\n" + "Halo " + target + ",\n\n" + bodyId,
+                extra,
+                true,
+              );
               return useIndonesian ? id : en;
             },
           },
@@ -1626,8 +2042,16 @@ window.TenguWarn = {
                 (isFinal ? finalSentence(true) : "") +
                 `\n\nJika Anda merasa pemberitahuan ini diberikan secara keliru, silakan tinggalkan pesan di halaman pembicaraan saya. ` +
                 `~`.repeat(4);
-              const en = withExtra(headingEn + "\n" + bodyEn, extra, false);
-              const id = withExtra(headingId + "\n" + bodyId, extra, true);
+              const en = withExtra(
+                headingEn + "\n" + "Hello " + target + ",\n\n" + bodyEn,
+                extra,
+                false,
+              );
+              const id = withExtra(
+                headingId + "\n" + "Halo " + target + ",\n\n" + bodyId,
+                extra,
+                true,
+              );
               return useIndonesian ? id : en;
             },
           },
@@ -1655,8 +2079,16 @@ window.TenguWarn = {
                 (isFinal ? finalSentence(true) : "") +
                 `\n\nJika Anda merasa pemberitahuan ini diberikan secara keliru, silakan tinggalkan pesan di halaman pembicaraan saya. ` +
                 `~`.repeat(4);
-              const en = withExtra(headingEn + "\n" + bodyEn, extra, false);
-              const id = withExtra(headingId + "\n" + bodyId, extra, true);
+              const en = withExtra(
+                headingEn + "\n" + "Hello " + target + ",\n\n" + bodyEn,
+                extra,
+                false,
+              );
+              const id = withExtra(
+                headingId + "\n" + "Halo " + target + ",\n\n" + bodyId,
+                extra,
+                true,
+              );
               return useIndonesian ? id : en;
             },
           },
@@ -1684,8 +2116,16 @@ window.TenguWarn = {
                 (isFinal ? finalSentence(true) : "") +
                 `\n\nJika Anda merasa pemberitahuan ini diberikan secara keliru, silakan tinggalkan pesan di halaman pembicaraan saya. ` +
                 `~`.repeat(4);
-              const en = withExtra(headingEn + "\n" + bodyEn, extra, false);
-              const id = withExtra(headingId + "\n" + bodyId, extra, true);
+              const en = withExtra(
+                headingEn + "\n" + "Hello " + target + ",\n\n" + bodyEn,
+                extra,
+                false,
+              );
+              const id = withExtra(
+                headingId + "\n" + "Halo " + target + ",\n\n" + bodyId,
+                extra,
+                true,
+              );
               return useIndonesian ? id : en;
             },
           },
@@ -1713,8 +2153,16 @@ window.TenguWarn = {
                 (isFinal ? finalSentence(true) : "") +
                 `\n\nJika Anda merasa pemberitahuan ini diberikan secara keliru, silakan tinggalkan pesan di halaman pembicaraan saya. ` +
                 `~`.repeat(4);
-              const en = withExtra(headingEn + "\n" + bodyEn, extra, false);
-              const id = withExtra(headingId + "\n" + bodyId, extra, true);
+              const en = withExtra(
+                headingEn + "\n" + "Hello " + target + ",\n\n" + bodyEn,
+                extra,
+                false,
+              );
+              const id = withExtra(
+                headingId + "\n" + "Halo " + target + ",\n\n" + bodyId,
+                extra,
+                true,
+              );
               return useIndonesian ? id : en;
             },
           },
@@ -1742,8 +2190,16 @@ window.TenguWarn = {
                 (isFinal ? finalSentence(true) : "") +
                 `\n\nJika Anda merasa pemberitahuan ini diberikan secara keliru, silakan tinggalkan pesan di halaman pembicaraan saya. ` +
                 `~`.repeat(4);
-              const en = withExtra(headingEn + "\n" + bodyEn, extra, false);
-              const id = withExtra(headingId + "\n" + bodyId, extra, true);
+              const en = withExtra(
+                headingEn + "\n" + "Hello " + target + ",\n\n" + bodyEn,
+                extra,
+                false,
+              );
+              const id = withExtra(
+                headingId + "\n" + "Halo " + target + ",\n\n" + bodyId,
+                extra,
+                true,
+              );
               return useIndonesian ? id : en;
             },
           },
@@ -1792,8 +2248,16 @@ window.TenguWarn = {
                 LANG_ID: `{{#language:${wikiLangId}}}`,
               });
 
-              const en = withExtra(headingEn + "\n" + bodyEn, extra, false);
-              const id = withExtra(headingId + "\n" + bodyId, extra, true);
+              const en = withExtra(
+                headingEn + "\n" + "Hello " + target + ",\n\n" + bodyEn,
+                extra,
+                false,
+              );
+              const id = withExtra(
+                headingId + "\n" + "Halo " + target + ",\n\n" + bodyId,
+                extra,
+                true,
+              );
               return useIndonesian ? id : en;
             },
           },
@@ -1821,8 +2285,16 @@ window.TenguWarn = {
                 (isFinal ? finalSentence(true) : "") +
                 `\n\nJika Anda merasa pemberitahuan ini diberikan secara keliru, silakan tinggalkan pesan di halaman pembicaraan saya. ` +
                 `~`.repeat(4);
-              const en = withExtra(headingEn + "\n" + bodyEn, extra, false);
-              const id = withExtra(headingId + "\n" + bodyId, extra, true);
+              const en = withExtra(
+                headingEn + "\n" + "Hello " + target + ",\n\n" + bodyEn,
+                extra,
+                false,
+              );
+              const id = withExtra(
+                headingId + "\n" + "Halo " + target + ",\n\n" + bodyId,
+                extra,
+                true,
+              );
               return useIndonesian ? id : en;
             },
           },
@@ -1850,8 +2322,16 @@ window.TenguWarn = {
                 (isFinal ? finalSentence(true) : "") +
                 `\n\nJika Anda merasa pemberitahuan ini diberikan secara keliru, silakan tinggalkan pesan di halaman pembicaraan saya. ` +
                 `~`.repeat(4);
-              const en = withExtra(headingEn + "\n" + bodyEn, extra, false);
-              const id = withExtra(headingId + "\n" + bodyId, extra, true);
+              const en = withExtra(
+                headingEn + "\n" + "Hello " + target + ",\n\n" + bodyEn,
+                extra,
+                false,
+              );
+              const id = withExtra(
+                headingId + "\n" + "Halo " + target + ",\n\n" + bodyId,
+                extra,
+                true,
+              );
               return useIndonesian ? id : en;
             },
           },
@@ -1900,8 +2380,16 @@ window.TenguWarn = {
                 LANG_ID: `{{#language:${wikiLangId}}}`,
               });
 
-              const en = withExtra(headingEn + "\n" + bodyEn, extra, false);
-              const id = withExtra(headingId + "\n" + bodyId, extra, true);
+              const en = withExtra(
+                headingEn + "\n" + "Hello " + target + ",\n\n" + bodyEn,
+                extra,
+                false,
+              );
+              const id = withExtra(
+                headingId + "\n" + "Halo " + target + ",\n\n" + bodyId,
+                extra,
+                true,
+              );
               return useIndonesian ? id : en;
             },
           },
@@ -1929,8 +2417,16 @@ window.TenguWarn = {
                 (isFinal ? finalSentence(true) : "") +
                 `\n\nJika Anda merasa pemberitahuan ini diberikan secara keliru, silakan tinggalkan pesan di halaman pembicaraan saya. ` +
                 `~`.repeat(4);
-              const en = withExtra(headingEn + "\n" + bodyEn, extra, false);
-              const id = withExtra(headingId + "\n" + bodyId, extra, true);
+              const en = withExtra(
+                headingEn + "\n" + "Hello " + target + ",\n\n" + bodyEn,
+                extra,
+                false,
+              );
+              const id = withExtra(
+                headingId + "\n" + "Halo " + target + ",\n\n" + bodyId,
+                extra,
+                true,
+              );
               return useIndonesian ? id : en;
             },
           },
@@ -1958,8 +2454,16 @@ window.TenguWarn = {
                 (isFinal ? finalSentence(true) : "") +
                 `\n\nJika Anda merasa pemberitahuan ini diberikan secara keliru, silakan tinggalkan pesan di halaman pembicaraan saya. ` +
                 `~`.repeat(4);
-              const en = withExtra(headingEn + "\n" + bodyEn, extra, false);
-              const id = withExtra(headingId + "\n" + bodyId, extra, true);
+              const en = withExtra(
+                headingEn + "\n" + "Hello " + target + ",\n\n" + bodyEn,
+                extra,
+                false,
+              );
+              const id = withExtra(
+                headingId + "\n" + "Halo " + target + ",\n\n" + bodyId,
+                extra,
+                true,
+              );
               return useIndonesian ? id : en;
             },
           },
@@ -1987,8 +2491,16 @@ window.TenguWarn = {
                 (isFinal ? finalSentence(true) : "") +
                 `\n\nJika Anda merasa pemberitahuan ini diberikan secara keliru, silakan tinggalkan pesan di halaman pembicaraan saya. ` +
                 `~`.repeat(4);
-              const en = withExtra(headingEn + "\n" + bodyEn, extra, false);
-              const id = withExtra(headingId + "\n" + bodyId, extra, true);
+              const en = withExtra(
+                headingEn + "\n" + "Hello " + target + ",\n\n" + bodyEn,
+                extra,
+                false,
+              );
+              const id = withExtra(
+                headingId + "\n" + "Halo " + target + ",\n\n" + bodyId,
+                extra,
+                true,
+              );
               return useIndonesian ? id : en;
             },
           },
@@ -2016,8 +2528,16 @@ window.TenguWarn = {
                 (isFinal ? finalSentence(true) : "") +
                 `\n\nJika Anda merasa pemberitahuan ini diberikan secara keliru, silakan tinggalkan pesan di halaman pembicaraan saya. ` +
                 `~`.repeat(4);
-              const en = withExtra(headingEn + "\n" + bodyEn, extra, false);
-              const id = withExtra(headingId + "\n" + bodyId, extra, true);
+              const en = withExtra(
+                headingEn + "\n" + "Hello " + target + ",\n\n" + bodyEn,
+                extra,
+                false,
+              );
+              const id = withExtra(
+                headingId + "\n" + "Halo " + target + ",\n\n" + bodyId,
+                extra,
+                true,
+              );
               return useIndonesian ? id : en;
             },
           },
@@ -2046,8 +2566,16 @@ window.TenguWarn = {
                 (isFinal ? finalSentence(true) : "") +
                 `\n\nJika Anda merasa pemberitahuan ini diberikan secara keliru, silakan tinggalkan pesan di halaman pembicaraan saya. ` +
                 `~`.repeat(4);
-              const en = withExtra(headingEn + "\n" + bodyEn, extra, false);
-              const id = withExtra(headingId + "\n" + bodyId, extra, true);
+              const en = withExtra(
+                headingEn + "\n" + "Hello " + target + ",\n\n" + bodyEn,
+                extra,
+                false,
+              );
+              const id = withExtra(
+                headingId + "\n" + "Halo " + target + ",\n\n" + bodyId,
+                extra,
+                true,
+              );
               return useIndonesian ? id : en;
             },
           },
@@ -2075,8 +2603,16 @@ window.TenguWarn = {
                 (isFinal ? finalSentence(true) : "") +
                 `\n\nJika Anda merasa pemberitahuan ini diberikan secara keliru, silakan tinggalkan pesan di halaman pembicaraan saya. ` +
                 `~`.repeat(4);
-              const en = withExtra(headingEn + "\n" + bodyEn, extra, false);
-              const id = withExtra(headingId + "\n" + bodyId, extra, true);
+              const en = withExtra(
+                headingEn + "\n" + "Hello " + target + ",\n\n" + bodyEn,
+                extra,
+                false,
+              );
+              const id = withExtra(
+                headingId + "\n" + "Halo " + target + ",\n\n" + bodyId,
+                extra,
+                true,
+              );
               return useIndonesian ? id : en;
             },
           },
@@ -2104,8 +2640,16 @@ window.TenguWarn = {
                 (isFinal ? finalSentence(true) : "") +
                 `\n\nJika Anda merasa pemberitahuan ini diberikan secara keliru, silakan tinggalkan pesan di halaman pembicaraan saya. ` +
                 `~`.repeat(4);
-              const en = withExtra(headingEn + "\n" + bodyEn, extra, false);
-              const id = withExtra(headingId + "\n" + bodyId, extra, true);
+              const en = withExtra(
+                headingEn + "\n" + "Hello " + target + ",\n\n" + bodyEn,
+                extra,
+                false,
+              );
+              const id = withExtra(
+                headingId + "\n" + "Halo " + target + ",\n\n" + bodyId,
+                extra,
+                true,
+              );
               return useIndonesian ? id : en;
             },
           },
@@ -2133,8 +2677,16 @@ window.TenguWarn = {
                 (isFinal ? finalSentence(true) : "") +
                 `\n\nJika Anda merasa pemberitahuan ini diberikan secara keliru, silakan tinggalkan pesan di halaman pembicaraan saya. ` +
                 `~`.repeat(4);
-              const en = withExtra(headingEn + "\n" + bodyEn, extra, false);
-              const id = withExtra(headingId + "\n" + bodyId, extra, true);
+              const en = withExtra(
+                headingEn + "\n" + "Hello " + target + ",\n\n" + bodyEn,
+                extra,
+                false,
+              );
+              const id = withExtra(
+                headingId + "\n" + "Halo " + target + ",\n\n" + bodyId,
+                extra,
+                true,
+              );
               return useIndonesian ? id : en;
             },
           },
@@ -2163,8 +2715,16 @@ window.TenguWarn = {
                 (isFinal ? finalSentence(true) : "") +
                 `\n\nJika Anda merasa pemberitahuan ini diberikan secara keliru, silakan tinggalkan pesan di halaman pembicaraan saya. ` +
                 `~`.repeat(4);
-              const en = withExtra(headingEn + "\n" + bodyEn, extra, false);
-              const id = withExtra(headingId + "\n" + bodyId, extra, true);
+              const en = withExtra(
+                headingEn + "\n" + "Hello " + target + ",\n\n" + bodyEn,
+                extra,
+                false,
+              );
+              const id = withExtra(
+                headingId + "\n" + "Halo " + target + ",\n\n" + bodyId,
+                extra,
+                true,
+              );
               return useIndonesian ? id : en;
             },
           },
@@ -2192,8 +2752,16 @@ window.TenguWarn = {
                 (isFinal ? finalSentence(true) : "") +
                 `\n\nJika Anda merasa pemberitahuan ini diberikan secara keliru, silakan tinggalkan pesan di halaman pembicaraan saya. ` +
                 `~`.repeat(4);
-              const en = withExtra(headingEn + "\n" + bodyEn, extra, false);
-              const id = withExtra(headingId + "\n" + bodyId, extra, true);
+              const en = withExtra(
+                headingEn + "\n" + "Hello " + target + ",\n\n" + bodyEn,
+                extra,
+                false,
+              );
+              const id = withExtra(
+                headingId + "\n" + "Halo " + target + ",\n\n" + bodyId,
+                extra,
+                true,
+              );
               return useIndonesian ? id : en;
             },
           },
@@ -2221,8 +2789,16 @@ window.TenguWarn = {
                 (isFinal ? finalSentence(true) : "") +
                 `\n\nJika Anda merasa pemberitahuan ini diberikan secara keliru, silakan tinggalkan pesan di halaman pembicaraan saya. ` +
                 `~`.repeat(4);
-              const en = withExtra(headingEn + "\n" + bodyEn, extra, false);
-              const id = withExtra(headingId + "\n" + bodyId, extra, true);
+              const en = withExtra(
+                headingEn + "\n" + "Hello " + target + ",\n\n" + bodyEn,
+                extra,
+                false,
+              );
+              const id = withExtra(
+                headingId + "\n" + "Halo " + target + ",\n\n" + bodyId,
+                extra,
+                true,
+              );
               return useIndonesian ? id : en;
             },
           },
@@ -2250,8 +2826,16 @@ window.TenguWarn = {
                 (isFinal ? finalSentence(true) : "") +
                 `\n\nJika Anda merasa pemberitahuan ini diberikan secara keliru, silakan tinggalkan pesan di halaman pembicaraan saya. ` +
                 `~`.repeat(4);
-              const en = withExtra(headingEn + "\n" + bodyEn, extra, false);
-              const id = withExtra(headingId + "\n" + bodyId, extra, true);
+              const en = withExtra(
+                headingEn + "\n" + "Hello " + target + ",\n\n" + bodyEn,
+                extra,
+                false,
+              );
+              const id = withExtra(
+                headingId + "\n" + "Halo " + target + ",\n\n" + bodyId,
+                extra,
+                true,
+              );
               return useIndonesian ? id : en;
             },
           },
@@ -2279,8 +2863,16 @@ window.TenguWarn = {
                 (isFinal ? finalSentence(true) : "") +
                 `\n\nJika Anda merasa pemberitahuan ini diberikan secara keliru, silakan tinggalkan pesan di halaman pembicaraan saya. ` +
                 `~`.repeat(4);
-              const en = withExtra(headingEn + "\n" + bodyEn, extra, false);
-              const id = withExtra(headingId + "\n" + bodyId, extra, true);
+              const en = withExtra(
+                headingEn + "\n" + "Hello " + target + ",\n\n" + bodyEn,
+                extra,
+                false,
+              );
+              const id = withExtra(
+                headingId + "\n" + "Halo " + target + ",\n\n" + bodyId,
+                extra,
+                true,
+              );
               return useIndonesian ? id : en;
             },
           },
@@ -2309,8 +2901,16 @@ window.TenguWarn = {
                 (isFinal ? finalSentence(true) : "") +
                 `\n\nJika Anda merasa pemberitahuan ini diberikan secara keliru, silakan tinggalkan pesan di halaman pembicaraan saya. ` +
                 `~`.repeat(4);
-              const en = withExtra(headingEn + "\n" + bodyEn, extra, false);
-              const id = withExtra(headingId + "\n" + bodyId, extra, true);
+              const en = withExtra(
+                headingEn + "\n" + "Hello " + target + ",\n\n" + bodyEn,
+                extra,
+                false,
+              );
+              const id = withExtra(
+                headingId + "\n" + "Halo " + target + ",\n\n" + bodyId,
+                extra,
+                true,
+              );
               return useIndonesian ? id : en;
             },
           },
@@ -2338,8 +2938,16 @@ window.TenguWarn = {
                 (isFinal ? finalSentence(true) : "") +
                 `\n\nJika Anda merasa pemberitahuan ini diberikan secara keliru, silakan tinggalkan pesan di halaman pembicaraan saya. ` +
                 `~`.repeat(4);
-              const en = withExtra(headingEn + "\n" + bodyEn, extra, false);
-              const id = withExtra(headingId + "\n" + bodyId, extra, true);
+              const en = withExtra(
+                headingEn + "\n" + "Hello " + target + ",\n\n" + bodyEn,
+                extra,
+                false,
+              );
+              const id = withExtra(
+                headingId + "\n" + "Halo " + target + ",\n\n" + bodyId,
+                extra,
+                true,
+              );
               return useIndonesian ? id : en;
             },
           },
@@ -2367,8 +2975,16 @@ window.TenguWarn = {
                 (isFinal ? finalSentence(true) : "") +
                 `\n\nJika Anda merasa pemberitahuan ini diberikan secara keliru, silakan tinggalkan pesan di halaman pembicaraan saya. ` +
                 `~`.repeat(4);
-              const en = withExtra(headingEn + "\n" + bodyEn, extra, false);
-              const id = withExtra(headingId + "\n" + bodyId, extra, true);
+              const en = withExtra(
+                headingEn + "\n" + "Hello " + target + ",\n\n" + bodyEn,
+                extra,
+                false,
+              );
+              const id = withExtra(
+                headingId + "\n" + "Halo " + target + ",\n\n" + bodyId,
+                extra,
+                true,
+              );
               return useIndonesian ? id : en;
             },
           },
@@ -2396,8 +3012,16 @@ window.TenguWarn = {
                 (isFinal ? finalSentence(true) : "") +
                 `\n\nJika Anda merasa pemberitahuan ini diberikan secara keliru, silakan tinggalkan pesan di halaman pembicaraan saya. ` +
                 `~`.repeat(4);
-              const en = withExtra(headingEn + "\n" + bodyEn, extra, false);
-              const id = withExtra(headingId + "\n" + bodyId, extra, true);
+              const en = withExtra(
+                headingEn + "\n" + "Hello " + target + ",\n\n" + bodyEn,
+                extra,
+                false,
+              );
+              const id = withExtra(
+                headingId + "\n" + "Halo " + target + ",\n\n" + bodyId,
+                extra,
+                true,
+              );
               return useIndonesian ? id : en;
             },
           },
@@ -2425,8 +3049,16 @@ window.TenguWarn = {
                 (isFinal ? finalSentence(true) : "") +
                 `\n\nJika Anda merasa pemberitahuan ini diberikan secara keliru, silakan tinggalkan pesan di halaman pembicaraan saya. ` +
                 `~`.repeat(4);
-              const en = withExtra(headingEn + "\n" + bodyEn, extra, false);
-              const id = withExtra(headingId + "\n" + bodyId, extra, true);
+              const en = withExtra(
+                headingEn + "\n" + "Hello " + target + ",\n\n" + bodyEn,
+                extra,
+                false,
+              );
+              const id = withExtra(
+                headingId + "\n" + "Halo " + target + ",\n\n" + bodyId,
+                extra,
+                true,
+              );
               return useIndonesian ? id : en;
             },
           },
@@ -2454,8 +3086,16 @@ window.TenguWarn = {
                 (isFinal ? finalSentence(true) : "") +
                 `\n\nJika Anda merasa pemberitahuan ini diberikan secara keliru, silakan tinggalkan pesan di halaman pembicaraan saya. ` +
                 `~`.repeat(4);
-              const en = withExtra(headingEn + "\n" + bodyEn, extra, false);
-              const id = withExtra(headingId + "\n" + bodyId, extra, true);
+              const en = withExtra(
+                headingEn + "\n" + "Hello " + target + ",\n\n" + bodyEn,
+                extra,
+                false,
+              );
+              const id = withExtra(
+                headingId + "\n" + "Halo " + target + ",\n\n" + bodyId,
+                extra,
+                true,
+              );
               return useIndonesian ? id : en;
             },
           },
@@ -2489,8 +3129,16 @@ window.TenguWarn = {
                 (isFinal ? finalSentence(true) : "") +
                 `\n\nJika Anda merasa peringatan ini diberikan secara keliru, silakan tinggalkan pesan di halaman pembicaraan saya. ` +
                 `~`.repeat(4);
-              const en = withExtra(headingEn + "\n" + bodyEn, extra, false);
-              const id = withExtra(headingId + "\n" + bodyId, extra, true);
+              const en = withExtra(
+                headingEn + "\n" + "Hello " + target + ",\n\n" + bodyEn,
+                extra,
+                false,
+              );
+              const id = withExtra(
+                headingId + "\n" + "Halo " + target + ",\n\n" + bodyId,
+                extra,
+                true,
+              );
               return useIndonesian ? id : en;
             },
           },
@@ -2518,8 +3166,16 @@ window.TenguWarn = {
                 (isFinal ? finalSentence(true) : "") +
                 `\n\nJika Anda merasa peringatan ini diberikan secara keliru, silakan tinggalkan pesan di halaman pembicaraan saya. ` +
                 `~`.repeat(4);
-              const en = withExtra(headingEn + "\n" + bodyEn, extra, false);
-              const id = withExtra(headingId + "\n" + bodyId, extra, true);
+              const en = withExtra(
+                headingEn + "\n" + "Hello " + target + ",\n\n" + bodyEn,
+                extra,
+                false,
+              );
+              const id = withExtra(
+                headingId + "\n" + "Halo " + target + ",\n\n" + bodyId,
+                extra,
+                true,
+              );
               return useIndonesian ? id : en;
             },
           },
@@ -2547,8 +3203,16 @@ window.TenguWarn = {
                 (isFinal ? finalSentence(true) : "") +
                 `\n\nJika Anda merasa peringatan ini diberikan secara keliru, silakan tinggalkan pesan di halaman pembicaraan saya. ` +
                 `~`.repeat(4);
-              const en = withExtra(headingEn + "\n" + bodyEn, extra, false);
-              const id = withExtra(headingId + "\n" + bodyId, extra, true);
+              const en = withExtra(
+                headingEn + "\n" + "Hello " + target + ",\n\n" + bodyEn,
+                extra,
+                false,
+              );
+              const id = withExtra(
+                headingId + "\n" + "Halo " + target + ",\n\n" + bodyId,
+                extra,
+                true,
+              );
               return useIndonesian ? id : en;
             },
           },
@@ -2576,8 +3240,16 @@ window.TenguWarn = {
                 (isFinal ? finalSentence(true) : "") +
                 `\n\nJika Anda merasa peringatan ini diberikan secara keliru, silakan tinggalkan pesan di halaman pembicaraan saya. ` +
                 `~`.repeat(4);
-              const en = withExtra(headingEn + "\n" + bodyEn, extra, false);
-              const id = withExtra(headingId + "\n" + bodyId, extra, true);
+              const en = withExtra(
+                headingEn + "\n" + "Hello " + target + ",\n\n" + bodyEn,
+                extra,
+                false,
+              );
+              const id = withExtra(
+                headingId + "\n" + "Halo " + target + ",\n\n" + bodyId,
+                extra,
+                true,
+              );
               return useIndonesian ? id : en;
             },
           },
@@ -2605,8 +3277,16 @@ window.TenguWarn = {
                 (isFinal ? finalSentence(true) : "") +
                 `\n\nJika Anda merasa peringatan ini diberikan secara keliru, silakan tinggalkan pesan di halaman pembicaraan saya. ` +
                 `~`.repeat(4);
-              const en = withExtra(headingEn + "\n" + bodyEn, extra, false);
-              const id = withExtra(headingId + "\n" + bodyId, extra, true);
+              const en = withExtra(
+                headingEn + "\n" + "Hello " + target + ",\n\n" + bodyEn,
+                extra,
+                false,
+              );
+              const id = withExtra(
+                headingId + "\n" + "Halo " + target + ",\n\n" + bodyId,
+                extra,
+                true,
+              );
               return useIndonesian ? id : en;
             },
           },
@@ -2640,8 +3320,16 @@ window.TenguWarn = {
                 (isFinal ? finalSentence(true) : "") +
                 `\n\nJika Anda merasa peringatan ini diberikan secara keliru, silakan tinggalkan pesan di halaman pembicaraan saya. ` +
                 `~`.repeat(4);
-              const en = withExtra(headingEn + "\n" + bodyEn, extra, false);
-              const id = withExtra(headingId + "\n" + bodyId, extra, true);
+              const en = withExtra(
+                headingEn + "\n" + "Hello " + target + ",\n\n" + bodyEn,
+                extra,
+                false,
+              );
+              const id = withExtra(
+                headingId + "\n" + "Halo " + target + ",\n\n" + bodyId,
+                extra,
+                true,
+              );
               return useIndonesian ? id : en;
             },
           },
@@ -2669,8 +3357,16 @@ window.TenguWarn = {
                 (isFinal ? finalSentence(true) : "") +
                 `\n\nJika Anda merasa peringatan ini diberikan secara keliru, silakan tinggalkan pesan di halaman pembicaraan saya. ` +
                 `~`.repeat(4);
-              const en = withExtra(headingEn + "\n" + bodyEn, extra, false);
-              const id = withExtra(headingId + "\n" + bodyId, extra, true);
+              const en = withExtra(
+                headingEn + "\n" + "Hello " + target + ",\n\n" + bodyEn,
+                extra,
+                false,
+              );
+              const id = withExtra(
+                headingId + "\n" + "Halo " + target + ",\n\n" + bodyId,
+                extra,
+                true,
+              );
               return useIndonesian ? id : en;
             },
           },
@@ -2698,8 +3394,16 @@ window.TenguWarn = {
                 (isFinal ? finalSentence(true) : "") +
                 `\n\nJika Anda merasa peringatan ini diberikan secara keliru, silakan tinggalkan pesan di halaman pembicaraan saya. ` +
                 `~`.repeat(4);
-              const en = withExtra(headingEn + "\n" + bodyEn, extra, false);
-              const id = withExtra(headingId + "\n" + bodyId, extra, true);
+              const en = withExtra(
+                headingEn + "\n" + "Hello " + target + ",\n\n" + bodyEn,
+                extra,
+                false,
+              );
+              const id = withExtra(
+                headingId + "\n" + "Halo " + target + ",\n\n" + bodyId,
+                extra,
+                true,
+              );
               return useIndonesian ? id : en;
             },
           },
@@ -2727,8 +3431,16 @@ window.TenguWarn = {
                 (isFinal ? finalSentence(true) : "") +
                 `\n\nJika Anda merasa peringatan ini diberikan secara keliru, silakan tinggalkan pesan di halaman pembicaraan saya. ` +
                 `~`.repeat(4);
-              const en = withExtra(headingEn + "\n" + bodyEn, extra, false);
-              const id = withExtra(headingId + "\n" + bodyId, extra, true);
+              const en = withExtra(
+                headingEn + "\n" + "Hello " + target + ",\n\n" + bodyEn,
+                extra,
+                false,
+              );
+              const id = withExtra(
+                headingId + "\n" + "Halo " + target + ",\n\n" + bodyId,
+                extra,
+                true,
+              );
               return useIndonesian ? id : en;
             },
           },
@@ -2757,8 +3469,16 @@ window.TenguWarn = {
                 (isFinal ? finalSentence(true) : "") +
                 `\n\nJika Anda merasa peringatan ini diberikan secara keliru, silakan tinggalkan pesan di halaman pembicaraan saya. ` +
                 `~`.repeat(4);
-              const en = withExtra(headingEn + "\n" + bodyEn, extra, false);
-              const id = withExtra(headingId + "\n" + bodyId, extra, true);
+              const en = withExtra(
+                headingEn + "\n" + "Hello " + target + ",\n\n" + bodyEn,
+                extra,
+                false,
+              );
+              const id = withExtra(
+                headingId + "\n" + "Halo " + target + ",\n\n" + bodyId,
+                extra,
+                true,
+              );
               return useIndonesian ? id : en;
             },
           },
@@ -2786,8 +3506,16 @@ window.TenguWarn = {
                 (isFinal ? finalSentence(true) : "") +
                 `\n\nJika Anda merasa peringatan ini diberikan secara keliru, silakan tinggalkan pesan di halaman pembicaraan saya. ` +
                 `~`.repeat(4);
-              const en = withExtra(headingEn + "\n" + bodyEn, extra, false);
-              const id = withExtra(headingId + "\n" + bodyId, extra, true);
+              const en = withExtra(
+                headingEn + "\n" + "Hello " + target + ",\n\n" + bodyEn,
+                extra,
+                false,
+              );
+              const id = withExtra(
+                headingId + "\n" + "Halo " + target + ",\n\n" + bodyId,
+                extra,
+                true,
+              );
               return useIndonesian ? id : en;
             },
           },
@@ -2815,8 +3543,16 @@ window.TenguWarn = {
                 (isFinal ? finalSentence(true) : "") +
                 `\n\nJika Anda merasa peringatan ini diberikan secara keliru, silakan tinggalkan pesan di halaman pembicaraan saya. ` +
                 `~`.repeat(4);
-              const en = withExtra(headingEn + "\n" + bodyEn, extra, false);
-              const id = withExtra(headingId + "\n" + bodyId, extra, true);
+              const en = withExtra(
+                headingEn + "\n" + "Hello " + target + ",\n\n" + bodyEn,
+                extra,
+                false,
+              );
+              const id = withExtra(
+                headingId + "\n" + "Halo " + target + ",\n\n" + bodyId,
+                extra,
+                true,
+              );
               return useIndonesian ? id : en;
             },
           },
@@ -2848,8 +3584,16 @@ window.TenguWarn = {
                 (isFinal ? finalSentence(true) : "") +
                 `\n\nJika Anda merasa peringatan ini diberikan secara keliru, silakan tinggalkan pesan di halaman pembicaraan saya. ` +
                 `~`.repeat(4);
-              const en = withExtra(headingEn + "\n" + bodyEn, extra, false);
-              const id = withExtra(headingId + "\n" + bodyId, extra, true);
+              const en = withExtra(
+                headingEn + "\n" + "Hello " + target + ",\n\n" + bodyEn,
+                extra,
+                false,
+              );
+              const id = withExtra(
+                headingId + "\n" + "Halo " + target + ",\n\n" + bodyId,
+                extra,
+                true,
+              );
               return useIndonesian ? id : en;
             },
           },
@@ -2879,8 +3623,16 @@ window.TenguWarn = {
                 (isFinal ? finalSentence(true) : "") +
                 `\n\nJika Anda merasa peringatan ini diberikan secara keliru, silakan tinggalkan pesan di halaman pembicaraan saya. ` +
                 `~`.repeat(4);
-              const en = withExtra(headingEn + "\n" + bodyEn, extra, false);
-              const id = withExtra(headingId + "\n" + bodyId, extra, true);
+              const en = withExtra(
+                headingEn + "\n" + "Hello " + target + ",\n\n" + bodyEn,
+                extra,
+                false,
+              );
+              const id = withExtra(
+                headingId + "\n" + "Halo " + target + ",\n\n" + bodyId,
+                extra,
+                true,
+              );
               return useIndonesian ? id : en;
             },
           },
@@ -2910,8 +3662,16 @@ window.TenguWarn = {
                 (isFinal ? finalSentence(true) : "") +
                 `\n\nJika Anda merasa peringatan ini diberikan secara keliru, silakan tinggalkan pesan di halaman pembicaraan saya. ` +
                 `~`.repeat(4);
-              const en = withExtra(headingEn + "\n" + bodyEn, extra, false);
-              const id = withExtra(headingId + "\n" + bodyId, extra, true);
+              const en = withExtra(
+                headingEn + "\n" + "Hello " + target + ",\n\n" + bodyEn,
+                extra,
+                false,
+              );
+              const id = withExtra(
+                headingId + "\n" + "Halo " + target + ",\n\n" + bodyId,
+                extra,
+                true,
+              );
               return useIndonesian ? id : en;
             },
           },
@@ -2941,8 +3701,16 @@ window.TenguWarn = {
                 (isFinal ? finalSentence(true) : "") +
                 `\n\nJika Anda merasa peringatan ini diberikan secara keliru, silakan tinggalkan pesan di halaman pembicaraan saya. ` +
                 `~`.repeat(4);
-              const en = withExtra(headingEn + "\n" + bodyEn, extra, false);
-              const id = withExtra(headingId + "\n" + bodyId, extra, true);
+              const en = withExtra(
+                headingEn + "\n" + "Hello " + target + ",\n\n" + bodyEn,
+                extra,
+                false,
+              );
+              const id = withExtra(
+                headingId + "\n" + "Halo " + target + ",\n\n" + bodyId,
+                extra,
+                true,
+              );
               return useIndonesian ? id : en;
             },
           },
@@ -2974,8 +3742,16 @@ window.TenguWarn = {
                 (isFinal ? finalSentence(true) : "") +
                 `\n\nJika Anda merasa peringatan ini diberikan secara keliru, silakan tinggalkan pesan di halaman pembicaraan saya. ` +
                 `~`.repeat(4);
-              const en = withExtra(headingEn + "\n" + bodyEn, extra, false);
-              const id = withExtra(headingId + "\n" + bodyId, extra, true);
+              const en = withExtra(
+                headingEn + "\n" + "Hello " + target + ",\n\n" + bodyEn,
+                extra,
+                false,
+              );
+              const id = withExtra(
+                headingId + "\n" + "Halo " + target + ",\n\n" + bodyId,
+                extra,
+                true,
+              );
               return useIndonesian ? id : en;
             },
           },
@@ -3007,8 +3783,16 @@ window.TenguWarn = {
                 (isFinal ? finalSentence(false) : "") +
                 `\n\nJika Anda merasa peringatan ini diberikan secara keliru, silakan tinggalkan pesan di halaman pembicaraan saya. ` +
                 `~`.repeat(4);
-              const en = withExtra(headingEn + "\n" + bodyEn, extra, false);
-              const id = withExtra(headingId + "\n" + bodyId, extra, true);
+              const en = withExtra(
+                headingEn + "\n" + "Hello " + target + ",\n\n" + bodyEn,
+                extra,
+                false,
+              );
+              const id = withExtra(
+                headingId + "\n" + "Halo " + target + ",\n\n" + bodyId,
+                extra,
+                true,
+              );
               return useIndonesian ? id : en;
             },
           },
@@ -3040,8 +3824,16 @@ window.TenguWarn = {
                 (isFinal ? finalSentence(true) : "") +
                 `\n\nJika Anda merasa peringatan ini diberikan secara keliru, silakan tinggalkan pesan di halaman pembicaraan saya. ` +
                 `~`.repeat(4);
-              const en = withExtra(headingEn + "\n" + bodyEn, extra, false);
-              const id = withExtra(headingId + "\n" + bodyId, extra, true);
+              const en = withExtra(
+                headingEn + "\n" + "Hello " + target + ",\n\n" + bodyEn,
+                extra,
+                false,
+              );
+              const id = withExtra(
+                headingId + "\n" + "Halo " + target + ",\n\n" + bodyId,
+                extra,
+                true,
+              );
               return useIndonesian ? id : en;
             },
           },
@@ -3073,8 +3865,16 @@ window.TenguWarn = {
                 (isFinal ? finalSentence(true) : "") +
                 `\n\nJika Anda merasa peringatan ini diberikan secara keliru, silakan tinggalkan pesan di halaman pembicaraan saya. ` +
                 `~`.repeat(4);
-              const en = withExtra(headingEn + "\n" + bodyEn, extra, false);
-              const id = withExtra(headingId + "\n" + bodyId, extra, true);
+              const en = withExtra(
+                headingEn + "\n" + "Hello " + target + ",\n\n" + bodyEn,
+                extra,
+                false,
+              );
+              const id = withExtra(
+                headingId + "\n" + "Halo " + target + ",\n\n" + bodyId,
+                extra,
+                true,
+              );
               return useIndonesian ? id : en;
             },
           },
@@ -3106,8 +3906,16 @@ window.TenguWarn = {
                 (isFinal ? finalSentence(true) : "") +
                 `\n\nJika Anda merasa peringatan ini diberikan secara keliru, silakan tinggalkan pesan di halaman pembicaraan saya. ` +
                 `~`.repeat(4);
-              const en = withExtra(headingEn + "\n" + bodyEn, extra, false);
-              const id = withExtra(headingId + "\n" + bodyId, extra, true);
+              const en = withExtra(
+                headingEn + "\n" + "Hello " + target + ",\n\n" + bodyEn,
+                extra,
+                false,
+              );
+              const id = withExtra(
+                headingId + "\n" + "Halo " + target + ",\n\n" + bodyId,
+                extra,
+                true,
+              );
               return useIndonesian ? id : en;
             },
           },
@@ -3139,8 +3947,16 @@ window.TenguWarn = {
                 (isFinal ? finalSentence(true) : "") +
                 `\n\nJika Anda merasa peringatan ini diberikan secara keliru, silakan tinggalkan pesan di halaman pembicaraan saya. ` +
                 `~`.repeat(4);
-              const en = withExtra(headingEn + "\n" + bodyEn, extra, false);
-              const id = withExtra(headingId + "\n" + bodyId, extra, true);
+              const en = withExtra(
+                headingEn + "\n" + "Hello " + target + ",\n\n" + bodyEn,
+                extra,
+                false,
+              );
+              const id = withExtra(
+                headingId + "\n" + "Halo " + target + ",\n\n" + bodyId,
+                extra,
+                true,
+              );
               return useIndonesian ? id : en;
             },
           },
@@ -3172,8 +3988,16 @@ window.TenguWarn = {
                 (isFinal ? finalSentence(true) : "") +
                 `\n\nJika Anda merasa peringatan ini diberikan secara keliru, silakan tinggalkan pesan di halaman pembicaraan saya. ` +
                 `~`.repeat(4);
-              const en = withExtra(headingEn + "\n" + bodyEn, extra, false);
-              const id = withExtra(headingId + "\n" + bodyId, extra, true);
+              const en = withExtra(
+                headingEn + "\n" + "Hello " + target + ",\n\n" + bodyEn,
+                extra,
+                false,
+              );
+              const id = withExtra(
+                headingId + "\n" + "Halo " + target + ",\n\n" + bodyId,
+                extra,
+                true,
+              );
               return useIndonesian ? id : en;
             },
           },
@@ -3205,8 +4029,16 @@ window.TenguWarn = {
                 (isFinal ? finalSentence(true) : "") +
                 `\n\nJika Anda merasa peringatan ini diberikan secara keliru, silakan tinggalkan pesan di halaman pembicaraan saya. ` +
                 `~`.repeat(4);
-              const en = withExtra(headingEn + "\n" + bodyEn, extra, false);
-              const id = withExtra(headingId + "\n" + bodyId, extra, true);
+              const en = withExtra(
+                headingEn + "\n" + "Hello " + target + ",\n\n" + bodyEn,
+                extra,
+                false,
+              );
+              const id = withExtra(
+                headingId + "\n" + "Halo " + target + ",\n\n" + bodyId,
+                extra,
+                true,
+              );
               return useIndonesian ? id : en;
             },
           },
@@ -3238,8 +4070,16 @@ window.TenguWarn = {
                 (isFinal ? finalSentence(true) : "") +
                 `\n\nJika Anda merasa peringatan ini diberikan secara keliru, silakan tinggalkan pesan di halaman pembicaraan saya. ` +
                 `~`.repeat(4);
-              const en = withExtra(headingEn + "\n" + bodyEn, extra, false);
-              const id = withExtra(headingId + "\n" + bodyId, extra, true);
+              const en = withExtra(
+                headingEn + "\n" + "Hello " + target + ",\n\n" + bodyEn,
+                extra,
+                false,
+              );
+              const id = withExtra(
+                headingId + "\n" + "Halo " + target + ",\n\n" + bodyId,
+                extra,
+                true,
+              );
               return useIndonesian ? id : en;
             },
           },
@@ -3271,8 +4111,16 @@ window.TenguWarn = {
                 (isFinal ? finalSentence(true) : "") +
                 `\n\nJika Anda merasa peringatan ini diberikan secara keliru, silakan tinggalkan pesan di halaman pembicaraan saya. ` +
                 `~`.repeat(4);
-              const en = withExtra(headingEn + "\n" + bodyEn, extra, false);
-              const id = withExtra(headingId + "\n" + bodyId, extra, true);
+              const en = withExtra(
+                headingEn + "\n" + "Hello " + target + ",\n\n" + bodyEn,
+                extra,
+                false,
+              );
+              const id = withExtra(
+                headingId + "\n" + "Halo " + target + ",\n\n" + bodyId,
+                extra,
+                true,
+              );
               return useIndonesian ? id : en;
             },
           },
@@ -3304,8 +4152,16 @@ window.TenguWarn = {
                 (isFinal ? finalSentence(true) : "") +
                 `\n\nJika Anda merasa peringatan ini diberikan secara keliru, silakan tinggalkan pesan di halaman pembicaraan saya. ` +
                 `~`.repeat(4);
-              const en = withExtra(headingEn + "\n" + bodyEn, extra, false);
-              const id = withExtra(headingId + "\n" + bodyId, extra, true);
+              const en = withExtra(
+                headingEn + "\n" + "Hello " + target + ",\n\n" + bodyEn,
+                extra,
+                false,
+              );
+              const id = withExtra(
+                headingId + "\n" + "Halo " + target + ",\n\n" + bodyId,
+                extra,
+                true,
+              );
               return useIndonesian ? id : en;
             },
           },
@@ -3337,8 +4193,16 @@ window.TenguWarn = {
                 (isFinal ? finalSentence(true) : "") +
                 `\n\nJika Anda merasa peringatan ini diberikan secara keliru, silakan tinggalkan pesan di halaman pembicaraan saya. ` +
                 `~`.repeat(4);
-              const en = withExtra(headingEn + "\n" + bodyEn, extra, false);
-              const id = withExtra(headingId + "\n" + bodyId, extra, true);
+              const en = withExtra(
+                headingEn + "\n" + "Hello " + target + ",\n\n" + bodyEn,
+                extra,
+                false,
+              );
+              const id = withExtra(
+                headingId + "\n" + "Halo " + target + ",\n\n" + bodyId,
+                extra,
+                true,
+              );
               return useIndonesian ? id : en;
             },
           },
@@ -3370,8 +4234,16 @@ window.TenguWarn = {
                 (isFinal ? finalSentence(true) : "") +
                 `\n\nJika Anda merasa peringatan ini diberikan secara keliru, silakan tinggalkan pesan di halaman pembicaraan saya. ` +
                 `~`.repeat(4);
-              const en = withExtra(headingEn + "\n" + bodyEn, extra, false);
-              const id = withExtra(headingId + "\n" + bodyId, extra, true);
+              const en = withExtra(
+                headingEn + "\n" + "Hello " + target + ",\n\n" + bodyEn,
+                extra,
+                false,
+              );
+              const id = withExtra(
+                headingId + "\n" + "Halo " + target + ",\n\n" + bodyId,
+                extra,
+                true,
+              );
               return useIndonesian ? id : en;
             },
           },
@@ -3403,8 +4275,16 @@ window.TenguWarn = {
                 (isFinal ? finalSentence(true) : "") +
                 `\n\nJika Anda merasa peringatan ini diberikan secara keliru, silakan tinggalkan pesan di halaman pembicaraan saya. ` +
                 `~`.repeat(4);
-              const en = withExtra(headingEn + "\n" + bodyEn, extra, false);
-              const id = withExtra(headingId + "\n" + bodyId, extra, true);
+              const en = withExtra(
+                headingEn + "\n" + "Hello " + target + ",\n\n" + bodyEn,
+                extra,
+                false,
+              );
+              const id = withExtra(
+                headingId + "\n" + "Halo " + target + ",\n\n" + bodyId,
+                extra,
+                true,
+              );
               return useIndonesian ? id : en;
             },
           },
@@ -3436,8 +4316,16 @@ window.TenguWarn = {
                 (isFinal ? finalSentence(true) : "") +
                 `\n\nJika Anda merasa peringatan ini diberikan secara keliru, silakan tinggalkan pesan di halaman pembicaraan saya. ` +
                 `~`.repeat(4);
-              const en = withExtra(headingEn + "\n" + bodyEn, extra, false);
-              const id = withExtra(headingId + "\n" + bodyId, extra, true);
+              const en = withExtra(
+                headingEn + "\n" + "Hello " + target + ",\n\n" + bodyEn,
+                extra,
+                false,
+              );
+              const id = withExtra(
+                headingId + "\n" + "Halo " + target + ",\n\n" + bodyId,
+                extra,
+                true,
+              );
               return useIndonesian ? id : en;
             },
           },
@@ -3471,8 +4359,16 @@ window.TenguWarn = {
                 (isFinal ? finalSentence(true) : "") +
                 `\n\nJika Anda merasa peringatan ini diberikan secara keliru, silakan tinggalkan pesan di halaman pembicaraan saya. ` +
                 `~`.repeat(4);
-              const en = withExtra(headingEn + "\n" + bodyEn, extra, false);
-              const id = withExtra(headingId + "\n" + bodyId, extra, true);
+              const en = withExtra(
+                headingEn + "\n" + "Hello " + target + ",\n\n" + bodyEn,
+                extra,
+                false,
+              );
+              const id = withExtra(
+                headingId + "\n" + "Halo " + target + ",\n\n" + bodyId,
+                extra,
+                true,
+              );
               return useIndonesian ? id : en;
             },
           },
@@ -3500,8 +4396,16 @@ window.TenguWarn = {
                 (isFinal ? finalSentence(true) : "") +
                 `\n\nJika Anda merasa peringatan ini diberikan secara keliru, silakan tinggalkan pesan di halaman pembicaraan saya. ` +
                 `~`.repeat(4);
-              const en = withExtra(headingEn + "\n" + bodyEn, extra, false);
-              const id = withExtra(headingId + "\n" + bodyId, extra, true);
+              const en = withExtra(
+                headingEn + "\n" + "Hello " + target + ",\n\n" + bodyEn,
+                extra,
+                false,
+              );
+              const id = withExtra(
+                headingId + "\n" + "Halo " + target + ",\n\n" + bodyId,
+                extra,
+                true,
+              );
               return useIndonesian ? id : en;
             },
           },
@@ -3529,8 +4433,16 @@ window.TenguWarn = {
                 (isFinal ? finalSentence(true) : "") +
                 `\n\nJika Anda merasa peringatan ini diberikan secara keliru, silakan tinggalkan pesan di halaman pembicaraan saya. ` +
                 `~`.repeat(4);
-              const en = withExtra(headingEn + "\n" + bodyEn, extra, false);
-              const id = withExtra(headingId + "\n" + bodyId, extra, true);
+              const en = withExtra(
+                headingEn + "\n" + "Hello " + target + ",\n\n" + bodyEn,
+                extra,
+                false,
+              );
+              const id = withExtra(
+                headingId + "\n" + "Halo " + target + ",\n\n" + bodyId,
+                extra,
+                true,
+              );
               return useIndonesian ? id : en;
             },
           },
@@ -3558,8 +4470,16 @@ window.TenguWarn = {
                 (isFinal ? finalSentence(true) : "") +
                 `\n\nJika Anda merasa peringatan ini diberikan secara keliru, silakan tinggalkan pesan di halaman pembicaraan saya. ` +
                 `~`.repeat(4);
-              const en = withExtra(headingEn + "\n" + bodyEn, extra, false);
-              const id = withExtra(headingId + "\n" + bodyId, extra, true);
+              const en = withExtra(
+                headingEn + "\n" + "Hello " + target + ",\n\n" + bodyEn,
+                extra,
+                false,
+              );
+              const id = withExtra(
+                headingId + "\n" + "Halo " + target + ",\n\n" + bodyId,
+                extra,
+                true,
+              );
               return useIndonesian ? id : en;
             },
           },
@@ -3587,8 +4507,16 @@ window.TenguWarn = {
                 (isFinal ? finalSentence(true) : "") +
                 `\n\nJika Anda merasa peringatan ini diberikan secara keliru, silakan tinggalkan pesan di halaman pembicaraan saya. ` +
                 `~`.repeat(4);
-              const en = withExtra(headingEn + "\n" + bodyEn, extra, false);
-              const id = withExtra(headingId + "\n" + bodyId, extra, true);
+              const en = withExtra(
+                headingEn + "\n" + "Hello " + target + ",\n\n" + bodyEn,
+                extra,
+                false,
+              );
+              const id = withExtra(
+                headingId + "\n" + "Halo " + target + ",\n\n" + bodyId,
+                extra,
+                true,
+              );
               return useIndonesian ? id : en;
             },
           },
@@ -3616,8 +4544,16 @@ window.TenguWarn = {
                 (isFinal ? finalSentence(true) : "") +
                 `\n\nJika Anda merasa peringatan ini diberikan secara keliru, silakan tinggalkan pesan di halaman pembicaraan saya. ` +
                 `~`.repeat(4);
-              const en = withExtra(headingEn + "\n" + bodyEn, extra, false);
-              const id = withExtra(headingId + "\n" + bodyId, extra, true);
+              const en = withExtra(
+                headingEn + "\n" + "Hello " + target + ",\n\n" + bodyEn,
+                extra,
+                false,
+              );
+              const id = withExtra(
+                headingId + "\n" + "Halo " + target + ",\n\n" + bodyId,
+                extra,
+                true,
+              );
               return useIndonesian ? id : en;
             },
           },
@@ -3651,8 +4587,16 @@ window.TenguWarn = {
                 (isFinal ? finalSentence(true) : "") +
                 `\n\nJika Anda merasa peringatan ini diberikan secara keliru, silakan tinggalkan pesan di halaman pembicaraan saya. ` +
                 `~`.repeat(4);
-              const en = withExtra(headingEn + "\n" + bodyEn, extra, false);
-              const id = withExtra(headingId + "\n" + bodyId, extra, true);
+              const en = withExtra(
+                headingEn + "\n" + "Hello " + target + ",\n\n" + bodyEn,
+                extra,
+                false,
+              );
+              const id = withExtra(
+                headingId + "\n" + "Halo " + target + ",\n\n" + bodyId,
+                extra,
+                true,
+              );
               return useIndonesian ? id : en;
             },
           },
@@ -3680,8 +4624,16 @@ window.TenguWarn = {
                 (isFinal ? finalSentence(true) : "") +
                 `\n\nJika Anda merasa peringatan ini diberikan secara keliru, silakan tinggalkan pesan di halaman pembicaraan saya. ` +
                 `~`.repeat(4);
-              const en = withExtra(headingEn + "\n" + bodyEn, extra, false);
-              const id = withExtra(headingId + "\n" + bodyId, extra, true);
+              const en = withExtra(
+                headingEn + "\n" + "Hello " + target + ",\n\n" + bodyEn,
+                extra,
+                false,
+              );
+              const id = withExtra(
+                headingId + "\n" + "Halo " + target + ",\n\n" + bodyId,
+                extra,
+                true,
+              );
               return useIndonesian ? id : en;
             },
           },
@@ -3709,8 +4661,16 @@ window.TenguWarn = {
                 (isFinal ? finalSentence(true) : "") +
                 `\n\nJika Anda merasa peringatan ini diberikan secara keliru, silakan tinggalkan pesan di halaman pembicaraan saya. ` +
                 `~`.repeat(4);
-              const en = withExtra(headingEn + "\n" + bodyEn, extra, false);
-              const id = withExtra(headingId + "\n" + bodyId, extra, true);
+              const en = withExtra(
+                headingEn + "\n" + "Hello " + target + ",\n\n" + bodyEn,
+                extra,
+                false,
+              );
+              const id = withExtra(
+                headingId + "\n" + "Halo " + target + ",\n\n" + bodyId,
+                extra,
+                true,
+              );
               return useIndonesian ? id : en;
             },
           },
@@ -3738,8 +4698,16 @@ window.TenguWarn = {
                 (isFinal ? finalSentence(true) : "") +
                 `\n\nJika Anda merasa peringatan ini diberikan secara keliru, silakan tinggalkan pesan di halaman pembicaraan saya. ` +
                 `~`.repeat(4);
-              const en = withExtra(headingEn + "\n" + bodyEn, extra, false);
-              const id = withExtra(headingId + "\n" + bodyId, extra, true);
+              const en = withExtra(
+                headingEn + "\n" + "Hello " + target + ",\n\n" + bodyEn,
+                extra,
+                false,
+              );
+              const id = withExtra(
+                headingId + "\n" + "Halo " + target + ",\n\n" + bodyId,
+                extra,
+                true,
+              );
               return useIndonesian ? id : en;
             },
           },
@@ -3767,8 +4735,16 @@ window.TenguWarn = {
                 (isFinal ? finalSentence(true) : "") +
                 `\n\nJika Anda merasa peringatan ini diberikan secara keliru, silakan tinggalkan pesan di halaman pembicaraan saya. ` +
                 `~`.repeat(4);
-              const en = withExtra(headingEn + "\n" + bodyEn, extra, false);
-              const id = withExtra(headingId + "\n" + bodyId, extra, true);
+              const en = withExtra(
+                headingEn + "\n" + "Hello " + target + ",\n\n" + bodyEn,
+                extra,
+                false,
+              );
+              const id = withExtra(
+                headingId + "\n" + "Halo " + target + ",\n\n" + bodyId,
+                extra,
+                true,
+              );
               return useIndonesian ? id : en;
             },
           },
@@ -3796,8 +4772,16 @@ window.TenguWarn = {
                 (isFinal ? finalSentence(true) : "") +
                 `\n\nJika Anda merasa peringatan ini diberikan secara keliru, silakan tinggalkan pesan di halaman pembicaraan saya. ` +
                 `~`.repeat(4);
-              const en = withExtra(headingEn + "\n" + bodyEn, extra, false);
-              const id = withExtra(headingId + "\n" + bodyId, extra, true);
+              const en = withExtra(
+                headingEn + "\n" + "Hello " + target + ",\n\n" + bodyEn,
+                extra,
+                false,
+              );
+              const id = withExtra(
+                headingId + "\n" + "Halo " + target + ",\n\n" + bodyId,
+                extra,
+                true,
+              );
               return useIndonesian ? id : en;
             },
           },
@@ -3825,8 +4809,16 @@ window.TenguWarn = {
                 (isFinal ? finalSentence(true) : "") +
                 `\n\nJika Anda merasa peringatan ini diberikan secara keliru, silakan tinggalkan pesan di halaman pembicaraan saya. ` +
                 `~`.repeat(4);
-              const en = withExtra(headingEn + "\n" + bodyEn, extra, false);
-              const id = withExtra(headingId + "\n" + bodyId, extra, true);
+              const en = withExtra(
+                headingEn + "\n" + "Hello " + target + ",\n\n" + bodyEn,
+                extra,
+                false,
+              );
+              const id = withExtra(
+                headingId + "\n" + "Halo " + target + ",\n\n" + bodyId,
+                extra,
+                true,
+              );
               return useIndonesian ? id : en;
             },
           },
@@ -3854,8 +4846,16 @@ window.TenguWarn = {
                 (isFinal ? finalSentence(true) : "") +
                 `\n\nJika Anda merasa peringatan ini diberikan secara keliru, silakan tinggalkan pesan di halaman pembicaraan saya. ` +
                 `~`.repeat(4);
-              const en = withExtra(headingEn + "\n" + bodyEn, extra, false);
-              const id = withExtra(headingId + "\n" + bodyId, extra, true);
+              const en = withExtra(
+                headingEn + "\n" + "Hello " + target + ",\n\n" + bodyEn,
+                extra,
+                false,
+              );
+              const id = withExtra(
+                headingId + "\n" + "Halo " + target + ",\n\n" + bodyId,
+                extra,
+                true,
+              );
               return useIndonesian ? id : en;
             },
           },
@@ -3883,8 +4883,16 @@ window.TenguWarn = {
                 (isFinal ? finalSentence(true) : "") +
                 `\n\nJika Anda merasa peringatan ini diberikan secara keliru, silakan tinggalkan pesan di halaman pembicaraan saya. ` +
                 `~`.repeat(4);
-              const en = withExtra(headingEn + "\n" + bodyEn, extra, false);
-              const id = withExtra(headingId + "\n" + bodyId, extra, true);
+              const en = withExtra(
+                headingEn + "\n" + "Hello " + target + ",\n\n" + bodyEn,
+                extra,
+                false,
+              );
+              const id = withExtra(
+                headingId + "\n" + "Halo " + target + ",\n\n" + bodyId,
+                extra,
+                true,
+              );
               return useIndonesian ? id : en;
             },
           },
@@ -3912,8 +4920,16 @@ window.TenguWarn = {
                 (isFinal ? finalSentence(true) : "") +
                 `\n\nJika Anda merasa peringatan ini diberikan secara keliru, silakan tinggalkan pesan di halaman pembicaraan saya. ` +
                 `~`.repeat(4);
-              const en = withExtra(headingEn + "\n" + bodyEn, extra, false);
-              const id = withExtra(headingId + "\n" + bodyId, extra, true);
+              const en = withExtra(
+                headingEn + "\n" + "Hello " + target + ",\n\n" + bodyEn,
+                extra,
+                false,
+              );
+              const id = withExtra(
+                headingId + "\n" + "Halo " + target + ",\n\n" + bodyId,
+                extra,
+                true,
+              );
               return useIndonesian ? id : en;
             },
           },

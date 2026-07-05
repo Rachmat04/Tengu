@@ -1,3 +1,12 @@
+## 2.60.0
+
+### Changed
+
+* All entries in `MOVE_TO_SANDBOX_REASONS` (`Tengu-reasons.js`) now use content-neutral language: "article" replaced with "page", "article space" with "main namespace", and "notability guidelines" with "inclusion guidelines". The Move to user's sandbox feature is available across Wikimedia projects where the content being moved is not necessarily an article, and the previous wording was needlessly Wikipedia-specific
+* Updated the label for the corresponding reason from "Not yet ready for article space" to "Not yet ready for the main namespace", and "New user article requiring development" to "New user page requiring development", to match
+* Notifications posted to user talk pages (block, unblock, and page deletion) now begin with "Dear [username]," in English and "Halo [username]," in Indonesian, to give them a more courteous and personal tone
+* Warning messages posted via the User warning section now begin with "Hello [username]," in English and "Halo [username]," in Indonesian, consistent with the same principle applied to formal notifications above
+
 ## 2.59.0
 
 ### Added

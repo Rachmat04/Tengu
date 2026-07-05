@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.59.0
+ * Version 2.60.0
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -1011,7 +1011,7 @@ $(function () {
                 footer.appendChild(btnConfirm);
               });
               if (!confirmed) {
-                addLog("[Block] Self-block cancelled.", "warn");
+                addLog("[Block] Self-block cancelled", "warn");
                 proceedWithBlock = false;
               }
             }
@@ -1056,11 +1056,11 @@ $(function () {
 
                 const notice = useIndonesian
                   ? isBlockIndef
-                    ? `== Pemberitahuan pemblokiran akun ==\nAkun "${targetVal}" telah diblokir secara tidak terbatas dengan alasan berikut: ${config.blockReason}.\n\nSelama masa pemblokiran, akun ini mungkin tidak dapat melakukan sebagian atau seluruh tindakan yang biasanya memerlukan hak penyuntingan. Pemblokiran ini tidak berakhir secara otomatis dan akan tetap berlaku kecuali diubah oleh pengurus.\n\nPemberitahuan ini dikirimkan secara otomatis. Silakan sampaikan pertanyaan atau keberatan ke halaman pembicaraan saya. ~~~~`
-                    : `== Pemberitahuan pemblokiran akun ==\nAkun "${targetVal}" telah diblokir selama ${translateDurationId(config.blockDur)} dengan alasan berikut: ${config.blockReason}.\n\nSelama masa pemblokiran, akun ini mungkin tidak dapat melakukan sebagian atau seluruh tindakan yang biasanya memerlukan hak penyuntingan. Pemblokiran dijadwalkan berakhir pada waktunya, kecuali diubah oleh pengurus.\n\nPemberitahuan ini dikirimkan secara otomatis. Silakan sampaikan pertanyaan atau keberatan ke halaman pembicaraan saya. ~~~~`
+                    ? `== Pemberitahuan pemblokiran akun ==\nHalo ${targetVal},\n\nAkun "${targetVal}" telah diblokir secara tidak terbatas dengan alasan berikut: ${config.blockReason}.\n\nSelama masa pemblokiran, akun ini mungkin tidak dapat melakukan sebagian atau seluruh tindakan yang biasanya memerlukan hak penyuntingan. Pemblokiran ini tidak berakhir secara otomatis dan akan tetap berlaku kecuali diubah oleh pengurus.\n\nPemberitahuan ini dikirimkan secara otomatis. Silakan sampaikan pertanyaan atau keberatan ke halaman pembicaraan saya. ~~~~`
+                    : `== Pemberitahuan pemblokiran akun ==\nHalo ${targetVal},\n\nAkun "${targetVal}" telah diblokir selama ${translateDurationId(config.blockDur)} dengan alasan berikut: ${config.blockReason}.\n\nSelama masa pemblokiran, akun ini mungkin tidak dapat melakukan sebagian atau seluruh tindakan yang biasanya memerlukan hak penyuntingan. Pemblokiran dijadwalkan berakhir pada waktunya, kecuali diubah oleh pengurus.\n\nPemberitahuan ini dikirimkan secara otomatis. Silakan sampaikan pertanyaan atau keberatan ke halaman pembicaraan saya. ~~~~`
                   : isBlockIndef
-                    ? `== Account block notice ==\nThe account "${targetVal}" has been blocked indefinitely due to the following reason: ${config.blockReason}.\n\nDuring the block period, the account may be unable to perform some or all actions that normally require editing privileges. This block does not expire automatically and will remain in effect unless modified by an administrator.\n\nThis notification was posted automatically. Please direct any questions or concerns to my user talk page. ~~~~`
-                    : `== Account block notice ==\nThe account "${targetVal}" has been blocked for ${config.blockDur} due to the following reason: ${config.blockReason}.\n\nDuring the block period, the account may be unable to perform some or all actions that normally require editing privileges. The block is scheduled to remain in effect until it expires, unless modified by an administrator.\n\nThis notification was posted automatically. Please direct any questions or concerns to my user talk page. ~~~~`;
+                    ? `== Account block notice ==\nDear ${targetVal},\n\nThe account "${targetVal}" has been blocked indefinitely due to the following reason: ${config.blockReason}.\n\nDuring the block period, the account may be unable to perform some or all actions that normally require editing privileges. This block does not expire automatically and will remain in effect unless modified by an administrator.\n\nThis notification was posted automatically. Please direct any questions or concerns to my user talk page. ~~~~`
+                    : `== Account block notice ==\nDear ${targetVal},\n\nThe account "${targetVal}" has been blocked for ${config.blockDur} due to the following reason: ${config.blockReason}.\n\nDuring the block period, the account may be unable to perform some or all actions that normally require editing privileges. The block is scheduled to remain in effect until it expires, unless modified by an administrator.\n\nThis notification was posted automatically. Please direct any questions or concerns to my user talk page. ~~~~`;
 
                 // When a permanent block is applied with the clear-before-notify option,
                 // replace the talk page with the notice in a single edit rather than
@@ -1114,8 +1114,8 @@ $(function () {
                     ? "Notifikasi: Pemberitahuan pencabutan pemblokiran"
                     : "Notification: Account unblock notice") + toolTag;
                 const notice = useIndonesian
-                  ? `== Pemberitahuan pencabutan pemblokiran ==\nPemblokiran pada akun "${targetVal}" telah dicabut dengan alasan berikut: ${config.unblockReason}.\n\nPemberitahuan ini dikirimkan secara otomatis. Silakan sampaikan pertanyaan atau keberatan ke halaman pembicaraan saya. ~~~~`
-                  : `== Account unblock notice ==\nThe block on the account "${targetVal}" has been lifted due to the following reason: ${config.unblockReason}.\n\nThis notification was posted automatically. Please direct any questions or concerns to my user talk page. ~~~~`;
+                  ? `== Pemberitahuan pencabutan pemblokiran ==\nHalo ${targetVal},\n\nPemblokiran pada akun "${targetVal}" telah dicabut dengan alasan berikut: ${config.unblockReason}.\n\nPemberitahuan ini dikirimkan secara otomatis. Silakan sampaikan pertanyaan atau keberatan ke halaman pembicaraan saya. ~~~~`
+                  : `== Account unblock notice ==\nDear ${targetVal},\n\nThe block on the account "${targetVal}" has been lifted due to the following reason: ${config.unblockReason}.\n\nThis notification was posted automatically. Please direct any questions or concerns to my user talk page. ~~~~`;
                 try {
                   const talkExists = await pageExists(talkTitle);
                   await apiPost({
@@ -1244,7 +1244,7 @@ $(function () {
                 const sourceTitleObj = new mw.Title(targetVal);
                 if (sourceTitleObj.isTalkPage()) {
                   addLog(
-                    "[Move] Skipped talk page move: target is already a talk page.",
+                    "[Move] Skipped talk page move: target is already a talk page",
                     "warn",
                   );
                 } else {
@@ -1277,7 +1277,7 @@ $(function () {
                     updateStatusDisplay();
                   } else {
                     addLog(
-                      `[Move] Skipped talk page move: "${sourceTalkTitle}" does not exist.`,
+                      `[Move] Skipped talk page move: "${sourceTalkTitle}" does not exist`,
                       "warn",
                     );
                   }
@@ -1567,7 +1567,7 @@ $(function () {
                 ) {
                   if (!mediainfoNeedsRevert) {
                     addLog(
-                      `[Undo] Skipped: ${title} — page had already been reverted by another user; undo was not applied by this operation.`,
+                      `[Undo] Skipped: ${title} — page had already been reverted by another user; undo was not applied by this operation`,
                       "warn",
                     );
                   }
@@ -1597,7 +1597,7 @@ $(function () {
                 ) {
                   if (!mediainfoNeedsRevert) {
                     addLog(
-                      `[Rollback] Skipped: ${title} — already reverted or user is the only author.`,
+                      `[Rollback] Skipped: ${title} — already reverted or user is the only author`,
                       "warn",
                     );
                   }
@@ -1892,7 +1892,7 @@ $(function () {
                     creatorMap.get(pageCreator).push(title);
                   } else {
                     addLog(
-                      `[Notify] Skipped deletion notification for ${title}: page was created and deleted by the same user.`,
+                      `[Notify] Skipped deletion notification for ${title}: page was created and deleted by the same user`,
                       "warn",
                     );
                   }
@@ -2192,13 +2192,13 @@ $(function () {
               let notice;
               if (deletedTitles.length === 1) {
                 notice = useIndonesian
-                  ? `== Pemberitahuan penghapusan halaman ==\nHalaman "${deletedTitles[0]}" yang Anda buat telah dihapus dengan alasan berikut: ${config.massdelReason}.\n\nHalaman yang dihapus tidak lagi dapat diakses secara publik. Jika Anda yakin penghapusan ini keliru, silakan sampaikan di halaman pembicaraan saya atau ikuti prosedur pemulihan halaman wiki ini.\n\nPemberitahuan ini dikirimkan secara otomatis. Silakan sampaikan pertanyaan atau keberatan ke halaman pembicaraan saya. ~~~~`
-                  : `== Page deletion notice ==\nThe page "${deletedTitles[0]}" you created has been deleted due to the following reason: ${config.massdelReason}.\n\nDeleted pages are no longer publicly accessible. If you believe this deletion was in error, please raise the matter on my user talk page or follow your wiki's undeletion process.\n\nThis notification was posted automatically. Please direct any questions or concerns to my user talk page. ~~~~`;
+                  ? `== Pemberitahuan penghapusan halaman ==\nHalo ${targetVal},\n\nHalaman "${deletedTitles[0]}" yang Anda buat telah dihapus dengan alasan berikut: ${config.massdelReason}.\n\nHalaman yang dihapus tidak lagi dapat diakses secara publik. Jika Anda yakin penghapusan ini keliru, silakan sampaikan di halaman pembicaraan saya atau ikuti prosedur pemulihan halaman wiki ini.\n\nPemberitahuan ini dikirimkan secara otomatis. Silakan sampaikan pertanyaan atau keberatan ke halaman pembicaraan saya. ~~~~`
+                  : `== Page deletion notice ==\nDear ${targetVal},\n\nThe page "${deletedTitles[0]}" you created has been deleted due to the following reason: ${config.massdelReason}.\n\nDeleted pages are no longer publicly accessible. If you believe this deletion was in error, please raise the matter on my user talk page or follow your wiki's undeletion process.\n\nThis notification was posted automatically. Please direct any questions or concerns to my user talk page. ~~~~`;
               } else {
                 const listed = deletedTitles.map((t) => `* "${t}"`).join("\n");
                 notice = useIndonesian
-                  ? `== Pemberitahuan penghapusan halaman ==\nHalaman-halaman berikut yang Anda buat telah dihapus dengan alasan berikut: ${config.massdelReason}.\n\n${listed}\n\nHalaman yang dihapus tidak lagi dapat diakses secara publik. Jika Anda yakin ada penghapusan yang keliru, silakan sampaikan di halaman pembicaraan saya atau ikuti prosedur pemulihan halaman wiki ini.\n\nPemberitahuan ini dikirimkan secara otomatis. Silakan sampaikan pertanyaan atau keberatan ke halaman pembicaraan saya. ~~~~`
-                  : `== Page deletion notice ==\nThe following pages you created have been deleted due to the following reason: ${config.massdelReason}.\n\n${listed}\n\nDeleted pages are no longer publicly accessible. If you believe any of these deletions were in error, please raise the matter on my user talk page or follow your wiki's undeletion process.\n\nThis notification was posted automatically. Please direct any questions or concerns to my user talk page. ~~~~`;
+                  ? `== Pemberitahuan penghapusan halaman ==\nHalo ${targetVal},\n\nHalaman-halaman berikut yang Anda buat telah dihapus dengan alasan berikut: ${config.massdelReason}.\n\n${listed}\n\nHalaman yang dihapus tidak lagi dapat diakses secara publik. Jika Anda yakin ada penghapusan yang keliru, silakan sampaikan di halaman pembicaraan saya atau ikuti prosedur pemulihan halaman wiki ini.\n\nPemberitahuan ini dikirimkan secara otomatis. Silakan sampaikan pertanyaan atau keberatan ke halaman pembicaraan saya. ~~~~`
+                  : `== Page deletion notice ==\nDear ${targetVal},\n\nThe following pages you created have been deleted due to the following reason: ${config.massdelReason}.\n\n${listed}\n\nDeleted pages are no longer publicly accessible. If you believe any of these deletions were in error, please raise the matter on my user talk page or follow your wiki's undeletion process.\n\nThis notification was posted automatically. Please direct any questions or concerns to my user talk page. ~~~~`;
               }
               await apiPost({
                 action: "edit",
@@ -2234,13 +2234,13 @@ $(function () {
                 let notice;
                 if (titles.length === 1) {
                   notice = useIndonesian
-                    ? `== Pemberitahuan penghapusan halaman ==\nHalaman "${titles[0]}" yang Anda buat telah dihapus dengan alasan berikut: ${config.massdelReason}.\n\nHalaman yang dihapus tidak lagi dapat diakses secara publik. Jika Anda yakin penghapusan ini keliru, silakan sampaikan di halaman pembicaraan saya atau ikuti prosedur pemulihan halaman wiki ini.\n\nPemberitahuan ini dikirimkan secara otomatis. Silakan sampaikan pertanyaan atau keberatan ke halaman pembicaraan saya. ~~~~`
-                    : `== Page deletion notice ==\nThe page "${titles[0]}" you created has been deleted due to the following reason: ${config.massdelReason}.\n\nDeleted pages are no longer publicly accessible. If you believe this deletion was in error, please raise the matter on my user talk page or follow your wiki's undeletion process.\n\nThis notification was posted automatically. Please direct any questions or concerns to my user talk page. ~~~~`;
+                    ? `== Pemberitahuan penghapusan halaman ==\nHalo ${creator},\n\nHalaman "${titles[0]}" yang Anda buat telah dihapus dengan alasan berikut: ${config.massdelReason}.\n\nHalaman yang dihapus tidak lagi dapat diakses secara publik. Jika Anda yakin penghapusan ini keliru, silakan sampaikan di halaman pembicaraan saya atau ikuti prosedur pemulihan halaman wiki ini.\n\nPemberitahuan ini dikirimkan secara otomatis. Silakan sampaikan pertanyaan atau keberatan ke halaman pembicaraan saya. ~~~~`
+                    : `== Page deletion notice ==\nDear ${creator},\n\nThe page "${titles[0]}" you created has been deleted due to the following reason: ${config.massdelReason}.\n\nDeleted pages are no longer publicly accessible. If you believe this deletion was in error, please raise the matter on my user talk page or follow your wiki's undeletion process.\n\nThis notification was posted automatically. Please direct any questions or concerns to my user talk page. ~~~~`;
                 } else {
                   const listed = titles.map((t) => `* "${t}"`).join("\n");
                   notice = useIndonesian
-                    ? `== Pemberitahuan penghapusan halaman ==\nHalaman-halaman berikut yang Anda buat telah dihapus dengan alasan berikut: ${config.massdelReason}.\n\n${listed}\n\nHalaman yang dihapus tidak lagi dapat diakses secara publik. Jika Anda yakin ada penghapusan yang keliru, silakan sampaikan di halaman pembicaraan saya atau ikuti prosedur pemulihan halaman wiki ini.\n\nPemberitahuan ini dikirimkan secara otomatis. Silakan sampaikan pertanyaan atau keberatan ke halaman pembicaraan saya. ~~~~`
-                    : `== Page deletion notice ==\nThe following pages you created have been deleted due to the following reason: ${config.massdelReason}.\n\n${listed}\n\nDeleted pages are no longer publicly accessible. If you believe any of these deletions were in error, please raise the matter on my user talk page or follow your wiki's undeletion process.\n\nThis notification was posted automatically. Please direct any questions or concerns to my user talk page. ~~~~`;
+                    ? `== Pemberitahuan penghapusan halaman ==\nHalo ${creator},\n\nHalaman-halaman berikut yang Anda buat telah dihapus dengan alasan berikut: ${config.massdelReason}.\n\n${listed}\n\nHalaman yang dihapus tidak lagi dapat diakses secara publik. Jika Anda yakin ada penghapusan yang keliru, silakan sampaikan di halaman pembicaraan saya atau ikuti prosedur pemulihan halaman wiki ini.\n\nPemberitahuan ini dikirimkan secara otomatis. Silakan sampaikan pertanyaan atau keberatan ke halaman pembicaraan saya. ~~~~`
+                    : `== Page deletion notice ==\nDear ${creator},\n\nThe following pages you created have been deleted due to the following reason: ${config.massdelReason}.\n\n${listed}\n\nDeleted pages are no longer publicly accessible. If you believe any of these deletions were in error, please raise the matter on my user talk page or follow your wiki's undeletion process.\n\nThis notification was posted automatically. Please direct any questions or concerns to my user talk page. ~~~~`;
                 }
                 await apiPost({
                   action: "edit",
@@ -2303,7 +2303,7 @@ $(function () {
               if (isAborted) break;
               if (!deletedTitles.includes(title)) {
                 addLog(
-                  `[Protect] Skipped deferred protection for ${title}: page was not deleted.`,
+                  `[Protect] Skipped deferred protection for ${title}: page was not deleted`,
                   "warn",
                 );
                 continue;
@@ -2429,7 +2429,7 @@ $(function () {
                     !talkExistCheck.query.pages[0].missing;
                   if (!talkExists) {
                     addLog(
-                      `[Notify] Skipped protection notification for ${talkTitle}: talk page no longer exists.`,
+                      `[Notify] Skipped protection notification for ${talkTitle}: talk page no longer exists`,
                       "warn",
                     );
                     await new Promise((resolve) => setTimeout(resolve, 100));

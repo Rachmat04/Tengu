@@ -1218,52 +1218,52 @@ window.TenguReasons = {
         },
         {
           value: v(
-            "Article requires significant improvement before it meets inclusion criteria",
-            "Artikel membutuhkan perbaikan yang signifikan sebelum memenuhi kriteria kelayakan",
+            "Page requires significant improvement before it meets inclusion criteria",
+            "Halaman ini membutuhkan perbaikan yang signifikan sebelum memenuhi kriteria kelayakan",
           ),
           label: "Requires significant improvement",
         },
         {
           value: v(
-            "Article appears to be an autobiography or content primarily about its creator",
-            "Artikel tampaknya merupakan otobiografi atau konten yang terutama tentang pembuatnya",
+            "Page appears to be an autobiography or content primarily about its creator",
+            "Halaman ini tampaknya merupakan otobiografi atau konten yang terutama tentang pembuatnya",
           ),
           label: "Appears to be an autobiography",
         },
         {
           value: v(
-            "Article was created in article space but is not yet ready for inclusion",
-            "Artikel dibuat di ruang artikel tetapi belum siap untuk menjadi sebagai artikel yang layak dimasukkan",
+            "Page was created in the main namespace but is not yet ready for inclusion",
+            "Halaman dibuat di ruang nama utama tetapi belum siap untuk disertakan",
           ),
-          label: "Not yet ready for article space",
+          label: "Not yet ready for the main namespace",
         },
         {
           value: v(
-            "Article lacks reliable sources and requires further development",
-            "Artikel tidak memiliki sumber tepercaya dan membutuhkan pengembangan lebih lanjut",
+            "Page lacks reliable sources and requires further development",
+            "Halaman ini tidak memiliki sumber tepercaya dan membutuhkan pengembangan lebih lanjut",
           ),
           label: "Lacks reliable sources",
         },
         {
           value: v(
-            "Article does not meet notability guidelines and requires improvement before resubmission",
-            "Artikel tidak memenuhi panduan kelayakan dan perlu diperbaiki sebelum diajukan kembali",
+            "Page does not meet the relevant inclusion guidelines and requires improvement before resubmission",
+            "Halaman ini tidak memenuhi panduan kelayakan yang berlaku dan perlu diperbaiki sebelum diajukan kembali",
           ),
-          label: "Does not meet notability guidelines",
+          label: "Does not meet inclusion guidelines",
         },
         {
           value: v(
-            "Moving to user space to allow the creator to continue developing the article",
-            "Memindahkan ke ruang pengguna agar pembuat dapat melanjutkan pengembangan artikel",
+            "Moving to user space to allow the creator to continue developing the page",
+            "Memindahkan ke ruang pengguna agar pembuat dapat melanjutkan pengembangan halaman",
           ),
           label: "Allow creator to continue development",
         },
         {
           value: v(
-            "Article created by a new user who may benefit from developing it further in their user space",
-            "Artikel dibuat oleh pengguna baru yang dapat memperoleh manfaat dari pengembangan lebih lanjut di ruang penggunanya",
+            "Page created by a new user who may benefit from developing it further in their user space",
+            "Halaman dibuat oleh pengguna baru yang dapat memperoleh manfaat dari pengembangan lebih lanjut di ruang penggunanya",
           ),
-          label: "New user article requiring development",
+          label: "New user page requiring development",
         },
       ],
 
