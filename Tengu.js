@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.64.0
+ * Version 2.65.0
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -184,7 +184,8 @@ $(function () {
             };
           }
           const dialog = document.createElement("div");
-          dialog.className = "tng-dialog";
+          dialog.className =
+            "tng-dialog" + (opts && opts.child ? " tng-dialog-child" : "");
           const header = document.createElement("div");
           header.className = "tng-dialog-header";
           const headerLeft = document.createElement("div");
@@ -854,6 +855,7 @@ $(function () {
           const { overlay, body, footer } = createDialog({
             title: "Processing Tengu tasks",
             icon: "⛩️",
+            child: true,
             onClose: () => {
               window.location.href = mw.util.getUrl(
                 mw.config.get("wgPageName"),
@@ -993,6 +995,7 @@ $(function () {
                 const { overlay, dialog, body, footer } = createDialog({
                   title: "Self-block confirmation",
                   icon: "⚠️",
+                  child: true,
                   onClose: () => resolve(false),
                 });
                 body.innerHTML =
@@ -2677,6 +2680,7 @@ $(function () {
           const { overlay, body, footer } = createDialog({
             title: "User info: " + username,
             icon: "🔍",
+            child: true,
           });
 
           // Format an ISO timestamp as a human-readable UTC string.
@@ -3225,6 +3229,7 @@ $(function () {
           const { overlay, body, footer } = createDialog({
             title: "Page info: " + pageName,
             icon: "🔍",
+            child: true,
           });
 
           function fmtTimestamp(ts) {
@@ -3842,7 +3847,7 @@ $(function () {
           );
           fieldTarget.appendChild(inputTarget);
 
-          const btnGetInfo = makeBtn("ℹ️ Get info", "quiet");
+          const btnGetInfo = makeBtn("🔦 Get info", "quiet");
           btnGetInfo.className += " tng-btn-sm";
           btnGetInfo.title =
             tenguMode === "user"
@@ -4010,7 +4015,7 @@ $(function () {
             section: secRollback,
             sectionBody: bodyRollback,
             enableChk: chkRollback,
-          } = makeSection("Rollback", "↩️", false);
+          } = makeSection("Rollback", "🔙", false);
           const { wrap: wrapBot, chk: chkBot } = makeCheckbox(
             "Mark as bot edits",
             true,
@@ -4318,7 +4323,7 @@ $(function () {
             section: secWarn,
             sectionBody: bodyWarn,
             enableChk: chkWarn,
-          } = makeSection("User warning", "⚠️", false);
+          } = makeSection("User warning", "🔔", false);
 
           const { row: rowWarnMsg, field: fieldWarnMsg } = makeRow("Message");
           // Flatten the grouped WARN_MESSAGES structure into a single <select>
@@ -4852,7 +4857,7 @@ $(function () {
             section: secUndelete,
             sectionBody: bodyUndelete,
             enableChk: chkUndelete,
-          } = makeSection("Page undeletion", "♻️", false);
+          } = makeSection("Page undeletion", "📤", false);
 
           const hdrUndelete = secUndelete.querySelector(".tng-section-header");
 
@@ -5297,7 +5302,7 @@ $(function () {
             section: secProtectRecreation,
             sectionBody: bodyProtectRecreation,
             enableChk: chkProtectRecreation,
-          } = makeSection("Protect against recreation", "🚫", false);
+          } = makeSection("Protect against recreation", "🔏", false);
 
           const hdrProtectRecreation = secProtectRecreation.querySelector(
             ".tng-section-header",
@@ -6427,21 +6432,21 @@ $(function () {
             // the user can verify their selections before any action runs.
             function buildEnabledFeaturesList() {
               const features = [];
-              if (config.rollback) features.push("↩️ Rollback");
+              if (config.rollback) features.push("🔙 Rollback");
               if (config.block) features.push("⛔️ Block");
               if (config.unblock) features.push("🔓 Unblock");
-              if (config.warn) features.push("⚠️ User warning");
+              if (config.warn) features.push("🔔 User warning");
               if (config.reportGS)
                 features.push("🚩 Report to Global sysops/Requests");
               if (config.reportSRG)
                 features.push("📌 Report to Steward requests/Global");
               if (config.massdel) features.push("🗑️ Page deletion");
-              if (config.undelete) features.push("♻️ Page undeletion");
+              if (config.undelete) features.push("📤 Page undeletion");
               if (config.moveSandbox)
                 features.push("✂️ Move to user's sandbox");
               if (config.protect) features.push("🛡️ Page protection");
               if (config.protectRecreation)
-                features.push("🚫 Protect against recreation");
+                features.push("🔏 Protect against recreation");
               if (config.rd) features.push("👁️ Revision deletion");
               return features;
             }
@@ -6459,6 +6464,7 @@ $(function () {
             const confirmDlg = createDialog({
               title: "Confirm selected operations",
               icon: "⚠️",
+              child: true,
               onClose: function () {
                 document.removeEventListener(
                   "keydown",

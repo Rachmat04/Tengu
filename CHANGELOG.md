@@ -1,3 +1,14 @@
+## 2.65.0
+
+### Fixed
+
+* Fixed section-body expand and collapse animations not running when a section's enable checkbox is unchecked. The `.tng-section.tng-disabled .tng-section-body` CSS rule previously declared only `transition: opacity 0.25s`, which overrode the `max-height` and padding transitions defined on `.tng-section-body`. All four animated properties are now listed in both transition declarations so the animation runs regardless of whether the section is enabled or disabled
+
+### Changed
+
+* Increased `.tng-section-body` `max-height` from 460 px to 560 px to reduce the frequency of internal scrollbars in feature sections
+* Progress, confirmation, user-info, page-info, and self-block-confirmation dialogues now use a new `.tng-dialog-child` CSS class (`width: min(720px, 88%)`) to distinguish them visually from the main Tengu window, which retains its original `width: min(850px, 96%)`
+
 ## 2.64.0
 
 ### Changed
