@@ -357,7 +357,7 @@ window.TenguPackages = {
         revisiondelete: { enabled: false },
       },
 
-      "Speedy deletion — vandalism or test page": {
+      "Speedy deletion (vandalism or test page)": {
         tracingedits: { duration: 3600, indefregistered: false },
         rollback: { enabled: false, bot: false, showname: true, reason: "" },
         block: {

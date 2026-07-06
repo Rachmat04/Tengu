@@ -1,3 +1,11 @@
+## 2.64.0
+
+### Changed
+
+* The toolTag separator has been changed from an en dash to a middle dot (·), making the attribution line visually consistent with the dot-separated notice lines used elsewhere in Tengu's output
+* The "Protect from recreation after deletion" protection level dropdown in the Page deletion section now includes the "Extended confirmed users" option on wikis where that protection level is configured, matching the protection level options already available in the Protect against recreation section and the main Page protection section
+* Section bodies now animate smoothly when expanding and collapsing, using a `max-height` and `padding` transition, rather than appearing and disappearing instantly
+
 ## 2.63.0
 
 ### Removed

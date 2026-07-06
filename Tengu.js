@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.63.0
+ * Version 2.64.0
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -848,7 +848,7 @@ $(function () {
             report: 0,
             error: 0,
           };
-          const toolTag = " — [[w:id:Pengguna:Rachmat04/Tengu.js|⛩️]]";
+          const toolTag = " · [[w:id:Pengguna:Rachmat04/Tengu.js|⛩️]]";
 
           // Build progress UI
           const { overlay, body, footer } = createDialog({
@@ -5153,7 +5153,12 @@ $(function () {
           // unaffected.
           restrictionLevelsPromise.then(function (info) {
             if (!info.hasExtendedConfirmed) return;
-            [selProtectEdit, selProtectMove].forEach(function (sel) {
+            [
+              selProtectEdit,
+              selProtectMove,
+              selPagedelProtectRecreationLevel,
+              selProtectRecreationLevel,
+            ].forEach(function (sel) {
               const opt = document.createElement("option");
               opt.value = "extendedconfirmed";
               opt.textContent = "Extended confirmed users";
