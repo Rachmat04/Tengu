@@ -1,3 +1,9 @@
+## 2.63.0
+
+### Removed
+
+* Removed the "Also block related temporary accounts (via shared IP)" checkbox and its associated pre-execution lookup panel from the block section. The feature relied on `action=checkuser` (`cutype=userips` / `cutype=ipusers`), which requires the `checkuser` right.
+
 ## 2.62.0
 
 ### Changed
