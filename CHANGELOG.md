@@ -1,8 +1,20 @@
+## 2.66.0
+
+### Added
+
+* Added an **"Also move all subpages"** checkbox to the Move to user's sandbox section. When ticked, all subpages of the target page are moved to the corresponding subpages of the destination (e.g. `User:[username]/[subpage name]/SubpageName`). If "Also move the talk page" is also ticked, the talk page of each subpage is moved to the corresponding talk subpage of the destination as well. Subpages are moved with the same reason, redirect-suppression setting, and throttle delay as the main page.
+
+### Changed
+
+* The "Suppress redirect" checkbox tooltip now states that the option is only available to sysops and that non-sysop users cannot use it, making the restriction clearer without requiring the user to attempt the move first.
+* The "Also move the talk page" checkbox is now automatically disabled when the target page is itself a talk page (which has no associated talk page) or when no talk page exists for the target. The checkbox is re-evaluated each time the target field changes. The tooltip is updated to reflect the reason when disabled.
+* The `moveSandboxTalk` config key is now gated on the checkbox's disabled state as well as its checked state, matching the pattern used by other reversibly lockable features.
+
 ## 2.65.0
 
 ### Fixed
 
-* Fixed section-body expand and collapse animations not running when a section's enable checkbox is unchecked. The `.tng-section.tng-disabled .tng-section-body` CSS rule previously declared only `transition: opacity 0.25s`, which overrode the `max-height` and padding transitions defined on `.tng-section-body`. All four animated properties are now listed in both transition declarations so the animation runs regardless of whether the section is enabled or disabled
+* Fixed section-body expand and collapse animations not running when a section's enable checkbox is unchecked. The `.tng-section.tng-disabled .tng-section-body` CSS rule previously declared only `transition: opacity 0.25s`, which overrode the `max-height` and padding transitions defined on `.tng-section-body`. All four animated properties are now listed in both transition declarations so the animation runs regardless of whether the section is enabled or disabled.
 
 ### Changed
 
