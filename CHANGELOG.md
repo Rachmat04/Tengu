@@ -1,3 +1,9 @@
+## 2.68.0
+
+### Fixed
+
+* Fixed temporary accounts being routed to the global lock path in the Report to Steward requests/Global section. Temporary accounts (matching the `~YYYY-…` pattern) cannot be globally locked and are now treated as global block targets, consistent with IP addresses. The block-reason checkboxes and global block report template are shown when the target is a temporary account.
+
 ## 2.67.0
 
 ### Changed

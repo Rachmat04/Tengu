@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.67.0
+ * Version 2.68.0
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -4698,11 +4698,16 @@ $(function () {
           checksSRGOptions.appendChild(wrapSRGHideUsername);
           bodySRG.appendChild(checksSRGOptions);
 
-          // Returns true when the current target is an IP address — i.e.
-          // when this section will file a global block request rather than
-          // a global lock request.
+          // Returns true when the current target is an IP address or a
+          // temporary account — i.e. when this section will file a global
+          // block request rather than a global lock request.
+          // Temporary accounts (pattern ~YYYY-…) cannot be globally locked
+          // and must be reported as global block requests instead.
           function isSRGBlockTarget() {
-            return mw.util.isIPAddress(inputTarget.value.trim());
+            const target = inputTarget.value.trim();
+            return (
+              mw.util.isIPAddress(target) || /^~\d{4}-\d+-\d+$/.test(target)
+            );
           }
 
           // Returns the reason-checkbox set matching the current target
@@ -4724,7 +4729,7 @@ $(function () {
             checksSRGOptions.classList.toggle("tng-hidden", isBlock);
             if (isBlock) chkSRGHideUsername.checked = false;
             divSRGStatus.textContent = isBlock
-              ? "This will be filed as a global block request, since the target is an IP address."
+              ? "This will be filed as a global block request, since the target is an IP address or temporary account."
               : "This will be filed as a global lock request, since the target is a registered account.";
           }
 
