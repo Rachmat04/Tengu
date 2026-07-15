@@ -1,3 +1,9 @@
+## 2.68.1
+
+### Fixed
+
+* Fixed the Start button remaining disabled when only the Protect against recreation section was enabled. The section's enable checkbox was missing from both the `updateStartBtn()` condition and its set of `change` event listeners, so ticking it had no effect on button state.
+
 ## 2.68.0
 
 ### Fixed

@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.68.0
+ * Version 2.68.1
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -6191,6 +6191,7 @@ $(function () {
               chkUndelete.checked ||
               chkMoveSandbox.checked ||
               chkProtect.checked ||
+              chkProtectRecreation.checked ||
               chkRevdel.checked ||
               chkWarn.checked ||
               chkGS.checked ||
@@ -6205,6 +6206,7 @@ $(function () {
           chkPagedel.addEventListener("change", updateStartBtn);
           chkUndelete.addEventListener("change", updateStartBtn);
           chkProtect.addEventListener("change", updateStartBtn);
+          chkProtectRecreation.addEventListener("change", updateStartBtn);
           chkRevdel.addEventListener("change", updateStartBtn);
           chkWarn.addEventListener("change", updateStartBtn);
           chkGS.addEventListener("change", updateStartBtn);
