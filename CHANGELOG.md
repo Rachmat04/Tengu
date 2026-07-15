@@ -1,3 +1,11 @@
+## 2.67.0
+
+### Changed
+
+* The "Mark as bot edits" checkbox in the Rollback section is now automatically disabled when "Use undo instead of rollback" is selected, since marking edits as bot edits applies only to native rollback. The checkbox is re-enabled when undo is deselected, and any ticked value is cleared while undo is active. The state is also re-evaluated when a package is applied and when the rights check resolves.
+* Removed the help text below the Rollback reason field. The note previously stated that leaving the reason field empty with "Show username in summary" unticked would produce a "Revert edits" summary; this wording no longer accurately reflects rollback and undo summary behaviour following changes in earlier versions.
+* The status notes shown in the Page deletion, Page protection, and Page undeletion sections when Tengu is in user mode now read "Deletion history is only available in page mode." and "Protection status is only available in page mode." respectively, replacing the previous "Not applicable in user mode." wording, which gave no indication of where the information is available.
+
 ## 2.66.0
 
 ### Added

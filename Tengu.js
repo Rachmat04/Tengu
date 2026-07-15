@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.66.0
+ * Version 2.67.0
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -4159,6 +4159,16 @@ $(function () {
           checksRollback.appendChild(wrapUndo);
           bodyRollback.appendChild(checksRollback);
 
+          // "Mark as bot edits" only applies to native rollback; disable it when undo is selected.
+          function updateBotAvailability() {
+            const isUndo = chkUndo.checked;
+            chkBot.disabled = isUndo;
+            wrapBot.style.opacity = isUndo ? "0.5" : "";
+            wrapBot.style.cursor = isUndo ? "not-allowed" : "";
+            if (isUndo) chkBot.checked = false;
+          }
+          chkUndo.addEventListener("change", updateBotAvailability);
+
           const { row: rowRbReason, field: fieldRbReason } = makeRow("Reason");
           const selRbReason = makeSelect(ROLLBACK_REASONS);
           const inputRbReason = makeInput(
@@ -4171,12 +4181,6 @@ $(function () {
           reasonWrapRollback.className = "tng-reason-wrap";
           reasonWrapRollback.appendChild(filteredWrapRbReason);
           reasonWrapRollback.appendChild(inputRbReason);
-
-          const helpRbReason = document.createElement("div");
-          helpRbReason.className = "tng-help";
-          helpRbReason.textContent =
-            'If set, this overrides the default rollback summary. When "Show username in summary" is unchecked and no reason is given, the summary will read "Revert edits".';
-          reasonWrapRollback.appendChild(helpRbReason);
 
           fieldRbReason.appendChild(reasonWrapRollback);
           bodyRollback.appendChild(rowRbReason);
@@ -6868,6 +6872,7 @@ $(function () {
               if (!hasRollback) {
                 chkUndo.checked = true;
               }
+              updateBotAvailability();
 
               if (!hasBlock && tenguMode === "user") {
                 lockSection(
@@ -6985,6 +6990,7 @@ $(function () {
             chkShow.checked = rb.showname !== false;
             // Reset to the appropriate default: undo if the user lacks rollback rights, rollback otherwise.
             chkUndo.checked = !!(resolvedRights && !resolvedRights.hasRollback);
+            updateBotAvailability();
 
             const rbr = rb.reason || "";
             let foundRbr = false;
@@ -7362,17 +7368,17 @@ $(function () {
               setNote(
                 divPagedelStatus,
                 "loading",
-                "Not applicable in user mode.",
+                "Deletion history is only available in page mode.",
               );
               setNote(
                 divProtectStatus,
                 "loading",
-                "Not applicable in user mode.",
+                "Protection status is only available in page mode.",
               );
               setNote(
                 divUndeleteStatus,
                 "loading",
-                "Not applicable in user mode.",
+                "Deletion history is only available in page mode.",
               );
               if (!undeleteRightsLocked) {
                 applyUndeleteStatusLock(true, "not applicable in user mode.");
