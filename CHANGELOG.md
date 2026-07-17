@@ -1,3 +1,20 @@
+## 2.69.0
+
+### Added
+
+* Added **Page protection** and **Revision deletion** as request types in the Report to Global sysops/Requests section when Tengu is in page mode. The section previously only supported page deletion requests. A new "Request type" dropdown (visible in page mode only) lets users choose the appropriate action before selecting reasons.
+* Added preset reason checkboxes for each page-mode request type:
+  * **Page deletion** — vandalism, spam, attack page, blatant copyright violation, cross-wiki spam, hoax page (unchanged from the previous single set)
+  * **Page protection** — cross-wiki vandalism, spam, long-term abuse (LTA), persistent disruption, repeated copyright violations
+  * **Revision deletion** — privacy violation or personal information, copyright violation, attack or defamatory content, grossly offensive content, spam or promotional content
+* The report line submitted to Global sysops/Requests now opens with "Please protect" or "Please delete revisions from" for the corresponding request types, replacing the fixed "Please delete" wording that previously applied to all page-mode reports.
+
+### Changed
+
+* Renamed the `PAGE` key in `GLOBAL_SYSOPS_REPORT_REASONS` (`Tengu-reasons.js`) to `PAGE_DELETE`, and updated all references in `Tengu.js`. This is an internal rename with no user-visible effect.
+* Switching the request type clears all reason checkboxes for the previously selected type so no stale selections carry over.
+* Switching between user mode and page mode resets the request type selector to "Page deletion" and clears all reason checkboxes across all three page-mode sets.
+
 ## 2.68.1
 
 ### Fixed

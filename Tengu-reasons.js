@@ -1286,13 +1286,27 @@ window.TenguReasons = {
           { id: "username", label: "Inappropriate username" },
           { id: "botaccount", label: "Bot or automated spam account" },
         ],
-        PAGE: [
+        PAGE_DELETE: [
           { id: "pagevandalism", label: "Vandalism" },
           { id: "pagespam", label: "Spam" },
           { id: "attackpage", label: "Attack page" },
           { id: "copyvio", label: "Blatant copyright violation" },
           { id: "crosswikispam", label: "Cross-wiki spam" },
           { id: "hoax", label: "Hoax page" },
+        ],
+        PAGE_PROTECT: [
+          { id: "crosswikivandalism", label: "Cross-wiki vandalism" },
+          { id: "spam", label: "Spam" },
+          { id: "lta", label: "Long-term abuse (LTA)" },
+          { id: "persistentdisruption", label: "Persistent disruption" },
+          { id: "copyvio", label: "Repeated copyright violations" },
+        ],
+        PAGE_REVDEL: [
+          { id: "privacy", label: "Privacy violation or personal information" },
+          { id: "copyvio", label: "Copyright violation" },
+          { id: "attackcontent", label: "Attack or defamatory content" },
+          { id: "offensive", label: "Grossly offensive content" },
+          { id: "spam", label: "Spam or promotional content" },
         ],
       },
 

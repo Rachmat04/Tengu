@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.68.1
+ * Version 2.69.0
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -4533,28 +4533,106 @@ $(function () {
           }
           bodyGS.appendChild(checksGSReasonsAccount);
 
-          const checksGSReasonsPage = document.createElement("div");
-          checksGSReasonsPage.className =
+          // Request type selector — page mode only; hidden in user mode.
+          const { row: rowGSPageRequestType, field: fieldGSPageRequestType } =
+            makeRow("Request type");
+          rowGSPageRequestType.className =
+            "tng-row" + (tenguMode === "page" ? "" : " tng-hidden");
+          const selGSPageRequestType = makeSelect([
+            { value: "delete", label: "Page deletion" },
+            { value: "protect", label: "Page protection" },
+            { value: "revdel", label: "Revision deletion" },
+          ]);
+          fieldGSPageRequestType.appendChild(wrapSelect(selGSPageRequestType));
+          bodyGS.appendChild(rowGSPageRequestType);
+
+          // Page deletion reasons
+          const checksGSReasonsPageDelete = document.createElement("div");
+          checksGSReasonsPageDelete.className =
             "tng-checks" + (tenguMode === "page" ? "" : " tng-hidden");
-          checksGSReasonsPage.style.paddingLeft = "0";
-          const gsReasonChecksPage = [];
-          for (const r of GLOBAL_SYSOPS_REPORT_REASONS.PAGE) {
+          checksGSReasonsPageDelete.style.paddingLeft = "0";
+          const gsReasonChecksPageDelete = [];
+          for (const r of GLOBAL_SYSOPS_REPORT_REASONS.PAGE_DELETE) {
             const { wrap: wrapGSReason, chk: chkGSReason } = makeCheckbox(
               r.label,
               false,
             );
-            checksGSReasonsPage.appendChild(wrapGSReason);
-            gsReasonChecksPage.push({ chk: chkGSReason, label: r.label });
+            checksGSReasonsPageDelete.appendChild(wrapGSReason);
+            gsReasonChecksPageDelete.push({ chk: chkGSReason, label: r.label });
           }
-          bodyGS.appendChild(checksGSReasonsPage);
+          bodyGS.appendChild(checksGSReasonsPageDelete);
 
-          // Returns the reason-checkbox set matching the current mode, so
-          // validation and report-building logic do not need to repeat the
-          // mode check inline.
+          // Page protection reasons (hidden until the user selects "protect")
+          const checksGSReasonsPageProtect = document.createElement("div");
+          checksGSReasonsPageProtect.className = "tng-checks tng-hidden";
+          checksGSReasonsPageProtect.style.paddingLeft = "0";
+          const gsReasonChecksPageProtect = [];
+          for (const r of GLOBAL_SYSOPS_REPORT_REASONS.PAGE_PROTECT) {
+            const { wrap: wrapGSReason, chk: chkGSReason } = makeCheckbox(
+              r.label,
+              false,
+            );
+            checksGSReasonsPageProtect.appendChild(wrapGSReason);
+            gsReasonChecksPageProtect.push({
+              chk: chkGSReason,
+              label: r.label,
+            });
+          }
+          bodyGS.appendChild(checksGSReasonsPageProtect);
+
+          // Revision deletion reasons (hidden until the user selects "revdel")
+          const checksGSReasonsPageRevdel = document.createElement("div");
+          checksGSReasonsPageRevdel.className = "tng-checks tng-hidden";
+          checksGSReasonsPageRevdel.style.paddingLeft = "0";
+          const gsReasonChecksPageRevdel = [];
+          for (const r of GLOBAL_SYSOPS_REPORT_REASONS.PAGE_REVDEL) {
+            const { wrap: wrapGSReason, chk: chkGSReason } = makeCheckbox(
+              r.label,
+              false,
+            );
+            checksGSReasonsPageRevdel.appendChild(wrapGSReason);
+            gsReasonChecksPageRevdel.push({ chk: chkGSReason, label: r.label });
+          }
+          bodyGS.appendChild(checksGSReasonsPageRevdel);
+
+          // Shows only the reason container matching the selected request type.
+          function updateGSPageReasonSet() {
+            const type = selGSPageRequestType.value;
+            checksGSReasonsPageDelete.classList.toggle(
+              "tng-hidden",
+              type !== "delete",
+            );
+            checksGSReasonsPageProtect.classList.toggle(
+              "tng-hidden",
+              type !== "protect",
+            );
+            checksGSReasonsPageRevdel.classList.toggle(
+              "tng-hidden",
+              type !== "revdel",
+            );
+          }
+          selGSPageRequestType.addEventListener("change", function () {
+            // Clear all page reason checkboxes when the type changes.
+            [
+              ...gsReasonChecksPageDelete,
+              ...gsReasonChecksPageProtect,
+              ...gsReasonChecksPageRevdel,
+            ].forEach(function (c) {
+              c.chk.checked = false;
+            });
+            updateGSPageReasonSet();
+          });
+
+          // Returns the reason-checkbox set matching the current mode and,
+          // in page mode, the selected request type. Used by validation and
+          // report-building logic so neither needs to repeat the mode/type
+          // check inline.
           function activeGSReasonChecks() {
-            return tenguMode === "page"
-              ? gsReasonChecksPage
-              : gsReasonChecksAccount;
+            if (tenguMode !== "page") return gsReasonChecksAccount;
+            const type = selGSPageRequestType.value;
+            if (type === "protect") return gsReasonChecksPageProtect;
+            if (type === "revdel") return gsReasonChecksPageRevdel;
+            return gsReasonChecksPageDelete;
           }
 
           const { row: rowGSDetails, field: fieldGSDetails } =
@@ -5945,17 +6023,28 @@ $(function () {
             updateModeBadge(isUserModeNow);
 
             // Show only the reason checkboxes matching the new mode, and
-            // clear both groups so a reason picked under the previous mode
+            // clear all groups so a reason picked under the previous mode
             // is never carried over into a report submitted under the new one.
             checksGSReasonsAccount.classList.toggle(
               "tng-hidden",
               !isUserModeNow,
             );
-            checksGSReasonsPage.classList.toggle("tng-hidden", isUserModeNow);
+            rowGSPageRequestType.classList.toggle("tng-hidden", isUserModeNow);
+            // Reset the request type to page deletion and update the visible
+            // reason container whenever the mode changes.
+            selGSPageRequestType.value = "delete";
+            updateGSPageReasonSet();
+            if (isUserModeNow) {
+              checksGSReasonsPageDelete.classList.add("tng-hidden");
+            }
             gsReasonChecksAccount.forEach(function (c) {
               c.chk.checked = false;
             });
-            gsReasonChecksPage.forEach(function (c) {
+            [
+              ...gsReasonChecksPageDelete,
+              ...gsReasonChecksPageProtect,
+              ...gsReasonChecksPageRevdel,
+            ].forEach(function (c) {
               c.chk.checked = false;
             });
 
@@ -6420,8 +6509,17 @@ $(function () {
 
               if (tenguMode === "page") {
                 const pageUrl = server + mw.util.getUrl(targetVal);
+                const gsPageType = selGSPageRequestType.value;
+                const requestVerb =
+                  gsPageType === "protect"
+                    ? "Please protect"
+                    : gsPageType === "revdel"
+                      ? "Please delete revisions from"
+                      : "Please delete";
                 return (
-                  "* Please delete [" +
+                  "* " +
+                  requestVerb +
+                  " [" +
                   pageUrl +
                   " " +
                   targetVal +
