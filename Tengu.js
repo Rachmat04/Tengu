@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.69.0
+ * Version 2.70.0
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -1426,7 +1426,36 @@ $(function () {
           const creation = [];
           const pagesToProtect = new Set();
 
-          if (config.mode === "user") {
+          if (config.mode === "user" && config.customSelection) {
+            // Custom-selection mode: use the items chosen in the picker rather
+            // than fetching contributions from the API.
+            for (const [title, info] of Object.entries(
+              config.selectedPageEdits,
+            )) {
+              pageEdits[title] = info;
+            }
+            for (const t of config.selectedCreations) {
+              creation.push(t);
+            }
+            if (!Object.keys(pageEdits).length && !creation.length) {
+              addLog(
+                "[Info] Custom selection is active but no items were selected — no edits or pages will be processed.",
+                "warn",
+              );
+            }
+            if (config.protect) {
+              for (const title of Object.keys(pageEdits)) {
+                pagesToProtect.add(title);
+              }
+              if (!config.massdel) {
+                for (const title of creation) {
+                  pagesToProtect.add(title);
+                }
+              }
+            }
+          }
+
+          if (config.mode === "user" && !config.customSelection) {
             const contribParams = {
               action: "query",
               list: "usercontribs",
@@ -1505,8 +1534,8 @@ $(function () {
                 }
               }
             }
-          } else {
-            // Page mode: Bypass fetching and apply operations directly to the target page
+          } else if (config.mode === "page") {
+            // Page mode: bypass fetching and apply operations directly to the target page
             if (config.protect) pagesToProtect.add(targetVal);
             if (config.massdel) creation.push(targetVal);
           }
@@ -3680,6 +3709,11 @@ $(function () {
           // Set when the rights Promise settles; used by applyModeRestrictions() to
           // re-apply rights-based locks when switching from page mode back to user mode.
           let resolvedRights = null;
+          // Maps page title → { revids, latest, oldestParent } for items chosen via
+          // the custom-selection picker. Populated when the user confirms the picker.
+          let customSelectedPageEdits = {};
+          // Array of page titles the user created, chosen via the custom-selection picker.
+          let customSelectedCreations = [];
           // Set to true once the rights check confirms the user lacks the undelete
           // right; guards the dynamic per-target enable/disable logic in
           // updateSectionStatus() so a permanent rights lock is never undone.
@@ -4013,6 +4047,7 @@ $(function () {
             { value: "inf", label: "All edits" },
             { value: "other", label: "Custom date and time:" },
             { value: "other-between", label: "Between two dates:" },
+            { value: "custom", label: "Select specific edits/pages:" },
           ]);
           const inputEndtime = document.createElement("input");
           inputEndtime.type = "datetime-local";
@@ -4047,6 +4082,14 @@ $(function () {
               "tng-hidden",
               selEndtime.value !== "other-between",
             );
+            pickEditsBtnRow.classList.toggle(
+              "tng-hidden",
+              selEndtime.value !== "custom",
+            );
+            if (selEndtime.value !== "custom") {
+              customSelectedPageEdits = {};
+              customSelectedCreations = [];
+            }
           });
 
           const editGroup = document.createElement("div");
@@ -4081,6 +4124,319 @@ $(function () {
           editGroup.appendChild(editGroupBetween);
           fieldEdits.appendChild(editGroup);
           topSection.appendChild(rowEdits);
+
+          // Picker button row — only visible when "Select specific edits/pages" is active.
+          const pickEditsBtnRow = document.createElement("div");
+          pickEditsBtnRow.className = "tng-hidden";
+          pickEditsBtnRow.style.cssText =
+            "display: flex; flex-direction: column; gap: 4px; padding-left: 190px;";
+
+          const btnPickEdits = makeBtn("🔎 Select edits/pages", "quiet");
+          btnPickEdits.className += " tng-btn-sm";
+          btnPickEdits.style.alignSelf = "flex-start";
+          btnPickEdits.title =
+            "Open a dialogue to choose which of the target user's edits and created pages to include.";
+
+          const lblPickerSummary = document.createElement("div");
+          lblPickerSummary.className = "tng-help";
+          lblPickerSummary.textContent = "No items selected.";
+
+          function updatePickerSelectionSummary() {
+            const editCount = Object.keys(customSelectedPageEdits).length;
+            const createCount = customSelectedCreations.length;
+            if (editCount === 0 && createCount === 0) {
+              lblPickerSummary.textContent = "No items selected.";
+            } else {
+              const parts = [];
+              if (editCount) {
+                parts.push(
+                  editCount + " edited page" + (editCount !== 1 ? "s" : ""),
+                );
+              }
+              if (createCount) {
+                parts.push(
+                  createCount +
+                    " created page" +
+                    (createCount !== 1 ? "s" : ""),
+                );
+              }
+              lblPickerSummary.textContent = parts.join(", ") + " selected.";
+            }
+          }
+
+          pickEditsBtnRow.appendChild(btnPickEdits);
+          pickEditsBtnRow.appendChild(lblPickerSummary);
+          topSection.appendChild(pickEditsBtnRow);
+
+          btnPickEdits.addEventListener("click", async function () {
+            const pickerTarget = inputTarget.value.trim();
+            if (!pickerTarget) {
+              showNotification(
+                fieldTarget,
+                "Please enter a target username first.",
+              );
+              inputTarget.focus();
+              return;
+            }
+
+            const {
+              overlay: pickerOverlay,
+              body: pickerBody,
+              footer: pickerFooter,
+            } = createDialog({
+              title: "Select edits/pages — " + pickerTarget,
+              icon: "🔎",
+              child: true,
+            });
+
+            const loadingEl = document.createElement("div");
+            loadingEl.className = "tng-info-loading";
+            loadingEl.textContent = "Fetching contributions…";
+            pickerBody.appendChild(loadingEl);
+
+            const PICKER_FETCH_LIMIT = 500;
+            let pickerContribs = [];
+            let pickerTruncated = false;
+
+            try {
+              let continueToken = {};
+              let fetching = true;
+              while (fetching) {
+                const params = Object.assign(
+                  {
+                    action: "query",
+                    list: "usercontribs",
+                    ucuser: pickerTarget,
+                    ucprop: "ids|title|timestamp|flags",
+                    uclimit: "max",
+                  },
+                  continueToken,
+                );
+                const data = await apiGet(params);
+                if (data.query && data.query.usercontribs) {
+                  pickerContribs = pickerContribs.concat(
+                    data.query.usercontribs,
+                  );
+                }
+                if (
+                  data.continue &&
+                  pickerContribs.length < PICKER_FETCH_LIMIT
+                ) {
+                  continueToken = data.continue;
+                } else {
+                  if (data.continue) pickerTruncated = true;
+                  fetching = false;
+                }
+              }
+            } catch (e) {
+              loadingEl.className = "tng-log-err";
+              loadingEl.style.padding = "6px 0";
+              loadingEl.textContent =
+                "Failed to fetch contributions: " + formatApiError(e);
+              const btnClose = makeBtn("Close", "quiet");
+              btnClose.addEventListener("click", function () {
+                pickerOverlay.closeHandler();
+              });
+              pickerFooter.appendChild(btnClose);
+              return;
+            }
+
+            pickerBody.removeChild(loadingEl);
+
+            // Group contributions into edited pages and created pages,
+            // using the same split as work().
+            const pickerEditedPages = {};
+            const pickerCreatedPages = {};
+
+            for (const edit of pickerContribs) {
+              if (edit.new === "") {
+                if (!pickerCreatedPages[edit.title]) {
+                  pickerCreatedPages[edit.title] = {
+                    timestamp: edit.timestamp,
+                  };
+                }
+              } else {
+                if (!pickerEditedPages[edit.title]) {
+                  pickerEditedPages[edit.title] = {
+                    revids: [],
+                    latest: edit.revid,
+                    oldestParent: edit.parentid,
+                    timestamp: edit.timestamp,
+                  };
+                }
+                pickerEditedPages[edit.title].revids.push(edit.revid);
+                pickerEditedPages[edit.title].oldestParent = edit.parentid;
+              }
+            }
+
+            const pickerEditedTitles = Object.keys(pickerEditedPages).sort();
+            const pickerCreatedTitles = Object.keys(pickerCreatedPages).sort();
+
+            if (pickerTruncated) {
+              const noteEl = document.createElement("div");
+              noteEl.className = "tng-status-note tng-status-note-active";
+              noteEl.textContent =
+                "Only the most recent " +
+                PICKER_FETCH_LIMIT +
+                " contributions are shown. Some edits or pages may not be listed.";
+              pickerBody.appendChild(noteEl);
+            }
+
+            if (!pickerEditedTitles.length && !pickerCreatedTitles.length) {
+              const emptyEl = document.createElement("div");
+              emptyEl.className = "tng-info-empty";
+              emptyEl.textContent = "No contributions found for this user.";
+              pickerBody.appendChild(emptyEl);
+              const btnClose = makeBtn("Close", "quiet");
+              btnClose.addEventListener("click", function () {
+                pickerOverlay.closeHandler();
+              });
+              pickerFooter.appendChild(btnClose);
+              return;
+            }
+
+            function fmtPickerDate(ts) {
+              if (!ts) return "";
+              const d = new Date(ts);
+              return isNaN(d.getTime())
+                ? ""
+                : d.toUTCString().replace("GMT", "UTC");
+            }
+
+            // Builds a collapsible section with select-all / deselect-all
+            // controls and one checkbox per item.
+            function makePickerSection(sectionTitle, items, labelFn) {
+              const sec = document.createElement("div");
+              sec.className = "tng-section";
+
+              const hdr = document.createElement("div");
+              hdr.className = "tng-section-header";
+              const titleSpan = document.createElement("span");
+              titleSpan.textContent = sectionTitle + " (" + items.length + ")";
+              hdr.appendChild(titleSpan);
+              const arrow = document.createElement("span");
+              arrow.className = "tng-section-arrow tng-arrow-up";
+              hdr.appendChild(arrow);
+
+              const secBody = document.createElement("div");
+              secBody.className = "tng-section-body";
+              secBody.style.maxHeight = "280px";
+
+              hdr.addEventListener("click", function () {
+                const hidden = secBody.classList.toggle("tng-hidden");
+                arrow.classList.toggle("tng-arrow-up", !hidden);
+              });
+
+              const ctrlRow = document.createElement("div");
+              ctrlRow.style.cssText =
+                "display: flex; gap: 6px; margin-bottom: 6px;";
+              const btnAll = makeBtn("Select all", "quiet");
+              btnAll.className += " tng-btn-sm";
+              const btnNone = makeBtn("Deselect all", "quiet");
+              btnNone.className += " tng-btn-sm";
+
+              const checkboxes = [];
+              const listEl = document.createElement("div");
+              listEl.style.cssText =
+                "display: flex; flex-direction: column; gap: 4px;";
+
+              for (const item of items) {
+                const { wrap, chk } = makeCheckbox(labelFn(item), false);
+                chk.dataset.pickerKey = item;
+                checkboxes.push(chk);
+                listEl.appendChild(wrap);
+              }
+
+              btnAll.addEventListener("click", function () {
+                checkboxes.forEach(function (c) {
+                  c.checked = true;
+                });
+              });
+              btnNone.addEventListener("click", function () {
+                checkboxes.forEach(function (c) {
+                  c.checked = false;
+                });
+              });
+
+              ctrlRow.appendChild(btnAll);
+              ctrlRow.appendChild(btnNone);
+              secBody.appendChild(ctrlRow);
+              secBody.appendChild(listEl);
+              sec.appendChild(hdr);
+              sec.appendChild(secBody);
+
+              return { sec, checkboxes };
+            }
+
+            const allEditedCheckboxes = [];
+            const allCreatedCheckboxes = [];
+
+            if (pickerEditedTitles.length) {
+              const { sec, checkboxes } = makePickerSection(
+                "Edited pages",
+                pickerEditedTitles,
+                function (t) {
+                  const ts = pickerEditedPages[t].timestamp;
+                  return t + (ts ? " — " + fmtPickerDate(ts) : "");
+                },
+              );
+              // Pre-tick items from a previous confirmed selection.
+              checkboxes.forEach(function (c) {
+                if (customSelectedPageEdits[c.dataset.pickerKey]) {
+                  c.checked = true;
+                }
+              });
+              allEditedCheckboxes.push(...checkboxes);
+              pickerBody.appendChild(sec);
+            }
+
+            if (pickerCreatedTitles.length) {
+              const { sec, checkboxes } = makePickerSection(
+                "Created pages",
+                pickerCreatedTitles,
+                function (t) {
+                  const ts = pickerCreatedPages[t].timestamp;
+                  return t + (ts ? " — " + fmtPickerDate(ts) : "");
+                },
+              );
+              // Pre-tick items from a previous confirmed selection.
+              checkboxes.forEach(function (c) {
+                if (customSelectedCreations.includes(c.dataset.pickerKey)) {
+                  c.checked = true;
+                }
+              });
+              allCreatedCheckboxes.push(...checkboxes);
+              pickerBody.appendChild(sec);
+            }
+
+            const btnCancelPicker = makeBtn("Cancel", "quiet");
+            btnCancelPicker.addEventListener("click", function () {
+              pickerOverlay.closeHandler();
+            });
+
+            const btnConfirmPicker = makeBtn("Confirm selection", "primary");
+            btnConfirmPicker.addEventListener("click", function () {
+              customSelectedPageEdits = {};
+              customSelectedCreations = [];
+              allEditedCheckboxes.forEach(function (c) {
+                if (c.checked) {
+                  customSelectedPageEdits[c.dataset.pickerKey] =
+                    pickerEditedPages[c.dataset.pickerKey];
+                }
+              });
+              allCreatedCheckboxes.forEach(function (c) {
+                if (c.checked) {
+                  customSelectedCreations.push(c.dataset.pickerKey);
+                }
+              });
+              updatePickerSelectionSummary();
+              pickerOverlay.closeHandler();
+            });
+
+            pickerFooter.appendChild(btnCancelPicker);
+            pickerFooter.appendChild(btnConfirmPicker);
+          });
+
           const { row: rowPkg, field: fieldPkg } = makeRow("Package");
           // Options are populated by rebuildPackageOptions() below rather
           // than fixed at construction time, since the set of relevant
@@ -6073,6 +6429,16 @@ $(function () {
             inputBetweenTo.disabled = !isUserModeNow;
             rowEdits.style.opacity = isUserModeNow ? "" : "0.5";
             rowEdits.title = isUserModeNow ? "" : "Not applicable in page mode";
+            // Reset custom-selection state when switching to page mode, since
+            // the picker is only available in user mode.
+            if (!isUserModeNow && selEndtime.value === "custom") {
+              selEndtime.value = "3600";
+              inputEndtime.classList.add("tng-hidden");
+              pickEditsBtnRow.classList.add("tng-hidden");
+              customSelectedPageEdits = {};
+              customSelectedCreations = [];
+              updatePickerSelectionSummary();
+            }
 
             // Package row: available in both modes. The preset list is
             // mode-specific, so rebuild it and reset to Default whenever the
@@ -6389,6 +6755,10 @@ $(function () {
               betweenTo = _toVal ? new Date(_toVal).toISOString() : null;
               // endtime is not used when betweenMode is active
               endtime = "inf";
+            } else if (endtime === "custom") {
+              // Time filtering is not used in custom-selection mode;
+              // work() reads config.selectedPageEdits and config.selectedCreations instead.
+              endtime = "inf";
             }
 
             function buildRollbackReason() {
@@ -6655,6 +7025,11 @@ $(function () {
               betweenMode: betweenMode,
               betweenFrom: betweenFrom,
               betweenTo: betweenTo,
+              customSelection: selEndtime.value === "custom",
+              selectedPageEdits:
+                selEndtime.value === "custom" ? customSelectedPageEdits : {},
+              selectedCreations:
+                selEndtime.value === "custom" ? customSelectedCreations : [],
               rollback: chkRollback.checked,
               rollbackMethod: chkUndo.checked ? "undo" : "rollback",
               rollbackBot: chkBot.checked,

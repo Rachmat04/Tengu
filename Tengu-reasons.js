@@ -1226,7 +1226,7 @@ window.TenguReasons = {
         {
           value: v(
             "Page appears to be an autobiography or content primarily about its creator",
-            "Halaman ini tampaknya merupakan otobiografi atau konten yang terutama tentang pembuatnya",
+            "Halaman ini tampaknya merupakan autobiografi atau konten yang terutama tentang pembuatnya",
           ),
           label: "Appears to be an autobiography",
         },

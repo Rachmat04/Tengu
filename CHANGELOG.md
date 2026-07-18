@@ -1,3 +1,16 @@
+## 2.70.0
+
+### Added
+
+* Added a **"Select specific edits/pages"** option to the Edits dropdown (user mode only). When selected, a **"Select edits/pages"** button appears below the dropdown. Clicking it opens a picker dialogue that fetches up to 500 of the target user's most recent contributions and groups them into two collapsible sections: **Edited pages** and **Created pages**. Each section has **Select all** and **Deselect all** controls and a checkbox per page, showing the page title and the timestamp of the most recent edit or creation.
+* A summary line below the button shows how many pages are currently selected (for example, "3 edited pages, 1 created page selected."). Previously confirmed selections are pre-ticked when the picker is reopened.
+* If the fetch returns more than 500 contributions, a notice is shown in the picker dialogue advising that only the most recent 500 are listed.
+* When the custom-selection mode is active and the Start button is pressed, `work()` uses the confirmed selection directly rather than fetching contributions from the API. If no items have been selected, a warning is logged and no edits or pages are processed.
+
+### Changed
+
+* Switching to page mode whilst the Edits dropdown is set to "Select specific edits/pages" now resets the dropdown to "In the last 1 hour" and clears any pending selection.
+
 ## 2.69.0
 
 ### Added

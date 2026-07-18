@@ -1138,8 +1138,8 @@ window.TenguWarn = {
                 ? "== Final notice: creating autobiographies =="
                 : "== Notice: creating autobiographies ==";
               const headingId = isFinal
-                ? "== Pemberitahuan terakhir: membuat otobiografi =="
-                : "== Pemberitahuan: membuat otobiografi ==";
+                ? "== Pemberitahuan terakhir: membuat autobiografi =="
+                : "== Pemberitahuan: membuat autobiografi ==";
               const bodyEn =
                 `It appears that you may have created or substantially edited an article about yourself. Wikipedia strongly discourages editors from writing about themselves, as it is very difficult to write about oneself in a neutral and verifiable way, and doing so creates a significant [[WP:COI|conflict of interest]]. Please review [[WP:AUTO]] and [[WP:COI]]. If you meet [[WP:NCRIT|Wikipedia's notability criteria]], you may wish to request that someone else write an article about you instead.` +
                 (isFinal ? finalSentence(false) : "") +
