@@ -1,3 +1,11 @@
+## 2.72.0
+
+### Added
+
+* Added **sort controls** to the **Select edits/pages** picker dialogue. Three buttons — **A–Z**, **Oldest first**, and **Newest first** — appear below the namespace filter (or below any truncation notice when all contributions are in a single namespace). Clicking a button reorders items in both the **Edited pages** and **Created pages** sections simultaneously. The active sort button is highlighted. Sorting operates on the full item list independently of the namespace filter; items hidden by the filter retain their position but remain hidden.
+* Each picker item wrapper now stores the page title as `data-picker-key` and the contribution timestamp as `data-picker-timestamp`, used by the sort comparators. The timestamp comparators use lexicographic string ordering, which is correct for ISO 8601 timestamps.
+* `makePickerSection()` now accepts an optional fourth parameter `tsFn`, a function that returns a timestamp string for a given item. It also returns `listEl` alongside `sec` and `checkboxes`, so callers can reference the DOM list for later reordering.
+
 ## 2.71.1
 
 ### Fixed
