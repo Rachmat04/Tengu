@@ -1,3 +1,9 @@
+## 2.71.1
+
+### Fixed
+
+* Fixed the namespace filter in the **Select edits/pages** picker having no effect. The filter checkboxes were built correctly but no `change` listener was ever attached, so ticking or unticking a namespace had no visible result. Each picker item wrapper now stores the page's resolved namespace ID as a `data-picker-ns-id` attribute at build time. A new `applyPickerNamespaceFilter()` function, wired to every namespace checkbox's `change` event, uses those attributes to show or hide rows immediately when the selection changes.
+
 ## 2.71.0
 
 ### Added

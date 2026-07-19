@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.71.0
+ * Version 2.71.1
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -4390,6 +4390,13 @@ $(function () {
               for (const item of items) {
                 const { wrap, chk } = makeCheckbox(labelFn(item), false);
                 chk.dataset.pickerKey = item;
+                // Store the namespace ID on the wrapper so the namespace
+                // filter can show/hide rows without re-parsing titles.
+                let itemNsId = 0;
+                try {
+                  itemNsId = new mw.Title(item).getNamespaceId();
+                } catch (e) {}
+                wrap.dataset.pickerNsId = String(itemNsId);
                 checkboxes.push(chk);
                 listEl.appendChild(wrap);
               }
@@ -4470,6 +4477,36 @@ $(function () {
               allCreatedCheckboxes.push(...checkboxes);
               pickerBody.appendChild(sec);
             }
+
+            // Apply the namespace filter immediately whenever a namespace
+            // checkbox is toggled. Runs over all picker item wrappers in
+            // both sections and sets tng-hidden based on whether their
+            // stored namespace ID matches a ticked filter checkbox.
+            function applyPickerNamespaceFilter() {
+              const enabledNsIds = new Set(
+                nsFilterChecks
+                  .filter(function (c) {
+                    return c.checked;
+                  })
+                  .map(function (c) {
+                    return c.dataset.nsId;
+                  }),
+              );
+              const allItemWrappers = [
+                ...allEditedCheckboxes,
+                ...allCreatedCheckboxes,
+              ].map(function (c) {
+                return c.parentElement;
+              });
+              allItemWrappers.forEach(function (wrap) {
+                const show = enabledNsIds.has(wrap.dataset.pickerNsId);
+                wrap.classList.toggle("tng-hidden", !show);
+              });
+            }
+
+            nsFilterChecks.forEach(function (cNs) {
+              cNs.addEventListener("change", applyPickerNamespaceFilter);
+            });
 
             const btnCancelPicker = makeBtn("Cancel", "quiet");
             btnCancelPicker.addEventListener("click", function () {
