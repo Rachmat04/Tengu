@@ -1,3 +1,14 @@
+## 2.71.0
+
+### Added
+
+* Added a **namespace filter** to the **Select edits/pages** picker. When fetched contributions span more than one namespace, a row of namespace checkboxes (for example, Main, User, Template) appears above the section lists. Unticking a namespace hides all items from that namespace across both the **Edited pages** and **Created pages** sections. The filter row is not shown when all contributions are in the same namespace.
+* Added an **Invert selection** button alongside **Select all** and **Deselect all** in each picker section. Clicking it reverses the checked state of every currently visible item in that section.
+
+### Changed
+
+* **Select all** and **Deselect all** in the picker now act only on items that are currently visible (i.e. not hidden by the namespace filter). Items hidden by the filter retain their current checked state.
+
 ## 2.70.0
 
 ### Added

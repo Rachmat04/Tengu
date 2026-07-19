@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.70.0
+ * Version 2.71.0
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -4295,6 +4295,51 @@ $(function () {
               return;
             }
 
+            // Collect the namespaces present across all fetched titles so the
+            // filter row only shows namespaces that are actually in the results.
+            const formattedNamespaces =
+              mw.config.get("wgFormattedNamespaces") || {};
+            const presentNsIds = new Set();
+            for (const title of [
+              ...pickerEditedTitles,
+              ...pickerCreatedTitles,
+            ]) {
+              let nsId = 0;
+              try {
+                nsId = new mw.Title(title).getNamespaceId();
+              } catch (e) {}
+              presentNsIds.add(nsId);
+            }
+            const sortedNsIds = [...presentNsIds].sort(function (a, b) {
+              return a - b;
+            });
+
+            // Build the namespace filter row. Only rendered when the results
+            // span more than one namespace; a single-namespace result needs no
+            // filter.
+            const nsFilterChecks = [];
+            if (sortedNsIds.length > 1) {
+              const nsFilterEl = document.createElement("div");
+              nsFilterEl.style.cssText =
+                "display: flex; flex-wrap: wrap; gap: 6px; align-items: center; padding: 6px 0 4px;";
+              const nsFilterLbl = document.createElement("span");
+              nsFilterLbl.className = "tng-rights-subtitle";
+              nsFilterLbl.style.marginRight = "2px";
+              nsFilterLbl.textContent = "Filter by namespace:";
+              nsFilterEl.appendChild(nsFilterLbl);
+              for (const nsId of sortedNsIds) {
+                // wgFormattedNamespaces returns an empty string for the main
+                // namespace (ID 0); fall back to "Main" in that case.
+                const nsName = formattedNamespaces[nsId] || "Main";
+                const { wrap: wNs, chk: cNs } = makeCheckbox(nsName, true);
+                wNs.style.marginBottom = "0";
+                cNs.dataset.nsId = String(nsId);
+                nsFilterEl.appendChild(wNs);
+                nsFilterChecks.push(cNs);
+              }
+              pickerBody.appendChild(nsFilterEl);
+            }
+
             function fmtPickerDate(ts) {
               if (!ts) return "";
               const d = new Date(ts);
@@ -4334,6 +4379,8 @@ $(function () {
               btnAll.className += " tng-btn-sm";
               const btnNone = makeBtn("Deselect all", "quiet");
               btnNone.className += " tng-btn-sm";
+              const btnInvert = makeBtn("Invert selection", "quiet");
+              btnInvert.className += " tng-btn-sm";
 
               const checkboxes = [];
               const listEl = document.createElement("div");
@@ -4347,19 +4394,34 @@ $(function () {
                 listEl.appendChild(wrap);
               }
 
+              // All three bulk-action buttons operate only on currently visible
+              // items so that namespace filtering does not silently affect hidden
+              // selections.
               btnAll.addEventListener("click", function () {
                 checkboxes.forEach(function (c) {
-                  c.checked = true;
+                  if (!c.parentElement.classList.contains("tng-hidden")) {
+                    c.checked = true;
+                  }
                 });
               });
               btnNone.addEventListener("click", function () {
                 checkboxes.forEach(function (c) {
-                  c.checked = false;
+                  if (!c.parentElement.classList.contains("tng-hidden")) {
+                    c.checked = false;
+                  }
+                });
+              });
+              btnInvert.addEventListener("click", function () {
+                checkboxes.forEach(function (c) {
+                  if (!c.parentElement.classList.contains("tng-hidden")) {
+                    c.checked = !c.checked;
+                  }
                 });
               });
 
               ctrlRow.appendChild(btnAll);
               ctrlRow.appendChild(btnNone);
+              ctrlRow.appendChild(btnInvert);
               secBody.appendChild(ctrlRow);
               secBody.appendChild(listEl);
               sec.appendChild(hdr);
