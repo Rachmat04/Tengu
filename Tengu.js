@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.74.1
+ * Version 2.75.0
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -851,6 +851,11 @@ $(function () {
             error: 0,
           };
           const toolTag = " · [[w:id:Pengguna:Rachmat04/Tengu.js|⛩️]]";
+          // Inter-request throttle delay (ms). Applied after each write API call
+          // to spread requests out and reduce the risk of hitting the wiki's rate
+          // limits during large batch operations. Centralised here so the value
+          // can be adjusted in one place.
+          const THROTTLE_MS = 50;
 
           // Build progress UI
           const { overlay, body, footer } = createDialog({
@@ -1437,7 +1442,9 @@ $(function () {
                         }
                       }
 
-                      await new Promise((resolve) => setTimeout(resolve, 100));
+                      await new Promise((resolve) =>
+                        setTimeout(resolve, THROTTLE_MS),
+                      );
                     }
                   }
                 } catch (e) {
@@ -1613,7 +1620,7 @@ $(function () {
                   );
                 }
               }
-              await new Promise((resolve) => setTimeout(resolve, 100)); // Rate limit buffer
+              await new Promise((resolve) => setTimeout(resolve, THROTTLE_MS)); // Rate limit buffer
               continue;
             }
 
@@ -1867,7 +1874,7 @@ $(function () {
               }
             }
 
-            await new Promise((resolve) => setTimeout(resolve, 100)); // Throttling window
+            await new Promise((resolve) => setTimeout(resolve, THROTTLE_MS)); // Throttling window
           }
 
           const notifyQueue = new Map();
@@ -1910,7 +1917,9 @@ $(function () {
                   `[Protect] Failed to protect ${title}: ${formatApiError(e)}`,
                   true,
                 );
-                await new Promise((resolve) => setTimeout(resolve, 100));
+                await new Promise((resolve) =>
+                  setTimeout(resolve, THROTTLE_MS),
+                );
                 continue;
               }
 
@@ -1945,7 +1954,9 @@ $(function () {
                       true,
                     );
                   }
-                  await new Promise((resolve) => setTimeout(resolve, 100));
+                  await new Promise((resolve) =>
+                    setTimeout(resolve, THROTTLE_MS),
+                  );
                 }
               }
 
@@ -1960,7 +1971,7 @@ $(function () {
               } catch (e) {
                 // Title has no talk page (e.g. it is itself a talk page); skip.
               }
-              await new Promise((resolve) => setTimeout(resolve, 100));
+              await new Promise((resolve) => setTimeout(resolve, THROTTLE_MS));
             }
           }
 
@@ -2012,7 +2023,7 @@ $(function () {
                   "warn",
                 );
               }
-              await new Promise((resolve) => setTimeout(resolve, 100));
+              await new Promise((resolve) => setTimeout(resolve, THROTTLE_MS));
             }
           }
 
@@ -2116,7 +2127,9 @@ $(function () {
                       true,
                     );
                   }
-                  await new Promise((resolve) => setTimeout(resolve, 100));
+                  await new Promise((resolve) =>
+                    setTimeout(resolve, THROTTLE_MS),
+                  );
                 }
               } catch (e) {
                 addLog(
@@ -2205,7 +2218,9 @@ $(function () {
                         true,
                       );
                     }
-                    await new Promise((resolve) => setTimeout(resolve, 100));
+                    await new Promise((resolve) =>
+                      setTimeout(resolve, THROTTLE_MS),
+                    );
                   }
                 } catch (e) {
                   addLog(
@@ -2300,7 +2315,9 @@ $(function () {
                           true,
                         );
                       }
-                      await new Promise((resolve) => setTimeout(resolve, 100));
+                      await new Promise((resolve) =>
+                        setTimeout(resolve, THROTTLE_MS),
+                      );
                     }
 
                     // Also delete redirects pointing to the subpage, reusing the
@@ -2341,7 +2358,7 @@ $(function () {
                             );
                           }
                           await new Promise((resolve) =>
-                            setTimeout(resolve, 100),
+                            setTimeout(resolve, THROTTLE_MS),
                           );
                         }
                       } catch (e) {
@@ -2352,7 +2369,9 @@ $(function () {
                       }
                     }
 
-                    await new Promise((resolve) => setTimeout(resolve, 100));
+                    await new Promise((resolve) =>
+                      setTimeout(resolve, THROTTLE_MS),
+                    );
                   }
                 } catch (e) {
                   addLog(
@@ -2362,7 +2381,7 @@ $(function () {
                 }
               }
 
-              await new Promise((resolve) => setTimeout(resolve, 100)); // Throttling window
+              await new Promise((resolve) => setTimeout(resolve, THROTTLE_MS)); // Throttling window
             }
           }
 
@@ -2452,7 +2471,7 @@ $(function () {
                   "warn",
                 );
               }
-              await new Promise((resolve) => setTimeout(resolve, 100));
+              await new Promise((resolve) => setTimeout(resolve, THROTTLE_MS));
             }
           }
 
@@ -2523,7 +2542,9 @@ $(function () {
                   `[Protect] Failed to protect ${title}: ${formatApiError(e)}`,
                   true,
                 );
-                await new Promise((resolve) => setTimeout(resolve, 100));
+                await new Promise((resolve) =>
+                  setTimeout(resolve, THROTTLE_MS),
+                );
                 continue;
               }
 
@@ -2577,7 +2598,9 @@ $(function () {
                       true,
                     );
                   }
-                  await new Promise((resolve) => setTimeout(resolve, 100));
+                  await new Promise((resolve) =>
+                    setTimeout(resolve, THROTTLE_MS),
+                  );
                 }
               }
 
@@ -2592,7 +2615,7 @@ $(function () {
               } catch (e) {
                 // Title has no talk page; skip.
               }
-              await new Promise((resolve) => setTimeout(resolve, 100));
+              await new Promise((resolve) => setTimeout(resolve, THROTTLE_MS));
             }
 
             // Dispatch notifications for the deferred protect pass
@@ -2626,7 +2649,9 @@ $(function () {
                       `[Notify] Skipped protection notification for ${talkTitle}: talk page no longer exists`,
                       "warn",
                     );
-                    await new Promise((resolve) => setTimeout(resolve, 100));
+                    await new Promise((resolve) =>
+                      setTimeout(resolve, THROTTLE_MS),
+                    );
                     continue;
                   }
                 } catch (e) {
@@ -2634,7 +2659,9 @@ $(function () {
                     `[Notify] Could not check talk page existence for ${talkTitle}: ${formatApiError(e)}`,
                     "warn",
                   );
-                  await new Promise((resolve) => setTimeout(resolve, 100));
+                  await new Promise((resolve) =>
+                    setTimeout(resolve, THROTTLE_MS),
+                  );
                   continue;
                 }
 
@@ -2671,7 +2698,9 @@ $(function () {
                     "warn",
                   );
                 }
-                await new Promise((resolve) => setTimeout(resolve, 100));
+                await new Promise((resolve) =>
+                  setTimeout(resolve, THROTTLE_MS),
+                );
               }
             }
           }
@@ -2779,7 +2808,9 @@ $(function () {
                         true,
                       );
                     }
-                    await new Promise((resolve) => setTimeout(resolve, 100));
+                    await new Promise((resolve) =>
+                      setTimeout(resolve, THROTTLE_MS),
+                    );
                   }
                 } catch (e) {
                   addLog(

@@ -1,3 +1,9 @@
+## 2.75.0
+
+### Changed
+
+* Reduced the inter-request throttle delay in `work()` from 100 ms to 50 ms. A new `THROTTLE_MS` constant centralises the value so it can be adjusted in a single place if needed. The lower delay halves the artificial wait time during large batch operations — for example, processing 100 pages — while remaining within typical sysop rate limits on Wikimedia wikis.
+
 ## 2.74.1
 
 ### Fixed
