@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.73.0
+ * Version 2.74.0
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -4469,6 +4469,113 @@ $(function () {
               return { sec, checkboxes, listEl };
             }
 
+            // Sort controls — shown above the picker sections so they are immediately visible.
+            // Built here before the sections so the row is appended in the correct position.
+            const sortRow = document.createElement("div");
+            sortRow.style.cssText =
+              "display: flex; gap: 6px; align-items: center; padding: 6px 0;";
+            const sortLbl = document.createElement("span");
+            sortLbl.className = "tng-rights-subtitle";
+            sortLbl.textContent = "Sort by:";
+            sortRow.appendChild(sortLbl);
+
+            const btnSortAlpha = makeBtn("A–Z", "quiet");
+            btnSortAlpha.className += " tng-btn-sm";
+            btnSortAlpha.title = "Sort alphabetically by page title (A to Z)";
+            const btnSortZA = makeBtn("Z–A", "quiet");
+            btnSortZA.className += " tng-btn-sm";
+            btnSortZA.title = "Sort alphabetically by page title (Z to A)";
+            const btnSortOldest = makeBtn("Oldest first", "quiet");
+            btnSortOldest.className += " tng-btn-sm";
+            btnSortOldest.title =
+              "Sort by date/time, oldest edits or creations first";
+            const btnSortNewest = makeBtn("Newest first", "quiet");
+            btnSortNewest.className += " tng-btn-sm";
+            btnSortNewest.title =
+              "Sort by date/time, newest edits or creations first";
+            sortRow.appendChild(btnSortAlpha);
+            sortRow.appendChild(btnSortZA);
+            sortRow.appendChild(btnSortOldest);
+            sortRow.appendChild(btnSortNewest);
+            pickerBody.appendChild(sortRow);
+
+            function setSortActive(activeBtn) {
+              [btnSortAlpha, btnSortZA, btnSortOldest, btnSortNewest].forEach(
+                function (b) {
+                  b.classList.remove("tng-btn-primary");
+                  b.classList.add("tng-btn-quiet");
+                },
+              );
+              activeBtn.classList.remove("tng-btn-quiet");
+              activeBtn.classList.add("tng-btn-primary");
+            }
+
+            // Reorders all children of a list element using the given comparator.
+            // ISO 8601 timestamps compare correctly as strings, so lexicographic
+            // comparison is sufficient for date sorting.
+            function sortPickerListEl(listEl, compareFn) {
+              if (!listEl) return;
+              const items = Array.from(listEl.children);
+              items.sort(compareFn);
+              items.forEach(function (item) {
+                listEl.appendChild(item);
+              });
+            }
+
+            btnSortAlpha.addEventListener("click", function () {
+              setSortActive(btnSortAlpha);
+              const cmp = function (a, b) {
+                return (a.dataset.pickerKey || "").localeCompare(
+                  b.dataset.pickerKey || "",
+                  undefined,
+                  { sensitivity: "base" },
+                );
+              };
+              sortPickerListEl(listElEdited, cmp);
+              sortPickerListEl(listElCreated, cmp);
+            });
+
+            btnSortZA.addEventListener("click", function () {
+              setSortActive(btnSortZA);
+              const cmp = function (a, b) {
+                return (b.dataset.pickerKey || "").localeCompare(
+                  a.dataset.pickerKey || "",
+                  undefined,
+                  { sensitivity: "base" },
+                );
+              };
+              sortPickerListEl(listElEdited, cmp);
+              sortPickerListEl(listElCreated, cmp);
+            });
+
+            btnSortOldest.addEventListener("click", function () {
+              setSortActive(btnSortOldest);
+              const cmp = function (a, b) {
+                const ta = a.dataset.pickerTimestamp || "";
+                const tb = b.dataset.pickerTimestamp || "";
+                if (!ta && !tb) return 0;
+                if (!ta) return 1;
+                if (!tb) return -1;
+                return ta < tb ? -1 : ta > tb ? 1 : 0;
+              };
+              sortPickerListEl(listElEdited, cmp);
+              sortPickerListEl(listElCreated, cmp);
+            });
+
+            btnSortNewest.addEventListener("click", function () {
+              setSortActive(btnSortNewest);
+              const cmp = function (a, b) {
+                const ta = a.dataset.pickerTimestamp || "";
+                const tb = b.dataset.pickerTimestamp || "";
+                if (!ta && !tb) return 0;
+                if (!ta) return 1;
+                if (!tb) return -1;
+                return ta > tb ? -1 : ta < tb ? 1 : 0;
+              };
+              sortPickerListEl(listElEdited, cmp);
+              sortPickerListEl(listElCreated, cmp);
+            });
+
             const allEditedCheckboxes = [];
             const allCreatedCheckboxes = [];
             let listElEdited = null;
@@ -4527,126 +4634,6 @@ $(function () {
               allCreatedCheckboxes.push(...checkboxes);
               pickerBody.appendChild(sec);
             }
-
-            // Apply the namespace filter immediately whenever a namespace
-            // checkbox is toggled. Runs over all picker item wrappers in
-            // both sections and sets tng-hidden based on whether their
-            // stored namespace ID matches a ticked filter checkbox.
-            function applyPickerNamespaceFilter() {
-              const enabledNsIds = new Set(
-                nsFilterChecks
-                  .filter(function (c) {
-                    return c.checked;
-                  })
-                  .map(function (c) {
-                    return c.dataset.nsId;
-                  }),
-              );
-              const allItemWrappers = [
-                ...allEditedCheckboxes,
-                ...allCreatedCheckboxes,
-              ].map(function (c) {
-                return c.parentElement;
-              });
-              allItemWrappers.forEach(function (wrap) {
-                const show = enabledNsIds.has(wrap.dataset.pickerNsId);
-                wrap.classList.toggle("tng-hidden", !show);
-              });
-            }
-
-            nsFilterChecks.forEach(function (cNs) {
-              cNs.addEventListener("change", applyPickerNamespaceFilter);
-            });
-
-            // Sort controls — allow the user to reorder items in each section
-            // by page title or by date/time, independently of the namespace filter.
-            const sortRow = document.createElement("div");
-            sortRow.style.cssText =
-              "display: flex; gap: 6px; align-items: center; padding: 6px 0;";
-            const sortLbl = document.createElement("span");
-            sortLbl.className = "tng-rights-subtitle";
-            sortLbl.textContent = "Sort by:";
-            sortRow.appendChild(sortLbl);
-
-            const btnSortAlpha = makeBtn("A–Z", "quiet");
-            btnSortAlpha.className += " tng-btn-sm";
-            btnSortAlpha.title = "Sort alphabetically by page title";
-            const btnSortOldest = makeBtn("Oldest first", "quiet");
-            btnSortOldest.className += " tng-btn-sm";
-            btnSortOldest.title =
-              "Sort by date/time, oldest edits or creations first";
-            const btnSortNewest = makeBtn("Newest first", "quiet");
-            btnSortNewest.className += " tng-btn-sm";
-            btnSortNewest.title =
-              "Sort by date/time, newest edits or creations first";
-            sortRow.appendChild(btnSortAlpha);
-            sortRow.appendChild(btnSortOldest);
-            sortRow.appendChild(btnSortNewest);
-            pickerBody.appendChild(sortRow);
-
-            function setSortActive(activeBtn) {
-              [btnSortAlpha, btnSortOldest, btnSortNewest].forEach(
-                function (b) {
-                  b.classList.remove("tng-btn-primary");
-                  b.classList.add("tng-btn-quiet");
-                },
-              );
-              activeBtn.classList.remove("tng-btn-quiet");
-              activeBtn.classList.add("tng-btn-primary");
-            }
-
-            // Reorders all children of a list element using the given comparator.
-            // ISO 8601 timestamps compare correctly as strings, so lexicographic
-            // comparison is sufficient for date sorting.
-            function sortPickerListEl(listEl, compareFn) {
-              if (!listEl) return;
-              const items = Array.from(listEl.children);
-              items.sort(compareFn);
-              items.forEach(function (item) {
-                listEl.appendChild(item);
-              });
-            }
-
-            btnSortAlpha.addEventListener("click", function () {
-              setSortActive(btnSortAlpha);
-              const cmp = function (a, b) {
-                return (a.dataset.pickerKey || "").localeCompare(
-                  b.dataset.pickerKey || "",
-                  undefined,
-                  { sensitivity: "base" },
-                );
-              };
-              sortPickerListEl(listElEdited, cmp);
-              sortPickerListEl(listElCreated, cmp);
-            });
-
-            btnSortOldest.addEventListener("click", function () {
-              setSortActive(btnSortOldest);
-              const cmp = function (a, b) {
-                const ta = a.dataset.pickerTimestamp || "";
-                const tb = b.dataset.pickerTimestamp || "";
-                if (!ta && !tb) return 0;
-                if (!ta) return 1;
-                if (!tb) return -1;
-                return ta < tb ? -1 : ta > tb ? 1 : 0;
-              };
-              sortPickerListEl(listElEdited, cmp);
-              sortPickerListEl(listElCreated, cmp);
-            });
-
-            btnSortNewest.addEventListener("click", function () {
-              setSortActive(btnSortNewest);
-              const cmp = function (a, b) {
-                const ta = a.dataset.pickerTimestamp || "";
-                const tb = b.dataset.pickerTimestamp || "";
-                if (!ta && !tb) return 0;
-                if (!ta) return 1;
-                if (!tb) return -1;
-                return ta > tb ? -1 : ta < tb ? 1 : 0;
-              };
-              sortPickerListEl(listElEdited, cmp);
-              sortPickerListEl(listElCreated, cmp);
-            });
 
             const btnCancelPicker = makeBtn("Cancel", "quiet");
             btnCancelPicker.addEventListener("click", function () {

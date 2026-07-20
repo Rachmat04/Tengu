@@ -1,3 +1,13 @@
+## 2.74.0
+
+### Added
+
+* Added a **Z–A** sort button to the **Select edits/pages** picker dialogue, providing reverse-alphabetical ordering as a complement to the existing A–Z button.
+
+### Changed
+
+* Moved the sort controls (**A–Z**, **Z–A**, **Oldest first**, **Newest first**) to the top of the picker dialogue body, immediately below the namespace filter row (or below any truncation notice when contributions fall within a single namespace). They were previously positioned below the picker sections, where they were easy to overlook.
+
 ## 2.73.0
 
 ### Added
