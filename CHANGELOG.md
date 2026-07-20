@@ -1,3 +1,9 @@
+## 2.74.1
+
+### Fixed
+
+* Fixed the namespace filter in the **Select edits/pages** picker having no effect after the sort controls were moved to the top of the picker body in v2.72.0 and v2.74.0. The `change` event listeners for the namespace filter checkboxes were dropped during that refactor. The listeners are now re-attached after the picker sections are built, so ticking or unticking a namespace correctly shows or hides the relevant items again.
+
 ## 2.74.0
 
 ### Added

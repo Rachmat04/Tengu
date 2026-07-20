@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.74.0
+ * Version 2.74.1
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -4633,6 +4633,37 @@ $(function () {
               });
               allCreatedCheckboxes.push(...checkboxes);
               pickerBody.appendChild(sec);
+            }
+
+            // Wire namespace filter change listeners now that listElEdited and
+            // listElCreated are both defined. Must run after the picker sections
+            // are built so the filter function can reference the correct list
+            // elements. These listeners were dropped during the sort-controls
+            // refactor in v2.72.0/v2.74.0.
+            if (nsFilterChecks.length) {
+              function applyPickerNamespaceFilter() {
+                const activeNsIds = new Set(
+                  nsFilterChecks
+                    .filter(function (c) {
+                      return c.checked;
+                    })
+                    .map(function (c) {
+                      return c.dataset.nsId;
+                    }),
+                );
+                [listElEdited, listElCreated].forEach(function (listEl) {
+                  if (!listEl) return;
+                  Array.from(listEl.children).forEach(function (wrap) {
+                    wrap.classList.toggle(
+                      "tng-hidden",
+                      !activeNsIds.has(wrap.dataset.pickerNsId),
+                    );
+                  });
+                });
+              }
+              nsFilterChecks.forEach(function (cNs) {
+                cNs.addEventListener("change", applyPickerNamespaceFilter);
+              });
             }
 
             const btnCancelPicker = makeBtn("Cancel", "quiet");
