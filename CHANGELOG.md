@@ -1,3 +1,20 @@
+## 2.73.0
+
+### Added
+
+* Expanded the **Move page** section (formerly "Move to user's sandbox") to support two sub-modes, selectable via a **Move mode** dropdown at the top of the section:
+  * **Move to user's sandbox** — existing behaviour; moves the target page into a user's subpage (e.g. `User:[username]/[subpage name]`).
+  * **Move page** — moves the target page to an arbitrary destination title, with native support for moving the associated talk page (`movetalk`) and all subpages (`movesubpages`) via API parameters in a single call.
+* Added a **Destination title** field and a **Reason** dropdown to the Move page sub-mode.
+* Added preset move reasons (`MOVE_REASONS`) to `Tengu-reasons.js`, grouped under Common move reasons, Talk pages, Templates, and Files.
+* The **Suppress redirect**, **Also move the associated talk page**, and **Also move all subpages** options are all available in the Move page sub-mode. Suppress redirect remains gated on the `suppressredirect` right.
+
+### Changed
+
+* The section label in the UI has changed from "Move to user's sandbox" to "Move page" to reflect the expanded scope. Internal variable names (`secMoveSandbox`, `chkMoveSandbox`, etc.) are unchanged.
+* Mode lock tooltip messages updated to read "Move page is only available in page mode."
+* The confirmation dialogue now shows "✂️ Move page" or "✂️ Move to user's sandbox" depending on the active sub-mode.
+
 ## 2.72.0
 
 ### Added

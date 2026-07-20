@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.72.0
+ * Version 2.73.0
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -67,6 +67,7 @@ $(function () {
         const PROTECT_RECREATION_REASONS =
           tenguReasonsObj.PROTECT_RECREATION_REASONS;
         const MOVE_TO_SANDBOX_REASONS = tenguReasonsObj.MOVE_TO_SANDBOX_REASONS;
+        const MOVE_REASONS = tenguReasonsObj.MOVE_REASONS;
         const GLOBAL_SYSOPS_REPORT_REASONS =
           tenguReasonsObj.GLOBAL_SYSOPS_REPORT_REASONS;
         const SRG_REPORT_REASONS = tenguReasonsObj.SRG_REPORT_REASONS;
@@ -1218,207 +1219,235 @@ $(function () {
             }
           }
 
-          // --- Move to user's sandbox ---
+          // --- Move page / Move to user's sandbox ---
           if (config.moveSandbox && config.mode === "page" && !isAborted) {
-            const moveParams = {
-              action: "move",
-              from: targetVal,
-              to: config.moveSandboxDest,
-              reason: config.moveSandboxReason + toolTag,
-            };
-            if (config.moveSandboxNoRedirect) moveParams.noredirect = 1;
-            try {
-              await apiPost(moveParams);
-              addLog(
-                `[Move] Moved "${targetVal}" to "${config.moveSandboxDest}"`,
-              );
-              stats.move++;
-              updateStatusDisplay();
-            } catch (e) {
-              addLog(
-                `[Move] Failed to move "${targetVal}" to "${config.moveSandboxDest}": ${formatApiError(e)}`,
-                true,
-              );
-            }
-
-            // Move the associated talk page if the option was selected.
-            if (config.moveSandboxTalk && !isAborted) {
+            if (config.moveSandboxMode === "movepage") {
+              // General page move. movetalk and movesubpages are native API
+              // parameters so the move, talk page move, and subpage moves are
+              // handled by the API in a single call rather than as separate requests.
+              const moveParams = {
+                action: "move",
+                from: targetVal,
+                to: config.movePageDest,
+                reason: config.movePageReason + toolTag,
+              };
+              if (config.movePageNoRedirect) moveParams.noredirect = 1;
+              if (config.movePageTalk) moveParams.movetalk = 1;
+              if (config.movePageSubpages) moveParams.movesubpages = 1;
               try {
-                const sourceTitleObj = new mw.Title(targetVal);
-                if (sourceTitleObj.isTalkPage()) {
-                  addLog(
-                    "[Move] Skipped talk page move: target is already a talk page",
-                    "warn",
-                  );
-                } else {
-                  const sourceTalkTitle = sourceTitleObj
-                    .getTalkPage()
-                    .getPrefixedText();
-                  const talkExistData = await apiGet({
-                    action: "query",
-                    titles: sourceTalkTitle,
-                    formatversion: 2,
-                  });
-                  const talkPage =
-                    talkExistData.query &&
-                    talkExistData.query.pages &&
-                    talkExistData.query.pages[0];
-                  if (talkPage && !talkPage.missing) {
-                    const talkMoveParams = {
-                      action: "move",
-                      from: sourceTalkTitle,
-                      to: config.moveSandboxTalkDest,
-                      reason:
-                        (useIndonesian
-                          ? `Memindahkan halaman pembicaraan karena halaman utama yang terkait telah dipindahkan: ${config.moveSandboxReason}`
-                          : `Moving the talk page because its associated main page has been moved: ${config.moveSandboxReason}`) +
-                        toolTag,
-                    };
-                    if (config.moveSandboxNoRedirect)
-                      talkMoveParams.noredirect = 1;
-                    await apiPost(talkMoveParams);
-                    addLog(
-                      `[Move] Moved talk page "${sourceTalkTitle}" to "${config.moveSandboxTalkDest}"`,
-                    );
-                    stats.move++;
-                    updateStatusDisplay();
-                  } else {
-                    addLog(
-                      `[Move] Skipped talk page move: "${sourceTalkTitle}" does not exist`,
-                      "warn",
-                    );
-                  }
-                }
+                await apiPost(moveParams);
+                addLog(
+                  `[Move] Moved "${targetVal}" to "${config.movePageDest}"`,
+                );
+                stats.move++;
+                updateStatusDisplay();
               } catch (e) {
                 addLog(
-                  `[Move] Failed to move talk page to "${config.moveSandboxTalkDest}": ${formatApiError(e)}`,
+                  `[Move] Failed to move "${targetVal}" to "${config.movePageDest}": ${formatApiError(e)}`,
                   true,
                 );
               }
-            }
-
-            // Move all subpages if the option was selected.
-            if (config.moveSandboxSubpages && !isAborted) {
+            } else {
+              const moveParams = {
+                action: "move",
+                from: targetVal,
+                to: config.moveSandboxDest,
+                reason: config.moveSandboxReason + toolTag,
+              };
+              if (config.moveSandboxNoRedirect) moveParams.noredirect = 1;
               try {
-                const sourceTitleObj = new mw.Title(targetVal);
-                if (sourceTitleObj.isTalkPage()) {
-                  addLog(
-                    "[Move] Skipped subpage moves: target is already a talk page",
-                    "warn",
-                  );
-                } else {
-                  const ns = sourceTitleObj.getNamespaceId();
-                  const mainText = sourceTitleObj.getMain();
-                  const spData = await apiGet({
-                    action: "query",
-                    list: "allpages",
-                    apprefix: mainText + "/",
-                    apnamespace: ns,
-                    aplimit: "max",
-                    formatversion: 2,
-                  });
-                  const subpages =
-                    (spData.query && spData.query.allpages) || [];
-                  if (!subpages.length) {
+                await apiPost(moveParams);
+                addLog(
+                  `[Move] Moved "${targetVal}" to "${config.moveSandboxDest}"`,
+                );
+                stats.move++;
+                updateStatusDisplay();
+              } catch (e) {
+                addLog(
+                  `[Move] Failed to move "${targetVal}" to "${config.moveSandboxDest}": ${formatApiError(e)}`,
+                  true,
+                );
+              }
+
+              // Move the associated talk page if the option was selected.
+              if (config.moveSandboxTalk && !isAborted) {
+                try {
+                  const sourceTitleObj = new mw.Title(targetVal);
+                  if (sourceTitleObj.isTalkPage()) {
                     addLog(
-                      `[Move] No subpages found for: ${targetVal}`,
+                      "[Move] Skipped talk page move: target is already a talk page",
                       "warn",
                     );
-                  }
-                  // Normalise the source prefix so that the suffix can be
-                  // extracted reliably regardless of how the user typed it.
-                  const normalizedSource = sourceTitleObj.getPrefixedText();
-                  for (const sp of subpages) {
-                    if (isAborted) break;
-                    const suffix = sp.title.slice(normalizedSource.length); // e.g. "/Section"
-                    const spDest = config.moveSandboxDest + suffix;
-                    const spMoveParams = {
-                      action: "move",
-                      from: sp.title,
-                      to: spDest,
-                      reason:
-                        (useIndonesian
-                          ? `Memindahkan subhalaman karena halaman utama yang terkait telah dipindahkan: ${config.moveSandboxReason}`
-                          : `Moving subpage because its associated main page has been moved: ${config.moveSandboxReason}`) +
-                        toolTag,
-                    };
-                    if (config.moveSandboxNoRedirect)
-                      spMoveParams.noredirect = 1;
-                    try {
-                      await apiPost(spMoveParams);
+                  } else {
+                    const sourceTalkTitle = sourceTitleObj
+                      .getTalkPage()
+                      .getPrefixedText();
+                    const talkExistData = await apiGet({
+                      action: "query",
+                      titles: sourceTalkTitle,
+                      formatversion: 2,
+                    });
+                    const talkPage =
+                      talkExistData.query &&
+                      talkExistData.query.pages &&
+                      talkExistData.query.pages[0];
+                    if (talkPage && !talkPage.missing) {
+                      const talkMoveParams = {
+                        action: "move",
+                        from: sourceTalkTitle,
+                        to: config.moveSandboxTalkDest,
+                        reason:
+                          (useIndonesian
+                            ? `Memindahkan halaman pembicaraan karena halaman utama yang terkait telah dipindahkan: ${config.moveSandboxReason}`
+                            : `Moving the talk page because its associated main page has been moved: ${config.moveSandboxReason}`) +
+                          toolTag,
+                      };
+                      if (config.moveSandboxNoRedirect)
+                        talkMoveParams.noredirect = 1;
+                      await apiPost(talkMoveParams);
                       addLog(
-                        `[Move] Moved subpage "${sp.title}" to "${spDest}"`,
+                        `[Move] Moved talk page "${sourceTalkTitle}" to "${config.moveSandboxTalkDest}"`,
                       );
                       stats.move++;
                       updateStatusDisplay();
-                    } catch (e) {
+                    } else {
                       addLog(
-                        `[Move] Failed to move subpage "${sp.title}" to "${spDest}": ${formatApiError(e)}`,
-                        true,
+                        `[Move] Skipped talk page move: "${sourceTalkTitle}" does not exist`,
+                        "warn",
                       );
                     }
+                  }
+                } catch (e) {
+                  addLog(
+                    `[Move] Failed to move talk page to "${config.moveSandboxTalkDest}": ${formatApiError(e)}`,
+                    true,
+                  );
+                }
+              }
 
-                    // Move the talk page of this subpage if the option is selected.
-                    if (config.moveSandboxTalk && !isAborted) {
+              // Move all subpages if the option was selected.
+              if (config.moveSandboxSubpages && !isAborted) {
+                try {
+                  const sourceTitleObj = new mw.Title(targetVal);
+                  if (sourceTitleObj.isTalkPage()) {
+                    addLog(
+                      "[Move] Skipped subpage moves: target is already a talk page",
+                      "warn",
+                    );
+                  } else {
+                    const ns = sourceTitleObj.getNamespaceId();
+                    const mainText = sourceTitleObj.getMain();
+                    const spData = await apiGet({
+                      action: "query",
+                      list: "allpages",
+                      apprefix: mainText + "/",
+                      apnamespace: ns,
+                      aplimit: "max",
+                      formatversion: 2,
+                    });
+                    const subpages =
+                      (spData.query && spData.query.allpages) || [];
+                    if (!subpages.length) {
+                      addLog(
+                        `[Move] No subpages found for: ${targetVal}`,
+                        "warn",
+                      );
+                    }
+                    // Normalise the source prefix so that the suffix can be
+                    // extracted reliably regardless of how the user typed it.
+                    const normalizedSource = sourceTitleObj.getPrefixedText();
+                    for (const sp of subpages) {
+                      if (isAborted) break;
+                      const suffix = sp.title.slice(normalizedSource.length); // e.g. "/Section"
+                      const spDest = config.moveSandboxDest + suffix;
+                      const spMoveParams = {
+                        action: "move",
+                        from: sp.title,
+                        to: spDest,
+                        reason:
+                          (useIndonesian
+                            ? `Memindahkan subhalaman karena halaman utama yang terkait telah dipindahkan: ${config.moveSandboxReason}`
+                            : `Moving subpage because its associated main page has been moved: ${config.moveSandboxReason}`) +
+                          toolTag,
+                      };
+                      if (config.moveSandboxNoRedirect)
+                        spMoveParams.noredirect = 1;
                       try {
-                        const spTitleObj = new mw.Title(sp.title);
-                        const spTalkTitle = spTitleObj
-                          .getTalkPage()
-                          .getPrefixedText();
-                        const spTalkExistData = await apiGet({
-                          action: "query",
-                          titles: spTalkTitle,
-                          formatversion: 2,
-                        });
-                        const spTalkPage =
-                          spTalkExistData.query &&
-                          spTalkExistData.query.pages &&
-                          spTalkExistData.query.pages[0];
-                        if (spTalkPage && !spTalkPage.missing) {
-                          const spTalkDest =
-                            config.moveSandboxTalkDest + suffix;
-                          const spTalkMoveParams = {
-                            action: "move",
-                            from: spTalkTitle,
-                            to: spTalkDest,
-                            reason:
-                              (useIndonesian
-                                ? `Memindahkan halaman pembicaraan subhalaman karena halaman utama yang terkait telah dipindahkan: ${config.moveSandboxReason}`
-                                : `Moving subpage talk page because its associated main page has been moved: ${config.moveSandboxReason}`) +
-                              toolTag,
-                          };
-                          if (config.moveSandboxNoRedirect)
-                            spTalkMoveParams.noredirect = 1;
-                          await apiPost(spTalkMoveParams);
-                          addLog(
-                            `[Move] Moved subpage talk page "${spTalkTitle}" to "${spTalkDest}"`,
-                          );
-                          stats.move++;
-                          updateStatusDisplay();
-                        } else {
-                          addLog(
-                            `[Move] Skipped subpage talk page move: "${spTalkTitle}" does not exist`,
-                            "warn",
-                          );
-                        }
+                        await apiPost(spMoveParams);
+                        addLog(
+                          `[Move] Moved subpage "${sp.title}" to "${spDest}"`,
+                        );
+                        stats.move++;
+                        updateStatusDisplay();
                       } catch (e) {
                         addLog(
-                          `[Move] Failed to move talk page for subpage "${sp.title}": ${formatApiError(e)}`,
+                          `[Move] Failed to move subpage "${sp.title}" to "${spDest}": ${formatApiError(e)}`,
                           true,
                         );
                       }
-                    }
 
-                    await new Promise((resolve) => setTimeout(resolve, 100));
+                      // Move the talk page of this subpage if the option is selected.
+                      if (config.moveSandboxTalk && !isAborted) {
+                        try {
+                          const spTitleObj = new mw.Title(sp.title);
+                          const spTalkTitle = spTitleObj
+                            .getTalkPage()
+                            .getPrefixedText();
+                          const spTalkExistData = await apiGet({
+                            action: "query",
+                            titles: spTalkTitle,
+                            formatversion: 2,
+                          });
+                          const spTalkPage =
+                            spTalkExistData.query &&
+                            spTalkExistData.query.pages &&
+                            spTalkExistData.query.pages[0];
+                          if (spTalkPage && !spTalkPage.missing) {
+                            const spTalkDest =
+                              config.moveSandboxTalkDest + suffix;
+                            const spTalkMoveParams = {
+                              action: "move",
+                              from: spTalkTitle,
+                              to: spTalkDest,
+                              reason:
+                                (useIndonesian
+                                  ? `Memindahkan halaman pembicaraan subhalaman karena halaman utama yang terkait telah dipindahkan: ${config.moveSandboxReason}`
+                                  : `Moving subpage talk page because its associated main page has been moved: ${config.moveSandboxReason}`) +
+                                toolTag,
+                            };
+                            if (config.moveSandboxNoRedirect)
+                              spTalkMoveParams.noredirect = 1;
+                            await apiPost(spTalkMoveParams);
+                            addLog(
+                              `[Move] Moved subpage talk page "${spTalkTitle}" to "${spTalkDest}"`,
+                            );
+                            stats.move++;
+                            updateStatusDisplay();
+                          } else {
+                            addLog(
+                              `[Move] Skipped subpage talk page move: "${spTalkTitle}" does not exist`,
+                              "warn",
+                            );
+                          }
+                        } catch (e) {
+                          addLog(
+                            `[Move] Failed to move talk page for subpage "${sp.title}": ${formatApiError(e)}`,
+                            true,
+                          );
+                        }
+                      }
+
+                      await new Promise((resolve) => setTimeout(resolve, 100));
+                    }
                   }
+                } catch (e) {
+                  addLog(
+                    `[Move] Failed to fetch subpages for "${targetVal}": ${formatApiError(e)}`,
+                    true,
+                  );
                 }
-              } catch (e) {
-                addLog(
-                  `[Move] Failed to fetch subpages for "${targetVal}": ${formatApiError(e)}`,
-                  true,
-                );
               }
-            }
+            } // end else (sandbox mode)
           }
 
           // --- Fetch user contributions OR prepare target page ---
@@ -5732,17 +5761,111 @@ $(function () {
           body.appendChild(secUndelete);
 
           // ============================================================================
-          // Move to user's sandbox section — page mode only.
-          // Moves the target page into a specified user's subpage, e.g.
-          // User:[username]/[subpage], using action=move. The redirect is
-          // suppressed when the "Suppress redirect" option is ticked,
-          // which requires the suppressredirect right.
+          // Move page section — page mode only.
+          // Supports two sub-modes:
+          //   • Move page — moves the target to an arbitrary destination title,
+          //     using action=move with native movetalk/movesubpages flags.
+          //   • Move to user's sandbox — moves the target into a specified user's
+          //     subpage (e.g. User:[username]/[subpage]).
+          // Suppressing the redirect in either mode requires the suppressredirect right.
           // ============================================================================
           const {
             section: secMoveSandbox,
             sectionBody: bodyMoveSandbox,
             enableChk: chkMoveSandbox,
-          } = makeSection("Move to user's sandbox", "✂️", false);
+          } = makeSection("Move page", "✂️", false);
+
+          // --- Move mode selector ---
+          const { row: rowMoveMode, field: fieldMoveMode } =
+            makeRow("Move mode");
+          const selMoveMode = makeSelect([
+            { value: "sandbox", label: "Move to user's sandbox" },
+            { value: "movepage", label: "Move page" },
+          ]);
+          fieldMoveMode.appendChild(wrapSelect(selMoveMode));
+          bodyMoveSandbox.appendChild(rowMoveMode);
+
+          // --- Move page panel ---
+          const divMovePagePanel = document.createElement("div");
+          divMovePagePanel.className = "tng-hidden";
+          divMovePagePanel.style.cssText =
+            "display:flex;flex-direction:column;gap:10px;";
+
+          const { row: rowMovePageDest, field: fieldMovePageDest } =
+            makeRow("Destination title");
+          const inputMovePageDest = makeInput(
+            "New page title (including namespace prefix if needed)",
+          );
+          fieldMovePageDest.appendChild(inputMovePageDest);
+          divMovePagePanel.appendChild(rowMovePageDest);
+
+          const { row: rowMovePageReason, field: fieldMovePageReason } =
+            makeRow("Reason");
+          const selMovePageReason = makeSelect(MOVE_REASONS);
+          const {
+            wrap: filteredWrapMovePageReason,
+            filter: filterMovePageReason,
+          } = makeFilteredSelect(selMovePageReason);
+          const inputMovePageReason = makeInput("Full reason to submit");
+          const btnMovePageAppend = makeBtn("Append", "quiet");
+          btnMovePageAppend.className += " tng-btn-sm";
+          btnMovePageAppend.addEventListener("click", function () {
+            const cur = inputMovePageReason.value;
+            const add = selMovePageReason.value;
+            if (!add) return;
+            inputMovePageReason.value = cur ? cur + "; " + add : add;
+            selMovePageReason.selectedIndex = 0;
+            filterMovePageReason.value = "";
+            filterMovePageReason.dispatchEvent(new Event("input"));
+          });
+          const reasonWrapMovePage = document.createElement("div");
+          reasonWrapMovePage.className = "tng-reason-wrap";
+          const reasonTopMovePage = document.createElement("div");
+          reasonTopMovePage.className = "tng-reason-top";
+          reasonTopMovePage.appendChild(filteredWrapMovePageReason);
+          reasonTopMovePage.appendChild(btnMovePageAppend);
+          reasonWrapMovePage.appendChild(reasonTopMovePage);
+          reasonWrapMovePage.appendChild(inputMovePageReason);
+          fieldMovePageReason.appendChild(reasonWrapMovePage);
+          divMovePagePanel.appendChild(rowMovePageReason);
+
+          const { wrap: wrapMovePageNoRedirect, chk: chkMovePageNoRedirect } =
+            makeCheckbox(
+              "Suppress redirect (requires the suppressredirect right)",
+              false,
+            );
+          wrapMovePageNoRedirect.title =
+            "When ticked, no redirect is left at the original title after the move. Only available to sysops, who hold the suppressredirect right. Non-sysop users cannot use this option.";
+          chkMovePageNoRedirect.disabled = true;
+          wrapMovePageNoRedirect.style.opacity = "0.5";
+          wrapMovePageNoRedirect.style.cursor = "not-allowed";
+
+          const { wrap: wrapMovePageTalk, chk: chkMovePageTalk } = makeCheckbox(
+            "Also move the associated talk page",
+            true,
+          );
+          wrapMovePageTalk.title =
+            "When ticked, the associated talk page is also moved to the equivalent title under the destination namespace.";
+
+          const { wrap: wrapMovePageSubpages, chk: chkMovePageSubpages } =
+            makeCheckbox("Also move all subpages", false);
+          wrapMovePageSubpages.title =
+            "When ticked, all subpages of the source page are also moved to the corresponding subpages of the destination title. Only applies to namespaces that support subpages.";
+
+          const checksMovePagePanel = document.createElement("div");
+          checksMovePagePanel.className = "tng-checks";
+          checksMovePagePanel.style.paddingLeft = "0";
+          checksMovePagePanel.appendChild(wrapMovePageNoRedirect);
+          checksMovePagePanel.appendChild(wrapMovePageTalk);
+          checksMovePagePanel.appendChild(wrapMovePageSubpages);
+          divMovePagePanel.appendChild(checksMovePagePanel);
+
+          bodyMoveSandbox.appendChild(divMovePagePanel);
+
+          // --- Move to user's sandbox panel ---
+          const divMoveSandboxPanel = document.createElement("div");
+          divMoveSandboxPanel.style.cssText =
+            "display:flex;flex-direction:column;gap:10px;";
 
           const { row: rowMoveSandboxUser, field: fieldMoveSandboxUser } =
             makeRow("Move to user");
@@ -5763,7 +5886,7 @@ $(function () {
           moveSandboxUserGroup.appendChild(wrapMoveSandboxSameAsCreator);
 
           fieldMoveSandboxUser.appendChild(moveSandboxUserGroup);
-          bodyMoveSandbox.appendChild(rowMoveSandboxUser);
+          divMoveSandboxPanel.appendChild(rowMoveSandboxUser);
 
           // Fetches the first revision's author for the current target page and
           // populates the username field. Only applies the result when the checkbox
@@ -5825,13 +5948,13 @@ $(function () {
             "Subpage (e.g. Draft article)",
           );
           fieldMoveSandboxSubpage.appendChild(inputMoveSandboxSubpage);
-          bodyMoveSandbox.appendChild(rowMoveSandboxSubpage);
+          divMoveSandboxPanel.appendChild(rowMoveSandboxSubpage);
 
           const helpMoveSandbox = document.createElement("div");
           helpMoveSandbox.className = "tng-help";
           helpMoveSandbox.textContent =
             'The page will be moved to "User:[username]/[subpage name]". When "Also move the talk page" is ticked, the talk page is moved to "User talk:[username]/[subpage name]", and the talk page of each subpage is moved if "Also move all subpages" is also ticked. Suppressing the redirect requires the suppressredirect right (sysops only).';
-          bodyMoveSandbox.appendChild(helpMoveSandbox);
+          divMoveSandboxPanel.appendChild(helpMoveSandbox);
 
           const { row: rowMoveSandboxReason, field: fieldMoveSandboxReason } =
             makeRow("Reason");
@@ -5861,7 +5984,7 @@ $(function () {
           reasonWrapMoveSandbox.appendChild(reasonTopMoveSandbox);
           reasonWrapMoveSandbox.appendChild(inputMoveSandboxReason);
           fieldMoveSandboxReason.appendChild(reasonWrapMoveSandbox);
-          bodyMoveSandbox.appendChild(rowMoveSandboxReason);
+          divMoveSandboxPanel.appendChild(rowMoveSandboxReason);
 
           const {
             wrap: wrapMoveSandboxNoRedirect,
@@ -5893,7 +6016,15 @@ $(function () {
           checksMoveSandbox.appendChild(wrapMoveSandboxNoRedirect);
           checksMoveSandbox.appendChild(wrapMoveSandboxTalk);
           checksMoveSandbox.appendChild(wrapMoveSandboxSubpages);
-          bodyMoveSandbox.appendChild(checksMoveSandbox);
+          divMoveSandboxPanel.appendChild(checksMoveSandbox);
+
+          bodyMoveSandbox.appendChild(divMoveSandboxPanel);
+
+          selMoveMode.addEventListener("change", function () {
+            const isSandbox = selMoveMode.value === "sandbox";
+            divMoveSandboxPanel.classList.toggle("tng-hidden", !isSandbox);
+            divMovePagePanel.classList.toggle("tng-hidden", isSandbox);
+          });
 
           body.appendChild(secMoveSandbox);
 
@@ -6742,7 +6873,7 @@ $(function () {
                 bodyMoveSandbox,
                 chkMoveSandbox,
                 true,
-                "Move to user's sandbox is only available in page mode.",
+                "Move page is only available in page mode.",
               );
               // Remove any special page locks that were active while in page mode
               applySpecialPageLocks(false);
@@ -6784,7 +6915,7 @@ $(function () {
               bodyMoveSandbox,
               chkMoveSandbox,
               true,
-              "Move to user's sandbox is only available in page mode.",
+              "Move page is only available in page mode.",
             );
           }
 
@@ -6923,22 +7054,33 @@ $(function () {
             }
 
             if (chkMoveSandbox.checked && !chkMoveSandbox.disabled) {
-              if (!inputMoveSandboxUser.value.trim()) {
-                showNotification(
-                  fieldMoveSandboxUser,
-                  "Please enter a username.",
-                );
-                inputMoveSandboxUser.focus();
-                return;
-              }
-              if (!inputMoveSandboxSubpage.value.trim()) {
-                showNotification(
-                  fieldMoveSandboxSubpage,
-                  "Please enter a subpage name.",
-                );
-                inputMoveSandboxSubpage.focus();
-                return;
-              }
+              if (selMoveMode.value === "movepage") {
+                if (!inputMovePageDest.value.trim()) {
+                  showNotification(
+                    fieldMovePageDest,
+                    "Please enter a destination title.",
+                  );
+                  inputMovePageDest.focus();
+                  return;
+                }
+              } else {
+                if (!inputMoveSandboxUser.value.trim()) {
+                  showNotification(
+                    fieldMoveSandboxUser,
+                    "Please enter a username.",
+                  );
+                  inputMoveSandboxUser.focus();
+                  return;
+                }
+                if (!inputMoveSandboxSubpage.value.trim()) {
+                  showNotification(
+                    fieldMoveSandboxSubpage,
+                    "Please enter a subpage name.",
+                  );
+                  inputMoveSandboxSubpage.focus();
+                  return;
+                }
+              } // end else (sandbox mode)
             }
 
             const suffix = selSuffix.value;
@@ -7043,6 +7185,11 @@ $(function () {
               const inp = inputProtectRecreationReason.value.trim();
               if (sel && inp) return sel + ": " + inp;
               return sel || inp;
+            }
+            function buildMovePageReason() {
+              return (
+                inputMovePageReason.value.trim() || selMovePageReason.value
+              );
             }
             function buildMoveSandboxReason() {
               return (
@@ -7283,6 +7430,12 @@ $(function () {
               undelete: chkUndelete.checked && !chkUndelete.disabled,
               undeleteReason: buildUndeleteReason() + suffix,
               moveSandbox: chkMoveSandbox.checked && !chkMoveSandbox.disabled,
+              moveSandboxMode: selMoveMode.value,
+              movePageDest: inputMovePageDest.value.trim(),
+              movePageReason: buildMovePageReason() + suffix,
+              movePageNoRedirect: chkMovePageNoRedirect.checked,
+              movePageTalk: chkMovePageTalk.checked,
+              movePageSubpages: chkMovePageSubpages.checked,
               moveSandboxUser: inputMoveSandboxUser.value.trim(),
               moveSandboxSubpage: inputMoveSandboxSubpage.value.trim(),
               moveSandboxDest:
@@ -7347,7 +7500,11 @@ $(function () {
               if (config.massdel) features.push("🗑️ Page deletion");
               if (config.undelete) features.push("📤 Page undeletion");
               if (config.moveSandbox)
-                features.push("✂️ Move to user's sandbox");
+                features.push(
+                  config.moveSandboxMode === "movepage"
+                    ? "✂️ Move page"
+                    : "✂️ Move to user's sandbox",
+                );
               if (config.protect) features.push("🛡️ Page protection");
               if (config.protectRecreation)
                 features.push("🔏 Protect against recreation");
@@ -7623,6 +7780,10 @@ $(function () {
                 chkMoveSandboxNoRedirect.disabled = false;
                 wrapMoveSandboxNoRedirect.style.opacity = "";
                 wrapMoveSandboxNoRedirect.style.cursor = "";
+                // Also enable the Move page suppress-redirect checkbox.
+                chkMovePageNoRedirect.disabled = false;
+                wrapMovePageNoRedirect.style.opacity = "";
+                wrapMovePageNoRedirect.style.cursor = "";
               }
 
               // Re-evaluate the start button in case locks changed the checked state

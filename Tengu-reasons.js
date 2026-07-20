@@ -1267,6 +1267,208 @@ window.TenguReasons = {
         },
       ],
 
+      MOVE_REASONS: [
+        {
+          value: "",
+          label: "Other:",
+        },
+        {
+          group: "Common move reasons",
+          items: [
+            {
+              value: v(
+                "Page title is misspelled",
+                "Judul halaman mengandung kesalahan ejaan",
+              ),
+              label: "Misspelled",
+            },
+            {
+              value: v("Shorten the page title", "Perpendek judul halaman"),
+              label: "Make shorter",
+            },
+            {
+              value: v(
+                "Change the page title to sentence case",
+                "Ubah judul halaman ke huruf besar-kecil",
+              ),
+              label: "Change to sentence case",
+            },
+            {
+              value: v(
+                "Remove unnecessary parentheses or disambiguator from the page title",
+                "Hapus tanda kurung atau keterangan disambiguasi yang tidak diperlukan dari judul halaman",
+              ),
+              label: "Remove unnecessary parentheses/disambiguator",
+            },
+            {
+              value: v(
+                "Revert page move performed as vandalism",
+                "Kembalikan pemindahan halaman yang dilakukan sebagai tindakan vandalisme",
+              ),
+              label: "Revert page-move vandalism",
+            },
+            {
+              value: v(
+                "Move the page as requested",
+                "Pindahkan halaman sesuai permintaan",
+              ),
+              label: "Perform requested move",
+            },
+            {
+              value: v(
+                "Move the page to the main namespace",
+                "Pindahkan halaman ke ruang nama utama",
+              ),
+              label: "Move to mainspace",
+            },
+            {
+              value: v(
+                "Add parentheses or a disambiguator to the page title",
+                "Tambahkan tanda kurung atau keterangan disambiguasi pada judul halaman",
+              ),
+              label: "Add parentheses/disambiguator",
+            },
+            {
+              value: v(
+                "Correct the grammar in the page title",
+                "Perbaiki tata bahasa pada judul halaman",
+              ),
+              label: "Fix grammar",
+            },
+            {
+              value: v(
+                "Revert a page move made without the required discussion or consensus",
+                "Batalkan pemindahan halaman yang dilakukan tanpa pembahasan atau konsensus yang diperlukan",
+              ),
+              label: "Revert undiscussed move",
+            },
+            {
+              value: v(
+                "Swap the titles of two pages",
+                "Tukarkan judul dua halaman",
+              ),
+              label: "Swap two pages",
+            },
+            {
+              value: v(
+                "Perform the requested technical page move",
+                "Laksanakan pemindahan halaman teknis yang diminta",
+              ),
+              label: "Perform technical move requested",
+            },
+            {
+              value: v(
+                "Correct the parentheses or disambiguator in the page title",
+                "Perbaiki tanda kurung atau keterangan disambiguasi pada judul halaman",
+              ),
+              label: "Adjust/fix parentheses/disambiguator",
+            },
+          ],
+        },
+        {
+          group: "Talk pages",
+          items: [
+            {
+              value: v(
+                "Move the talk page to an archive",
+                "Pindahkan halaman pembicaraan ke arsip",
+              ),
+              label: "Archive talk page",
+            },
+            {
+              value: v(
+                "Resynchronise the talk page with its associated subject page",
+                "Sinkronkan kembali halaman pembicaraan dengan halaman terkait",
+              ),
+              label: "Resynchronise talk page with associated subject page",
+            },
+          ],
+        },
+        {
+          group: "Templates",
+          items: [
+            {
+              value: v(
+                "Standardise the spelling, spacing, and capitalisation of the page title",
+                "Sesuaikan ejaan, spasi, dan penggunaan huruf kapital pada judul halaman dengan kaidah baku",
+              ),
+              label: "Change to standard spelling, spacing, and capitalisation",
+            },
+          ],
+        },
+        {
+          group: "Files",
+          items: [
+            {
+              value: v(
+                "Perform the move requested by the file uploader",
+                "Laksanakan pemindahan yang diminta oleh pengunggah berkas",
+              ),
+              label: "Uploader requested",
+            },
+            {
+              value: v(
+                "Change the filename from a meaningless name to a suitable name",
+                "Ubah nama berkas dari nama yang tidak bermakna menjadi nama yang sesuai",
+              ),
+              label:
+                "Change from completely meaningless names to suitable names",
+            },
+            {
+              value: v(
+                "Change the filename from a misleading name to an accurate one",
+                "Ubah nama berkas dari nama yang menyesatkan menjadi nama yang akurat",
+              ),
+              label: "Correct misleading names to accurate ones",
+            },
+            {
+              value: v(
+                "Change the filename from a generic biological name to a binomial scientific name",
+                "Ubah nama berkas dari nama biologi yang bersifat umum menjadi nama ilmiah binomial",
+              ),
+              label:
+                "Change generic biological names to binomial scientific names",
+            },
+            {
+              value: v(
+                "Correct obvious errors in the filename, such as spelling or formatting errors",
+                "Perbaiki kesalahan yang jelas pada nama berkas, seperti kesalahan ejaan atau pemformatan",
+              ),
+              label: "Correct obvious errors in file names",
+            },
+            {
+              value: v(
+                "Rename files in a set of images to use consistent filenames for easier use in templates",
+                "Ubah nama berkas dalam satu kumpulan gambar agar konsisten sehingga lebih mudah digunakan dalam templat",
+              ),
+              label:
+                "Harmonise file names within a set of images to make them easier to use in templates",
+            },
+            {
+              value: v(
+                "Rename files to distinguish filenames that are too similar",
+                "Ubah nama berkas untuk membedakan nama berkas yang terlalu mirip",
+              ),
+              label: "Disambiguate files with overly similar names",
+            },
+            {
+              value: v(
+                "Remove inappropriate pejorative, offensive, or crude language from the filename",
+                "Hapus bahasa yang tidak pantas, merendahkan, menyinggung, atau kasar dari nama berkas",
+              ),
+              label: "Remove pejorative, offensive or crude language",
+            },
+            {
+              value: v(
+                "Rename the file because its filename shadows a Commons file or a redirect",
+                "Ubah nama berkas karena namanya menutupi berkas di Commons atau sebuah pengalihan",
+              ),
+              label: "Rename files that shadow a Commons file or a redirect",
+            },
+          ],
+        },
+      ],
+
       // Quick-select reasons for the "Report to global sysops" feature.
       // Unlike the reason sets above, these are not run through v() and stay
       // in English regardless of useIndonesian: reports built from this list
