@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.75.0
+ * Version 2.76.0
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -410,7 +410,7 @@ $(function () {
           }
           if (inp._tngErrTimeout) clearTimeout(inp._tngErrTimeout);
           inp.classList.add("tng-input-error");
-          inp.placeholder = "⚠️ " + message;
+          inp.placeholder = "️️⚠️️️ " + message;
           inp._tngErrTimeout = setTimeout(function () {
             inp.classList.remove("tng-input-error");
             inp.placeholder = inp.dataset.tngOrigPlaceholder || "";
@@ -895,7 +895,7 @@ $(function () {
               isAborted = true;
               btnAbort.disabled = true;
               btnAbort.textContent = "Aborting...";
-              addLog("⚠️ Operations are being aborted...");
+              addLog("️️⚠️️️ Operations are being aborted...");
             }
           });
           footer.appendChild(btnAbort);
@@ -1000,7 +1000,7 @@ $(function () {
               const confirmed = await new Promise((resolve) => {
                 const { overlay, dialog, body, footer } = createDialog({
                   title: "Self-block confirmation",
-                  icon: "⚠️",
+                  icon: "️️⚠️️️",
                   child: true,
                   onClose: () => resolve(false),
                 });
@@ -2941,7 +2941,7 @@ $(function () {
             const el = document.createElement("div");
             el.className = "tng-log-err";
             el.style.padding = "6px 0";
-            el.textContent = "⚠ " + msg;
+            el.textContent = "️️⚠️️ " + msg;
             container.appendChild(el);
           }
 
@@ -3488,7 +3488,7 @@ $(function () {
             const el = document.createElement("div");
             el.className = "tng-log-err";
             el.style.padding = "6px 0";
-            el.textContent = "⚠ " + msg;
+            el.textContent = "️️⚠️️ " + msg;
             container.appendChild(el);
           }
 
@@ -3720,6 +3720,306 @@ $(function () {
               );
             }
           })();
+        };
+
+        // ============================================================================
+        // [Section 08c] Export edits (user mode)
+        // Fetches all unique pages edited by a target user (paginating through the
+        // full contribution history) and displays them as a filterable, sortable list
+        // with a copy-to-clipboard option in wikitext numbered-list format.
+        // ============================================================================
+        const openExportEditsDialog = async function (username) {
+          const {
+            overlay: exportOverlay,
+            body: exportBody,
+            footer: exportFooter,
+          } = createDialog({
+            title: "Export edits — " + username,
+            icon: "📋",
+            child: true,
+          });
+
+          const loadingEl = document.createElement("div");
+          loadingEl.className = "tng-info-loading";
+          loadingEl.textContent = "Fetching contributions…";
+          exportBody.appendChild(loadingEl);
+
+          // titleNsMap stores title → namespace ID for every unique page edited.
+          // allTitles preserves insertion order before sorting is applied; Set
+          // deduplication removes repeated page titles.
+          const allTitles = new Set();
+          const titleNsMap = new Map();
+          let continueToken = {};
+          let fetching = true;
+
+          try {
+            while (fetching) {
+              const params = Object.assign(
+                {
+                  action: "query",
+                  list: "usercontribs",
+                  ucuser: username,
+                  ucprop: "title",
+                  uclimit: "max",
+                },
+                continueToken,
+              );
+              const data = await apiGet(params);
+              if (data.query && data.query.usercontribs) {
+                for (const edit of data.query.usercontribs) {
+                  if (!allTitles.has(edit.title)) {
+                    allTitles.add(edit.title);
+                    let nsId = 0;
+                    try {
+                      nsId = new mw.Title(edit.title).getNamespaceId();
+                    } catch (e) {}
+                    titleNsMap.set(edit.title, nsId);
+                  }
+                }
+                loadingEl.textContent =
+                  "Fetching contributions… (" +
+                  allTitles.size +
+                  " unique page" +
+                  (allTitles.size !== 1 ? "s" : "") +
+                  " found so far)";
+              }
+              if (data.continue) {
+                continueToken = data.continue;
+              } else {
+                fetching = false;
+              }
+            }
+          } catch (e) {
+            exportBody.removeChild(loadingEl);
+            const errEl = document.createElement("div");
+            errEl.className = "tng-log-err";
+            errEl.style.padding = "6px 0";
+            errEl.textContent =
+              "️️️⚠️️️ Failed to fetch contributions: " + formatApiError(e);
+            exportBody.appendChild(errEl);
+            const btnClose = makeBtn("✕ Close", "quiet");
+            btnClose.addEventListener("click", function () {
+              exportOverlay.closeHandler();
+            });
+            exportFooter.appendChild(btnClose);
+            return;
+          }
+
+          exportBody.removeChild(loadingEl);
+
+          if (!allTitles.size) {
+            const emptyEl = document.createElement("div");
+            emptyEl.className = "tng-info-empty";
+            emptyEl.textContent = "No contributions found for this user.";
+            exportBody.appendChild(emptyEl);
+            const btnClose = makeBtn("✕ Close", "quiet");
+            btnClose.addEventListener("click", function () {
+              exportOverlay.closeHandler();
+            });
+            exportFooter.appendChild(btnClose);
+            return;
+          }
+
+          // Namespace filter row — only rendered when results span more than one namespace.
+          const formattedNamespaces =
+            mw.config.get("wgFormattedNamespaces") || {};
+          const presentNsIds = new Set(titleNsMap.values());
+          const sortedNsIds = [...presentNsIds].sort(function (a, b) {
+            return a - b;
+          });
+          const nsFilterChecks = [];
+
+          if (sortedNsIds.length > 1) {
+            const nsFilterEl = document.createElement("div");
+            nsFilterEl.style.cssText =
+              "display: flex; flex-wrap: wrap; gap: 6px; align-items: center; padding: 6px 0 4px;";
+            const nsFilterLbl = document.createElement("span");
+            nsFilterLbl.className = "tng-rights-subtitle";
+            nsFilterLbl.style.marginRight = "2px";
+            nsFilterLbl.textContent = "Filter by namespace:";
+            nsFilterEl.appendChild(nsFilterLbl);
+            for (const nsId of sortedNsIds) {
+              const nsName = formattedNamespaces[nsId] || "Main";
+              const { wrap: wNs, chk: cNs } = makeCheckbox(nsName, true);
+              wNs.style.marginBottom = "0";
+              cNs.dataset.nsId = String(nsId);
+              nsFilterEl.appendChild(wNs);
+              nsFilterChecks.push(cNs);
+            }
+            exportBody.appendChild(nsFilterEl);
+          }
+
+          // Sort controls.
+          const sortRow = document.createElement("div");
+          sortRow.style.cssText =
+            "display: flex; gap: 6px; align-items: center; padding: 6px 0;";
+          const sortLbl = document.createElement("span");
+          sortLbl.className = "tng-rights-subtitle";
+          sortLbl.textContent = "Sort by:";
+          sortRow.appendChild(sortLbl);
+
+          const btnSortAZ = makeBtn("A–Z", "primary");
+          btnSortAZ.className += " tng-btn-sm";
+          btnSortAZ.title = "Sort alphabetically, A to Z";
+          const btnSortZA = makeBtn("Z–A", "quiet");
+          btnSortZA.className += " tng-btn-sm";
+          btnSortZA.title = "Sort alphabetically, Z to A";
+          sortRow.appendChild(btnSortAZ);
+          sortRow.appendChild(btnSortZA);
+          exportBody.appendChild(sortRow);
+
+          // Summary line — updated whenever the filter or sort changes.
+          const summaryEl = document.createElement("div");
+          summaryEl.className = "tng-help";
+          exportBody.appendChild(summaryEl);
+
+          // Scrollable wikitext preview box.
+          const listBox = document.createElement("div");
+          listBox.className = "tng-log-box";
+          listBox.style.height = "320px";
+          exportBody.appendChild(listBox);
+
+          // Namespaces that require a colon prefix in wikilinks to render as a
+          // hyperlink rather than an embedded file or a category membership tag.
+          const colonPrefixNs = new Set([6, 14]); // File, Category
+
+          function toWikiLink(title) {
+            const nsId = titleNsMap.get(title) || 0;
+            const prefix = colonPrefixNs.has(nsId) ? ":" : "";
+            return "[[" + prefix + title + "]]";
+          }
+
+          // Returns the set of active namespace ID strings from the filter checkboxes,
+          // or null when no filter row was rendered (single-namespace result).
+          function getActiveNsIds() {
+            if (!nsFilterChecks.length) return null;
+            return new Set(
+              nsFilterChecks
+                .filter(function (c) {
+                  return c.checked;
+                })
+                .map(function (c) {
+                  return c.dataset.nsId;
+                }),
+            );
+          }
+
+          let currentSort = "az";
+
+          function getFilteredSortedTitles() {
+            const activeNs = getActiveNsIds();
+            let titles = [...allTitles];
+            if (activeNs) {
+              titles = titles.filter(function (t) {
+                return activeNs.has(String(titleNsMap.get(t) || 0));
+              });
+            }
+            if (currentSort === "az") {
+              titles.sort(function (a, b) {
+                return a.localeCompare(b, undefined, { sensitivity: "base" });
+              });
+            } else {
+              titles.sort(function (a, b) {
+                return b.localeCompare(a, undefined, { sensitivity: "base" });
+              });
+            }
+            return titles;
+          }
+
+          function setSortActive(activeBtn) {
+            [btnSortAZ, btnSortZA].forEach(function (b) {
+              b.classList.remove("tng-btn-primary");
+              b.classList.add("tng-btn-quiet");
+            });
+            activeBtn.classList.remove("tng-btn-quiet");
+            activeBtn.classList.add("tng-btn-primary");
+          }
+
+          function renderExportList() {
+            listBox.innerHTML = "";
+            const titles = getFilteredSortedTitles();
+            const total = allTitles.size;
+            summaryEl.textContent =
+              titles.length +
+              " of " +
+              total +
+              " unique page" +
+              (total !== 1 ? "s" : "") +
+              " shown.";
+            if (!titles.length) {
+              const emptyLine = document.createElement("div");
+              emptyLine.className = "tng-info-empty";
+              emptyLine.textContent = "No pages match the current filter.";
+              listBox.appendChild(emptyLine);
+              return;
+            }
+            for (let i = 0; i < titles.length; i++) {
+              const line = document.createElement("div");
+              line.textContent = "# " + toWikiLink(titles[i]);
+              listBox.appendChild(line);
+            }
+          }
+
+          nsFilterChecks.forEach(function (cNs) {
+            cNs.addEventListener("change", renderExportList);
+          });
+
+          btnSortAZ.addEventListener("click", function () {
+            currentSort = "az";
+            setSortActive(btnSortAZ);
+            renderExportList();
+          });
+
+          btnSortZA.addEventListener("click", function () {
+            currentSort = "za";
+            setSortActive(btnSortZA);
+            renderExportList();
+          });
+
+          renderExportList();
+
+          // Footer buttons.
+          const btnCopy = makeBtn("📋 Copy as wiki links", "primary");
+          btnCopy.addEventListener("click", function () {
+            const titles = getFilteredSortedTitles();
+            const text = titles
+              .map(function (t) {
+                return "# " + toWikiLink(t);
+              })
+              .join("\n");
+            navigator.clipboard
+              .writeText(text)
+              .then(function () {
+                const orig = btnCopy.textContent;
+                btnCopy.textContent = "✔ Copied!";
+                setTimeout(function () {
+                  btnCopy.textContent = orig;
+                }, 2000);
+              })
+              .catch(function () {
+                const ta = document.createElement("textarea");
+                ta.value = text;
+                document.body.appendChild(ta);
+                ta.select();
+                try {
+                  document.execCommand("copy");
+                } catch (err) {}
+                document.body.removeChild(ta);
+                const orig = btnCopy.textContent;
+                btnCopy.textContent = "✔ Copied!";
+                setTimeout(function () {
+                  btnCopy.textContent = orig;
+                }, 2000);
+              });
+          });
+
+          const btnClose = makeBtn("✕ Close", "quiet");
+          btnClose.addEventListener("click", function () {
+            exportOverlay.closeHandler();
+          });
+
+          exportFooter.appendChild(btnCopy);
+          exportFooter.appendChild(btnClose);
         };
 
         // ============================================================================
@@ -4087,6 +4387,24 @@ $(function () {
             }
           });
           fieldTarget.appendChild(btnGetInfo);
+
+          const btnExportEdits = makeBtn("📥 Export edits", "quiet");
+          btnExportEdits.className += " tng-btn-sm";
+          btnExportEdits.title =
+            "Export a list of all pages edited by this user as wiki links";
+          btnExportEdits.disabled = true;
+          if (tenguMode !== "user") btnExportEdits.style.display = "none";
+          btnExportEdits.addEventListener("click", function () {
+            const target = inputTarget.value.trim();
+            if (!target) return;
+            openExportEditsDialog(target);
+          });
+          fieldTarget.appendChild(btnExportEdits);
+
+          // Keep the export button's disabled state in sync with the target field.
+          inputTarget.addEventListener("input", function () {
+            btnExportEdits.disabled = !inputTarget.value.trim();
+          });
 
           topSection.appendChild(rowTarget);
           const { row: rowEdits, field: fieldEdits } = makeRow("Edits");
@@ -6804,6 +7122,9 @@ $(function () {
             btnGetInfo.title = isUserModeNow
               ? "View access rights, block log, rights changes, and abuse filter log for this user"
               : "View abuse filter, protection, deletion, and move logs for this page";
+            btnExportEdits.style.display = isUserModeNow ? "" : "none";
+            btnExportEdits.disabled =
+              !inputTarget.value.trim() || !isUserModeNow;
 
             // Pre-fill target with the appropriate default for the selected mode
             inputTarget.value = isUserModeNow
@@ -7573,7 +7894,7 @@ $(function () {
             let handleConfirmKeydown;
             const confirmDlg = createDialog({
               title: "Confirm selected operations",
-              icon: "⚠️",
+              icon: "️️⚠️️️",
               child: true,
               onClose: function () {
                 document.removeEventListener(
@@ -8833,6 +9154,8 @@ $(function () {
               ? mw.config.get("wgRelevantUserName") || ""
               : mw.config.get("wgPageName").replace(/_/g, " ");
           btnGetInfo.disabled = !inputTarget.value.trim();
+          btnExportEdits.disabled =
+            !inputTarget.value.trim() || tenguMode !== "user";
           inputTarget.dispatchEvent(new Event("change"));
 
           // Perform initial check on modal framework launch

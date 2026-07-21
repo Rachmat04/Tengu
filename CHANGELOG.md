@@ -1,3 +1,12 @@
+## 2.76.0
+
+### Added
+
+* Added an **Export edits** button in user mode, placed next to the **Get info** button. Clicking it opens a dialogue that paginates through the target user's full contribution history and collects all unique pages they have edited.
+* The dialogue includes a namespace filter (shown when results span more than one namespace), **A–Z** and **Z–A** sort buttons, a summary line showing how many pages are visible, and a scrollable preview of the output in wikitext numbered-list format (for example, `# [[Example title]]`, `# [[:File:Example file]]`, `# [[:Category:Example category]]`).
+* A **Copy as wiki links** button copies the currently visible, sorted list to the clipboard. File and Category pages are prefixed with a colon so they render as hyperlinks rather than file embeds or category tags. All other namespaces use standard wikilink syntax without a colon prefix.
+* The button is hidden in page mode, where there is no user target to query.
+
 ## 2.75.0
 
 ### Changed
