@@ -1,3 +1,9 @@
+## 2.77.2
+
+### Fixed
+
+* Fixed the Move page section remaining unlocked when switching from user mode to page mode on a Special-namespace page. `targetIsSpecial` in `applyModeRestrictions()` was computed before `inputTarget.value` was updated to the page's default target, so `applySpecialPageLocks()` received an incorrect `false` and left the section available. The check is now re-evaluated after the input update, and the mode notice is refreshed accordingly.
+
 ## 2.77.1
 
 ### Changed

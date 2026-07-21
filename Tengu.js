@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.77.1
+ * Version 2.77.2
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -7004,9 +7004,10 @@ $(function () {
             if (!isFilePage) selProtectUpload.value = "all";
           }
 
-          // Applies or removes reversible mode locks on page deletion and protection
-          // when the target is a special page. Delegates to applyModeLock() so locks
-          // are cleared automatically when the target changes or mode is switched.
+          // Applies or removes reversible mode locks on page deletion, protection,
+          // and page moves when the target is a special page. Delegates to
+          // applyModeLock() so locks are cleared automatically when the target
+          // changes or mode is switched.
           function applySpecialPageLocks(lock) {
             if (lock) {
               applyModeLock(
@@ -7074,7 +7075,7 @@ $(function () {
           // Updates all mode-sensitive UI when the user switches modes via the toggle.
           function applyModeRestrictions(isUserModeNow) {
             tenguMode = isUserModeNow ? "user" : "page";
-            const targetIsSpecial = !isUserModeNow && isTargetSpecialPage();
+            let targetIsSpecial = !isUserModeNow && isTargetSpecialPage();
             updateModeNotice(isUserModeNow, targetIsSpecial);
             updateModeBadge(isUserModeNow);
 
@@ -7124,6 +7125,13 @@ $(function () {
               : mw.config.get("wgPageName").replace(/_/g, " ");
             clearInputError(inputTarget);
             btnGetInfo.disabled = !inputTarget.value.trim();
+            // Re-evaluate after the input has been updated to the mode's default
+            // target. The value computed above may be stale when switching from
+            // user mode (where the input holds a username) to page mode on a
+            // special page, causing applySpecialPageLocks() to receive an
+            // incorrect false and leave the Move page section unlocked.
+            targetIsSpecial = !isUserModeNow && isTargetSpecialPage();
+            if (!isUserModeNow) updateModeNotice(false, targetIsSpecial);
 
             // Edits row: only applicable in user mode
             selEndtime.disabled = !isUserModeNow;
