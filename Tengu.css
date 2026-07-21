@@ -729,6 +729,27 @@
   }
 }
 
+/* --- Theme transition --- */
+/* Applied only while the theme toggle is animating (see setTheme() in Tengu.js)
+   so hover and collapse/expand transitions are not disrupted. */
+.tng-theme-transitioning .tng-dialog,
+.tng-theme-transitioning .tng-dialog-header,
+.tng-theme-transitioning .tng-dialog-footer,
+.tng-theme-transitioning .tng-section-header,
+.tng-theme-transitioning .tng-input,
+.tng-theme-transitioning .tng-select,
+.tng-theme-transitioning .tng-log-box,
+.tng-theme-transitioning .tng-rights-panel,
+.tng-theme-transitioning .tng-rights-badge,
+.tng-theme-transitioning .tng-status-note,
+.tng-theme-transitioning .tng-mode-notice,
+.tng-theme-transitioning .tng-mode-badge,
+.tng-theme-transitioning .tng-info-entry,
+.tng-theme-transitioning .tng-user-rights-header,
+.tng-theme-transitioning .tng-user-rights-list {
+  transition: background-color 0.25s ease, color 0.25s ease, border-color 0.25s ease;
+}
+
 /* --- Dark mode (manual toggle via .tng-theme-dark on .tng-overlay) --- */
 .tng-theme-dark .tng-dialog {
   background: #1e1e1e;

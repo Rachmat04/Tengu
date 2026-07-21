@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.77.0
+ * Version 2.77.1
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -167,7 +167,11 @@ $(function () {
             // applies for the rest of this session, just not persisted.
           }
           for (const ov of overlayStack) {
+            ov.classList.add("tng-theme-transitioning");
             ov.classList.toggle("tng-theme-dark", theme === "dark");
+            setTimeout(function () {
+              ov.classList.remove("tng-theme-transitioning");
+            }, 300);
           }
         }
 

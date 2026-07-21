@@ -1,3 +1,9 @@
+## 2.77.1
+
+### Changed
+
+* Switching between light and dark mode now animates smoothly. Background, text, and border colours on the dialogue and its main child elements cross-fade over 0.25 s. The transition is scoped to a short-lived `.tng-theme-transitioning` class added during the switch, so hover effects, section expand/collapse animations, and other existing transitions are not affected.
+
 ## 2.77.0
 
 ### Changed
