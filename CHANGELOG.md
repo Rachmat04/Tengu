@@ -1,3 +1,9 @@
+## 2.77.0
+
+### Changed
+
+* The **Select edits/pages** picker now fetches the target user's complete contribution history by paginating through all available API results, matching the behaviour of the **Export edits** feature. The previous cap of 500 contributions and the accompanying truncation notice have been removed. A running count is displayed in the loading message while fetching is in progress.
+
 ## 2.76.0
 
 ### Added

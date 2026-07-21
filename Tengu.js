@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.76.0
+ * Version 2.77.0
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -281,7 +281,7 @@ $(function () {
           const filter = document.createElement("input");
           filter.type = "text";
           filter.className = "tng-input tng-filtered-select-input";
-          filter.placeholder = "Filter options…";
+          filter.placeholder = "Filter options...";
           filter.setAttribute("aria-label", "Filter options");
 
           wrap.appendChild(filter);
@@ -3741,7 +3741,7 @@ $(function () {
 
           const loadingEl = document.createElement("div");
           loadingEl.className = "tng-info-loading";
-          loadingEl.textContent = "Fetching contributions…";
+          loadingEl.textContent = "Fetching contributions...";
           exportBody.appendChild(loadingEl);
 
           // titleNsMap stores title → namespace ID for every unique page edited.
@@ -3777,7 +3777,7 @@ $(function () {
                   }
                 }
                 loadingEl.textContent =
-                  "Fetching contributions… (" +
+                  "Fetching contributions... (" +
                   allTitles.size +
                   " unique page" +
                   (allTitles.size !== 1 ? "s" : "") +
@@ -3979,7 +3979,7 @@ $(function () {
           renderExportList();
 
           // Footer buttons.
-          const btnCopy = makeBtn("📋 Copy as wiki links", "primary");
+          const btnCopy = makeBtn("Copy as wiki links", "primary");
           btnCopy.addEventListener("click", function () {
             const titles = getFilteredSortedTitles();
             const text = titles
@@ -4013,7 +4013,7 @@ $(function () {
               });
           });
 
-          const btnClose = makeBtn("✕ Close", "quiet");
+          const btnClose = makeBtn("Close", "quiet");
           btnClose.addEventListener("click", function () {
             exportOverlay.closeHandler();
           });
@@ -4569,12 +4569,10 @@ $(function () {
 
             const loadingEl = document.createElement("div");
             loadingEl.className = "tng-info-loading";
-            loadingEl.textContent = "Fetching contributions…";
+            loadingEl.textContent = "Fetching contributions...";
             pickerBody.appendChild(loadingEl);
 
-            const PICKER_FETCH_LIMIT = 500;
             let pickerContribs = [];
-            let pickerTruncated = false;
 
             try {
               let continueToken = {};
@@ -4595,14 +4593,14 @@ $(function () {
                   pickerContribs = pickerContribs.concat(
                     data.query.usercontribs,
                   );
+                  loadingEl.textContent =
+                    "Fetching contributions... (" +
+                    pickerContribs.length +
+                    " so far)";
                 }
-                if (
-                  data.continue &&
-                  pickerContribs.length < PICKER_FETCH_LIMIT
-                ) {
+                if (data.continue) {
                   continueToken = data.continue;
                 } else {
-                  if (data.continue) pickerTruncated = true;
                   fetching = false;
                 }
               }
@@ -4649,16 +4647,6 @@ $(function () {
 
             const pickerEditedTitles = Object.keys(pickerEditedPages).sort();
             const pickerCreatedTitles = Object.keys(pickerCreatedPages).sort();
-
-            if (pickerTruncated) {
-              const noteEl = document.createElement("div");
-              noteEl.className = "tng-status-note tng-status-note-active";
-              noteEl.textContent =
-                "Only the most recent " +
-                PICKER_FETCH_LIMIT +
-                " contributions are shown. Some edits or pages may not be listed.";
-              pickerBody.appendChild(noteEl);
-            }
 
             if (!pickerEditedTitles.length && !pickerCreatedTitles.length) {
               const emptyEl = document.createElement("div");
@@ -5741,7 +5729,7 @@ $(function () {
           // Returns true when the current target is an IP address or a
           // temporary account — i.e. when this section will file a global
           // block request rather than a global lock request.
-          // Temporary accounts (pattern ~YYYY-…) cannot be globally locked
+          // Temporary accounts (pattern ~YYYY-...) cannot be globally locked
           // and must be reported as global block requests instead.
           function isSRGBlockTarget() {
             const target = inputTarget.value.trim();
