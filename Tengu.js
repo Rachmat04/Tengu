@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.79.0
+ * Version 2.80.0
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -2716,7 +2716,26 @@ $(function () {
           if (config.massdelUnlink && deletedTitles.length > 0) {
             for (const delTitle of deletedTitles) {
               if (isAborted) break;
-              addLog(`[Unlink] Searching for links to: ${delTitle}...`);
+
+              // Detect whether the deleted item is a file. File embeds and
+              // gallery entries use different wikitext forms than plain page
+              // links, and MediaWiki tracks file usage via imageinfo/imageusage
+              // rather than the pagelinks table used by list=backlinks.
+              // [TRIAL] — this branch has not been independently verified
+              // against a live wiki; the file-delinking feature is experimental.
+              let isFileDeletion = false;
+              let fileMain = null;
+              try {
+                const delTitleObj = new mw.Title(delTitle);
+                isFileDeletion = delTitleObj.getNamespaceId() === 6;
+                if (isFileDeletion) fileMain = delTitleObj.getMain();
+              } catch (e) {
+                // Leave isFileDeletion false if the title cannot be resolved.
+              }
+
+              addLog(
+                `[Unlink] Searching for ${isFileDeletion ? "references to file" : "links to"}: ${delTitle}...`,
+              );
 
               // Escape the title for use in a regular expression.
               // Spaces and underscores are treated as equivalent in wikilinks.
@@ -2734,21 +2753,69 @@ $(function () {
                 "g",
               );
 
-              let blcontinue;
+              // File-specific patterns, built only when the deleted item is a file.
+              // [TRIAL] — the "File"/"Image" namespace aliases and gallery
+              // line syntax used below cover the common cases but may not match
+              // every valid form (e.g. localised namespace aliases on this wiki).
+              let fileEmbedRe = null;
+              let galleryLineRe = null;
+              if (isFileDeletion && fileMain) {
+                const escapedFileName = fileMain
+                  .replace(/[.*+?^${}()|[\]\\]/g, "\\$&")
+                  .replace(/[ _]/g, "[ _]");
+                // Matches [[File:Example.jpg]], [[File:Example.jpg|thumb|caption]],
+                // and the "Image:" alias. The entire embed is removed, since a
+                // bare file embed has no display-text fallback to replace it with.
+                fileEmbedRe = new RegExp(
+                  "\\[\\[\\s*(?:[Ff]ile|[Ii]mage)\\s*:\\s*" +
+                    escapedFileName +
+                    "(?:\\|[^\\]]*)?\\]\\]",
+                  "g",
+                );
+                // Matches a bare gallery entry on its own line, e.g.
+                // "File:Example.jpg|caption", as used inside <gallery> tags.
+                galleryLineRe = new RegExp(
+                  "^[ \\t]*(?:[Ff]ile|[Ii]mage)\\s*:\\s*" +
+                    escapedFileName +
+                    "[ \\t]*(?:\\|.*)?$\\n?",
+                  "gim",
+                );
+              }
+
+              let continueToken;
               do {
                 if (isAborted) break;
                 try {
-                  const blParams = {
-                    action: "query",
-                    list: "backlinks",
-                    bltitle: delTitle,
-                    blnamespace: 0, // Main namespace only
-                    bllimit: 50,
-                  };
-                  if (blcontinue) blParams.blcontinue = blcontinue;
-                  const blData = await apiGet(blParams);
-                  blcontinue = blData.continue && blData.continue.blcontinue;
-                  const links = (blData.query && blData.query.backlinks) || [];
+                  let links;
+                  if (isFileDeletion) {
+                    // list=imageusage tracks file embeds/transclusions, unlike
+                    // list=backlinks which only tracks pagelinks-table wikilinks.
+                    const iuParams = {
+                      action: "query",
+                      list: "imageusage",
+                      iutitle: delTitle,
+                      iunamespace: 0, // Main namespace only
+                      iulimit: 50,
+                    };
+                    if (continueToken) iuParams.iucontinue = continueToken;
+                    const iuData = await apiGet(iuParams);
+                    continueToken =
+                      iuData.continue && iuData.continue.iucontinue;
+                    links = (iuData.query && iuData.query.imageusage) || [];
+                  } else {
+                    const blParams = {
+                      action: "query",
+                      list: "backlinks",
+                      bltitle: delTitle,
+                      blnamespace: 0, // Main namespace only
+                      bllimit: 50,
+                    };
+                    if (continueToken) blParams.blcontinue = continueToken;
+                    const blData = await apiGet(blParams);
+                    continueToken =
+                      blData.continue && blData.continue.blcontinue;
+                    links = (blData.query && blData.query.backlinks) || [];
+                  }
 
                   for (const link of links) {
                     if (isAborted) break;
@@ -2776,18 +2843,28 @@ $(function () {
                       if (!slot) continue;
                       const wikitext = slot.content;
 
-                      // Replace each matching wikilink with its display text,
-                      // or with the base page title if no display text is present.
-                      const newWikitext = wikitext.replace(
-                        linkRe,
-                        function (match, displayText) {
-                          return displayText !== undefined
-                            ? displayText
-                            : delTitle;
-                        },
-                      );
+                      let newWikitext;
+                      if (isFileDeletion) {
+                        // Remove whole file embeds and gallery lines referencing
+                        // the deleted file. Neither form has a meaningful
+                        // display-text fallback, so the match is deleted outright.
+                        newWikitext = wikitext
+                          .replace(fileEmbedRe, "")
+                          .replace(galleryLineRe, "");
+                      } else {
+                        // Replace each matching wikilink with its display text,
+                        // or with the base page title if no display text is present.
+                        newWikitext = wikitext.replace(
+                          linkRe,
+                          function (match, displayText) {
+                            return displayText !== undefined
+                              ? displayText
+                              : delTitle;
+                          },
+                        );
+                      }
 
-                      if (newWikitext === wikitext) continue; // No matching links found in content
+                      if (newWikitext === wikitext) continue; // No matching references found in content
 
                       await apiPost({
                         action: "edit",
@@ -2795,14 +2872,18 @@ $(function () {
                         text: newWikitext,
                         summary:
                           (useIndonesian
-                            ? "Menghapus pranala ke halaman yang sudah dihapus: "
-                            : "Removing links to deleted page: ") +
+                            ? isFileDeletion
+                              ? "Menghapus referensi ke berkas yang sudah dihapus: "
+                              : "Menghapus pranala ke halaman yang sudah dihapus: "
+                            : isFileDeletion
+                              ? "Removing references to deleted file: "
+                              : "Removing links to deleted page: ") +
                           delTitle +
                           toolTag,
                         bot: true,
                       });
                       addLog(
-                        `[Unlink] Removed links to "${delTitle}" in: ${linkTitle}`,
+                        `[Unlink] Removed ${isFileDeletion ? "references to file" : "links to"} "${delTitle}" in: ${linkTitle}`,
                       );
                       stats.unlink++;
                       updateStatusDisplay();
@@ -2818,12 +2899,12 @@ $(function () {
                   }
                 } catch (e) {
                   addLog(
-                    `[Unlink] Failed to fetch backlinks for "${delTitle}": ${formatApiError(e)}`,
+                    `[Unlink] Failed to fetch ${isFileDeletion ? "file usage" : "backlinks"} for "${delTitle}": ${formatApiError(e)}`,
                     true,
                   );
                   break;
                 }
-              } while (blcontinue && !isAborted);
+              } while (continueToken && !isAborted);
             }
           }
 
@@ -5849,11 +5930,11 @@ $(function () {
           checksPagedel.appendChild(wrapPagedelSubpages);
           const { wrap: wrapPagedelUnlink, chk: chkPagedelUnlink } =
             makeCheckbox(
-              "Remove links to deleted page (article namespace only)",
+              "Remove links to deleted page or file (article namespace only)",
               false,
             );
           wrapPagedelUnlink.title =
-            "When ticked, wikilinks pointing to each deleted page are removed from articles in the main namespace. Talk pages, user pages, and other namespaces are not modified.";
+            "When ticked, wikilinks pointing to each deleted page are removed from articles in the main namespace. When the deleted item is a file, references to it — including [[File:...]] embeds and <gallery> entries — are also removed. Talk pages, user pages, and other namespaces are not modified. File delinking is an experimental feature; please check the results carefully before relying on it.";
           checksPagedel.appendChild(wrapPagedelUnlink);
           const { wrap: wrapNotifyDelete, chk: chkNotifyDelete } = makeCheckbox(
             "Send deletion notification to page creator's talk page",

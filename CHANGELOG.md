@@ -1,3 +1,20 @@
+## 2.80.0
+
+### Added
+
+* Added file delinking to the **Remove links to deleted page or file (article namespace only)** option (renamed from "Remove links to deleted page") in the **Page deletion** section. When a deleted item is a file, Tengu now also removes references to it from articles in the main namespace, covering `[[File:Example.jpg]]`, `[[File:Example.jpg|thumb|caption]]`, the `Image:` alias, and bare `<gallery>` entries such as `File:Example.jpg|caption`.
+* File references are located via `list=imageusage` rather than `list=backlinks`, since MediaWiki tracks file embeds separately from ordinary page links.
+
+### Changed
+
+* The checkbox tooltip now explains the file-delinking behaviour and notes that it is an experimental feature, so results should be checked carefully before relying on it.
+* Edit summaries for file-reference removals now read "Removing references to deleted file: " (or the Indonesian equivalent) instead of the page-link wording.
+
+### Notes
+
+* File delinking is new and experimental. The regular expressions used to match file embeds and gallery entries cover common forms but have not been exhaustively tested against every valid wikitext variant, including localised `File:`/`Image:` namespace aliases on non-English wikis.
+* Unlike the existing page-link removal, a matched file reference is deleted outright rather than replaced with display text, since bare file embeds have no equivalent plain-text fallback.
+
 ## 2.79.0
 
 ### Changed
