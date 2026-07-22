@@ -1,3 +1,10 @@
+## 2.79.0
+
+### Changed
+
+* The **Also move the associated talk page** option in the **Move page** sub-mode of the Move page section is now disabled when no associated talk page exists for the current target, or when the target is itself a talk page. This matches the behaviour already applied to the Move to user's sandbox sub-mode. The option starts unchecked and disabled until the check resolves.
+* The **Also delete the talk page** option in the **Page deletion** section is now disabled in page mode when no associated talk page exists for the current target, or when the target is itself a talk page. In user mode the option remains always enabled, since the pages to delete are determined dynamically from the target user's contributions.
+
 ## 2.78.0
 
 ### Changed

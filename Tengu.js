@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.78.0
+ * Version 2.79.0
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -6201,8 +6201,11 @@ $(function () {
 
           const { wrap: wrapMovePageTalk, chk: chkMovePageTalk } = makeCheckbox(
             "Also move the associated talk page",
-            true,
+            false,
           );
+          chkMovePageTalk.disabled = true;
+          wrapMovePageTalk.style.opacity = "0.5";
+          wrapMovePageTalk.style.cursor = "not-allowed";
           wrapMovePageTalk.title =
             "When ticked, the associated talk page is also moved to the equivalent title under the destination namespace.";
 
@@ -6461,6 +6464,155 @@ $(function () {
               chkMoveSandboxTalk.disabled = false;
               wrapMoveSandboxTalk.style.opacity = "";
               wrapMoveSandboxTalk.style.cursor = "";
+            }
+          }
+
+          // Evaluates whether the "Also move the associated talk page" checkbox in the
+          // Move page sub-mode should be available for the current target. Mirrors the
+          // logic in updateMoveSandboxTalkAvailability(). Only runs in page mode.
+          async function updateMovePageTalkAvailability() {
+            const target = inputTarget.value.trim();
+            if (!target || tenguMode !== "page") return;
+
+            let isTalkPage = false;
+            try {
+              isTalkPage = new mw.Title(target).isTalkPage();
+            } catch (e) {}
+
+            if (isTalkPage) {
+              chkMovePageTalk.checked = false;
+              chkMovePageTalk.disabled = true;
+              wrapMovePageTalk.style.opacity = "0.5";
+              wrapMovePageTalk.style.cursor = "not-allowed";
+              wrapMovePageTalk.title =
+                "Not available: the target page is itself a talk page.";
+              return;
+            }
+
+            let talkTitle = null;
+            try {
+              talkTitle = new mw.Title(target).getTalkPage().getPrefixedText();
+            } catch (e) {}
+
+            if (!talkTitle) {
+              chkMovePageTalk.checked = false;
+              chkMovePageTalk.disabled = true;
+              wrapMovePageTalk.style.opacity = "0.5";
+              wrapMovePageTalk.style.cursor = "not-allowed";
+              wrapMovePageTalk.title =
+                "Not available: this page has no associated talk page.";
+              return;
+            }
+
+            try {
+              const data = await apiGet({
+                action: "query",
+                titles: talkTitle,
+                formatversion: 2,
+              });
+              const page =
+                data.query && data.query.pages && data.query.pages[0];
+              const talkExists = !!(page && !page.missing);
+              if (talkExists) {
+                chkMovePageTalk.disabled = false;
+                wrapMovePageTalk.style.opacity = "";
+                wrapMovePageTalk.style.cursor = "";
+                wrapMovePageTalk.title =
+                  "When ticked, the associated talk page is also moved to the equivalent title under the destination namespace.";
+              } else {
+                chkMovePageTalk.checked = false;
+                chkMovePageTalk.disabled = true;
+                wrapMovePageTalk.style.opacity = "0.5";
+                wrapMovePageTalk.style.cursor = "not-allowed";
+                wrapMovePageTalk.title =
+                  "Not available: no talk page exists for this page.";
+              }
+            } catch (e) {
+              // API call failed; leave the checkbox enabled so the user can still try.
+              chkMovePageTalk.disabled = false;
+              wrapMovePageTalk.style.opacity = "";
+              wrapMovePageTalk.style.cursor = "";
+            }
+          }
+
+          // Evaluates whether the "Also delete the talk page" checkbox in the Page
+          // deletion section should be available for the current target. In page mode,
+          // checks whether an associated talk page exists for the target. In user mode,
+          // the pages to delete are determined dynamically from contributions, so the
+          // option remains always enabled.
+          async function updatePagedelTalkAvailability() {
+            const target = inputTarget.value.trim();
+
+            if (tenguMode !== "page") {
+              // Restore the enabled state when in user mode.
+              chkPagedelTalk.disabled = false;
+              wrapPagedelTalk.style.opacity = "";
+              wrapPagedelTalk.style.cursor = "";
+              wrapPagedelTalk.title =
+                "When ticked, the talk page of each deleted page will also be deleted if it exists, including subpages when 'Delete subpages of deleted page' is enabled. Pages that are already talk pages are skipped.";
+              return;
+            }
+
+            if (!target) return;
+
+            let isTalkPage = false;
+            try {
+              isTalkPage = new mw.Title(target).isTalkPage();
+            } catch (e) {}
+
+            if (isTalkPage) {
+              chkPagedelTalk.checked = false;
+              chkPagedelTalk.disabled = true;
+              wrapPagedelTalk.style.opacity = "0.5";
+              wrapPagedelTalk.style.cursor = "not-allowed";
+              wrapPagedelTalk.title =
+                "Not available: the target page is itself a talk page.";
+              return;
+            }
+
+            let talkTitle = null;
+            try {
+              talkTitle = new mw.Title(target).getTalkPage().getPrefixedText();
+            } catch (e) {}
+
+            if (!talkTitle) {
+              chkPagedelTalk.checked = false;
+              chkPagedelTalk.disabled = true;
+              wrapPagedelTalk.style.opacity = "0.5";
+              wrapPagedelTalk.style.cursor = "not-allowed";
+              wrapPagedelTalk.title =
+                "Not available: this page has no associated talk page.";
+              return;
+            }
+
+            try {
+              const data = await apiGet({
+                action: "query",
+                titles: talkTitle,
+                formatversion: 2,
+              });
+              const page =
+                data.query && data.query.pages && data.query.pages[0];
+              const talkExists = !!(page && !page.missing);
+              if (talkExists) {
+                chkPagedelTalk.disabled = false;
+                wrapPagedelTalk.style.opacity = "";
+                wrapPagedelTalk.style.cursor = "";
+                wrapPagedelTalk.title =
+                  "When ticked, the talk page of each deleted page will also be deleted if it exists, including subpages when 'Delete subpages of deleted page' is enabled. Pages that are already talk pages are skipped.";
+              } else {
+                chkPagedelTalk.checked = false;
+                chkPagedelTalk.disabled = true;
+                wrapPagedelTalk.style.opacity = "0.5";
+                wrapPagedelTalk.style.cursor = "not-allowed";
+                wrapPagedelTalk.title =
+                  "Not available: no talk page exists for this page.";
+              }
+            } catch (e) {
+              // API call failed; leave the checkbox enabled so the user can still try.
+              chkPagedelTalk.disabled = false;
+              wrapPagedelTalk.style.opacity = "";
+              wrapPagedelTalk.style.cursor = "";
             }
           }
 
@@ -7232,6 +7384,8 @@ $(function () {
               }
               // Re-evaluate talk page availability for the new target.
               updateMoveSandboxTalkAvailability();
+              updateMovePageTalkAvailability();
+              updatePagedelTalkAvailability();
             } else {
               // Remove mode locks first to enable features
               applyModeLock(secRollback, bodyRollback, chkRollback, false);
@@ -9140,10 +9294,13 @@ $(function () {
             if (tenguMode === "page" && chkMoveSandboxSameAsCreator.checked) {
               fetchAndApplyPageCreator();
             }
-            // Re-evaluate talk page availability for the move sandbox section.
+            // Re-evaluate talk page availability for the move sandbox and move page sections.
             if (tenguMode === "page") {
               updateMoveSandboxTalkAvailability();
+              updateMovePageTalkAvailability();
             }
+            // Re-evaluate talk page deletion availability (handles both modes internally).
+            updatePagedelTalkAvailability();
             updateUploadAvailability();
             updateSectionStatus();
           });
