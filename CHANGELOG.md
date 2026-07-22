@@ -1,3 +1,9 @@
+## 2.78.0
+
+### Changed
+
+* The **Destination title** field in the **Move page** sub-mode of the Move page section is now pre-filled with the current page's full title (including the namespace prefix where applicable) when the dialogue opens or the target changes. This avoids retyping the existing title when only a minor adjustment is needed.
+
 ## 2.77.2
 
 ### Fixed

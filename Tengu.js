@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.77.2
+ * Version 2.78.0
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -7214,17 +7214,20 @@ $(function () {
               // stale username from a previous session is not silently reused.
               chkMoveSandboxSameAsCreator.checked = false;
               inputMoveSandboxUser.disabled = false;
-              // Auto-fill subpage name with the page title (without namespace)
+              // Auto-fill subpage name with the page title (without namespace),
+              // and pre-fill the Move page destination with the full prefixed title.
               const _pageTargetForMove = inputTarget.value.trim();
               if (_pageTargetForMove) {
                 try {
-                  inputMoveSandboxSubpage.value = new mw.Title(
-                    _pageTargetForMove,
-                  )
+                  const _moveTargetObj = new mw.Title(_pageTargetForMove);
+                  inputMoveSandboxSubpage.value = _moveTargetObj
                     .getMain()
                     .replace(/_/g, " ");
+                  inputMovePageDest.value = _moveTargetObj
+                    .getPrefixedText()
+                    .replace(/_/g, " ");
                 } catch (e) {
-                  // Title could not be parsed; leave the subpage field as-is
+                  // Title could not be parsed; leave the fields as-is
                 }
               }
               // Re-evaluate talk page availability for the new target.
@@ -9117,14 +9120,19 @@ $(function () {
               applySpecialPageLocks(targetIsSpecial);
               updateModeNotice(false, targetIsSpecial);
             }
-            // Auto-fill subpage name with the page title (without namespace)
+            // Auto-fill subpage name with the page title (without namespace),
+            // and pre-fill the Move page destination with the full prefixed title.
             if (tenguMode === "page" && targetVal) {
               try {
-                inputMoveSandboxSubpage.value = new mw.Title(targetVal)
+                const _titleObj = new mw.Title(targetVal);
+                inputMoveSandboxSubpage.value = _titleObj
                   .getMain()
                   .replace(/_/g, " ");
+                inputMovePageDest.value = _titleObj
+                  .getPrefixedText()
+                  .replace(/_/g, " ");
               } catch (e) {
-                // Title could not be parsed; leave the subpage field as-is
+                // Title could not be parsed; leave the fields as-is
               }
             }
             // Re-fetch the page creator when the target changes and the
