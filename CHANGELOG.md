@@ -1,3 +1,16 @@
+## 2.81.0
+
+### Changed
+
+* Standardised the wikitext format used when submitting reports to Meta-Wiki's Global sysops/Requests page.
+* Blocking requests now read `* Please block {{LockHide|1=Username|2=Prefix}}: [reason]` for registered and temporary accounts, or an interwiki-linked contributions page for IP addresses, instead of the previous full-URL link followed by "on [site name] ([dbname])".
+* Page deletion, page protection, and revision deletion requests now read `* Please delete [[:Prefix:Page title|Page title]]: [reason]` (or "Please protect" / "Please delete revisions from"), instead of a bracketed full-URL link.
+* `Prefix` is the reporting wiki's interwiki project and language prefix (e.g. `w:id:`, `wikt:ja:`), generated automatically from the current wiki's hostname via the new `getInterwikiPrefix()` helper.
+
+### Added
+
+* Added `getInterwikiPrefix()`, covering Wikipedia, Wiktionary, Wikibooks, Wikinews, Wikiquote, Wikisource, Wikiversity, Wikivoyage, and a handful of language-independent sister projects (Commons, Wikidata, Meta, Wikispecies, Incubator, Wikifunctions).
+
 ## 2.80.0
 
 ### Added

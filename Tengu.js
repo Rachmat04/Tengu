@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.80.0
+ * Version 2.81.0
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -601,6 +601,51 @@ $(function () {
               reject,
             );
           });
+        }
+
+        // Derives an interwiki prefix (project + language, e.g. "w:id:" or
+        // "wikt:ja:") for the current wiki from its hostname, used to build
+        // interwiki links and {{LockHide}} project parameters in reports
+        // submitted to Meta-Wiki. [Inference] This mapping covers common
+        // Wikimedia project subdomain patterns (Wikipedia, Wiktionary,
+        // Wikibooks, Wikinews, Wikiquote, Wikisource, Wikiversity, Wikivoyage)
+        // and a handful of language-independent sister projects (Commons,
+        // Wikidata, Meta, Wikispecies, Incubator), but has not been
+        // independently confirmed against every Wikimedia project's actual
+        // interwiki table. Returns an empty string if no mapping is found,
+        // in which case callers fall back to a plain, non-prefixed link.
+        function getInterwikiPrefix() {
+          const server = (mw.config.get("wgServer") || "").replace(
+            /^(?:https?:)?\/\//,
+            "",
+          );
+          const SISTER_PROJECT_PREFIXES = {
+            wikipedia: "w",
+            wiktionary: "wikt",
+            wikibooks: "b",
+            wikinews: "n",
+            wikiquote: "q",
+            wikisource: "s",
+            wikiversity: "v",
+            wikivoyage: "voy",
+          };
+          const NO_LANG_HOSTS = {
+            "commons.wikimedia.org": "c:",
+            "www.wikidata.org": "d:",
+            "meta.wikimedia.org": "m:",
+            "species.wikimedia.org": "species:",
+            "incubator.wikimedia.org": "incubator:",
+            "www.wikifunctions.org": "f:",
+          };
+          if (NO_LANG_HOSTS[server]) return NO_LANG_HOSTS[server];
+
+          const hostParts = server.split(".");
+          if (hostParts.length >= 3 && SISTER_PROJECT_PREFIXES[hostParts[1]]) {
+            return (
+              SISTER_PROJECT_PREFIXES[hostParts[1]] + ":" + hostParts[0] + ":"
+            );
+          }
+          return "";
         }
 
         // Appends a pre-built report line to the bottom of Meta-Wiki's
@@ -7805,19 +7850,18 @@ $(function () {
                 selMoveSandboxReason.value
               );
             }
+
             // Assembles the wikitext line submitted to Meta-Wiki's Global
-            // sysops/Requests page. User mode uses {{LockHide|1=Username}} for
-            // registered accounts (per existing usage on Meta steward-request
-            // pages — exact parameter syntax not independently confirmed) and a
-            // direct contributions URL for IPs, since IPs cannot be locked.
-            // Page mode links directly to the target page instead, and opens
-            // with "Please delete" rather than "Please block" — exact wikitext
-            // conventions for page-deletion requests on this page have not been
-            // independently confirmed.
+            // sysops/Requests page, following the report format standardised
+            // in v2.81.0. User mode uses {{LockHide|1=Username|2=Prefix}} for
+            // registered and temporary accounts, where Prefix is the
+            // reporting wiki's interwiki project/language prefix (e.g.
+            // "wikt:ja:"), and an interwiki-linked contributions page for IP
+            // addresses, since IPs cannot be locked. Page mode links directly
+            // to the target page using the same interwiki prefix, e.g.
+            // [[:w:id:Category:Example|Category:Example]].
             function buildGSReportLine() {
-              const dbname = mw.config.get("wgDBname") || "";
-              const siteName = mw.config.get("wgSiteName") || dbname;
-              const server = mw.config.get("wgServer") || "";
+              const prefix = getInterwikiPrefix();
               const pickedReasons = activeGSReasonChecks()
                 .filter(function (c) {
                   return c.chk.checked;
@@ -7843,7 +7887,6 @@ $(function () {
               }
 
               if (tenguMode === "page") {
-                const pageUrl = server + mw.util.getUrl(targetVal);
                 const gsPageType = selGSPageRequestType.value;
                 const requestVerb =
                   gsPageType === "protect"
@@ -7851,43 +7894,41 @@ $(function () {
                     : gsPageType === "revdel"
                       ? "Please delete revisions from"
                       : "Please delete";
+                const pageLink = prefix
+                  ? "[[:" + prefix + targetVal + "|" + targetVal + "]]"
+                  : "[[:" + targetVal + "]]";
                 return (
                   "* " +
                   requestVerb +
-                  " [" +
-                  pageUrl +
                   " " +
-                  targetVal +
-                  "] on " +
-                  siteName +
-                  " (" +
-                  dbname +
-                  "): " +
+                  pageLink +
+                  ": " +
                   reasonText +
                   " ~~~~"
                 );
               }
 
-              const contribsUrl =
-                server + mw.util.getUrl("Special:Contributions/" + targetVal);
-              const userLink = isIP
-                ? "[" + contribsUrl + " " + targetVal + "]"
-                : "{{LockHide|1=" +
-                  targetVal +
-                  "}} ([" +
-                  contribsUrl +
-                  " contributions])";
-              return (
-                "* Please block " +
-                userLink +
-                " on " +
-                siteName +
-                " (" +
-                dbname +
-                "): " +
-                reasonText +
-                " ~~~~"
-              );
+              let userLink;
+              if (isIP) {
+                userLink = prefix
+                  ? "[[:" +
+                    prefix +
+                    "Special:Contributions/" +
+                    targetVal +
+                    "|" +
+                    targetVal +
+                    "]]"
+                  : "[[Special:Contributions/" +
+                    targetVal +
+                    "|" +
+                    targetVal +
+                    "]]";
+              } else {
+                userLink = prefix
+                  ? "{{LockHide|1=" + targetVal + "|2=" + prefix + "}}"
+                  : "{{LockHide|1=" + targetVal + "}}";
+              }
+              return "* Please block " + userLink + ": " + reasonText + " ~~~~";
             }
             // Assembles the wikitext section submitted to Meta-Wiki's
             // Steward requests/Global page. IP targets are filed as global
