@@ -34,6 +34,7 @@ Tengu automatically selects the most appropriate mode based on the page you open
 - Uses native rollback by default; falls back to undo when rollback rights are unavailable.
 - Optional bot-edit flag, username display in summary, and custom reason.
 - Automatically falls back to native rollback for pages using the ZObject content model (Wikifunctions).
+- Optional notification to the target user's talk page listing every reverted page and the reason given, sent once per run rather than once per page. Disabled by default.
 
 ### Block
 - Blocks users or IP addresses with configurable expiry, reason, and flags (autoblock, account-creation block, talk-page block, email block, hard block, username hiding).

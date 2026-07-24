@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.84.0
+ * Version 2.85.0
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -1047,6 +1047,11 @@ $(function () {
               ? "Notifikasi: Peringatan pengguna"
               : "Notification: User warning") + toolTag;
 
+          const notifySummaryRollback =
+            (useIndonesian
+              ? "Notifikasi: Pemberitahuan pembatalan suntingan"
+              : "Notification: Edit reversion notice") + toolTag;
+
           // --- User warning ---
           // Only runs in user mode; config.warn is only set when the warn
           // section is enabled and a message template has been selected.
@@ -1799,6 +1804,11 @@ $(function () {
             pagesToProtect.delete(t);
           }
 
+          // Titles successfully reverted via rollback/undo, collected so a single
+          // consolidated notification can be sent to the target user's talk page
+          // (if enabled), instead of one notification per page.
+          const rollbackNotifiedTitles = [];
+
           // Process rollbacks, undos and revision deletions sequentially with a throttling buffer delay
           for (const [title, info] of Object.entries(pageEdits)) {
             if (isAborted) break;
@@ -1983,6 +1993,7 @@ $(function () {
                   );
                   standardRevertSuccess = true;
                   stats.rollback++;
+                  rollbackNotifiedTitles.push(title);
                   updateStatusDisplay();
                 }
               } catch (e) {
@@ -2014,6 +2025,7 @@ $(function () {
                 addLog(`[Rollback] Successfully reverted: ${title}`);
                 standardRevertSuccess = true;
                 stats.rollback++;
+                rollbackNotifiedTitles.push(title);
                 updateStatusDisplay();
               } catch (e) {
                 standardErr = String(e);
@@ -2063,6 +2075,7 @@ $(function () {
                 );
                 if (!standardRevertSuccess) {
                   stats.rollback++;
+                  rollbackNotifiedTitles.push(title);
                   updateStatusDisplay();
                 }
               } catch (e) {
@@ -2100,6 +2113,52 @@ $(function () {
             }
 
             await new Promise((resolve) => setTimeout(resolve, THROTTLE_MS)); // Throttling window
+          }
+
+          // --- Rollback/undo notification ---
+          // Posted once per run to the target user's talk page, listing every
+          // page successfully reverted (rather than one notification per page).
+          if (
+            config.notifyRollback &&
+            config.mode === "user" &&
+            rollbackNotifiedTitles.length > 0 &&
+            !isAborted
+          ) {
+            const talkTitle = new mw.Title(targetVal, 3).getPrefixedText();
+            const reasonText =
+              config.rollbackReason ||
+              (useIndonesian
+                ? "(tidak ada alasan diberikan)"
+                : "(no reason given)");
+            try {
+              const talkExists = await pageExists(talkTitle);
+              let notice;
+              if (rollbackNotifiedTitles.length === 1) {
+                notice = useIndonesian
+                  ? `== Pemberitahuan pembatalan suntingan ==\nHalo ${targetVal},\n\nSuntingan Anda pada halaman "${rollbackNotifiedTitles[0]}" telah dibatalkan dengan alasan berikut: ${reasonText}.\n\nPemberitahuan ini dikirimkan secara otomatis. Silakan sampaikan pertanyaan atau keberatan ke halaman pembicaraan saya. ~~~~`
+                  : `== Edit reversion notice ==\nDear ${targetVal},\n\nYour edit to the page "${rollbackNotifiedTitles[0]}" has been reverted due to the following reason: ${reasonText}.\n\nThis notification was posted automatically. Please direct any questions or concerns to my user talk page. ~~~~`;
+              } else {
+                const listed = rollbackNotifiedTitles
+                  .map((t) => `* "${t}"`)
+                  .join("\n");
+                notice = useIndonesian
+                  ? `== Pemberitahuan pembatalan suntingan ==\nHalo ${targetVal},\n\nSuntingan Anda pada halaman-halaman berikut telah dibatalkan dengan alasan berikut: ${reasonText}.\n\n${listed}\n\nPemberitahuan ini dikirimkan secara otomatis. Silakan sampaikan pertanyaan atau keberatan ke halaman pembicaraan saya. ~~~~`
+                  : `== Edit reversion notice ==\nDear ${targetVal},\n\nYour edits to the following pages have been reverted due to the following reason: ${reasonText}.\n\n${listed}\n\nThis notification was posted automatically. Please direct any questions or concerns to my user talk page. ~~~~`;
+              }
+              await apiPost({
+                action: "edit",
+                title: talkTitle,
+                appendtext: (talkExists ? "\n\n" : "") + notice,
+                summary: notifySummaryRollback,
+                bot: true,
+              });
+              addLog(`[Notify] Reversion notification posted to: ${talkTitle}`);
+            } catch (e) {
+              addLog(
+                `[Notify] Failed to post reversion notification to ${talkTitle}: ${formatApiError(e)}`,
+                "warn",
+              );
+            }
           }
 
           const notifyQueue = new Map();
@@ -5407,12 +5466,17 @@ $(function () {
             "Use undo instead of rollback",
             false,
           );
+          const { wrap: wrapNotifyRollback, chk: chkNotifyRollback } =
+            makeCheckbox("Notify target user of reverted edits", false);
+          wrapNotifyRollback.title =
+            "When ticked, a single notification listing every page reverted in this run (and the reason given) will be posted to the target user's talk page.";
           const checksRollback = document.createElement("div");
           checksRollback.className = "tng-checks";
           checksRollback.style.paddingLeft = "0";
           checksRollback.appendChild(wrapBot);
           checksRollback.appendChild(wrapShow);
           checksRollback.appendChild(wrapUndo);
+          checksRollback.appendChild(wrapNotifyRollback);
           bodyRollback.appendChild(checksRollback);
 
           // "Mark as bot edits" only applies to native rollback; disable it when undo is selected.
@@ -8225,6 +8289,7 @@ $(function () {
               rollbackBot: chkBot.checked,
               rollbackShow: chkShow.checked,
               rollbackReason: buildRollbackReason(),
+              notifyRollback: chkNotifyRollback.checked,
               block: chkBlock.checked,
               blockDur:
                 selBlockDur.value === "other"

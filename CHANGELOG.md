@@ -1,3 +1,16 @@
+## 2.85.0
+
+### Added
+
+* Added a **"Notify target user of reverted edits"** checkbox to the Rollback section, disabled by default. When ticked, a single notification is posted to the target user's talk page after Start is pressed, listing every page successfully reverted via rollback or undo in that run, along with the reason given.
+* If more than one page was reverted, all affected pages are listed in one consolidated notification rather than one notification per page, matching the pattern already used for mass deletion and mass protection notices.
+* Added an Indonesian-language variant of the notice, shown on wikis whose content language is listed in `INDONESIAN_LANGS`.
+
+### Notes
+
+* The notification is only sent in user mode, since rollback/undo is not available in page mode.
+* If no custom rollback/undo reason was supplied, the notice falls back to "(no reason given)" / "(tidak ada alasan diberikan)".
+
 ## 2.84.0
 
 ### Fixed
