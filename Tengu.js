@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.82.0
+ * Version 2.83.0
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -583,6 +583,39 @@ $(function () {
             return true;
           }
         };
+
+        // Cache of localised redirect magic word aliases (e.g. "#REDIRECT",
+        // "#ALIH"), fetched once via siprop=magicwords and reused for the
+        // rest of the session. Falls back to the English "#REDIRECT" alias
+        // alone if the request fails or the wiki's "redirect" magic word
+        // entry has no aliases, so double-redirect fixing keeps working even
+        // when this cannot be determined.
+        let redirectMagicWordsPromise = null;
+        function getRedirectMagicWords() {
+          if (!redirectMagicWordsPromise) {
+            redirectMagicWordsPromise = apiGet({
+              action: "query",
+              meta: "siteinfo",
+              siprop: "magicwords",
+              formatversion: 2,
+            })
+              .then(function (data) {
+                const words = (data.query && data.query.magicwords) || [];
+                const redirectWord = words.find(function (w) {
+                  return w.name === "redirect";
+                });
+                return redirectWord &&
+                  redirectWord.aliases &&
+                  redirectWord.aliases.length
+                  ? redirectWord.aliases
+                  : ["#REDIRECT"];
+              })
+              .catch(function () {
+                return ["#REDIRECT"];
+              });
+          }
+          return redirectMagicWordsPromise;
+        }
 
         // Loads mw.ForeignApi and returns an instance pointed at Meta-Wiki.
         function getMetaForeignApi() {
@@ -1336,6 +1369,14 @@ $(function () {
                       `[Move] No double redirects found pointing to: ${targetVal}`,
                     );
                   }
+                  // Detect the local wiki's redirect magic word(s) (e.g.
+                  // "#REDIRECT", "#ALIH") rather than assuming English.
+                  const redirectAliases = await getRedirectMagicWords();
+                  const redirectAliasPattern = redirectAliases
+                    .map(function (a) {
+                      return a.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+                    })
+                    .join("|");
                   for (const rdPage of redirectPages) {
                     if (isAborted) break;
                     try {
@@ -1368,7 +1409,9 @@ $(function () {
                         .replace(/[.*+?^${}()|[\]\\]/g, "\\$&")
                         .replace(/[ _]/g, "[ _]");
                       const redirRe = new RegExp(
-                        "(#REDIRECT\\s*\\[\\[)\\s*" +
+                        "((?:" +
+                          redirectAliasPattern +
+                          ")\\s*\\[\\[)\\s*" +
                           escapedOld +
                           "\\s*(\\]\\]|\\||#)",
                         "i",

@@ -1,3 +1,14 @@
+## 2.83.0
+
+### Changed
+
+* The **fix double redirects** feature (Move page section) now detects the local wiki's redirect magic word(s) instead of assuming the English `#REDIRECT`. The set of valid aliases (e.g. `#REDIRECT`, `#ALIH`) is fetched once per session via `siprop=magicwords` and reused for every double-redirect fix performed afterwards.
+
+### Notes
+
+* Falls back to `#REDIRECT` alone if the magic word lookup fails or the wiki returns no aliases for `redirect`, so the feature continues to work even when this cannot be determined.
+* The matched alias is preserved as-is when rewriting the redirect target, since it is captured and reused rather than replaced.
+
 ## 2.82.0
 
 ### Added
