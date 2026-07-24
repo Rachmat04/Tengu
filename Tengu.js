@@ -669,6 +669,11 @@ $(function () {
             "species.wikimedia.org": "species:",
             "incubator.wikimedia.org": "incubator:",
             "www.wikifunctions.org": "f:",
+            "www.mediawiki.org": "mw:",
+            "foundation.wikimedia.org": "foundation:",
+            "outreach.wikimedia.org": "outreach:",
+            "wikimania.wikimedia.org": "wikimania:",
+            "wikitech.wikimedia.org": "wikitech:",
           };
           if (NO_LANG_HOSTS[server]) return NO_LANG_HOSTS[server];
 
@@ -3001,7 +3006,7 @@ $(function () {
               // gallery entries use different wikitext forms than plain page
               // links, and MediaWiki tracks file usage via imageinfo/imageusage
               // rather than the pagelinks table used by list=backlinks.
-              // [TRIAL] — this branch has not been independently verified
+              // [NOT CONFIRMED] — this branch has not been independently verified
               // against a live wiki; the file-delinking feature is experimental.
               let isFileDeletion = false;
               let fileMain = null;
@@ -3034,7 +3039,7 @@ $(function () {
               );
 
               // File-specific patterns, built only when the deleted item is a file.
-              // [TRIAL] — the "File"/"Image" namespace aliases and gallery
+              // [NOT CONFIRMED] — the "File"/"Image" namespace aliases and gallery
               // line syntax used below cover the common cases but may not match
               // every valid form (e.g. localised namespace aliases on this wiki).
               let fileEmbedRe = null;

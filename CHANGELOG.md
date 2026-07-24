@@ -1,3 +1,14 @@
+## 2.86.0
+
+### Added
+
+* Added five interwiki prefixes to `NO_LANG_HOSTS` in `getInterwikiPrefix()`: `www.mediawiki.org` → `mw:`, `foundation.wikimedia.org` → `foundation:`, `outreach.wikimedia.org` → `outreach:`, `wikimania.wikimedia.org` → `wikimania:`, `wikitech.wikimedia.org` → `wikitech:`.
+
+### Notes
+
+* These hosts do not use language-specific subdomains, so they belong in `NO_LANG_HOSTS` rather than the language-pattern branch.
+* Primarily relevant to the Report to Global sysops/Requests feature, which uses `getInterwikiPrefix()` to build report links.
+
 ## 2.85.0
 
 ### Added
