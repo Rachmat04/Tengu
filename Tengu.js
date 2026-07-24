@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.81.0
+ * Version 2.82.0
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -896,6 +896,7 @@ $(function () {
             move: 0,
             protect: 0,
             unlink: 0,
+            redirfix: 0,
             report: 0,
             error: 0,
           };
@@ -921,13 +922,13 @@ $(function () {
           // Helper function to update status dynamically
           const updateStatusDisplay = () => {
             const statusText = isAborted ? "Aborted." : "Processing...";
-            const summaryLine = `<b>Status:</b> ${statusText}<br/>Summary: <b>${stats.rollback}</b> reverted | <b>${stats.delete}</b> deleted | <b>${stats.undelete}</b> undeleted | <b>${stats.move}</b> moved | <b>${stats.unlink}</b> unlinked | <b>${stats.protect}</b> protected | <b>${stats.revdel}</b> hidden | <b>${stats.report}</b> reported | <b>${stats.error}</b> errors.`;
+            const summaryLine = `<b>Status:</b> ${statusText}<br/>Summary: <b>${stats.rollback}</b> reverted | <b>${stats.delete}</b> deleted | <b>${stats.undelete}</b> undeleted | <b>${stats.move}</b> moved | <b>${stats.unlink}</b> unlinked | <b>${stats.redirfix}</b> redirects fixed | <b>${stats.protect}</b> protected | <b>${stats.revdel}</b> hidden | <b>${stats.report}</b> reported | <b>${stats.error}</b> errors.`;
             statusLbl.innerHTML = summaryLine;
           };
 
           const statusLbl = document.createElement("div");
           statusLbl.innerHTML =
-            "<b>Status:</b> Processing...<br/>Summary: <b>0</b> reverted | <b>0</b> deleted | <b>0</b> undeleted | <b>0</b> moved | <b>0</b> unlinked | <b>0</b> protected | <b>0</b> hidden | <b>0</b> reported | <b>0</b> errors.";
+            "<b>Status:</b> Processing...<br/>Summary: <b>0</b> reverted | <b>0</b> deleted | <b>0</b> undeleted | <b>0</b> moved | <b>0</b> unlinked | <b>0</b> redirects fixed | <b>0</b> protected | <b>0</b> hidden | <b>0</b> reported | <b>0</b> errors.";
           statusLbl.style.marginBottom = "8px";
 
           const logBox = document.createElement("div");
@@ -1288,6 +1289,8 @@ $(function () {
               if (config.movePageNoRedirect) moveParams.noredirect = 1;
               if (config.movePageTalk) moveParams.movetalk = 1;
               if (config.movePageSubpages) moveParams.movesubpages = 1;
+
+              let movePageMoveSucceeded = false;
               try {
                 await apiPost(moveParams);
                 addLog(
@@ -1295,11 +1298,125 @@ $(function () {
                 );
                 stats.move++;
                 updateStatusDisplay();
+                movePageMoveSucceeded = true;
               } catch (e) {
                 addLog(
                   `[Move] Failed to move "${targetVal}" to "${config.movePageDest}": ${formatApiError(e)}`,
                   true,
                 );
+              }
+
+              // Fix double redirects. A double redirect occurs when a page
+              // redirects to targetVal, which — following this move — is
+              // itself now a redirect to config.movePageDest, instead of the
+              // pre-existing redirect being updated to point directly to the
+              // final destination. Only relevant when a redirect was left
+              // behind at the old title (i.e. 'Suppress redirect' was not
+              // used), since otherwise there is no intermediate redirect for
+              // other pages to chain through.
+              if (
+                movePageMoveSucceeded &&
+                config.movePageFixDoubleRedirects &&
+                !config.movePageNoRedirect &&
+                !isAborted
+              ) {
+                try {
+                  const drData = await apiGet({
+                    action: "query",
+                    list: "backlinks",
+                    bltitle: targetVal,
+                    blfilterredir: "redirects",
+                    bllimit: "max",
+                    formatversion: 2,
+                  });
+                  const redirectPages =
+                    (drData.query && drData.query.backlinks) || [];
+                  if (!redirectPages.length) {
+                    addLog(
+                      `[Move] No double redirects found pointing to: ${targetVal}`,
+                    );
+                  }
+                  for (const rdPage of redirectPages) {
+                    if (isAborted) break;
+                    try {
+                      const revData = await apiGet({
+                        action: "query",
+                        prop: "revisions",
+                        titles: rdPage.title,
+                        rvprop: "content",
+                        rvslots: "main",
+                        formatversion: 2,
+                      });
+                      const page =
+                        revData.query &&
+                        revData.query.pages &&
+                        revData.query.pages[0];
+                      const slot =
+                        page &&
+                        page.revisions &&
+                        page.revisions[0] &&
+                        page.revisions[0].slots &&
+                        page.revisions[0].slots.main;
+                      if (!slot) continue;
+                      const wikitext = slot.content;
+
+                      // Matches "#REDIRECT [[Old title]]", optionally followed
+                      // by a section anchor (#Section) or a piped display text,
+                      // and rewrites only the title portion, preserving whatever
+                      // follows it.
+                      const escapedOld = targetVal
+                        .replace(/[.*+?^${}()|[\]\\]/g, "\\$&")
+                        .replace(/[ _]/g, "[ _]");
+                      const redirRe = new RegExp(
+                        "(#REDIRECT\\s*\\[\\[)\\s*" +
+                          escapedOld +
+                          "\\s*(\\]\\]|\\||#)",
+                        "i",
+                      );
+                      if (!redirRe.test(wikitext)) continue;
+                      const newWikitext = wikitext.replace(
+                        redirRe,
+                        function (match, prefix, tail) {
+                          return prefix + config.movePageDest + tail;
+                        },
+                      );
+                      if (newWikitext === wikitext) continue;
+
+                      await apiPost({
+                        action: "edit",
+                        title: rdPage.title,
+                        text: newWikitext,
+                        summary:
+                          (useIndonesian
+                            ? "Memperbaiki pengalihan ganda setelah pemindahan halaman: "
+                            : "Fixing double redirect following page move: ") +
+                          targetVal +
+                          " → " +
+                          config.movePageDest +
+                          toolTag,
+                        bot: true,
+                      });
+                      addLog(
+                        `[Move] Fixed double redirect: ${rdPage.title} now points directly to "${config.movePageDest}"`,
+                      );
+                      stats.redirfix++;
+                      updateStatusDisplay();
+                    } catch (e) {
+                      addLog(
+                        `[Move] Failed to fix double redirect at ${rdPage.title}: ${formatApiError(e)}`,
+                        true,
+                      );
+                    }
+                    await new Promise((resolve) =>
+                      setTimeout(resolve, THROTTLE_MS),
+                    );
+                  }
+                } catch (e) {
+                  addLog(
+                    `[Move] Failed to fetch redirects pointing to "${targetVal}": ${formatApiError(e)}`,
+                    true,
+                  );
+                }
               }
             } else {
               const moveParams = {
@@ -2960,7 +3077,7 @@ $(function () {
             config.rollbackMethod === "undo" ? "undone" : "reverted";
           const statusWord = isAborted ? "Aborted." : "Completed.";
           const statusPrefix = `<b>Status: ${statusWord}</b><br/>`;
-          const finalStatus = `${statusPrefix}Summary: <b>${stats.rollback}</b> ${methodTxt} | <b>${stats.delete}</b> deleted | <b>${stats.undelete}</b> undeleted | <b>${stats.move}</b> moved | <b>${stats.unlink}</b> unlinked | <b>${stats.protect}</b> protected | <b>${stats.revdel}</b> hidden | <b>${stats.report}</b> reported | <b>${stats.error}</b> errors.`;
+          const finalStatus = `${statusPrefix}Summary: <b>${stats.rollback}</b> ${methodTxt} | <b>${stats.delete}</b> deleted | <b>${stats.undelete}</b> undeleted | <b>${stats.move}</b> moved | <b>${stats.unlink}</b> unlinked | <b>${stats.redirfix}</b> redirects fixed | <b>${stats.protect}</b> protected | <b>${stats.revdel}</b> hidden | <b>${stats.report}</b> reported | <b>${stats.error}</b> errors.`;
           statusLbl.innerHTML = finalStatus;
           isAborted = false;
 
@@ -6340,12 +6457,20 @@ $(function () {
           wrapMovePageSubpages.title =
             "When ticked, all subpages of the source page are also moved to the corresponding subpages of the destination title. Only applies to namespaces that support subpages.";
 
+          const {
+            wrap: wrapMovePageFixDoubleRedirects,
+            chk: chkMovePageFixDoubleRedirects,
+          } = makeCheckbox("Fix double redirects", true);
+          wrapMovePageFixDoubleRedirects.title =
+            "When ticked, existing redirects that pointed to the source page are updated to point directly to the destination title, avoiding double redirects. Only applies when a redirect is left at the source title (i.e. when 'Suppress redirect' is not used).";
+
           const checksMovePagePanel = document.createElement("div");
           checksMovePagePanel.className = "tng-checks";
           checksMovePagePanel.style.paddingLeft = "0";
           checksMovePagePanel.appendChild(wrapMovePageNoRedirect);
           checksMovePagePanel.appendChild(wrapMovePageTalk);
           checksMovePagePanel.appendChild(wrapMovePageSubpages);
+          checksMovePagePanel.appendChild(wrapMovePageFixDoubleRedirects);
           divMovePagePanel.appendChild(checksMovePagePanel);
 
           bodyMoveSandbox.appendChild(divMovePagePanel);
@@ -8085,6 +8210,7 @@ $(function () {
               movePageNoRedirect: chkMovePageNoRedirect.checked,
               movePageTalk: chkMovePageTalk.checked,
               movePageSubpages: chkMovePageSubpages.checked,
+              movePageFixDoubleRedirects: chkMovePageFixDoubleRedirects.checked,
               moveSandboxUser: inputMoveSandboxUser.value.trim(),
               moveSandboxSubpage: inputMoveSandboxSubpage.value.trim(),
               moveSandboxDest:

@@ -1,3 +1,16 @@
+## 2.82.0
+
+### Added
+
+* Added a **"Fix double redirects"** checkbox (enabled by default) to the **Move page** sub-mode of the Move page section. After a successful move, Tengu searches for existing redirects pointing to the old title and updates each one to point directly to the new destination, rather than leaving them chained through the redirect created at the old title.
+* Added a `redirfix` counter to the progress dialogue's operation statistics, shown alongside the other counters as "redirects fixed".
+
+### Notes
+
+* Only applies when a redirect is left at the source title (i.e. when **"Suppress redirect"** is not used), since a double redirect can only arise when an intermediate redirect exists.
+* The rewrite only replaces the title inside the `#REDIRECT [[...]]` markup, preserving any section anchor or piped display text that follows it.
+* This feature is not available in the **Move to user's sandbox** sub-mode, since sandbox moves are not expected to have existing redirects pointing at the source title in the same way as general page moves.
+
 ## 2.81.0
 
 ### Changed

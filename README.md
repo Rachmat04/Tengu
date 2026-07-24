@@ -2,7 +2,6 @@
 
 **Type:** All-in-one MediaWiki moderation tool  
 **Language:** JavaScript (User script)  
-**Current version:** 2.81.0
 
 ---
 
