@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.85.0
+ * Version 2.87.0
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -109,7 +109,6 @@ $(function () {
         // [Section 01] Stylesheet
         // The CSS components were moved to an external file, [[Pengguna:Rachmat04/Tengu.css]], to allow easier maintenance and quicker iteration without needing to edit the main script.
         // ============================================================================
-        const TNG_CSS = ``;
 
         // ============================================================================
         // [Section 02] Overlay stack
@@ -1091,7 +1090,7 @@ $(function () {
               (mw.config.get("wgUserName") || "").toLowerCase();
             if (isSelfBlock) {
               const confirmed = await new Promise((resolve) => {
-                const { overlay, dialog, body, footer } = createDialog({
+                const { overlay, body, footer } = createDialog({
                   title: "Self-block confirmation",
                   icon: "️️⚠️️️",
                   child: true,
@@ -4142,7 +4141,9 @@ $(function () {
                     let nsId = 0;
                     try {
                       nsId = new mw.Title(edit.title).getNamespaceId();
-                    } catch (e) {}
+                    } catch (e) {
+                      /* empty */
+                    }
                     titleNsMap.set(edit.title, nsId);
                   }
                 }
@@ -4373,7 +4374,9 @@ $(function () {
                 ta.select();
                 try {
                   document.execCommand("copy");
-                } catch (err) {}
+                } catch (err) {
+                  /* empty */
+                }
                 document.body.removeChild(ta);
                 const orig = btnCopy.textContent;
                 btnCopy.textContent = "✔ Copied!";
@@ -5043,7 +5046,9 @@ $(function () {
               let nsId = 0;
               try {
                 nsId = new mw.Title(title).getNamespaceId();
-              } catch (e) {}
+              } catch (e) {
+                /* empty */
+              }
               presentNsIds.add(nsId);
             }
             const sortedNsIds = [...presentNsIds].sort(function (a, b) {
@@ -5134,7 +5139,9 @@ $(function () {
                 let itemNsId = 0;
                 try {
                   itemNsId = new mw.Title(item).getNamespaceId();
-                } catch (e) {}
+                } catch (e) {
+                  /* empty */
+                }
                 wrap.dataset.pickerNsId = String(itemNsId);
                 checkboxes.push(chk);
                 listEl.appendChild(wrap);
@@ -5348,7 +5355,7 @@ $(function () {
             // elements. These listeners were dropped during the sort-controls
             // refactor in v2.72.0/v2.74.0.
             if (nsFilterChecks.length) {
-              function applyPickerNamespaceFilter() {
+              const applyPickerNamespaceFilter = function () {
                 const activeNsIds = new Set(
                   nsFilterChecks
                     .filter(function (c) {
@@ -5367,7 +5374,7 @@ $(function () {
                     );
                   });
                 });
-              }
+              };
               nsFilterChecks.forEach(function (cNs) {
                 cNs.addEventListener("change", applyPickerNamespaceFilter);
               });
@@ -6856,7 +6863,9 @@ $(function () {
             let isTalkPage = false;
             try {
               isTalkPage = new mw.Title(target).isTalkPage();
-            } catch (e) {}
+            } catch (e) {
+              /* empty */
+            }
 
             if (isTalkPage) {
               chkMovePageTalk.checked = false;
@@ -6871,7 +6880,9 @@ $(function () {
             let talkTitle = null;
             try {
               talkTitle = new mw.Title(target).getTalkPage().getPrefixedText();
-            } catch (e) {}
+            } catch (e) {
+              /* empty */
+            }
 
             if (!talkTitle) {
               chkMovePageTalk.checked = false;
@@ -6937,7 +6948,9 @@ $(function () {
             let isTalkPage = false;
             try {
               isTalkPage = new mw.Title(target).isTalkPage();
-            } catch (e) {}
+            } catch (e) {
+              /* empty */
+            }
 
             if (isTalkPage) {
               chkPagedelTalk.checked = false;
@@ -6952,7 +6965,9 @@ $(function () {
             let talkTitle = null;
             try {
               talkTitle = new mw.Title(target).getTalkPage().getPrefixedText();
-            } catch (e) {}
+            } catch (e) {
+              /* empty */
+            }
 
             if (!talkTitle) {
               chkPagedelTalk.checked = false;

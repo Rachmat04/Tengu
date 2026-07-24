@@ -1,3 +1,17 @@
+## 2.87.0
+
+### Fixed
+
+* Fixed several ESLint warnings with no functional impact:
+  * Removed the unused `TNG_CSS` constant (superseded by the external `Tengu.css` stylesheet since v2.0.0).
+  * Removed an unused `dialog` binding from the self-block confirmation dialogue's destructuring assignment.
+  * Added explanatory comments to previously empty `catch` blocks used for best-effort namespace-ID resolution in the Export edits and Select edits/pages picker features.
+  * Converted the `applyPickerNamespaceFilter` function declaration (nested inside an `if` block) to a function expression, resolving a `no-inner-declarations` warning.
+
+### Notes
+
+* This is a lint-cleanup release; no user-facing behaviour has changed.
+
 ## 2.86.0
 
 ### Added
