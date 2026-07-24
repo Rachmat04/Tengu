@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.83.0
+ * Version 2.84.0
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -1964,11 +1964,27 @@ $(function () {
               if (config.rollbackBot) undoData.bot = 1;
 
               try {
-                await apiPost(undoData);
-                addLog(`[Undo] Successfully reverted edits via undo: ${title}`);
-                standardRevertSuccess = true;
-                stats.rollback++;
-                updateStatusDisplay();
+                const undoResult = await apiPost(undoData);
+                const editResult = undoResult && undoResult.edit;
+                const noChangeMade = !!(
+                  editResult &&
+                  Object.prototype.hasOwnProperty.call(editResult, "nochange")
+                );
+                if (noChangeMade) {
+                  if (!mediainfoNeedsRevert) {
+                    addLog(
+                      `[Undo] Skipped: ${title} — the edit appears to have already been undone; no changes were made`,
+                      "warn",
+                    );
+                  }
+                } else {
+                  addLog(
+                    `[Undo] Successfully reverted edits via undo: ${title}`,
+                  );
+                  standardRevertSuccess = true;
+                  stats.rollback++;
+                  updateStatusDisplay();
+                }
               } catch (e) {
                 standardErr = String(e);
                 if (

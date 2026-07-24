@@ -1,3 +1,14 @@
+## 2.84.0
+
+### Fixed
+
+* Fixed the Undo feature logging a successful revert even when no edit was actually made. `action=edit&undo=` can return a successful API response with a `nochange` result and no `newrevid` when the target revision has already been undone by another user, which was previously treated as a successful revert since no error was thrown.
+* Tengu now inspects the edit API response for a `nochange` result and logs "the edit appears to have already been undone; no changes were made" instead of a success message when this occurs.
+
+### Notes
+
+* This is separate from the existing `alreadyreverted`/`nothingtorevert` handling, which only catches cases where the API call throws an error. The `nochange` case resolves successfully but performs no edit, so it required its own check.
+
 ## 2.83.0
 
 ### Changed
