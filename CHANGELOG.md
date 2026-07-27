@@ -1,3 +1,13 @@
+## 2.88.0
+
+### Fixed
+
+* Fixed block, page deletion, and page protection talk-page notifications leaving the reason blank when no reason was entered or selected. These notifications now fall back to "(no reason given)" on English-language wikis, or "(tidak ada alasan diberikan)" on wikis listed in `INDONESIAN_LANGS`, matching the fallback already used by the rollback/undo notification since v2.85.0.
+
+### Notes
+
+* This affects only the notification text posted to the relevant talk page. Edit summaries and log entries elsewhere are unaffected.
+
 ## 2.87.0
 
 ### Fixed

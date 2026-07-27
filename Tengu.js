@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.87.0
+ * Version 2.88.0
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -1154,14 +1154,20 @@ $(function () {
               if (stats.block > 0 && config.notifyBlock) {
                 const talkTitle = new mw.Title(targetVal, 3).getPrefixedText();
                 const isBlockIndef = config.blockDur === "never";
+                const blockReasonNotice =
+                  config.blockReason && config.blockReason.trim()
+                    ? config.blockReason
+                    : useIndonesian
+                      ? "(tidak ada alasan diberikan)"
+                      : "(no reason given)";
 
                 const notice = useIndonesian
                   ? isBlockIndef
-                    ? `== Pemberitahuan pemblokiran akun ==\nHalo ${targetVal},\n\nAkun "${targetVal}" telah diblokir secara tidak terbatas dengan alasan berikut: ${config.blockReason}.\n\nSelama masa pemblokiran, akun ini mungkin tidak dapat melakukan sebagian atau seluruh tindakan yang biasanya memerlukan hak penyuntingan. Pemblokiran ini tidak berakhir secara otomatis dan akan tetap berlaku kecuali diubah oleh pengurus.\n\nPemberitahuan ini dikirimkan secara otomatis. Silakan sampaikan pertanyaan atau keberatan ke halaman pembicaraan saya. ~~~~`
-                    : `== Pemberitahuan pemblokiran akun ==\nHalo ${targetVal},\n\nAkun "${targetVal}" telah diblokir selama ${translateDurationId(config.blockDur)} dengan alasan berikut: ${config.blockReason}.\n\nSelama masa pemblokiran, akun ini mungkin tidak dapat melakukan sebagian atau seluruh tindakan yang biasanya memerlukan hak penyuntingan. Pemblokiran dijadwalkan berakhir pada waktunya, kecuali diubah oleh pengurus.\n\nPemberitahuan ini dikirimkan secara otomatis. Silakan sampaikan pertanyaan atau keberatan ke halaman pembicaraan saya. ~~~~`
+                    ? `== Pemberitahuan pemblokiran akun ==\nHalo ${targetVal},\n\nAkun "${targetVal}" telah diblokir secara tidak terbatas dengan alasan berikut: ${blockReasonNotice}.\n\nSelama masa pemblokiran, akun ini mungkin tidak dapat melakukan sebagian atau seluruh tindakan yang biasanya memerlukan hak penyuntingan. Pemblokiran ini tidak berakhir secara otomatis dan akan tetap berlaku kecuali diubah oleh pengurus.\n\nPemberitahuan ini dikirimkan secara otomatis. Silakan sampaikan pertanyaan atau keberatan ke halaman pembicaraan saya. ~~~~`
+                    : `== Pemberitahuan pemblokiran akun ==\nHalo ${targetVal},\n\nAkun "${targetVal}" telah diblokir selama ${translateDurationId(config.blockDur)} dengan alasan berikut: ${blockReasonNotice}.\n\nSelama masa pemblokiran, akun ini mungkin tidak dapat melakukan sebagian atau seluruh tindakan yang biasanya memerlukan hak penyuntingan. Pemblokiran dijadwalkan berakhir pada waktunya, kecuali diubah oleh pengurus.\n\nPemberitahuan ini dikirimkan secara otomatis. Silakan sampaikan pertanyaan atau keberatan ke halaman pembicaraan saya. ~~~~`
                   : isBlockIndef
-                    ? `== Account block notice ==\nDear ${targetVal},\n\nThe account "${targetVal}" has been blocked indefinitely due to the following reason: ${config.blockReason}.\n\nDuring the block period, the account may be unable to perform some or all actions that normally require editing privileges. This block does not expire automatically and will remain in effect unless modified by an administrator.\n\nThis notification was posted automatically. Please direct any questions or concerns to my user talk page. ~~~~`
-                    : `== Account block notice ==\nDear ${targetVal},\n\nThe account "${targetVal}" has been blocked for ${config.blockDur} due to the following reason: ${config.blockReason}.\n\nDuring the block period, the account may be unable to perform some or all actions that normally require editing privileges. The block is scheduled to remain in effect until it expires, unless modified by an administrator.\n\nThis notification was posted automatically. Please direct any questions or concerns to my user talk page. ~~~~`;
+                    ? `== Account block notice ==\nDear ${targetVal},\n\nThe account "${targetVal}" has been blocked indefinitely due to the following reason: ${blockReasonNotice}.\n\nDuring the block period, the account may be unable to perform some or all actions that normally require editing privileges. This block does not expire automatically and will remain in effect unless modified by an administrator.\n\nThis notification was posted automatically. Please direct any questions or concerns to my user talk page. ~~~~`
+                    : `== Account block notice ==\nDear ${targetVal},\n\nThe account "${targetVal}" has been blocked for ${config.blockDur} due to the following reason: ${blockReasonNotice}.\n\nDuring the block period, the account may be unable to perform some or all actions that normally require editing privileges. The block is scheduled to remain in effect until it expires, unless modified by an administrator.\n\nThis notification was posted automatically. Please direct any questions or concerns to my user talk page. ~~~~`;
 
                 // When a permanent block is applied with the clear-before-notify option,
                 // replace the talk page with the notice in a single edit rather than
@@ -2282,20 +2288,26 @@ $(function () {
                 const talkExists = await pageExists(talkTitle);
                 let notice;
                 const isProtectIndef = config.protectExpiry === "never";
+                const protectReasonNotice =
+                  config.protectReason && config.protectReason.trim()
+                    ? config.protectReason
+                    : useIndonesian
+                      ? "(tidak ada alasan diberikan)"
+                      : "(no reason given)";
                 if (titles.length === 1) {
                   notice = useIndonesian
                     ? isProtectIndef
-                      ? `== Pemberitahuan perlindungan halaman ==\nHalaman "${titles[0]}" telah dilindungi secara tidak terbatas dengan alasan berikut: ${config.protectReason}.\n\nSelama masa perlindungan, sebagian atau seluruh tindakan penyuntingan mungkin dibatasi bergantung pada tingkat perlindungan yang diterapkan. Perlindungan ini tidak berakhir secara otomatis dan akan tetap berlaku kecuali diubah oleh pengurus.\n\nPemberitahuan ini dikirimkan secara otomatis. Silakan sampaikan pertanyaan atau keberatan ke halaman pembicaraan saya. ~~~~`
-                      : `== Pemberitahuan perlindungan halaman ==\nHalaman "${titles[0]}" telah dilindungi selama ${translateDurationId(config.protectExpiry)} dengan alasan berikut: ${config.protectReason}.\n\nSelama masa perlindungan, sebagian atau seluruh tindakan penyuntingan mungkin dibatasi bergantung pada tingkat perlindungan yang diterapkan. Perlindungan dijadwalkan berakhir pada waktunya, kecuali diubah oleh pengurus.\n\nPemberitahuan ini dikirimkan secara otomatis. Silakan sampaikan pertanyaan atau keberatan ke halaman pembicaraan saya. ~~~~`
-                    : `== Page protection notice ==\nThe page "${titles[0]}" has been protected ${protectExpiryDisplay} due to the following reason: ${config.protectReason}.\n\nDuring the protection period, some or all editing actions may be restricted depending on the level of protection applied. ${protectExpiryText}\n\nThis notification was posted automatically. Please direct any questions or concerns to my user talk page. ~~~~`;
+                      ? `== Pemberitahuan perlindungan halaman ==\nHalaman "${titles[0]}" telah dilindungi secara tidak terbatas dengan alasan berikut: ${protectReasonNotice}.\n\nSelama masa perlindungan, sebagian atau seluruh tindakan penyuntingan mungkin dibatasi bergantung pada tingkat perlindungan yang diterapkan. Perlindungan ini tidak berakhir secara otomatis dan akan tetap berlaku kecuali diubah oleh pengurus.\n\nPemberitahuan ini dikirimkan secara otomatis. Silakan sampaikan pertanyaan atau keberatan ke halaman pembicaraan saya. ~~~~`
+                      : `== Pemberitahuan perlindungan halaman ==\nHalaman "${titles[0]}" telah dilindungi selama ${translateDurationId(config.protectExpiry)} dengan alasan berikut: ${protectReasonNotice}.\n\nSelama masa perlindungan, sebagian atau seluruh tindakan penyuntingan mungkin dibatasi bergantung pada tingkat perlindungan yang diterapkan. Perlindungan dijadwalkan berakhir pada waktunya, kecuali diubah oleh pengurus.\n\nPemberitahuan ini dikirimkan secara otomatis. Silakan sampaikan pertanyaan atau keberatan ke halaman pembicaraan saya. ~~~~`
+                    : `== Page protection notice ==\nThe page "${titles[0]}" has been protected ${protectExpiryDisplay} due to the following reason: ${protectReasonNotice}.\n\nDuring the protection period, some or all editing actions may be restricted depending on the level of protection applied. ${protectExpiryText}\n\nThis notification was posted automatically. Please direct any questions or concerns to my user talk page. ~~~~`;
                 } else {
                   const listed = titles.map((t) => `"${t}"`).join(" and ");
                   const listedId = titles.map((t) => `"${t}"`).join(" dan ");
                   notice = useIndonesian
                     ? isProtectIndef
-                      ? `== Pemberitahuan perlindungan halaman ==\nHalaman-halaman berikut telah dilindungi secara tidak terbatas dengan alasan berikut: ${config.protectReason}.\n\n${listedId}\n\nSelama masa perlindungan, sebagian atau seluruh tindakan penyuntingan pada halaman-halaman ini mungkin dibatasi bergantung pada tingkat perlindungan yang diterapkan. Perlindungan ini tidak berakhir secara otomatis dan akan tetap berlaku kecuali diubah oleh pengurus.\n\nPemberitahuan ini dikirimkan secara otomatis. Silakan sampaikan pertanyaan atau keberatan ke halaman pembicaraan saya. ~~~~`
-                      : `== Pemberitahuan perlindungan halaman ==\nHalaman-halaman berikut telah dilindungi selama ${translateDurationId(config.protectExpiry)} dengan alasan berikut: ${config.protectReason}.\n\n${listedId}\n\nSelama masa perlindungan, sebagian atau seluruh tindakan penyuntingan pada halaman-halaman ini mungkin dibatasi bergantung pada tingkat perlindungan yang diterapkan. Perlindungan dijadwalkan berakhir pada waktunya, kecuali diubah oleh pengurus.\n\nPemberitahuan ini dikirimkan secara otomatis. Silakan sampaikan pertanyaan atau keberatan ke halaman pembicaraan saya. ~~~~`
-                    : `== Page protection notice ==\nThe following pages have been protected ${protectExpiryDisplay} due to the following reason: ${config.protectReason}.\n\n${listed}\n\nDuring the protection period, some or all editing actions on these pages may be restricted depending on the level of protection applied. ${protectExpiryText}\n\nThis notification was posted automatically. Please direct any questions or concerns to my user talk page. ~~~~`;
+                      ? `== Pemberitahuan perlindungan halaman ==\nHalaman-halaman berikut telah dilindungi secara tidak terbatas dengan alasan berikut: ${protectReasonNotice}.\n\n${listedId}\n\nSelama masa perlindungan, sebagian atau seluruh tindakan penyuntingan pada halaman-halaman ini mungkin dibatasi bergantung pada tingkat perlindungan yang diterapkan. Perlindungan ini tidak berakhir secara otomatis dan akan tetap berlaku kecuali diubah oleh pengurus.\n\nPemberitahuan ini dikirimkan secara otomatis. Silakan sampaikan pertanyaan atau keberatan ke halaman pembicaraan saya. ~~~~`
+                      : `== Pemberitahuan perlindungan halaman ==\nHalaman-halaman berikut telah dilindungi selama ${translateDurationId(config.protectExpiry)} dengan alasan berikut: ${protectReasonNotice}.\n\n${listedId}\n\nSelama masa perlindungan, sebagian atau seluruh tindakan penyuntingan pada halaman-halaman ini mungkin dibatasi bergantung pada tingkat perlindungan yang diterapkan. Perlindungan dijadwalkan berakhir pada waktunya, kecuali diubah oleh pengurus.\n\nPemberitahuan ini dikirimkan secara otomatis. Silakan sampaikan pertanyaan atau keberatan ke halaman pembicaraan saya. ~~~~`
+                    : `== Page protection notice ==\nThe following pages have been protected ${protectExpiryDisplay} due to the following reason: ${protectReasonNotice}.\n\n${listed}\n\nDuring the protection period, some or all editing actions on these pages may be restricted depending on the level of protection applied. ${protectExpiryText}\n\nThis notification was posted automatically. Please direct any questions or concerns to my user talk page. ~~~~`;
                 }
                 await apiPost({
                   action: "edit",
@@ -2690,16 +2702,22 @@ $(function () {
             const talkTitle = new mw.Title(targetVal, 3).getPrefixedText();
             try {
               const talkExists = await pageExists(talkTitle);
+              const massdelReasonNotice =
+                config.massdelReason && config.massdelReason.trim()
+                  ? config.massdelReason
+                  : useIndonesian
+                    ? "(tidak ada alasan diberikan)"
+                    : "(no reason given)";
               let notice;
               if (deletedTitles.length === 1) {
                 notice = useIndonesian
-                  ? `== Pemberitahuan penghapusan halaman ==\nHalo ${targetVal},\n\nHalaman "${deletedTitles[0]}" yang Anda buat telah dihapus dengan alasan berikut: ${config.massdelReason}.\n\nHalaman yang dihapus tidak lagi dapat diakses secara publik. Jika Anda yakin penghapusan ini keliru, silakan sampaikan di halaman pembicaraan saya atau ikuti prosedur pemulihan halaman wiki ini.\n\nPemberitahuan ini dikirimkan secara otomatis. Silakan sampaikan pertanyaan atau keberatan ke halaman pembicaraan saya. ~~~~`
-                  : `== Page deletion notice ==\nDear ${targetVal},\n\nThe page "${deletedTitles[0]}" you created has been deleted due to the following reason: ${config.massdelReason}.\n\nDeleted pages are no longer publicly accessible. If you believe this deletion was in error, please raise the matter on my user talk page or follow your wiki's undeletion process.\n\nThis notification was posted automatically. Please direct any questions or concerns to my user talk page. ~~~~`;
+                  ? `== Pemberitahuan penghapusan halaman ==\nHalo ${targetVal},\n\nHalaman "${deletedTitles[0]}" yang Anda buat telah dihapus dengan alasan berikut: ${massdelReasonNotice}.\n\nHalaman yang dihapus tidak lagi dapat diakses secara publik. Jika Anda yakin penghapusan ini keliru, silakan sampaikan di halaman pembicaraan saya atau ikuti prosedur pemulihan halaman wiki ini.\n\nPemberitahuan ini dikirimkan secara otomatis. Silakan sampaikan pertanyaan atau keberatan ke halaman pembicaraan saya. ~~~~`
+                  : `== Page deletion notice ==\nDear ${targetVal},\n\nThe page "${deletedTitles[0]}" you created has been deleted due to the following reason: ${massdelReasonNotice}.\n\nDeleted pages are no longer publicly accessible. If you believe this deletion was in error, please raise the matter on my user talk page or follow your wiki's undeletion process.\n\nThis notification was posted automatically. Please direct any questions or concerns to my user talk page. ~~~~`;
               } else {
                 const listed = deletedTitles.map((t) => `* "${t}"`).join("\n");
                 notice = useIndonesian
-                  ? `== Pemberitahuan penghapusan halaman ==\nHalo ${targetVal},\n\nHalaman-halaman berikut yang Anda buat telah dihapus dengan alasan berikut: ${config.massdelReason}.\n\n${listed}\n\nHalaman yang dihapus tidak lagi dapat diakses secara publik. Jika Anda yakin ada penghapusan yang keliru, silakan sampaikan di halaman pembicaraan saya atau ikuti prosedur pemulihan halaman wiki ini.\n\nPemberitahuan ini dikirimkan secara otomatis. Silakan sampaikan pertanyaan atau keberatan ke halaman pembicaraan saya. ~~~~`
-                  : `== Page deletion notice ==\nDear ${targetVal},\n\nThe following pages you created have been deleted due to the following reason: ${config.massdelReason}.\n\n${listed}\n\nDeleted pages are no longer publicly accessible. If you believe any of these deletions were in error, please raise the matter on my user talk page or follow your wiki's undeletion process.\n\nThis notification was posted automatically. Please direct any questions or concerns to my user talk page. ~~~~`;
+                  ? `== Pemberitahuan penghapusan halaman ==\nHalo ${targetVal},\n\nHalaman-halaman berikut yang Anda buat telah dihapus dengan alasan berikut: ${massdelReasonNotice}.\n\n${listed}\n\nHalaman yang dihapus tidak lagi dapat diakses secara publik. Jika Anda yakin ada penghapusan yang keliru, silakan sampaikan di halaman pembicaraan saya atau ikuti prosedur pemulihan halaman wiki ini.\n\nPemberitahuan ini dikirimkan secara otomatis. Silakan sampaikan pertanyaan atau keberatan ke halaman pembicaraan saya. ~~~~`
+                  : `== Page deletion notice ==\nDear ${targetVal},\n\nThe following pages you created have been deleted due to the following reason: ${massdelReasonNotice}.\n\n${listed}\n\nDeleted pages are no longer publicly accessible. If you believe any of these deletions were in error, please raise the matter on my user talk page or follow your wiki's undeletion process.\n\nThis notification was posted automatically. Please direct any questions or concerns to my user talk page. ~~~~`;
               }
               await apiPost({
                 action: "edit",
@@ -2732,16 +2750,22 @@ $(function () {
               const talkTitle = new mw.Title(creator, 3).getPrefixedText();
               try {
                 const talkExists = await pageExists(talkTitle);
+                const massdelReasonNotice =
+                  config.massdelReason && config.massdelReason.trim()
+                    ? config.massdelReason
+                    : useIndonesian
+                      ? "(tidak ada alasan diberikan)"
+                      : "(no reason given)";
                 let notice;
                 if (titles.length === 1) {
                   notice = useIndonesian
-                    ? `== Pemberitahuan penghapusan halaman ==\nHalo ${creator},\n\nHalaman "${titles[0]}" yang Anda buat telah dihapus dengan alasan berikut: ${config.massdelReason}.\n\nHalaman yang dihapus tidak lagi dapat diakses secara publik. Jika Anda yakin penghapusan ini keliru, silakan sampaikan di halaman pembicaraan saya atau ikuti prosedur pemulihan halaman wiki ini.\n\nPemberitahuan ini dikirimkan secara otomatis. Silakan sampaikan pertanyaan atau keberatan ke halaman pembicaraan saya. ~~~~`
-                    : `== Page deletion notice ==\nDear ${creator},\n\nThe page "${titles[0]}" you created has been deleted due to the following reason: ${config.massdelReason}.\n\nDeleted pages are no longer publicly accessible. If you believe this deletion was in error, please raise the matter on my user talk page or follow your wiki's undeletion process.\n\nThis notification was posted automatically. Please direct any questions or concerns to my user talk page. ~~~~`;
+                    ? `== Pemberitahuan penghapusan halaman ==\nHalo ${creator},\n\nHalaman "${titles[0]}" yang Anda buat telah dihapus dengan alasan berikut: ${massdelReasonNotice}.\n\nHalaman yang dihapus tidak lagi dapat diakses secara publik. Jika Anda yakin penghapusan ini keliru, silakan sampaikan di halaman pembicaraan saya atau ikuti prosedur pemulihan halaman wiki ini.\n\nPemberitahuan ini dikirimkan secara otomatis. Silakan sampaikan pertanyaan atau keberatan ke halaman pembicaraan saya. ~~~~`
+                    : `== Page deletion notice ==\nDear ${creator},\n\nThe page "${titles[0]}" you created has been deleted due to the following reason: ${massdelReasonNotice}.\n\nDeleted pages are no longer publicly accessible. If you believe this deletion was in error, please raise the matter on my user talk page or follow your wiki's undeletion process.\n\nThis notification was posted automatically. Please direct any questions or concerns to my user talk page. ~~~~`;
                 } else {
                   const listed = titles.map((t) => `* "${t}"`).join("\n");
                   notice = useIndonesian
-                    ? `== Pemberitahuan penghapusan halaman ==\nHalo ${creator},\n\nHalaman-halaman berikut yang Anda buat telah dihapus dengan alasan berikut: ${config.massdelReason}.\n\n${listed}\n\nHalaman yang dihapus tidak lagi dapat diakses secara publik. Jika Anda yakin ada penghapusan yang keliru, silakan sampaikan di halaman pembicaraan saya atau ikuti prosedur pemulihan halaman wiki ini.\n\nPemberitahuan ini dikirimkan secara otomatis. Silakan sampaikan pertanyaan atau keberatan ke halaman pembicaraan saya. ~~~~`
-                    : `== Page deletion notice ==\nDear ${creator},\n\nThe following pages you created have been deleted due to the following reason: ${config.massdelReason}.\n\n${listed}\n\nDeleted pages are no longer publicly accessible. If you believe any of these deletions were in error, please raise the matter on my user talk page or follow your wiki's undeletion process.\n\nThis notification was posted automatically. Please direct any questions or concerns to my user talk page. ~~~~`;
+                    ? `== Pemberitahuan penghapusan halaman ==\nHalo ${creator},\n\nHalaman-halaman berikut yang Anda buat telah dihapus dengan alasan berikut: ${massdelReasonNotice}.\n\n${listed}\n\nHalaman yang dihapus tidak lagi dapat diakses secara publik. Jika Anda yakin ada penghapusan yang keliru, silakan sampaikan di halaman pembicaraan saya atau ikuti prosedur pemulihan halaman wiki ini.\n\nPemberitahuan ini dikirimkan secara otomatis. Silakan sampaikan pertanyaan atau keberatan ke halaman pembicaraan saya. ~~~~`
+                    : `== Page deletion notice ==\nDear ${creator},\n\nThe following pages you created have been deleted due to the following reason: ${massdelReasonNotice}.\n\n${listed}\n\nDeleted pages are no longer publicly accessible. If you believe any of these deletions were in error, please raise the matter on my user talk page or follow your wiki's undeletion process.\n\nThis notification was posted automatically. Please direct any questions or concerns to my user talk page. ~~~~`;
                 }
                 await apiPost({
                   action: "edit",
@@ -2957,20 +2981,26 @@ $(function () {
                   let notice;
                   const isProtectIndefDeferred =
                     config.protectExpiry === "never";
+                  const protectReasonNotice =
+                    config.protectReason && config.protectReason.trim()
+                      ? config.protectReason
+                      : useIndonesian
+                        ? "(tidak ada alasan diberikan)"
+                        : "(no reason given)";
                   if (titles.length === 1) {
                     notice = useIndonesian
                       ? isProtectIndefDeferred
-                        ? `== Pemberitahuan perlindungan halaman ==\nHalaman "${titles[0]}" telah dilindungi secara tidak terbatas dengan alasan berikut: ${config.protectReason}.\n\nSelama masa perlindungan, sebagian atau seluruh tindakan penyuntingan mungkin dibatasi bergantung pada tingkat perlindungan yang diterapkan. Perlindungan ini tidak berakhir secara otomatis dan akan tetap berlaku kecuali diubah oleh pengurus.\n\nPemberitahuan ini dikirimkan secara otomatis. Silakan sampaikan pertanyaan atau keberatan ke halaman pembicaraan saya. ~~~~`
-                        : `== Pemberitahuan perlindungan halaman ==\nHalaman "${titles[0]}" telah dilindungi selama ${translateDurationId(config.protectExpiry)} dengan alasan berikut: ${config.protectReason}.\n\nSelama masa perlindungan, sebagian atau seluruh tindakan penyuntingan mungkin dibatasi bergantung pada tingkat perlindungan yang diterapkan. Perlindungan dijadwalkan berakhir pada waktunya, kecuali diubah oleh pengurus.\n\nPemberitahuan ini dikirimkan secara otomatis. Silakan sampaikan pertanyaan atau keberatan ke halaman pembicaraan saya. ~~~~`
-                      : `== Page protection notice ==\nThe page "${titles[0]}" has been protected ${protectExpiryDisplay} due to the following reason: ${config.protectReason}.\n\nDuring the protection period, some or all editing actions may be restricted depending on the level of protection applied. ${protectExpiryText}\n\nThis notification was posted automatically. Please direct any questions or concerns to my user talk page. ~~~~`;
+                        ? `== Pemberitahuan perlindungan halaman ==\nHalaman "${titles[0]}" telah dilindungi secara tidak terbatas dengan alasan berikut: ${protectReasonNotice}.\n\nSelama masa perlindungan, sebagian atau seluruh tindakan penyuntingan mungkin dibatasi bergantung pada tingkat perlindungan yang diterapkan. Perlindungan ini tidak berakhir secara otomatis dan akan tetap berlaku kecuali diubah oleh pengurus.\n\nPemberitahuan ini dikirimkan secara otomatis. Silakan sampaikan pertanyaan atau keberatan ke halaman pembicaraan saya. ~~~~`
+                        : `== Pemberitahuan perlindungan halaman ==\nHalaman "${titles[0]}" telah dilindungi selama ${translateDurationId(config.protectExpiry)} dengan alasan berikut: ${protectReasonNotice}.\n\nSelama masa perlindungan, sebagian atau seluruh tindakan penyuntingan mungkin dibatasi bergantung pada tingkat perlindungan yang diterapkan. Perlindungan dijadwalkan berakhir pada waktunya, kecuali diubah oleh pengurus.\n\nPemberitahuan ini dikirimkan secara otomatis. Silakan sampaikan pertanyaan atau keberatan ke halaman pembicaraan saya. ~~~~`
+                      : `== Page protection notice ==\nThe page "${titles[0]}" has been protected ${protectExpiryDisplay} due to the following reason: ${protectReasonNotice}.\n\nDuring the protection period, some or all editing actions may be restricted depending on the level of protection applied. ${protectExpiryText}\n\nThis notification was posted automatically. Please direct any questions or concerns to my user talk page. ~~~~`;
                   } else {
                     const listed = titles.map((t) => `"${t}"`).join(" and ");
                     const listedId = titles.map((t) => `"${t}"`).join(" dan ");
                     notice = useIndonesian
                       ? isProtectIndefDeferred
-                        ? `== Pemberitahuan perlindungan halaman ==\nHalaman-halaman berikut telah dilindungi secara tidak terbatas dengan alasan berikut: ${config.protectReason}.\n\n${listedId}\n\nSelama masa perlindungan, sebagian atau seluruh tindakan penyuntingan pada halaman-halaman ini mungkin dibatasi bergantung pada tingkat perlindungan yang diterapkan. Perlindungan ini tidak berakhir secara otomatis dan akan tetap berlaku kecuali diubah oleh pengurus.\n\nPemberitahuan ini dikirimkan secara otomatis. Silakan sampaikan pertanyaan atau keberatan ke halaman pembicaraan saya. ~~~~`
-                        : `== Pemberitahuan perlindungan halaman ==\nHalaman-halaman berikut telah dilindungi selama ${translateDurationId(config.protectExpiry)} dengan alasan berikut: ${config.protectReason}.\n\n${listedId}\n\nSelama masa perlindungan, sebagian atau seluruh tindakan penyuntingan pada halaman-halaman ini mungkin dibatasi bergantung pada tingkat perlindungan yang diterapkan. Perlindungan dijadwalkan berakhir pada waktunya, kecuali diubah oleh pengurus.\n\nPemberitahuan ini dikirimkan secara otomatis. Silakan sampaikan pertanyaan atau keberatan ke halaman pembicaraan saya. ~~~~`
-                      : `== Page protection notice ==\nThe following pages have been protected ${protectExpiryDisplay} due to the following reason: ${config.protectReason}.\n\n${listed}\n\nDuring the protection period, some or all editing actions on these pages may be restricted depending on the level of protection applied. ${protectExpiryText}\n\nThis notification was posted automatically. Please direct any questions or concerns to my user talk page. ~~~~`;
+                        ? `== Pemberitahuan perlindungan halaman ==\nHalaman-halaman berikut telah dilindungi secara tidak terbatas dengan alasan berikut: ${protectReasonNotice}.\n\n${listedId}\n\nSelama masa perlindungan, sebagian atau seluruh tindakan penyuntingan pada halaman-halaman ini mungkin dibatasi bergantung pada tingkat perlindungan yang diterapkan. Perlindungan ini tidak berakhir secara otomatis dan akan tetap berlaku kecuali diubah oleh pengurus.\n\nPemberitahuan ini dikirimkan secara otomatis. Silakan sampaikan pertanyaan atau keberatan ke halaman pembicaraan saya. ~~~~`
+                        : `== Pemberitahuan perlindungan halaman ==\nHalaman-halaman berikut telah dilindungi selama ${translateDurationId(config.protectExpiry)} dengan alasan berikut: ${protectReasonNotice}.\n\n${listedId}\n\nSelama masa perlindungan, sebagian atau seluruh tindakan penyuntingan pada halaman-halaman ini mungkin dibatasi bergantung pada tingkat perlindungan yang diterapkan. Perlindungan dijadwalkan berakhir pada waktunya, kecuali diubah oleh pengurus.\n\nPemberitahuan ini dikirimkan secara otomatis. Silakan sampaikan pertanyaan atau keberatan ke halaman pembicaraan saya. ~~~~`
+                      : `== Page protection notice ==\nThe following pages have been protected ${protectExpiryDisplay} due to the following reason: ${protectReasonNotice}.\n\n${listed}\n\nDuring the protection period, some or all editing actions on these pages may be restricted depending on the level of protection applied. ${protectExpiryText}\n\nThis notification was posted automatically. Please direct any questions or concerns to my user talk page. ~~~~`;
                   }
                   await apiPost({
                     action: "edit",
