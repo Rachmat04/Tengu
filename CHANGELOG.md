@@ -1,3 +1,19 @@
+## 2.91.0
+
+### Added
+
+* Added a namespace drop-down to the **Move page** sub-mode of the **Move page** section, positioned to the left of the **Destination title** field. The list of namespaces is fetched automatically from the current wiki via `siprop=namespaces` and cached for the session.
+* The drop-down occupies 35% of the row's width, with the destination page title field taking the remaining 65%.
+
+### Changed
+
+* The **Destination title** field now holds only the page title (without a namespace prefix); the namespace is selected separately via the new drop-down. Both are pre-filled from the current target's namespace and title when the dialogue opens or the target changes, matching previous behaviour.
+* Added `updateMovePageDestFromTarget()` and `buildMovePageDestTitle()`, replacing duplicated inline pre-fill logic previously present in `applyModeRestrictions()` and the target-change handler.
+
+### Notes
+
+* Typing a fully prefixed title into the destination field while the namespace drop-down is left on "(Main)" continues to work, since the two values are only combined if a non-main namespace is selected.
+
 ## 2.90.0
 
 ### Changed

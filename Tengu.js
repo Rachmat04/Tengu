@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.90.0
+ * Version 2.91.0
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -4555,6 +4555,37 @@ $(function () {
               });
           });
 
+          // Fetches the list of namespaces available on this wiki, used to
+          // populate the namespace selector in the Move page sub-mode of the
+          // Move page section.
+          const namespacesPromise = new Promise(function (resolve) {
+            rightsApi
+              .get({
+                action: "query",
+                meta: "siteinfo",
+                siprop: "namespaces",
+                formatversion: 2,
+              })
+              .done(function (data) {
+                const nsObj =
+                  (data && data.query && data.query.namespaces) || {};
+                const list = Object.keys(nsObj)
+                  .map(function (key) {
+                    return nsObj[key];
+                  })
+                  .filter(function (n) {
+                    return n.id >= 0; // Exclude Special (-1) and Media (-2)
+                  })
+                  .sort(function (a, b) {
+                    return a.id - b.id;
+                  });
+                resolve(list);
+              })
+              .fail(function () {
+                resolve([]);
+              });
+          });
+
           // Determines whether this wiki falls within the scope of the global
           // sysops service. Resolved entirely from GS_INELIGIBLE_HOSTS: any
           // host on that list is out of scope, every other host is treated as
@@ -6569,11 +6600,71 @@ $(function () {
 
           const { row: rowMovePageDest, field: fieldMovePageDest } =
             makeRow("Destination title");
-          const inputMovePageDest = makeInput(
-            "New page title (including namespace prefix if needed)",
-          );
-          fieldMovePageDest.appendChild(inputMovePageDest);
+          // Namespace selector — occupies 35% of the row's width, with the
+          // page title field taking the remaining 65%. Options are populated
+          // once namespacesPromise resolves; a single "(Main)" placeholder
+          // is shown until then.
+          const selMovePageNs = makeSelect([{ value: "0", label: "(Main)" }]);
+          const inputMovePageDest = makeInput("Page title");
+          const movePageDestGroup = document.createElement("div");
+          movePageDestGroup.style.cssText =
+            "display: flex; gap: 6px; width: 100%;";
+          const movePageNsWrap = wrapSelect(selMovePageNs);
+          movePageNsWrap.style.flex = "0 0 35%";
+          inputMovePageDest.style.flex = "1";
+          movePageDestGroup.appendChild(movePageNsWrap);
+          movePageDestGroup.appendChild(inputMovePageDest);
+          fieldMovePageDest.appendChild(movePageDestGroup);
           divMovePagePanel.appendChild(rowMovePageDest);
+
+          namespacesPromise.then(function (list) {
+            selMovePageNs.innerHTML = "";
+            list.forEach(function (n) {
+              const opt = document.createElement("option");
+              opt.value = String(n.id);
+              opt.textContent =
+                n.id === 0 ? "(Main)" : n.name || n.canonical || String(n.id);
+              selMovePageNs.appendChild(opt);
+            });
+            updateMovePageDestFromTarget();
+          });
+
+          // Pre-fills the namespace selector and page title field (and the
+          // Move-to-sandbox subpage field) from the current target's
+          // namespace and page name. Shared by the initial mode setup, the
+          // target-change handler, and namespacesPromise above, so the
+          // namespace selector stays in sync however the target was set.
+          function updateMovePageDestFromTarget() {
+            const _pageTargetForMove = inputTarget.value.trim();
+            if (!_pageTargetForMove) return;
+            try {
+              const _moveTargetObj = new mw.Title(_pageTargetForMove);
+              selMovePageNs.value = String(_moveTargetObj.getNamespaceId());
+              inputMovePageDest.value = _moveTargetObj
+                .getMain()
+                .replace(/_/g, " ");
+              inputMoveSandboxSubpage.value = _moveTargetObj
+                .getMain()
+                .replace(/_/g, " ");
+            } catch (e) {
+              // Title could not be parsed; leave the fields as-is
+            }
+          }
+
+          // Combines the selected namespace with the entered page title into
+          // a full destination title. A namespace of "(Main)" is prefixed
+          // with nothing, preserving the ability to type a fully prefixed
+          // title directly if a user prefers to do so.
+          function buildMovePageDestTitle() {
+            const nsId = parseInt(selMovePageNs.value, 10) || 0;
+            const pageName = inputMovePageDest.value.trim();
+            if (!pageName) return "";
+            if (nsId === 0) return pageName;
+            const selectedOpt =
+              selMovePageNs.options[selMovePageNs.selectedIndex];
+            const nsName = selectedOpt ? selectedOpt.textContent : "";
+            return nsName + ":" + pageName;
+          }
 
           const { row: rowMovePageReason, field: fieldMovePageReason } =
             makeRow("Reason");
@@ -7801,20 +7892,7 @@ $(function () {
               inputMoveSandboxUser.disabled = false;
               // Auto-fill subpage name with the page title (without namespace),
               // and pre-fill the Move page destination with the full prefixed title.
-              const _pageTargetForMove = inputTarget.value.trim();
-              if (_pageTargetForMove) {
-                try {
-                  const _moveTargetObj = new mw.Title(_pageTargetForMove);
-                  inputMoveSandboxSubpage.value = _moveTargetObj
-                    .getMain()
-                    .replace(/_/g, " ");
-                  inputMovePageDest.value = _moveTargetObj
-                    .getPrefixedText()
-                    .replace(/_/g, " ");
-                } catch (e) {
-                  // Title could not be parsed; leave the fields as-is
-                }
-              }
+              updateMovePageDestFromTarget();
               // Re-evaluate talk page availability for the new target.
               updateMoveSandboxTalkAvailability();
               updateMovePageTalkAvailability();
@@ -8388,7 +8466,7 @@ $(function () {
               undeleteReason: buildUndeleteReason() + suffix,
               moveSandbox: chkMoveSandbox.checked && !chkMoveSandbox.disabled,
               moveSandboxMode: selMoveMode.value,
-              movePageDest: inputMovePageDest.value.trim(),
+              movePageDest: buildMovePageDestTitle(),
               movePageReason: buildMovePageReason() + suffix,
               movePageNoRedirect: chkMovePageNoRedirect.checked,
               movePageTalk: chkMovePageTalk.checked,
@@ -9744,17 +9822,7 @@ $(function () {
             // Auto-fill subpage name with the page title (without namespace),
             // and pre-fill the Move page destination with the full prefixed title.
             if (tenguMode === "page" && targetVal) {
-              try {
-                const _titleObj = new mw.Title(targetVal);
-                inputMoveSandboxSubpage.value = _titleObj
-                  .getMain()
-                  .replace(/_/g, " ");
-                inputMovePageDest.value = _titleObj
-                  .getPrefixedText()
-                  .replace(/_/g, " ");
-              } catch (e) {
-                // Title could not be parsed; leave the fields as-is
-              }
+              updateMovePageDestFromTarget();
             }
             // Re-fetch the page creator when the target changes and the
             // same-as-creator option is active.
