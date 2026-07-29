@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.88.0
+ * Version 2.89.0
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -9609,6 +9609,42 @@ $(function () {
                     inputProtectRecreationExpiry.disabled = true;
                     rowProtectRecreationLevel.style.opacity = "0.5";
                     rowProtectRecreationExpiry.style.opacity = "0.5";
+                  }
+
+                  // Page deletion, Move page, and Page protection all act on an
+                  // existing target page, so lock them when the page does not
+                  // exist — the inverse of the recreation-protection gating above.
+                  if (pageIsMissing) {
+                    applyModeLock(
+                      secPagedel,
+                      bodyPagedel,
+                      chkPagedel,
+                      true,
+                      "the target page does not exist.",
+                    );
+                    applyModeLock(
+                      secMoveSandbox,
+                      bodyMoveSandbox,
+                      chkMoveSandbox,
+                      true,
+                      "the target page does not exist.",
+                    );
+                    applyModeLock(
+                      secProtect,
+                      bodyProtect,
+                      chkProtect,
+                      true,
+                      "the target page does not exist.",
+                    );
+                  } else {
+                    applyModeLock(secPagedel, bodyPagedel, chkPagedel, false);
+                    applyModeLock(
+                      secMoveSandbox,
+                      bodyMoveSandbox,
+                      chkMoveSandbox,
+                      false,
+                    );
+                    applyModeLock(secProtect, bodyProtect, chkProtect, false);
                   }
 
                   if (active.length) {

@@ -1,3 +1,15 @@
+## 2.89.0
+
+### Added
+
+* Tengu now checks whether the target page currently exists (in page mode) before allowing Page deletion, Move page, or Page protection to be enabled. These features act on an existing page, so they are now locked with an explanatory padlock tooltip when the target does not exist.
+
+### Notes
+
+* This mirrors the gating already applied in the opposite direction to Protect against recreation, which is only available when the target page does not exist.
+* Page undeletion was unaffected by this issue, since it already checked the target's deletion log before allowing it to run.
+* The existence check reuses the `prop=info` request already made for the Page protection status note, so no additional API call was introduced.
+
 ## 2.88.0
 
 ### Fixed
