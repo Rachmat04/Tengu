@@ -1,3 +1,14 @@
+## 2.90.0
+
+### Changed
+
+* Redesigned the User mode / Page mode toggle as a compact on/off switch, replacing the previous side-by-side button pair. The "User mode" and "Page mode" labels are now shown outside the switch, on either side of it, with the active mode's label highlighted in its mode colour (lavender for user mode, sage green for page mode).
+
+### Notes
+
+* This is a visual change only; mode-switching behaviour, mode locking, and target pre-filling are unchanged.
+* The switch is now disabled as a whole (rather than only the "User mode" side) when user mode is unavailable — outside the user/user talk namespace, on out-of-scope contribution-style pages, or when the target is an IP range — since page mode is the only option in those cases.
+
 ## 2.89.0
 
 ### Added

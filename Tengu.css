@@ -650,39 +650,77 @@
   top: 2px;
 }
 
-/* --- Mode toggle (User/Page switch, User namespace only) --- */
-.tng-mode-toggle {
+/* --- Mode switch (User/Page toggle, User namespace only) --- */
+.tng-mode-switch-wrap {
   display: inline-flex;
-  border: 1px solid #a2a9b1;
-  border-radius: 4px;
-  overflow: hidden;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
   flex-shrink: 0;
 }
-.tng-mode-btn {
-  padding: 4px 14px;
+.tng-mode-switch-label {
   font-size: 0.88em;
   font-weight: 600;
-  background: none;
-  border: none;
+  color: #72777d;
   cursor: pointer;
-  color: #54595d;
-  font-family: inherit;
-  transition:
-    background 0.12s,
-    color 0.12s;
+  user-select: none;
   white-space: nowrap;
+  transition: color 0.12s;
 }
-.tng-mode-btn:hover:not(.tng-mode-btn-active) {
-  background: #f0f2f5;
+.tng-mode-switch-label:hover:not(.tng-mode-switch-label-disabled) {
+  color: #202122;
 }
-.tng-mode-btn.tng-mode-btn-active {
-  color: #fff;
+.tng-mode-switch-label-active-user {
+  color: #7b6fb8;
 }
-.tng-mode-btn-active-user {
+.tng-mode-switch-label-active-page {
+  color: #4f9b8e;
+}
+.tng-mode-switch-label-disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+.tng-mode-switch {
+  position: relative;
+  display: inline-block;
+  width: 38px;
+  height: 21px;
+  flex-shrink: 0;
+}
+.tng-mode-switch-input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+.tng-mode-switch-slider {
+  position: absolute;
+  inset: 0;
+  cursor: pointer;
   background: #7b6fb8;
+  border-radius: 21px;
+  transition: background 0.18s;
 }
-.tng-mode-btn-active-page {
+.tng-mode-switch-slider::before {
+  content: "";
+  position: absolute;
+  width: 15px;
+  height: 15px;
+  left: 3px;
+  top: 3px;
+  background: #fff;
+  border-radius: 50%;
+  transition: transform 0.18s;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+}
+.tng-mode-switch-input:checked + .tng-mode-switch-slider {
   background: #4f9b8e;
+}
+.tng-mode-switch-input:checked + .tng-mode-switch-slider::before {
+  transform: translateX(17px);
+}
+.tng-mode-switch-input:disabled + .tng-mode-switch-slider {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 /* --- Mode badge (dialogue header) --- */
@@ -746,8 +784,13 @@
 .tng-theme-transitioning .tng-mode-badge,
 .tng-theme-transitioning .tng-info-entry,
 .tng-theme-transitioning .tng-user-rights-header,
-.tng-theme-transitioning .tng-user-rights-list {
-  transition: background-color 0.25s ease, color 0.25s ease, border-color 0.25s ease;
+.tng-theme-transitioning .tng-user-rights-list,
+.tng-theme-transitioning .tng-mode-switch-label,
+.tng-theme-transitioning .tng-mode-switch-slider {
+  transition:
+    background-color 0.25s ease,
+    color 0.25s ease,
+    border-color 0.25s ease;
 }
 
 /* --- Dark mode (manual toggle via .tng-theme-dark on .tng-overlay) --- */
@@ -931,15 +974,13 @@
   border-color: #a2a9b1;
 }
 
-/* Dark mode for mode toggle */
-.tng-theme-dark .tng-mode-toggle {
-  border-color: #54595d;
-}
-.tng-theme-dark .tng-mode-btn {
+/* Dark mode for mode switch */
+.tng-theme-dark .tng-mode-switch-label {
   color: #a2a9b1;
 }
-.tng-theme-dark .tng-mode-btn:hover:not(.tng-mode-btn-active) {
-  background: #2a2a35;
+.tng-theme-dark
+  .tng-mode-switch-label:hover:not(.tng-mode-switch-label-disabled) {
+  color: #eaecf0;
 }
 
 /* Dark mode for mode notice */

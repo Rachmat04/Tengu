@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.89.0
+ * Version 2.90.0
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -4641,73 +4641,82 @@ $(function () {
           // Mode toggle row — Rendered globally across all namespace layers
           const { row: rowMode, field: fieldMode } = makeRow("Mode");
           const modeToggle = document.createElement("div");
-          modeToggle.className = "tng-mode-toggle";
+          modeToggle.className = "tng-mode-switch-wrap";
 
-          const btnModeUser = document.createElement("button");
-          btnModeUser.className = "tng-mode-btn";
+          const btnModeUser = document.createElement("span");
+          btnModeUser.className =
+            "tng-mode-switch-label tng-mode-switch-label-user";
           btnModeUser.textContent = "👤 User mode";
 
-          const btnModePage = document.createElement("button");
-          btnModePage.className = "tng-mode-btn";
+          const modeSwitchLabel = document.createElement("label");
+          modeSwitchLabel.className = "tng-mode-switch";
+          const modeSwitchInput = document.createElement("input");
+          modeSwitchInput.type = "checkbox";
+          modeSwitchInput.className = "tng-mode-switch-input";
+          const modeSwitchSlider = document.createElement("span");
+          modeSwitchSlider.className = "tng-mode-switch-slider";
+          modeSwitchLabel.appendChild(modeSwitchInput);
+          modeSwitchLabel.appendChild(modeSwitchSlider);
+
+          const btnModePage = document.createElement("span");
+          btnModePage.className =
+            "tng-mode-switch-label tng-mode-switch-label-page";
           btnModePage.textContent = "📄 Page mode";
 
-          // Dynamically map default execution target indicators on activation context
-          if (tenguMode === "user") {
-            btnModeUser.classList.add(
-              "tng-mode-btn-active",
-              "tng-mode-btn-active-user",
+          // Syncs the switch position and the active-label highlight with the
+          // given mode. Does not itself call applyModeRestrictions(); callers
+          // remain responsible for that, matching the previous click-handler pattern.
+          function setModeSwitchActive(isUserModeNow) {
+            modeSwitchInput.checked = !isUserModeNow;
+            btnModeUser.classList.toggle(
+              "tng-mode-switch-label-active-user",
+              isUserModeNow,
             );
-          } else {
-            btnModePage.classList.add(
-              "tng-mode-btn-active",
-              "tng-mode-btn-active-page",
+            btnModePage.classList.toggle(
+              "tng-mode-switch-label-active-page",
+              !isUserModeNow,
             );
           }
 
+          // Dynamically map default execution target indicators on activation context
+          setModeSwitchActive(tenguMode === "user");
+
           // Restrict user mode selection if current workspace context sits outside standard user profile areas
           if (!isUserNamespace) {
-            btnModeUser.disabled = true;
-            btnModeUser.style.opacity = "0.4";
-            btnModeUser.style.cursor = "not-allowed";
+            btnModeUser.classList.add("tng-mode-switch-label-disabled");
+            modeSwitchInput.disabled = true;
             btnModeUser.title =
               "User mode is only available when Tengu is launched from a user profile or contribution space";
           } else if (isIPRange) {
             // IP ranges (e.g. 192.168.0.0/16 or 2001:db8::/32) cannot be used as
             // individual user targets. User mode is disabled for range pages.
-            btnModeUser.disabled = true;
-            btnModeUser.style.opacity = "0.4";
-            btnModeUser.style.cursor = "not-allowed";
+            btnModeUser.classList.add("tng-mode-switch-label-disabled");
+            modeSwitchInput.disabled = true;
             btnModeUser.title =
               "User mode is not available for IP ranges. IP ranges cannot be targeted as individual users. Use the block section in page mode, or navigate to a single IP address instead.";
           } else {
             btnModeUser.addEventListener("click", function () {
               if (tenguMode === "user") return;
-              btnModeUser.classList.add(
-                "tng-mode-btn-active",
-                "tng-mode-btn-active-user",
-              );
-              btnModePage.classList.remove(
-                "tng-mode-btn-active",
-                "tng-mode-btn-active-page",
-              );
+              setModeSwitchActive(true);
               applyModeRestrictions(true);
             });
           }
 
           btnModePage.addEventListener("click", function () {
             if (tenguMode === "page") return;
-            btnModePage.classList.add(
-              "tng-mode-btn-active",
-              "tng-mode-btn-active-page",
-            );
-            btnModeUser.classList.remove(
-              "tng-mode-btn-active",
-              "tng-mode-btn-active-user",
-            );
+            setModeSwitchActive(false);
             applyModeRestrictions(false);
           });
 
+          modeSwitchInput.addEventListener("change", function () {
+            const wantUser = !modeSwitchInput.checked;
+            if (wantUser === (tenguMode === "user")) return;
+            setModeSwitchActive(wantUser);
+            applyModeRestrictions(wantUser);
+          });
+
           modeToggle.appendChild(btnModeUser);
+          modeToggle.appendChild(modeSwitchLabel);
           modeToggle.appendChild(btnModePage);
           fieldMode.appendChild(modeToggle);
 
