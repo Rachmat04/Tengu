@@ -1,3 +1,14 @@
+## 2.93.0
+
+### Changed
+
+* The pending changes (FlaggedRevs) controls in the Page protection section are no longer hidden on wikis without the FlaggedRevs extension. The "Also enable pending changes protection" checkbox and "Pending changes level" dropdown now stay visible at all times and are disabled, with an explanatory tooltip, when the current wiki does not have FlaggedRevs installed.
+* Grouped the pending changes checkbox and level dropdown inside a bordered `.tng-recreation-group` container (the same style already used by the recreation-protection controls), separating them visually from the standard edit/move/upload restriction settings above.
+
+### Notes
+
+* This is a visual and discoverability change only; pending changes protection continues to be submitted via `action=stabilize` exactly as before, and remains unavailable to select until `flaggedRevsPromise` confirms the extension is present.
+
 ## 2.92.0
 
 ### Added

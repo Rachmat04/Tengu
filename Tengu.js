@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.92.0
+ * Version 2.93.0
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -7277,8 +7277,10 @@ $(function () {
             "Also enable pending changes protection",
             false,
           );
+          chkProtectPC.disabled = true;
+          wrapProtectPC.style.opacity = "0.5";
           wrapProtectPC.title =
-            "Requires all edits by non-autoreviewed users to be reviewed before becoming the page's default (stable) version.";
+            "Checking whether this wiki supports pending changes protection...";
           const { row: rowProtectPCLevel, field: fieldProtectPCLevel } =
             makeRow("Pending changes level");
           const selProtectPCLevel = makeSelect([
@@ -7289,8 +7291,16 @@ $(function () {
           fieldProtectPCLevel.appendChild(wrapSelect(selProtectPCLevel));
           rowProtectPCLevel.style.opacity = "0.5";
 
+          // Grouped in its own bordered section (reusing the
+          // .tng-recreation-group style already used by the recreation
+          // protection controls) so it reads as a distinct set of settings
+          // from the standard page protection options above. The group
+          // stays visible on every wiki, including those without
+          // FlaggedRevs; only the checkbox and level dropdown are disabled
+          // when the extension is unavailable, so users can see the
+          // feature exists rather than having it disappear entirely.
           const divProtectPCGroup = document.createElement("div");
-          divProtectPCGroup.className = "tng-hidden"; // shown only once FlaggedRevs is confirmed
+          divProtectPCGroup.className = "tng-recreation-group";
           divProtectPCGroup.appendChild(wrapProtectPC);
           divProtectPCGroup.appendChild(rowProtectPCLevel);
           bodyProtect.appendChild(divProtectPCGroup);
@@ -7300,12 +7310,15 @@ $(function () {
             rowProtectPCLevel.style.opacity = chkProtectPC.checked ? "" : "0.5";
           });
 
-          // Reveal the pending changes controls once FlaggedRevs availability is known.
+          // Enable the pending changes checkbox only once FlaggedRevs
+          // availability is confirmed for this wiki. When unavailable, the
+          // checkbox is disabled (not hidden) with a tooltip explaining why.
           flaggedRevsPromise.then(function (info) {
-            divProtectPCGroup.classList.toggle(
-              "tng-hidden",
-              !info.hasFlaggedRevs,
-            );
+            chkProtectPC.disabled = !info.hasFlaggedRevs;
+            wrapProtectPC.style.opacity = info.hasFlaggedRevs ? "" : "0.5";
+            wrapProtectPC.title = info.hasFlaggedRevs
+              ? "Requires all edits by non-autoreviewed users to be reviewed before becoming the page's default (stable) version."
+              : "Not available: this wiki does not have the FlaggedRevs (pending changes) extension installed.";
           });
 
           const { row: rowProtectExpiry, field: fieldProtectExpiry } =
