@@ -1,3 +1,15 @@
+## 2.96.0
+
+### Fixed
+
+* Fixed the Move log in the Get info panel (page mode) failing to show move history when opened on the destination title of a previous move. Move log entries are recorded under the page's title at the time of the move (the source title), so querying only the current title missed entries whenever the current title was the result of an earlier move.
+* The Move log now also checks the move history of any redirects currently pointing to the target page, since a redirect left behind by a move holds exactly the previous title the page held. Entries found this way are labelled with a "Previous title" row so it is clear which title the move log entry was recorded against.
+
+### Notes
+
+* Entries from the current title and any checked redirects are merged, deduplicated by log ID, and sorted newest first before display.
+* If the redirect lookup itself fails, the section falls back to checking only the current title's own move log, matching the previous behaviour.
+
 ## 2.95.0
 
 ### Fixed

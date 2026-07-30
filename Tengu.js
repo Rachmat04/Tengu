@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.95.0
+ * Version 2.96.0
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -4103,17 +4103,73 @@ $(function () {
           })();
 
           // --- Move log ---
+          // Move log entries are recorded under the page's title *at the time of
+          // the move* (the source title), not the destination title. A page that
+          // was moved into its current title therefore has no log_title match
+          // against the current title itself — only against whatever title it
+          // held before the move. To surface that history, redirects currently
+          // pointing to the target (typically left behind by a previous move)
+          // are also checked, since their titles are exactly the previous
+          // titles this page may have held.
           (async function () {
             try {
-              const data = await apiGet({
-                action: "query",
-                list: "logevents",
-                letype: "move",
-                letitle: pageName,
-                lelimit: 50,
-                leprop: "user|timestamp|comment|details",
+              const titlesToCheck = [pageName];
+              try {
+                const blData = await apiGet({
+                  action: "query",
+                  list: "backlinks",
+                  bltitle: pageName,
+                  blfilterredir: "redirects",
+                  bllimit: "max",
+                  formatversion: 2,
+                });
+                const redirectTitles = (
+                  (blData.query && blData.query.backlinks) ||
+                  []
+                ).map(function (b) {
+                  return b.title;
+                });
+                for (const t of redirectTitles) {
+                  if (!titlesToCheck.includes(t)) titlesToCheck.push(t);
+                }
+              } catch (e) {
+                // If the redirect lookup fails, fall back to checking only the
+                // current title's own move log.
+              }
+
+              let entries = [];
+              for (const t of titlesToCheck) {
+                try {
+                  const data = await apiGet({
+                    action: "query",
+                    list: "logevents",
+                    letype: "move",
+                    letitle: t,
+                    lelimit: 50,
+                    leprop: "user|timestamp|comment|details",
+                  });
+                  const found = (data.query && data.query.logevents) || [];
+                  for (const e of found) {
+                    e._tngSourceTitle = t;
+                  }
+                  entries = entries.concat(found);
+                } catch (e) {
+                  // Skip this title on failure; other titles are still checked.
+                }
+              }
+
+              // Deduplicate (a redirect and the main title could theoretically
+              // surface the same entry) and sort newest first.
+              const seenLogIds = new Set();
+              entries = entries.filter(function (e) {
+                if (e.logid && seenLogIds.has(e.logid)) return false;
+                if (e.logid) seenLogIds.add(e.logid);
+                return true;
               });
-              const entries = (data.query && data.query.logevents) || [];
+              entries.sort(function (a, b) {
+                return (b.timestamp || "").localeCompare(a.timestamp || "");
+              });
+
               if (!entries.length) {
                 setEmpty(bodyMoveLog, "No move log entries found.");
                 return;
@@ -4130,15 +4186,17 @@ $(function () {
                       ? "Yes (no redirect left)"
                       : "No (redirect left)"
                     : "—";
-                bodyMoveLog.appendChild(
-                  makeEntry([
-                    ["Time", fmtTimestamp(e.timestamp)],
-                    ["Performed by", e.user || "—"],
-                    ["Moved to", targetTitle],
-                    ["Redirect suppressed", suppressedRedirect],
-                    ["Reason", e.comment || "(no reason given)"],
-                  ]),
-                );
+                const rows = [
+                  ["Time", fmtTimestamp(e.timestamp)],
+                  ["Performed by", e.user || "—"],
+                ];
+                if (e._tngSourceTitle && e._tngSourceTitle !== pageName) {
+                  rows.push(["Previous title", e._tngSourceTitle]);
+                }
+                rows.push(["Moved to", targetTitle]);
+                rows.push(["Redirect suppressed", suppressedRedirect]);
+                rows.push(["Reason", e.comment || "(no reason given)"]);
+                bodyMoveLog.appendChild(makeEntry(rows));
               }
             } catch (err) {
               setError(
