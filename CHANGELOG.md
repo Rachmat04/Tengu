@@ -1,3 +1,13 @@
+## 2.94.0
+
+### Fixed
+
+* Fixed a horizontal scrollbar appearing in the Page protection section. `.tng-recreation-group` did not use `box-sizing: border-box`, so its padding and border were added on top of its 100%-width sizing rather than being contained within it, making the container wider than its parent. This became visible once the pending changes controls were grouped into their own `.tng-recreation-group` container in v2.92.0/v2.93.0.
+
+### Notes
+
+* This is a CSS-only fix. It also applies to the other two containers that share `.tng-recreation-group` (the Page deletion section's recreation-protection controls and the standalone Protect against recreation section), though neither had been reported as visibly overflowing.
+
 ## 2.93.0
 
 ### Changed

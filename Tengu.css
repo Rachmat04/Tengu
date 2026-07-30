@@ -194,6 +194,10 @@
   flex-shrink: 0;
 }
 /* --- Recreation protection group (page deletion section) --- */
+/* box-sizing: border-box is required here so the 1px border and 8px padding
+   are included within the 100% width, rather than added on top of it, which
+   previously pushed the container wider than its parent and caused a
+   horizontal scrollbar in sections using this class (see v2.94.0). */
 .tng-recreation-group {
   display: flex;
   flex-direction: column;
@@ -203,6 +207,7 @@
   padding: 8px;
   margin-top: 6px;
   width: 100%;
+  box-sizing: border-box;
 }
 .tng-row .tng-field {
   flex: 1;
