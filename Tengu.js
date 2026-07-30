@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.94.0
+ * Version 2.95.0
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -1281,9 +1281,9 @@ $(function () {
           if (config.reportSRG && !isAborted) {
             try {
               const srgSummary =
-                (config.reportSRGKind === "block"
-                  ? "Reporting IP for global block"
-                  : "Reporting account for global lock") + toolTag;
+                "Reporting account for global " +
+                (config.reportSRGKind === "block" ? "block" : "lock") +
+                toolTag;
               await submitSRGReport(
                 config.reportSRGKind,
                 targetVal,
@@ -8452,17 +8452,14 @@ $(function () {
               }
 
               if (isBlock) {
-                const contribsUrl =
-                  (mw.config.get("wgServer") || "") +
-                  mw.util.getUrl("Special:Contributions/" + targetVal);
                 return (
-                  "=== Global block for [" +
-                  contribsUrl +
-                  " " +
+                  "=== Global block for [[Special:Contributions/" +
                   targetVal +
-                  "] ===\n" +
+                  "|" +
+                  targetVal +
+                  "]] ===\n" +
                   "{{Status}}\n" +
-                  "{{Luxotool|1=" +
+                  "* {{Luxotool|1=" +
                   targetVal +
                   "}}\n" +
                   reasonText +

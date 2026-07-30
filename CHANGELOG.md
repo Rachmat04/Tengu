@@ -1,3 +1,13 @@
+## 2.95.0
+
+### Fixed
+
+* Fixed the global block report format submitted to Steward requests/Global for IP addresses and temporary accounts. The heading link now uses a standard wikilink (`[[Special:Contributions/Target|Target]]`) instead of a bracketed external URL, and the `{{Luxotool}}` line is now preceded by a bullet (`*`), matching the formatting already used by global lock requests.
+
+### Changed
+
+* Standardised the edit summary used when submitting to Steward requests/Global. Both global block and global lock requests now read "Reporting account for global block" or "Reporting account for global lock" as appropriate, replacing the previous account-type-specific wording ("Reporting IP for global block" / "Reporting account for global lock").
+
 ## 2.94.0
 
 ### Fixed
