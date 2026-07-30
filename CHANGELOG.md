@@ -1,3 +1,14 @@
+## 2.92.0
+
+### Added
+
+* Added pending changes (FlaggedRevs) protection support to the Page protection section. A new "Also enable pending changes protection" checkbox and a "Pending changes level" dropdown (Autoconfirmed users / Reviewers/administrators only) appear only on wikis where the FlaggedRevs extension is detected via `siprop=extensions`.
+* When enabled, an `action=stabilize` request is submitted alongside the standard `action=protect` request, using the same expiry and reason as the main protection action.
+
+### Notes
+
+* Pending changes protection is requested as a separate API call from the standard edit/move (and, where applicable, upload) protection; a failure in one does not prevent the other from being attempted.
+
 ## 2.91.0
 
 ### Added

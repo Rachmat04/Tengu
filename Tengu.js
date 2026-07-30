@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.91.0
+ * Version 2.92.0
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -2215,6 +2215,34 @@ $(function () {
                   setTimeout(resolve, THROTTLE_MS),
                 );
                 continue;
+              }
+
+              // Pending changes (FlaggedRevs) protection. Assumes
+              // the stabilize API module accepts protectlevel/expiry/reason
+              // parameters analogous to action=protect.
+              if (config.protectPendingChanges) {
+                try {
+                  await apiPost({
+                    action: "stabilize",
+                    title: title,
+                    protectlevel: config.protectPendingChangesLevel,
+                    expiry: config.protectExpiry,
+                    reason: config.protectReason + toolTag,
+                  });
+                  addLog(
+                    `[Protect] Enabled pending changes protection: ${title}`,
+                  );
+                  stats.protect++;
+                  updateStatusDisplay();
+                } catch (e) {
+                  addLog(
+                    `[Protect] Failed to enable pending changes protection for ${title}: ${formatApiError(e)}`,
+                    true,
+                  );
+                }
+                await new Promise((resolve) =>
+                  setTimeout(resolve, THROTTLE_MS),
+                );
               }
 
               // Also protect the talk page if that option was selected and this
@@ -4552,6 +4580,31 @@ $(function () {
               })
               .fail(function () {
                 resolve({ hasExtendedConfirmed: false });
+              });
+          });
+
+          // Checks whether this wiki has the FlaggedRevs (Pending Changes)
+          // extension installed, via siprop=extensions. Pending changes
+          // protection is only offered in the Page protection section when
+          // this resolves true, since most Wikimedia wikis do not run it.
+          const flaggedRevsPromise = new Promise(function (resolve) {
+            rightsApi
+              .get({
+                action: "query",
+                meta: "siteinfo",
+                siprop: "extensions",
+                formatversion: 2,
+              })
+              .done(function (data) {
+                const extensions =
+                  (data && data.query && data.query.extensions) || [];
+                const hasFlaggedRevs = extensions.some(function (ext) {
+                  return ext.name === "FlaggedRevs";
+                });
+                resolve({ hasFlaggedRevs: hasFlaggedRevs });
+              })
+              .fail(function () {
+                resolve({ hasFlaggedRevs: false });
               });
           });
 
@@ -7216,6 +7269,45 @@ $(function () {
             "Only available when the target is a file page.";
           bodyProtect.appendChild(rowProtectUpload);
 
+          // Pending changes (FlaggedRevs) protection — only offered on wikis
+          // that have the FlaggedRevs extension installed. Hidden until
+          // flaggedRevsPromise resolves and confirms availability, since most
+          // Wikimedia wikis do not run this extension.
+          const { wrap: wrapProtectPC, chk: chkProtectPC } = makeCheckbox(
+            "Also enable pending changes protection",
+            false,
+          );
+          wrapProtectPC.title =
+            "Requires all edits by non-autoreviewed users to be reviewed before becoming the page's default (stable) version.";
+          const { row: rowProtectPCLevel, field: fieldProtectPCLevel } =
+            makeRow("Pending changes level");
+          const selProtectPCLevel = makeSelect([
+            { value: "autoconfirmed", label: "Autoconfirmed users" },
+            { value: "sysop", label: "Reviewers/administrators only" },
+          ]);
+          selProtectPCLevel.disabled = true;
+          fieldProtectPCLevel.appendChild(wrapSelect(selProtectPCLevel));
+          rowProtectPCLevel.style.opacity = "0.5";
+
+          const divProtectPCGroup = document.createElement("div");
+          divProtectPCGroup.className = "tng-hidden"; // shown only once FlaggedRevs is confirmed
+          divProtectPCGroup.appendChild(wrapProtectPC);
+          divProtectPCGroup.appendChild(rowProtectPCLevel);
+          bodyProtect.appendChild(divProtectPCGroup);
+
+          chkProtectPC.addEventListener("change", function () {
+            selProtectPCLevel.disabled = !chkProtectPC.checked;
+            rowProtectPCLevel.style.opacity = chkProtectPC.checked ? "" : "0.5";
+          });
+
+          // Reveal the pending changes controls once FlaggedRevs availability is known.
+          flaggedRevsPromise.then(function (info) {
+            divProtectPCGroup.classList.toggle(
+              "tng-hidden",
+              !info.hasFlaggedRevs,
+            );
+          });
+
           const { row: rowProtectExpiry, field: fieldProtectExpiry } =
             makeRow("Expiry");
           const selProtectExpiry = makeSelect([
@@ -8500,6 +8592,8 @@ $(function () {
               protectReason: buildProtectReason() + suffix,
               protectTalk: chkProtectTalk.checked,
               protectCascade: chkProtectCascade.checked,
+              protectPendingChanges: chkProtectPC.checked,
+              protectPendingChangesLevel: selProtectPCLevel.value,
               protectRecreation:
                 chkProtectRecreation.checked && !chkProtectRecreation.disabled,
               protectRecreationLevel: selProtectRecreationLevel.value,
