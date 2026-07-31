@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.96.0
+ * Version 2.97.1
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -1940,37 +1940,41 @@ $(function () {
             let standardRevertSuccess = false;
             let standardErr = null;
 
-            // When no custom reason is supplied and the username is shown,
-            // name both the reverted user and the author of the revision
-            // being restored, where known, so it is clear which revision the
-            // page was reverted to. Falls back to the previous wording when
-            // the previous editor could not be determined (e.g. the lookup
-            // above failed, or there is no parent revision).
-            const undoSummaryStr = config.rollbackReason
-              ? config.rollbackReason + toolTag
-              : config.rollbackShow
-                ? (previousEditorUser
-                    ? useIndonesian
-                      ? `Membatalkan suntingan ${targetVal} ke suntingan sebelumnya oleh ${previousEditorUser}`
-                      : `Revert ${targetVal}'s edits to the previous edit by ${previousEditorUser}`
-                    : useIndonesian
-                      ? "Membatalkan suntingan oleh " + targetVal
-                      : "Reverting edits by " + targetVal) + toolTag
-                : (useIndonesian ? "Membatalkan suntingan" : "Revert edits") +
-                  toolTag;
+            // Builds the shared "Reverted [[Special:Diff/X|edit]] by ..." wording
+            // used by both the undo and native rollback summaries below. Always
+            // links to the diff of the reverted revision. When a custom reason is
+            // supplied, the summary reads "Reverted [[Special:Diff/X|edit]] by
+            // [user]: [reason]"; otherwise it names the author of the revision
+            // being restored, where known, so it is clear which revision the page
+            // was reverted to. Falls back to omitting the "to the previous
+            // revision by..." clause when the previous editor could not be
+            // determined (e.g. the lookup above failed, or there is no parent
+            // revision), and to omitting the username entirely when "Show
+            // username in summary" is unticked.
+            const revertedRevId = info.latest;
+            const buildRevertSummaryText = function () {
+              if (config.rollbackReason) {
+                return useIndonesian
+                  ? `Membalikkan [[Special:Diff/${revertedRevId}|suntingan]] oleh ${targetVal}: ${config.rollbackReason}`
+                  : `Reverted [[Special:Diff/${revertedRevId}|edit]] by ${targetVal}: ${config.rollbackReason}`;
+              }
+              if (!config.rollbackShow) {
+                return useIndonesian
+                  ? `Membalikkan [[Special:Diff/${revertedRevId}|suntingan]]`
+                  : `Reverted [[Special:Diff/${revertedRevId}|edit]]`;
+              }
+              if (previousEditorUser) {
+                return useIndonesian
+                  ? `Membalikkan [[Special:Diff/${revertedRevId}|suntingan]] oleh ${targetVal} ke revisi sebelumnya oleh ${previousEditorUser}`
+                  : `Reverted [[Special:Diff/${revertedRevId}|edit]] by ${targetVal} to the previous revision by ${previousEditorUser}`;
+              }
+              return useIndonesian
+                ? `Membalikkan [[Special:Diff/${revertedRevId}|suntingan]] oleh ${targetVal}`
+                : `Reverted [[Special:Diff/${revertedRevId}|edit]] by ${targetVal}`;
+            };
 
-            const rbSummaryStr = config.rollbackReason
-              ? config.rollbackReason + toolTag
-              : config.rollbackShow
-                ? (previousEditorUser
-                    ? useIndonesian
-                      ? `Membatalkan suntingan ${targetVal} ke suntingan sebelumnya oleh ${previousEditorUser}`
-                      : `Revert ${targetVal}'s edits to the previous edit by ${previousEditorUser}`
-                    : useIndonesian
-                      ? "Membatalkan suntingan oleh " + targetVal
-                      : "Reverting edits by " + targetVal) + toolTag
-                : (useIndonesian ? "Membatalkan suntingan" : "Revert edits") +
-                  toolTag;
+            const undoSummaryStr = buildRevertSummaryText() + toolTag;
+            const rbSummaryStr = buildRevertSummaryText() + toolTag;
 
             // Execute standard rollback or undo operation sequentially based on settings
             if (config.rollbackMethod === "undo" && !isZObject) {

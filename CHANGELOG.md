@@ -1,3 +1,27 @@
+## 2.97.1
+
+### Fixed
+
+* Fixed a `SyntaxError: Identifier 'rbSummaryStr' has already been declared` parsing error that broke the entire script. A leftover pre-v2.97.0 assignment to `rbSummaryStr` (the old rollback summary logic, without the diff link) was never removed when that version introduced `buildRevertSummaryText()`, leaving two `const rbSummaryStr` declarations in the same scope.
+
+### Notes
+
+* This is a syntax-only fix. `rbSummaryStr` and `undoSummaryStr` now both come from the single `buildRevertSummaryText()` call added in v2.97.0; no summary wording has changed as a result of this fix.
+
+## 2.97.0
+
+### Changed
+
+* Rollback and undo edit summaries now include a link to the reverted revision's diff, using `[[Special:Diff/<revision ID>|edit]]` (or `suntingan` on Indonesian-language wikis).
+* When no rollback/undo reason is supplied, the summary now reads "Reverted [[Special:Diff/X|edit]] by [reverted user] to the previous revision by [previous user]" (falling back to omitting the "to the previous revision by..." clause if the previous editor could not be determined).
+* When a rollback/undo reason is supplied, the summary now reads "Reverted [[Special:Diff/X|edit]] by [reverted user]: [reason]".
+* Added the equivalent Indonesian-language wording for both cases.
+
+### Notes
+
+* This affects the native rollback summary, the undo summary, and the mediainfo/structured-data revert summary, all of which draw from the same shared summary text.
+* The "Show username in summary" checkbox continues to be respected: when unticked, the summary omits the username, reading "Reverted [[Special:Diff/X|edit]]" (optionally followed by ": [reason]").
+
 ## 2.96.0
 
 ### Fixed
