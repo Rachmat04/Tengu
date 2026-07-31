@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.97.1
+ * Version 2.98.0
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -5331,6 +5331,36 @@ $(function () {
                 checkboxes.push(chk);
                 listEl.appendChild(wrap);
               }
+
+              // Shift-click range selection. Clicking a checkbox while holding
+              // Shift extends the previous click's state (checked or unchecked)
+              // to every visible checkbox between the previous click and this
+              // one, matching standard range-selection behaviour found in
+              // desktop and web file pickers. Only currently visible items
+              // (i.e. not hidden by the namespace filter) are considered, so
+              // the range does not silently include hidden rows.
+              let lastClickedIndex = null;
+              checkboxes.forEach(function (chk) {
+                chk.addEventListener("click", function (e) {
+                  const visibleBoxes = checkboxes.filter(function (c) {
+                    return !c.parentElement.classList.contains("tng-hidden");
+                  });
+                  const currentIndex = visibleBoxes.indexOf(chk);
+                  if (
+                    e.shiftKey &&
+                    lastClickedIndex !== null &&
+                    currentIndex !== -1
+                  ) {
+                    const start = Math.min(lastClickedIndex, currentIndex);
+                    const end = Math.max(lastClickedIndex, currentIndex);
+                    const checkedState = chk.checked;
+                    for (let i = start; i <= end; i++) {
+                      visibleBoxes[i].checked = checkedState;
+                    }
+                  }
+                  if (currentIndex !== -1) lastClickedIndex = currentIndex;
+                });
+              });
 
               // All three bulk-action buttons operate only on currently visible
               // items so that namespace filtering does not silently affect hidden

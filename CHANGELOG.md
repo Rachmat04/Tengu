@@ -1,3 +1,13 @@
+## 2.98.0
+
+### Added
+
+* Added shift-click range selection to the **Select specific edits/pages** picker. Ticking a checkbox, then holding Shift and ticking another checkbox further down the same section, now selects (or deselects) every item in between, matching standard range-selection behaviour in desktop and web interfaces.
+
+### Notes
+
+* Range selection operates only on currently visible items — rows hidden by the namespace filter are skipped and not included in the range.
+
 ## 2.97.1
 
 ### Fixed
