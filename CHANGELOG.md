@@ -1,3 +1,24 @@
+## 2.101.0
+
+### Added
+
+* Added an **"All users"** option to the **Pending changes level** drop-down in the Page protection section, alongside the existing Autoconfirmed users and Reviewers/administrators only options. Selecting this now allows pending changes protection to be reduced or removed entirely, rather than only ever being increased.
+
+### Notes
+
+* Submitting this option passes `protectlevel: "none"` to the `action=stabilize` API call.
+* No changes were made to the standard edit/move/upload protection controls; this affects only the pending changes group.
+
+## 2.100.2
+
+### Fixed
+
+* Fixed the **Suppress redirect** checkbox in the **Move page** sub-mode of the Move page section not being ticked automatically for sysops, unlike the equivalent checkbox in the **Move to user's sandbox** sub-mode. Once the `suppressredirect` right was confirmed, the checkbox was correctly enabled but left unchecked, so sysops had to tick it manually every time despite holding the right.
+
+### Notes
+
+* This affects only the Move page sub-mode's default state. The Move to user's sandbox sub-mode's suppress-redirect checkbox was already being ticked correctly and is unaffected.
+
 ## 2.100.1
 
 ### Fixed

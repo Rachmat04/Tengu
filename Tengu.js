@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.100.2
+ * Version 2.101.0
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -7387,6 +7387,10 @@ $(function () {
           const { row: rowProtectPCLevel, field: fieldProtectPCLevel } =
             makeRow("Pending changes level");
           const selProtectPCLevel = makeSelect([
+            {
+              value: "none",
+              label: "All users (no pending changes protection)",
+            },
             { value: "autoconfirmed", label: "Autoconfirmed users" },
             { value: "sysop", label: "Reviewers/administrators only" },
           ]);
