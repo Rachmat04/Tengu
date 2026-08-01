@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.100.1
+ * Version 2.100.2
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -9023,7 +9023,9 @@ $(function () {
                 chkMoveSandboxNoRedirect.disabled = false;
                 wrapMoveSandboxNoRedirect.style.opacity = "";
                 wrapMoveSandboxNoRedirect.style.cursor = "";
-                // Also enable the Move page suppress-redirect checkbox.
+                // Also enable and tick the Move page suppress-redirect checkbox,
+                // matching the sandbox checkbox's behaviour above.
+                chkMovePageNoRedirect.checked = true;
                 chkMovePageNoRedirect.disabled = false;
                 wrapMovePageNoRedirect.style.opacity = "";
                 wrapMovePageNoRedirect.style.cursor = "";
