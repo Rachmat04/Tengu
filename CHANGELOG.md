@@ -1,3 +1,13 @@
+## 2.100.1
+
+### Fixed
+
+* Fixed the progress dialogue always logging "✅ All operations have been completed successfully" at the end of a run, even when the user had aborted the operation. `isAborted` was being reset to `false` immediately before the check that selects between the "aborted" and "completed" log messages, making the aborted-run message unreachable.
+
+### Notes
+
+* This is a logging-only fix. Abort handling itself (stopping further actions, disabling the abort button, etc.) was already working correctly; only the final summary log line was affected.
+
 ## 2.100.0
 
 ### Changed

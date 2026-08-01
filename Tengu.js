@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.100.0
+ * Version 2.100.1
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -3275,7 +3275,6 @@ $(function () {
           const statusPrefix = `<b>Status: ${statusWord}</b><br/>`;
           const finalStatus = `${statusPrefix}Summary: <b>${stats.rollback}</b> ${methodTxt} | <b>${stats.delete}</b> deleted | <b>${stats.undelete}</b> undeleted | <b>${stats.move}</b> moved | <b>${stats.unlink}</b> unlinked | <b>${stats.redirfix}</b> redirects fixed | <b>${stats.protect}</b> protected | <b>${stats.revdel}</b> hidden | <b>${stats.report}</b> reported | <b>${stats.error}</b> errors.`;
           statusLbl.innerHTML = finalStatus;
-          isAborted = false;
 
           if (isAborted) {
             addLog("⏹️ Operations aborted by user");
