@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.98.0
+ * Version 2.99.0
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -1952,25 +1952,37 @@ $(function () {
             // revision), and to omitting the username entirely when "Show
             // username in summary" is unticked.
             const revertedRevId = info.latest;
+            // Links to the full diff between the revision immediately before the
+            // reverted edit(s) and the latest reverted revision, using MediaWiki's
+            // two-ID Special:Diff/<oldid>/<diffid> form, rather than the single-ID
+            // form (Special:Diff/<diffid>), which only shows that one revision's
+            // individual change against its immediate parent. This matters when
+            // rollback reverts several consecutive edits at once: the single-ID
+            // form would only reflect the last of those edits, not the cumulative
+            // change being reverted. Falls back to the single-ID form when no
+            // parent revision is known (info.oldestParent is unset).
+            const diffLinkTarget = info.oldestParent
+              ? `${info.oldestParent}/${revertedRevId}`
+              : `${revertedRevId}`;
             const buildRevertSummaryText = function () {
               if (config.rollbackReason) {
                 return useIndonesian
-                  ? `Membalikkan [[Special:Diff/${revertedRevId}|suntingan]] oleh ${targetVal}: ${config.rollbackReason}`
-                  : `Reverted [[Special:Diff/${revertedRevId}|edit]] by ${targetVal}: ${config.rollbackReason}`;
+                  ? `Membalikkan [[Special:Diff/${diffLinkTarget}|suntingan]] oleh ${targetVal}: ${config.rollbackReason}`
+                  : `Reverted [[Special:Diff/${diffLinkTarget}|edit]] by ${targetVal}: ${config.rollbackReason}`;
               }
               if (!config.rollbackShow) {
                 return useIndonesian
-                  ? `Membalikkan [[Special:Diff/${revertedRevId}|suntingan]]`
-                  : `Reverted [[Special:Diff/${revertedRevId}|edit]]`;
+                  ? `Membalikkan [[Special:Diff/${diffLinkTarget}|suntingan]]`
+                  : `Reverted [[Special:Diff/${diffLinkTarget}|edit]]`;
               }
               if (previousEditorUser) {
                 return useIndonesian
-                  ? `Membalikkan [[Special:Diff/${revertedRevId}|suntingan]] oleh ${targetVal} ke revisi sebelumnya oleh ${previousEditorUser}`
-                  : `Reverted [[Special:Diff/${revertedRevId}|edit]] by ${targetVal} to the previous revision by ${previousEditorUser}`;
+                  ? `Membalikkan [[Special:Diff/${diffLinkTarget}|suntingan]] oleh ${targetVal} ke revisi sebelumnya oleh ${previousEditorUser}`
+                  : `Reverted [[Special:Diff/${diffLinkTarget}|edit]] by ${targetVal} to the previous revision by ${previousEditorUser}`;
               }
               return useIndonesian
-                ? `Membalikkan [[Special:Diff/${revertedRevId}|suntingan]] oleh ${targetVal}`
-                : `Reverted [[Special:Diff/${revertedRevId}|edit]] by ${targetVal}`;
+                ? `Membalikkan [[Special:Diff/${diffLinkTarget}|suntingan]] oleh ${targetVal}`
+                : `Reverted [[Special:Diff/${diffLinkTarget}|edit]] by ${targetVal}`;
             };
 
             const undoSummaryStr = buildRevertSummaryText() + toolTag;

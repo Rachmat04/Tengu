@@ -1,3 +1,15 @@
+## 2.99.0
+
+### Fixed
+
+* Fixed the rollback/undo edit summary diff link (added in v2.97.0) pointing to a single revision (`Special:Diff/<revid>`) instead of the full diff of the reverted change. When rollback reverts several consecutive edits in one action, the single-ID form only showed the last of those edits against its immediate parent, not the cumulative change being reverted.
+* The link now uses the two-ID form `Special:Diff/<previous revision ID>/<reverted revision ID>` (e.g. `Special:Diff/1000/1005`), showing the full diff between the revision before the reverted edits and the latest reverted revision.
+
+### Notes
+
+* Falls back to the single-ID form when no parent revision is known (`info.oldestParent` is unset), matching previous behaviour in that edge case.
+* This affects the native rollback summary, the undo summary, and the mediainfo/structured-data revert summary, all of which draw from the same shared `buildRevertSummaryText()` call.
+
 ## 2.98.0
 
 ### Added
