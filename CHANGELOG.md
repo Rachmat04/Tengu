@@ -1,3 +1,15 @@
+## 2.100.0
+
+### Changed
+
+* Changed the edit summary used when a talk page is moved as part of the **Move to user's sandbox** sub-mode of the Move page section, from "Moving the talk page because its associated main page has been moved: [reason]" to "Talk page of moved page: [reason]", matching the wording pattern already used by the Page deletion section for its own associated talk-page action.
+* Applied the same change to the corresponding subpage talk-page move summary, which now reads "Talk page of moved subpage: [reason]".
+* Added the equivalent Indonesian-language wording for both cases: "Halaman pembicaraan dari halaman yang dipindahkan: [reason]" and "Halaman pembicaraan dari subhalaman yang dipindahkan: [reason]".
+
+### Notes
+
+* This affects only the edit summary text used for the separately-triggered talk-page and subpage-talk-page moves in the Move to user's sandbox sub-mode. It has no effect on the Move page sub-mode, which relies on the native `movetalk` API parameter and reuses the main move's reason directly.
+
 ## 2.99.0
 
 ### Fixed

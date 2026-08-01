@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.99.0
+ * Version 2.100.0
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -1527,8 +1527,8 @@ $(function () {
                         to: config.moveSandboxTalkDest,
                         reason:
                           (useIndonesian
-                            ? `Memindahkan halaman pembicaraan karena halaman utama yang terkait telah dipindahkan: ${config.moveSandboxReason}`
-                            : `Moving the talk page because its associated main page has been moved: ${config.moveSandboxReason}`) +
+                            ? `Halaman pembicaraan dari halaman yang dipindahkan: ${config.moveSandboxReason}`
+                            : `Talk page of moved page: ${config.moveSandboxReason}`) +
                           toolTag,
                       };
                       if (config.moveSandboxNoRedirect)
@@ -1640,8 +1640,8 @@ $(function () {
                               to: spTalkDest,
                               reason:
                                 (useIndonesian
-                                  ? `Memindahkan halaman pembicaraan subhalaman karena halaman utama yang terkait telah dipindahkan: ${config.moveSandboxReason}`
-                                  : `Moving subpage talk page because its associated main page has been moved: ${config.moveSandboxReason}`) +
+                                  ? `Halaman pembicaraan dari subhalaman yang dipindahkan: ${config.moveSandboxReason}`
+                                  : `Talk page of moved subpage: ${config.moveSandboxReason}`) +
                                 toolTag,
                             };
                             if (config.moveSandboxNoRedirect)
