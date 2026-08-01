@@ -1,3 +1,21 @@
+## 2.102.0
+
+### Added
+
+* Added separate expiry drop-downs for edit protection, move protection, and pending changes protection in the Page protection section, replacing the single shared expiry control. Each has its own preset options and custom-expiry input, so different protection types can now expire independently.
+
+### Fixed
+
+* Fixed pending changes protection failing with `stabilize_expiry_invalid` when the expiry was set to "Indefinite". The `action=stabilize` request now sends `infinite` for indefinite expiry instead of `never`.
+
+### Notes
+
+* The `stabilize_expiry_invalid` error may appear to have been caused by `action=stabilize` not accepting the `never` alias that `action=protect` recognises for indefinite expiry.
+* Edit and move protection expiries are now submitted as a pipe-separated `expiry` parameter alongside the pipe-separated `protections` parameter in a single `action=protect` call, matching the positional expiry-list format documented for that API module.
+* Upload restriction has no dedicated expiry control and continues to share the edit protection expiry, since it was not part of this request.
+* Talk page protection (both the primary pass and the deferred post-deletion pass) now submits edit and move expiries separately using the same pipe-separated format.
+* Package presets without explicit `moveExpiry` or `pendingChangesExpiry` values fall back to the existing `expiry` value, so current entries in `Tengu-packages.js` continue to work unchanged.
+
 ## 2.101.0
 
 ### Added

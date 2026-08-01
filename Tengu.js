@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.101.0
+ * Version 2.102.0
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -2205,6 +2205,26 @@ $(function () {
             return protections;
           }
 
+          // Builds the expiry parameter matching the pipe-separated order of
+          // buildPageProtections(): edit expiry, then move expiry, then (for
+          // file pages) upload expiry. The MediaWiki protect API accepts a
+          // pipe-separated expiry list that is matched positionally against
+          // the pipe-separated protections list, so edit and move restrictions
+          // can expire independently in a single action=protect call. Upload
+          // restriction has no dedicated expiry control and reuses the edit
+          // protection expiry.
+          function buildPageProtectionExpiries(title) {
+            let expiries = `${config.protectExpiry}|${config.protectMoveExpiry}`;
+            try {
+              if (new mw.Title(title).getNamespaceId() === 6) {
+                expiries += `|${config.protectExpiry}`;
+              }
+            } catch (e) {
+              // Skip if the title cannot be resolved
+            }
+            return expiries;
+          }
+
           // Execute sequential page protections if enabled
           if (config.protect && pagesToProtect.size > 0) {
             for (const title of pagesToProtect) {
@@ -2214,7 +2234,7 @@ $(function () {
                   action: "protect",
                   title: title,
                   protections: buildPageProtections(title),
-                  expiry: config.protectExpiry,
+                  expiry: buildPageProtectionExpiries(title),
                   reason: config.protectReason + toolTag,
                   ...(config.protectCascade ? { cascade: "" } : {}),
                 };
@@ -2242,7 +2262,14 @@ $(function () {
                     action: "stabilize",
                     title: title,
                     protectlevel: config.protectPendingChangesLevel,
-                    expiry: config.protectExpiry,
+                    // action=stabilize may not accept "never" as
+                    // an indefinite-expiry alias the way action=protect does;
+                    // this appears to be the cause of the previous
+                    // stabilize_expiry_invalid error and is translated here.
+                    expiry:
+                      config.protectPendingChangesExpiry === "never"
+                        ? "infinite"
+                        : config.protectPendingChangesExpiry,
                     reason: config.protectReason + toolTag,
                   });
                   addLog(
@@ -2279,7 +2306,7 @@ $(function () {
                       action: "protect",
                       title: talkForProtect,
                       protections: `edit=${config.protectEdit}|move=${config.protectMove}`,
-                      expiry: config.protectExpiry,
+                      expiry: `${config.protectExpiry}|${config.protectMoveExpiry}`,
                       reason: config.protectReason + toolTag,
                       ...(config.protectCascade ? { cascade: "" } : {}),
                     });
@@ -2941,7 +2968,7 @@ $(function () {
                     };
                     // Expiry and cascade only apply when the page exists.
                     if (talkExists) {
-                      talkProtectParams.expiry = config.protectExpiry;
+                      talkProtectParams.expiry = `${config.protectExpiry}|${config.protectMoveExpiry}`;
                       if (config.protectCascade) talkProtectParams.cascade = "";
                     }
                     await apiPost(talkProtectParams);
@@ -7331,6 +7358,41 @@ $(function () {
           fieldProtectMove.appendChild(wrapSelect(selProtectMove));
           bodyProtect.appendChild(rowProtectMove);
 
+          // Move protection expiry — independent of edit protection expiry,
+          // since the two restrictions may need to expire at different times.
+          const { row: rowProtectMoveExpiry, field: fieldProtectMoveExpiry } =
+            makeRow("Move protection expiry");
+          const selProtectMoveExpiry = makeSelect([
+            { value: "1 day", label: "1 day" },
+            { value: "3 days", label: "3 days" },
+            { value: "1 week", label: "1 week" },
+            { value: "2 weeks", label: "2 weeks" },
+            { value: "1 month", label: "1 month" },
+            { value: "3 months", label: "3 months" },
+            { value: "6 months", label: "6 months" },
+            { value: "1 year", label: "1 year" },
+            { value: "never", label: "Indefinite" },
+            { value: "other", label: "Other:" },
+          ]);
+          const inputProtectMoveExpiry = makeInput("e.g. 6 months, 2099-01-01");
+          inputProtectMoveExpiry.classList.add("tng-hidden");
+          selProtectMoveExpiry.addEventListener("change", function () {
+            inputProtectMoveExpiry.classList.toggle(
+              "tng-hidden",
+              selProtectMoveExpiry.value !== "other",
+            );
+          });
+          const protectMoveExpiryGroup = document.createElement("div");
+          protectMoveExpiryGroup.style.cssText =
+            "display: flex; gap: 6px; width: 100%;";
+          inputProtectMoveExpiry.style.flex = "1";
+          protectMoveExpiryGroup.appendChild(
+            wrapSelect(selProtectMoveExpiry, "1"),
+          );
+          protectMoveExpiryGroup.appendChild(inputProtectMoveExpiry);
+          fieldProtectMoveExpiry.appendChild(protectMoveExpiryGroup);
+          bodyProtect.appendChild(rowProtectMoveExpiry);
+
           // Adds 'Extended confirmed users' between autoconfirmed and sysop on
           // wikis where this protection level is configured. The group does not
           // exist on all wikis, so the option is omitted entirely rather than
@@ -7398,23 +7460,64 @@ $(function () {
           fieldProtectPCLevel.appendChild(wrapSelect(selProtectPCLevel));
           rowProtectPCLevel.style.opacity = "0.5";
 
+          // Pending changes expiry — submitted to action=stabilize separately
+          // from the edit/move protection expiry submitted to action=protect.
+          const { row: rowProtectPCExpiry, field: fieldProtectPCExpiry } =
+            makeRow("Pending changes expiry");
+          const selProtectPCExpiry = makeSelect([
+            { value: "1 day", label: "1 day" },
+            { value: "3 days", label: "3 days" },
+            { value: "1 week", label: "1 week" },
+            { value: "2 weeks", label: "2 weeks" },
+            { value: "1 month", label: "1 month" },
+            { value: "3 months", label: "3 months" },
+            { value: "6 months", label: "6 months" },
+            { value: "1 year", label: "1 year" },
+            { value: "never", label: "Indefinite" },
+            { value: "other", label: "Other:" },
+          ]);
+          selProtectPCExpiry.disabled = true;
+          const inputProtectPCExpiry = makeInput("e.g. 6 months, 2099-01-01");
+          inputProtectPCExpiry.classList.add("tng-hidden");
+          inputProtectPCExpiry.disabled = true;
+          selProtectPCExpiry.addEventListener("change", function () {
+            inputProtectPCExpiry.classList.toggle(
+              "tng-hidden",
+              selProtectPCExpiry.value !== "other",
+            );
+          });
+          const protectPCExpiryGroup = document.createElement("div");
+          protectPCExpiryGroup.style.cssText =
+            "display: flex; gap: 6px; width: 100%;";
+          inputProtectPCExpiry.style.flex = "1";
+          protectPCExpiryGroup.appendChild(wrapSelect(selProtectPCExpiry, "1"));
+          protectPCExpiryGroup.appendChild(inputProtectPCExpiry);
+          fieldProtectPCExpiry.appendChild(protectPCExpiryGroup);
+          rowProtectPCExpiry.style.opacity = "0.5";
+
           // Grouped in its own bordered section (reusing the
           // .tng-recreation-group style already used by the recreation
           // protection controls) so it reads as a distinct set of settings
           // from the standard page protection options above. The group
           // stays visible on every wiki, including those without
-          // FlaggedRevs; only the checkbox and level dropdown are disabled
-          // when the extension is unavailable, so users can see the
-          // feature exists rather than having it disappear entirely.
+          // FlaggedRevs; only the checkbox, level dropdown, and expiry
+          // controls are disabled when the extension is unavailable, so
+          // users can see the feature exists rather than having it
+          // disappear entirely.
           const divProtectPCGroup = document.createElement("div");
           divProtectPCGroup.className = "tng-recreation-group";
           divProtectPCGroup.appendChild(wrapProtectPC);
           divProtectPCGroup.appendChild(rowProtectPCLevel);
+          divProtectPCGroup.appendChild(rowProtectPCExpiry);
           bodyProtect.appendChild(divProtectPCGroup);
 
           chkProtectPC.addEventListener("change", function () {
-            selProtectPCLevel.disabled = !chkProtectPC.checked;
-            rowProtectPCLevel.style.opacity = chkProtectPC.checked ? "" : "0.5";
+            const enabled = chkProtectPC.checked;
+            selProtectPCLevel.disabled = !enabled;
+            rowProtectPCLevel.style.opacity = enabled ? "" : "0.5";
+            selProtectPCExpiry.disabled = !enabled;
+            inputProtectPCExpiry.disabled = !enabled;
+            rowProtectPCExpiry.style.opacity = enabled ? "" : "0.5";
           });
 
           // Enable the pending changes checkbox only once FlaggedRevs
@@ -7428,8 +7531,9 @@ $(function () {
               : "Not available: this wiki does not have the FlaggedRevs (pending changes) extension installed.";
           });
 
-          const { row: rowProtectExpiry, field: fieldProtectExpiry } =
-            makeRow("Expiry");
+          const { row: rowProtectExpiry, field: fieldProtectExpiry } = makeRow(
+            "Edit/upload protection expiry",
+          );
           const selProtectExpiry = makeSelect([
             { value: "1 day", label: "1 day" },
             { value: "3 days", label: "3 days" },
@@ -8706,11 +8810,19 @@ $(function () {
                 selProtectExpiry.value === "other"
                   ? inputProtectExpiry.value.trim() || "never"
                   : selProtectExpiry.value,
+              protectMoveExpiry:
+                selProtectMoveExpiry.value === "other"
+                  ? inputProtectMoveExpiry.value.trim() || "never"
+                  : selProtectMoveExpiry.value,
               protectReason: buildProtectReason() + suffix,
               protectTalk: chkProtectTalk.checked,
               protectCascade: chkProtectCascade.checked,
               protectPendingChanges: chkProtectPC.checked,
               protectPendingChangesLevel: selProtectPCLevel.value,
+              protectPendingChangesExpiry:
+                selProtectPCExpiry.value === "other"
+                  ? inputProtectPCExpiry.value.trim() || "never"
+                  : selProtectPCExpiry.value,
               protectRecreation:
                 chkProtectRecreation.checked && !chkProtectRecreation.disabled,
               protectRecreationLevel: selProtectRecreationLevel.value,
@@ -9200,6 +9312,13 @@ $(function () {
             selProtectExpiry.value = pt.expiry || "1 day";
             inputProtectExpiry.value = "";
             inputProtectExpiry.classList.add("tng-hidden");
+            selProtectMoveExpiry.value = pt.moveExpiry || pt.expiry || "1 day";
+            inputProtectMoveExpiry.value = "";
+            inputProtectMoveExpiry.classList.add("tng-hidden");
+            selProtectPCExpiry.value =
+              pt.pendingChangesExpiry || pt.expiry || "1 day";
+            inputProtectPCExpiry.value = "";
+            inputProtectPCExpiry.classList.add("tng-hidden");
             // Match the package reason against the reason dropdown's option
             // values, mirroring the pattern already used for rollback,
             // block, page deletion, and revision deletion reasons, rather
@@ -9347,21 +9466,28 @@ $(function () {
               chkProtectCascade.checked = hasCascade;
             }
 
-            // Expiry — use the edit entry first, fall back to move entry.
-            // "infinity" maps to the indefinite option; anything else uses the
-            // free-text input so the raw timestamp is shown for reference.
-            const expiryEntry = editEntry || moveEntry;
-            if (expiryEntry) {
-              const expiry = expiryEntry.expiry || "";
+            // Expiry — set the edit and move expiry controls independently
+            // from their respective protection entries. "infinity" maps to
+            // the indefinite option; anything else uses the free-text input
+            // so the raw timestamp is shown for reference.
+            function applyExpiryEntry(entry, sel, input) {
+              if (!entry) return;
+              const expiry = entry.expiry || "";
               if (!expiry || expiry === "infinity" || expiry === "infinite") {
-                selProtectExpiry.value = "never";
-                inputProtectExpiry.classList.add("tng-hidden");
+                sel.value = "never";
+                input.classList.add("tng-hidden");
               } else {
-                selProtectExpiry.value = "other";
-                inputProtectExpiry.value = expiry;
-                inputProtectExpiry.classList.remove("tng-hidden");
+                sel.value = "other";
+                input.value = expiry;
+                input.classList.remove("tng-hidden");
               }
             }
+            applyExpiryEntry(editEntry, selProtectExpiry, inputProtectExpiry);
+            applyExpiryEntry(
+              moveEntry,
+              selProtectMoveExpiry,
+              inputProtectMoveExpiry,
+            );
           }
 
           // Fetches and renders a brief status note for the block, page deletion,
