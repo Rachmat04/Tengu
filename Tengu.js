@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.102.0
+ * Version 2.102.1
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -8609,8 +8609,14 @@ $(function () {
                 );
               }
 
+              // Temporary accounts, like IP addresses, cannot be locked via
+              // {{LockHide}} and are reported using an interwiki-linked
+              // contributions page instead, mirroring the equivalent fix
+              // applied to the Report to Steward requests/Global section
+              // in v2.68.0.
+              const isTempAccountTarget = /^~\d{4}-\d+-\d+$/.test(targetVal);
               let userLink;
-              if (isIP) {
+              if (isIP || isTempAccountTarget) {
                 userLink = prefix
                   ? "[[:" +
                     prefix +

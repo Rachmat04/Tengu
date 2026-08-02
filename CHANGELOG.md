@@ -1,3 +1,13 @@
+## 2.102.1
+
+### Fixed
+
+* Fixed temporary accounts (matching the `~YYYY-…` pattern) being reported via `{{LockHide|1=Username}}` in the Report to Global sysops/Requests section, the same as registered accounts. Temporary accounts cannot be locked, so this report line now uses an interwiki-linked contributions page instead, matching the fix already applied to the Report to Steward requests/Global section in v2.68.0.
+
+### Notes
+
+* This affects only the wikitext report line built by `buildGSReportLine()` in user mode. Page-mode reports and the Steward requests/Global section were unaffected, as the latter already handled temporary accounts correctly.
+
 ## 2.102.0
 
 ### Added
