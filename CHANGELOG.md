@@ -1,3 +1,13 @@
+## 2.102.2
+
+### Fixed
+
+* Fixed the selected Suffix (e.g. " (global sysops action)", " (stewards action)", " (global rollbackers action)") not being appended to the Rollback section's reason. Every other reason field (block, unblock, page deletion, undeletion, move, protection, recreation protection, revision deletion) already appended the suffix; `rollbackReason` was the sole exception, so rollback/undo edit summaries silently omitted it even when explicitly selected.
+
+### Notes
+
+* This affects only the reason text used in rollback/undo edit summaries. No other behaviour changed.
+
 ## 2.102.1
 
 ### Fixed

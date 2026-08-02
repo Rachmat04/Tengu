@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.102.1
+ * Version 2.102.2
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -8744,7 +8744,7 @@ $(function () {
               rollbackMethod: chkUndo.checked ? "undo" : "rollback",
               rollbackBot: chkBot.checked,
               rollbackShow: chkShow.checked,
-              rollbackReason: buildRollbackReason(),
+              rollbackReason: buildRollbackReason() + suffix,
               notifyRollback: chkNotifyRollback.checked,
               block: chkBlock.checked,
               blockDur:
