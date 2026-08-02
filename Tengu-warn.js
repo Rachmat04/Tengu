@@ -2546,7 +2546,7 @@ window.TenguWarn = {
           // Adding citations to research published by a small group of researchers
           // ------------------------------------------------------------------
           {
-            value: "fringe",
+            value: "citingfringeresearch",
             label:
               "Adding citations to research published by a small group of researchers",
             buildNotice: function (target, extra, isFinal) {

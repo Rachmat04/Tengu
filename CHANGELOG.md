@@ -1,3 +1,13 @@
+## 2.102.3
+
+### Fixed
+
+* Fixed the **"Adding citations to research published by a small group of researchers"** warning template (Single notices group) sharing the same `value` ("fringe") as the unrelated **"Introducing fringe theories"** template (Behaviour in articles group). Because `buildWarnNotice()` matches templates by value and searches groups in order, selecting the citations template always posted the fringe-theories notice instead.
+
+### Notes
+
+* This affected only the User warning section's template resolution. The citations template's dropdown label was always correct; only the posted notice content was wrong.
+
 ## 2.102.2
 
 ### Fixed
