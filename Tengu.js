@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.102.3
+ * Version 2.103.0
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -71,6 +71,7 @@ $(function () {
         const GLOBAL_SYSOPS_REPORT_REASONS =
           tenguReasonsObj.GLOBAL_SYSOPS_REPORT_REASONS;
         const SRG_REPORT_REASONS = tenguReasonsObj.SRG_REPORT_REASONS;
+        const LOCK_ACCOUNT_REASONS = tenguReasonsObj.LOCK_ACCOUNT_REASONS;
 
         const tenguWarnObj = window.TenguWarn.get(useIndonesian);
         const WARN_MESSAGES = tenguWarnObj.WARN_MESSAGES;
@@ -926,6 +927,7 @@ $(function () {
           const stats = {
             block: 0,
             unblock: 0,
+            lockAccount: 0,
             rollback: 0,
             revdel: 0,
             delete: 0,
@@ -959,13 +961,13 @@ $(function () {
           // Helper function to update status dynamically
           const updateStatusDisplay = () => {
             const statusText = isAborted ? "Aborted." : "Processing...";
-            const summaryLine = `<b>Status:</b> ${statusText}<br/>Summary: <b>${stats.rollback}</b> reverted | <b>${stats.delete}</b> deleted | <b>${stats.undelete}</b> undeleted | <b>${stats.move}</b> moved | <b>${stats.unlink}</b> unlinked | <b>${stats.redirfix}</b> redirects fixed | <b>${stats.protect}</b> protected | <b>${stats.revdel}</b> hidden | <b>${stats.report}</b> reported | <b>${stats.error}</b> errors.`;
+            const summaryLine = `<b>Status:</b> ${statusText}<br/>Summary: <b>${stats.rollback}</b> reverted | <b>${stats.delete}</b> deleted | <b>${stats.undelete}</b> undeleted | <b>${stats.move}</b> moved | <b>${stats.unlink}</b> unlinked | <b>${stats.redirfix}</b> redirects fixed | <b>${stats.protect}</b> protected | <b>${stats.revdel}</b> hidden | <b>${stats.report}</b> reported | <b>${stats.lockAccount}</b> locked | <b>${stats.error}</b> errors.`;
             statusLbl.innerHTML = summaryLine;
           };
 
           const statusLbl = document.createElement("div");
           statusLbl.innerHTML =
-            "<b>Status:</b> Processing...<br/>Summary: <b>0</b> reverted | <b>0</b> deleted | <b>0</b> undeleted | <b>0</b> moved | <b>0</b> unlinked | <b>0</b> redirects fixed | <b>0</b> protected | <b>0</b> hidden | <b>0</b> reported | <b>0</b> errors.";
+            "<b>Status:</b> Processing...<br/>Summary: <b>0</b> reverted | <b>0</b> deleted | <b>0</b> undeleted | <b>0</b> moved | <b>0</b> unlinked | <b>0</b> redirects fixed | <b>0</b> protected | <b>0</b> hidden | <b>0</b> reported | <b>0</b> locked | <b>0</b> errors.";
           statusLbl.style.marginBottom = "8px";
 
           const logBox = document.createElement("div");
@@ -1243,6 +1245,73 @@ $(function () {
             } catch (e) {
               addLog(
                 `[Unblock] Failed to unblock ${targetVal}: ${formatApiError(e)}`,
+                true,
+              );
+            }
+          }
+
+          // --- Lock account [EXPERIMENTAL] ---
+          // This calls CentralAuth's global account status API
+          // via a foreign API request to Meta-Wiki, following the same
+          // pattern already used by the Report to global sysops and Report
+          // to Steward requests/Global features above. The exact API module
+          // and parameter names used here (action=setglobalaccountstatus)
+          // have not been independently confirmed against a live wiki, since
+          // testing this feature requires steward rights. Please verify
+          // carefully before relying on it.
+          if (config.lockAccount && config.mode === "user" && !isAborted) {
+            try {
+              const foreignApi = await getMetaForeignApi();
+              await new Promise((resolve, reject) => {
+                foreignApi
+                  .postWithEditToken({
+                    action: "setglobalaccountstatus",
+                    user: targetVal,
+                    locked: "lock",
+                    reason: config.lockAccountReason + toolTag,
+                    ...(config.lockAccountHideUsername
+                      ? { hidden: "lists" }
+                      : {}),
+                  })
+                  .done(resolve)
+                  .fail((code, err) =>
+                    reject(
+                      code +
+                        (err && err.error && err.error.info
+                          ? ": " + err.error.info
+                          : ""),
+                    ),
+                  );
+              });
+              addLog(`[Lock] Successfully locked account: ${targetVal}`);
+              stats.lockAccount++;
+              updateStatusDisplay();
+
+              if (config.notifyLockAccount) {
+                const talkTitle = new mw.Title(targetVal, 3).getPrefixedText();
+                const notifySummaryLockAccount =
+                  "Notification: Account lock notice" + toolTag;
+                const notice = `== Account lock notice ==\nDear ${targetVal},\n\nYour account has been globally locked due to the following reason: ${config.lockAccountReason}.\n\nThis notification was posted automatically. Please direct any questions or concerns to my user talk page. ~~~~`;
+                try {
+                  const talkExists = await pageExists(talkTitle);
+                  await apiPost({
+                    action: "edit",
+                    title: talkTitle,
+                    appendtext: (talkExists ? "\n\n" : "") + notice,
+                    summary: notifySummaryLockAccount,
+                    bot: true,
+                  });
+                  addLog(`[Notify] Notification posted to: ${talkTitle}`);
+                } catch (e) {
+                  addLog(
+                    `[Notify] Failed to post lock notification to ${talkTitle}: ${formatApiError(e)}`,
+                    "warn",
+                  );
+                }
+              }
+            } catch (e) {
+              addLog(
+                `[Lock] Failed to lock ${targetVal}: ${formatApiError(e)}`,
                 true,
               );
             }
@@ -3300,7 +3369,7 @@ $(function () {
             config.rollbackMethod === "undo" ? "undone" : "reverted";
           const statusWord = isAborted ? "Aborted." : "Completed.";
           const statusPrefix = `<b>Status: ${statusWord}</b><br/>`;
-          const finalStatus = `${statusPrefix}Summary: <b>${stats.rollback}</b> ${methodTxt} | <b>${stats.delete}</b> deleted | <b>${stats.undelete}</b> undeleted | <b>${stats.move}</b> moved | <b>${stats.unlink}</b> unlinked | <b>${stats.redirfix}</b> redirects fixed | <b>${stats.protect}</b> protected | <b>${stats.revdel}</b> hidden | <b>${stats.report}</b> reported | <b>${stats.error}</b> errors.`;
+          const finalStatus = `${statusPrefix}Summary: <b>${stats.rollback}</b> ${methodTxt} | <b>${stats.delete}</b> deleted | <b>${stats.undelete}</b> undeleted | <b>${stats.move}</b> moved | <b>${stats.unlink}</b> unlinked | <b>${stats.redirfix}</b> redirects fixed | <b>${stats.protect}</b> protected | <b>${stats.revdel}</b> hidden | <b>${stats.report}</b> reported | <b>${stats.lockAccount}</b> locked | <b>${stats.error}</b> errors.`;
           statusLbl.innerHTML = finalStatus;
 
           if (isAborted) {
@@ -6028,6 +6097,145 @@ $(function () {
           }
 
           // ============================================================================
+          // Lock account section — user mode only. [EXPERIMENTAL]
+          // Globally locks a user account via CentralAuth, preventing it from
+          // logging in to any Wikimedia wiki. Normally restricted to
+          // stewards. The section stays visible to everyone so its existence
+          // is discoverable, but its controls are disabled for non-stewards.
+          // [Unverified] The API call performed in work() has not been
+          // independently confirmed against a live wiki. Please verify
+          // carefully before relying on it.
+          // ============================================================================
+          const {
+            section: secLockAccount,
+            sectionBody: bodyLockAccount,
+            enableChk: chkLockAccount,
+          } = makeSection("Lock account", "🔧", false);
+
+          const hdrLockAccount = secLockAccount.querySelector(
+            ".tng-section-header",
+          );
+          const badgeLockAccountExperimental = document.createElement("span");
+          badgeLockAccountExperimental.className = "tng-experimental-badge";
+          badgeLockAccountExperimental.textContent = "EXPERIMENTAL";
+          badgeLockAccountExperimental.title =
+            "This feature has not been confirmed to work as expected. Please verify results carefully.";
+          hdrLockAccount
+            .querySelector(".tng-checkrow")
+            .appendChild(badgeLockAccountExperimental);
+
+          const divLockAccountStatus = document.createElement("div");
+          divLockAccountStatus.className =
+            "tng-status-note tng-status-note-loading";
+          divLockAccountStatus.textContent = "Checking steward status...";
+          bodyLockAccount.appendChild(divLockAccountStatus);
+
+          const { row: rowLockAccountReason, field: fieldLockAccountReason } =
+            makeRow("Reason");
+          const selLockAccountReason = makeSelect(LOCK_ACCOUNT_REASONS);
+          const {
+            wrap: filteredWrapLockAccountReason,
+            filter: filterLockAccountReason,
+          } = makeFilteredSelect(selLockAccountReason);
+          const inputLockAccountReason = makeInput("Full reason to submit");
+          const btnLockAccountAppend = makeBtn("Append", "quiet");
+          btnLockAccountAppend.className += " tng-btn-sm";
+          btnLockAccountAppend.addEventListener("click", function () {
+            const cur = inputLockAccountReason.value;
+            const add = selLockAccountReason.value;
+            if (!add) return;
+            inputLockAccountReason.value = cur ? cur + "; " + add : add;
+            selLockAccountReason.selectedIndex = 0;
+            filterLockAccountReason.value = "";
+            filterLockAccountReason.dispatchEvent(new Event("input"));
+          });
+          const reasonWrapLockAccount = document.createElement("div");
+          reasonWrapLockAccount.className = "tng-reason-wrap";
+          const reasonTopLockAccount = document.createElement("div");
+          reasonTopLockAccount.className = "tng-reason-top";
+          reasonTopLockAccount.appendChild(filteredWrapLockAccountReason);
+          reasonTopLockAccount.appendChild(btnLockAccountAppend);
+          reasonWrapLockAccount.appendChild(reasonTopLockAccount);
+          reasonWrapLockAccount.appendChild(inputLockAccountReason);
+          fieldLockAccountReason.appendChild(reasonWrapLockAccount);
+          bodyLockAccount.appendChild(rowLockAccountReason);
+
+          const {
+            wrap: wrapLockAccountHideUsername,
+            chk: chkLockAccountHideUsername,
+          } = makeCheckbox(
+            "Also request the username be hidden (lock and hide)",
+            false,
+          );
+          wrapLockAccountHideUsername.title =
+            "When ticked, the username will also be hidden from public logs, in addition to being locked.";
+          const { wrap: wrapNotifyLockAccount, chk: chkNotifyLockAccount } =
+            makeCheckbox("Send lock notification to user talk page", false);
+          wrapNotifyLockAccount.title =
+            "When ticked, a notification is posted to the target user's talk page after a successful lock. A locked account cannot read this, but it remains visible to other editors.";
+          const checksLockAccount = document.createElement("div");
+          checksLockAccount.className = "tng-checks";
+          checksLockAccount.style.paddingLeft = "0";
+          checksLockAccount.appendChild(wrapLockAccountHideUsername);
+          checksLockAccount.appendChild(wrapNotifyLockAccount);
+          bodyLockAccount.appendChild(checksLockAccount);
+
+          body.appendChild(secLockAccount);
+
+          // Reversible lock for this section, driven by steward status.
+          // Tracked separately from the mode lock (applyModeLock) via its
+          // own set, mirroring the pattern used by applyUnblockStatusLock().
+          const lockAccountStatusLocked = new Set();
+          function applyLockAccountStatusLock(locked, reason) {
+            const arrow = secLockAccount.querySelector(".tng-section-arrow");
+
+            if (locked) {
+              if (lockAccountStatusLocked.has(chkLockAccount)) {
+                hdrLockAccount.title = "Unavailable: " + reason;
+                const existingBadge = hdrLockAccount.querySelector(
+                  ".tng-lockaccount-lock-badge",
+                );
+                if (existingBadge)
+                  existingBadge.title = "Unavailable: " + reason;
+                return;
+              }
+              lockAccountStatusLocked.add(chkLockAccount);
+              chkLockAccount.checked = false;
+              chkLockAccount.disabled = true;
+              secLockAccount.classList.add("tng-disabled");
+              bodyLockAccount.classList.add("tng-hidden");
+              if (arrow) arrow.classList.add("tng-hidden");
+              hdrLockAccount.title = "Unavailable: " + reason;
+              const badge = document.createElement("span");
+              badge.className = "tng-rights-lock tng-lockaccount-lock-badge";
+              badge.textContent = "🔒";
+              badge.title = "Unavailable: " + reason;
+              hdrLockAccount.appendChild(badge);
+            } else {
+              if (!lockAccountStatusLocked.has(chkLockAccount)) return;
+              lockAccountStatusLocked.delete(chkLockAccount);
+              chkLockAccount.disabled = false;
+              secLockAccount.classList.toggle(
+                "tng-disabled",
+                !chkLockAccount.checked,
+              );
+              if (arrow) {
+                arrow.classList.remove("tng-hidden");
+                arrow.classList.toggle(
+                  "tng-arrow-up",
+                  !bodyLockAccount.classList.contains("tng-hidden"),
+                );
+              }
+              hdrLockAccount.title = "";
+              const badge = hdrLockAccount.querySelector(
+                ".tng-lockaccount-lock-badge",
+              );
+              if (badge) badge.remove();
+            }
+          }
+          applyLockAccountStatusLock(true, "checking steward status.");
+
+          // ============================================================================
           // Warn section — user mode only
           // Sends a templated warning message to the target user's talk page.
           // ============================================================================
@@ -8195,6 +8403,13 @@ $(function () {
                 true,
                 "Tengu is targeting a page, not a user.",
               );
+              applyModeLock(
+                secLockAccount,
+                bodyLockAccount,
+                chkLockAccount,
+                true,
+                "Tengu is targeting a page, not a user.",
+              );
               // Move to sandbox is available in page mode; unlock it
               applyModeLock(
                 secMoveSandbox,
@@ -8221,6 +8436,12 @@ $(function () {
               applyModeLock(secWarn, bodyWarn, chkWarn, false);
               applyModeLock(secRevdel, bodyRevdel, chkRevdel, false);
               applyModeLock(secSRG, bodySRG, chkSRG, false);
+              applyModeLock(
+                secLockAccount,
+                bodyLockAccount,
+                chkLockAccount,
+                false,
+              );
               // Move to sandbox is page-mode only; lock it when switching to user mode
               applyModeLock(
                 secMoveSandbox,
@@ -8317,6 +8538,13 @@ $(function () {
               true,
               "Tengu is targeting a page, not a user.",
             );
+            applyModeLock(
+              secLockAccount,
+              bodyLockAccount,
+              chkLockAccount,
+              true,
+              "Tengu is targeting a page, not a user.",
+            );
             // Lock deletion and protection on initial load when the current page is a special page
             if (isSpecialPage) {
               applySpecialPageLocks(true);
@@ -8345,7 +8573,8 @@ $(function () {
               chkRevdel.checked ||
               chkWarn.checked ||
               chkGS.checked ||
-              chkSRG.checked
+              chkSRG.checked ||
+              chkLockAccount.checked
             );
           }
 
@@ -8361,6 +8590,7 @@ $(function () {
           chkWarn.addEventListener("change", updateStartBtn);
           chkGS.addEventListener("change", updateStartBtn);
           chkSRG.addEventListener("change", updateStartBtn);
+          chkLockAccount.addEventListener("change", updateStartBtn);
           chkMoveSandbox.addEventListener("change", updateStartBtn);
 
           btnStart.addEventListener("click", function () {
@@ -8403,6 +8633,17 @@ $(function () {
                   "Select at least one reason, or add details below.",
                 );
                 inputSRGDetails.focus();
+                return;
+              }
+            }
+
+            if (chkLockAccount.checked && !chkLockAccount.disabled) {
+              if (mw.util.isIPAddress(targetVal)) {
+                showNotification(
+                  fieldTarget,
+                  "Global locks only apply to registered accounts, not IP addresses.",
+                );
+                inputTarget.focus();
                 return;
               }
             }
@@ -8513,6 +8754,12 @@ $(function () {
             }
             function buildUnblockReason() {
               return inputUnblockReason.value.trim() || selUnblockReason.value;
+            }
+            function buildLockAccountReason() {
+              const sel = selLockAccountReason.value;
+              const inp = inputLockAccountReason.value.trim();
+              if (sel && inp) return sel + ": " + inp;
+              return sel || inp;
             }
             function buildPagedelReason() {
               return inputPagedelReason.value.trim() || selPagedelReason.value;
@@ -8766,6 +9013,10 @@ $(function () {
               reportSRG: chkSRG.checked && !chkSRG.disabled,
               reportSRGKind: isSRGBlockTarget() ? "block" : "lock",
               reportSRGSection: buildSRGReportLine(),
+              lockAccount: chkLockAccount.checked && !chkLockAccount.disabled,
+              lockAccountReason: buildLockAccountReason() + suffix,
+              lockAccountHideUsername: chkLockAccountHideUsername.checked,
+              notifyLockAccount: chkNotifyLockAccount.checked,
               massdel: chkPagedel.checked,
               massdelTalk: chkPagedelTalk.checked,
               massdelRedirects: chkPagedelRedirects.checked,
@@ -8862,6 +9113,8 @@ $(function () {
                 features.push("🚩 Report to Global sysops/Requests");
               if (config.reportSRG)
                 features.push("📌 Report to Steward requests/Global");
+              if (config.lockAccount)
+                features.push("🔧 Lock account [EXPERIMENTAL]");
               if (config.massdel) features.push("🗑️ Page deletion");
               if (config.undelete) features.push("📤 Page undeletion");
               if (config.moveSandbox)
@@ -9067,6 +9320,17 @@ $(function () {
                 "tng-rights-badge tng-rights-" + (isSteward ? "have" : "lack");
               badgeSteward.textContent =
                 (isSteward ? "✔️  " : "❌  ") + "Steward";
+
+              // Lock account requires steward rights and only applies in
+              // user mode; applyModeLock() already governs page mode.
+              if (isSteward) {
+                if (tenguMode === "user") applyLockAccountStatusLock(false);
+              } else {
+                applyLockAccountStatusLock(
+                  true,
+                  "you do not have steward rights on this wiki.",
+                );
+              }
 
               // Store resolved rights so applyModeRestrictions() can re-apply
               // rights-based locks if they fired while page mode was active.
@@ -9552,6 +9816,11 @@ $(function () {
                 "Enter a target to see global sysops eligibility.",
               );
               applyGSStatusLock(true, "no target has been specified.");
+              setNote(
+                divLockAccountStatus,
+                "loading",
+                "Enter a target to see lock account status.",
+              );
               return;
             }
 
@@ -9597,6 +9866,20 @@ $(function () {
 
             if (tenguMode === "user") {
               const isTargetIP = mw.util.isIPAddress(target);
+
+              if (isTargetIP) {
+                setNote(
+                  divLockAccountStatus,
+                  "inactive",
+                  "Not applicable — global locks only apply to registered accounts.",
+                );
+              } else {
+                setNote(
+                  divLockAccountStatus,
+                  "loading",
+                  "Global lock availability depends on your steward status.",
+                );
+              }
               setNote(
                 divPagedelStatus,
                 "loading",
@@ -9872,6 +10155,11 @@ $(function () {
               );
               setNote(
                 divGlobalStatus,
+                "loading",
+                "Not applicable in page mode.",
+              );
+              setNote(
+                divLockAccountStatus,
                 "loading",
                 "Not applicable in page mode.",
               );

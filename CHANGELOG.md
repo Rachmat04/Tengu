@@ -1,3 +1,19 @@
+## 2.103.0
+
+### Added
+
+* Added a new **Lock account** section (user mode only), marked with an `[EXPERIMENTAL]` badge in the section header. Globally locks the target account via CentralAuth, preventing it from logging in to any Wikimedia wiki.
+* This action is restricted to stewards. Non-stewards see the section (so its existence is discoverable) but its controls are disabled with an explanatory padlock tooltip.
+* Added `LOCK_ACCOUNT_REASONS` to `Tengu-reasons.js`, a set of preset lock reasons in English only, since global locks are a steward-only, cross-wiki action.
+* Added an "Also request the username be hidden (lock and hide)" option and an optional lock notification to the target's talk page.
+* Added a `lock` counter to the progress dialogue's operation statistics.
+
+### Notes
+
+* [EXPERIMENTAL] The API call used to perform the lock (`action=setglobalaccountstatus` via `mw.ForeignApi` against Meta-Wiki) has not been independently confirmed against a live wiki. Testing this feature requires steward rights, which were not available at the time of writing. Please verify carefully before relying on it.
+* Global locks only apply to registered accounts; the Start button validation blocks execution if the target is an IP address.
+* This feature is not included in any package preset.
+
 ## 2.102.3
 
 ### Fixed

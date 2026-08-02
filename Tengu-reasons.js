@@ -1211,6 +1211,31 @@ window.TenguReasons = {
         },
       ],
 
+      // Quick-select reasons for the "Lock account" feature (global lock via
+      // CentralAuth).
+      LOCK_ACCOUNT_REASONS: [
+        { value: "", label: "Other:" },
+        { value: "Cross-wiki abuse", label: "Cross-wiki abuse" },
+        { value: "Cross-wiki vandalism", label: "Cross-wiki vandalism" },
+        { value: "Long-term abuse (LTA)", label: "Long-term abuse (LTA)" },
+        { value: "Spambot", label: "Spambot" },
+        { value: "Vandalism-only account", label: "Vandalism-only account" },
+        { value: "Compromised account", label: "Compromised account" },
+        { value: "Inappropriate username", label: "Inappropriate username" },
+        {
+          value: "Serious privacy violation or doxxing",
+          label: "Serious privacy violation or doxxing",
+        },
+        {
+          value: "Requested by the account holder",
+          label: "Requested by the account holder",
+        },
+        {
+          value: "Sockpuppetry or block evasion",
+          label: "Sockpuppetry or block evasion",
+        },
+      ],
+
       MOVE_TO_SANDBOX_REASONS: [
         {
           value: "",

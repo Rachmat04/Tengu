@@ -116,6 +116,13 @@ Only available in page mode.
 - Checks for an existing open report for the same target before submitting.
 - Only available in user mode.
 
+### Lock account [EXPERIMENTAL]
+- Globally locks the target account via CentralAuth, preventing it from logging in to any Wikimedia wiki.
+- Restricted to stewards. Visible to all users, but its controls are disabled for anyone without steward rights.
+- Preset and free-text lock reasons (English only), with an optional "lock and hide" username option and an optional talk page notification.
+- This feature has not been confirmed to work as expected on a live wiki. Verify results carefully before relying on it.
+- Only available in user mode.
+
 ### Export edits
 - Fetches the target user's full contribution history and collects all unique pages they have edited.
 - Namespace filter, A–Z and Z–A sort, a page count summary, and a scrollable wikitext preview.
