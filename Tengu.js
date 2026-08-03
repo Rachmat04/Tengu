@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.103.2
+ * Version 2.104.0
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -398,7 +398,6 @@ $(function () {
           // Locked sections (checkbox disabled) cannot be expanded.
           hdr.addEventListener("click", function (e) {
             if (chkWrap.contains(e.target)) return;
-            if (enableChk.disabled) return;
             const isHidden = sectionBody.classList.toggle("tng-hidden");
             arrow.classList.toggle("tng-arrow-up", !isHidden);
           });
@@ -6069,14 +6068,15 @@ $(function () {
               secUnblock.classList.add("tng-disabled");
               bodyUnblock.classList.add("tng-hidden");
 
-              if (arrow) arrow.classList.add("tng-hidden");
+              if (arrow) arrow.classList.remove("tng-arrow-up");
 
               hdr.title = "Unavailable: " + reason;
               const badge = document.createElement("span");
               badge.className = "tng-rights-lock tng-unblock-lock-badge";
               badge.textContent = "🔒";
               badge.title = "Unavailable: " + reason;
-              hdr.appendChild(badge);
+              if (arrow) hdr.insertBefore(badge, arrow);
+              else hdr.appendChild(badge);
             } else {
               if (!unblockStatusLocked.has(chkUnblock)) return; // Not status-locked
               unblockStatusLocked.delete(chkUnblock);
@@ -6084,7 +6084,6 @@ $(function () {
               secUnblock.classList.toggle("tng-disabled", !chkUnblock.checked);
 
               if (arrow) {
-                arrow.classList.remove("tng-hidden");
                 arrow.classList.toggle(
                   "tng-arrow-up",
                   !bodyUnblock.classList.contains("tng-hidden"),
@@ -6204,13 +6203,14 @@ $(function () {
               chkLockAccount.disabled = true;
               secLockAccount.classList.add("tng-disabled");
               bodyLockAccount.classList.add("tng-hidden");
-              if (arrow) arrow.classList.add("tng-hidden");
+              if (arrow) arrow.classList.remove("tng-arrow-up");
               hdrLockAccount.title = "Unavailable: " + reason;
               const badge = document.createElement("span");
               badge.className = "tng-rights-lock tng-lockaccount-lock-badge";
               badge.textContent = "🔒";
               badge.title = "Unavailable: " + reason;
-              hdrLockAccount.appendChild(badge);
+              if (arrow) hdrLockAccount.insertBefore(badge, arrow);
+              else hdrLockAccount.appendChild(badge);
             } else {
               if (!lockAccountStatusLocked.has(chkLockAccount)) return;
               lockAccountStatusLocked.delete(chkLockAccount);
@@ -6220,7 +6220,6 @@ $(function () {
                 !chkLockAccount.checked,
               );
               if (arrow) {
-                arrow.classList.remove("tng-hidden");
                 arrow.classList.toggle(
                   "tng-arrow-up",
                   !bodyLockAccount.classList.contains("tng-hidden"),
@@ -6464,20 +6463,20 @@ $(function () {
               chkGS.disabled = true;
               secGS.classList.add("tng-disabled");
               bodyGS.classList.add("tng-hidden");
-              if (arrow) arrow.classList.add("tng-hidden");
+              if (arrow) arrow.classList.remove("tng-arrow-up");
               hdr.title = "Unavailable: " + reason;
               const badge = document.createElement("span");
               badge.className = "tng-rights-lock tng-gs-lock-badge";
               badge.textContent = "🔒";
               badge.title = "Unavailable: " + reason;
-              hdr.appendChild(badge);
+              if (arrow) hdr.insertBefore(badge, arrow);
+              else hdr.appendChild(badge);
             } else {
               if (!gsStatusLocked.has(chkGS)) return;
               gsStatusLocked.delete(chkGS);
               chkGS.disabled = false;
               secGS.classList.toggle("tng-disabled", !chkGS.checked);
               if (arrow) {
-                arrow.classList.remove("tng-hidden");
                 arrow.classList.toggle(
                   "tng-arrow-up",
                   !bodyGS.classList.contains("tng-hidden"),
@@ -6925,13 +6924,14 @@ $(function () {
               chkUndelete.disabled = true;
               secUndelete.classList.add("tng-disabled");
               bodyUndelete.classList.add("tng-hidden");
-              if (arrow) arrow.classList.add("tng-hidden");
+              if (arrow) arrow.classList.remove("tng-arrow-up");
               hdrUndelete.title = "Unavailable: " + reason;
               const badge = document.createElement("span");
               badge.className = "tng-rights-lock tng-undelete-lock-badge";
               badge.textContent = "🔒";
               badge.title = "Unavailable: " + reason;
-              hdrUndelete.appendChild(badge);
+              if (arrow) hdrUndelete.insertBefore(badge, arrow);
+              else hdrUndelete.appendChild(badge);
             } else {
               if (!undeleteStatusLocked.has(chkUndelete)) return;
               undeleteStatusLocked.delete(chkUndelete);
@@ -6941,7 +6941,6 @@ $(function () {
                 !chkUndelete.checked,
               );
               if (arrow) {
-                arrow.classList.remove("tng-hidden");
                 arrow.classList.toggle(
                   "tng-arrow-up",
                   !bodyUndelete.classList.contains("tng-hidden"),
@@ -8006,14 +8005,15 @@ $(function () {
               chkProtectRecreation.disabled = true;
               secProtectRecreation.classList.add("tng-disabled");
               bodyProtectRecreation.classList.add("tng-hidden");
-              if (arrow) arrow.classList.add("tng-hidden");
+              if (arrow) arrow.classList.remove("tng-arrow-up");
               hdrProtectRecreation.title = "Unavailable: " + reason;
               const badge = document.createElement("span");
               badge.className =
                 "tng-rights-lock tng-protectrecreation-lock-badge";
               badge.textContent = "🔒";
               badge.title = "Unavailable: " + reason;
-              hdrProtectRecreation.appendChild(badge);
+              if (arrow) hdrProtectRecreation.insertBefore(badge, arrow);
+              else hdrProtectRecreation.appendChild(badge);
             } else {
               if (!protectRecreationStatusLocked.has(chkProtectRecreation))
                 return;
@@ -8024,7 +8024,6 @@ $(function () {
                 !chkProtectRecreation.checked,
               );
               if (arrow) {
-                arrow.classList.remove("tng-hidden");
                 arrow.classList.toggle(
                   "tng-arrow-up",
                   !bodyProtectRecreation.classList.contains("tng-hidden"),
@@ -8115,14 +8114,18 @@ $(function () {
             sec.classList.add("tng-disabled");
             secBody.classList.add("tng-hidden");
             const arrow = sec.querySelector(".tng-section-arrow");
-            if (arrow) arrow.remove();
+            if (arrow) arrow.classList.remove("tng-arrow-up");
             const hdr = sec.querySelector(".tng-section-header");
             hdr.title = "Unavailable: " + reason;
             const lockBadge = document.createElement("span");
             lockBadge.className = "tng-rights-lock";
             lockBadge.textContent = "🔒";
             lockBadge.title = "Unavailable: " + reason;
-            hdr.appendChild(lockBadge);
+            // Inserted before the chevron (rather than appended after it) so
+            // the section remains expandable/collapsible while locked; only
+            // the checkbox itself stays disabled.
+            if (arrow) hdr.insertBefore(lockBadge, arrow);
+            else hdr.appendChild(lockBadge);
           }
 
           // Reversible section lock for the mode toggle. Unlike lockSection(), which is
@@ -8138,14 +8141,15 @@ $(function () {
               sec.classList.add("tng-disabled");
               secBody.classList.add("tng-hidden");
               const arrow = sec.querySelector(".tng-section-arrow");
-              if (arrow) arrow.classList.add("tng-hidden");
+              if (arrow) arrow.classList.remove("tng-arrow-up");
               const hdr = sec.querySelector(".tng-section-header");
               hdr.title = "Unavailable: " + reason;
               const badge = document.createElement("span");
               badge.className = "tng-rights-lock tng-mode-lock-badge";
               badge.textContent = "🔒";
               badge.title = "Unavailable: " + reason;
-              hdr.appendChild(badge);
+              if (arrow) hdr.insertBefore(badge, arrow);
+              else hdr.appendChild(badge);
             } else {
               if (!modeLocked.has(chk)) return; // Not mode-locked; leave it alone
               modeLocked.delete(chk);
@@ -8153,7 +8157,6 @@ $(function () {
               sec.classList.toggle("tng-disabled", !chk.checked);
               const arrow = sec.querySelector(".tng-section-arrow");
               if (arrow) {
-                arrow.classList.remove("tng-hidden");
                 arrow.classList.toggle(
                   "tng-arrow-up",
                   !secBody.classList.contains("tng-hidden"),

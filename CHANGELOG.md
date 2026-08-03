@@ -1,4 +1,17 @@
-## 2.103.2 
+## 2.104.0
+
+### Changed
+
+* Locked sections (padlocked due to insufficient rights, an unsupported mode, or an unmet status condition, e.g. Block, Page deletion, Page protection, Unblock, Lock account, Report to Global sysops/Requests, Page undeletion, Protect against recreation) can now always be expanded and collapsed by clicking the section header, regardless of lock state.
+* Added a chevron next to the padlock icon on locked sections, so the section can be opened to view its (disabled) controls without needing to satisfy the mode or rights requirement first.
+* The feature itself remains unavailable while locked: the enable checkbox stays disabled and unchecked, and the section body stays visually dimmed and non-interactive. Only the ability to expand/collapse the section header is now unconditional.
+
+### Notes
+
+* This affects `lockSection()` (permanent rights-based locks), `applyModeLock()` (reversible mode locks), and all reversible status-lock helpers (`applyUnblockStatusLock()`, `applyLockAccountStatusLock()`, `applyGSStatusLock()`, `applyUndeleteStatusLock()`, `applyProtectRecreationStatusLock()`).
+* No CSS changes were required: the padlock badge and the chevron both already use `margin-left: auto`, so inserting the padlock immediately before the chevron in the DOM keeps them adjacent at the right edge of the section header.
+
+## 2.103.2
 
 ### Fixed 
 
