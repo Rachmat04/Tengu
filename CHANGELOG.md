@@ -1,3 +1,9 @@
+## 2.104.2
+
+### Changed
+
+* The padlock's `margin-left` is now removed.
+
 ## 2.104.1
 
 ### Fixed
