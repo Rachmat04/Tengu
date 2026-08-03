@@ -541,6 +541,16 @@
   opacity: 0.65;
   pointer-events: none;
 }
+/* When a padlock is inserted before the chevron in a section header,
+   transfer the auto left margin to the padlock so it (and the chevron)
+   are pushed flush to the right edge. The adjacent-sibling rule cancels
+   the chevron's own auto margin to keep the two icons together. */
+.tng-section-header .tng-rights-lock {
+  margin-left: auto;
+}
+.tng-rights-lock + .tng-section-arrow {
+  margin-left: 0;
+}
 
 /* --- User info panel entries --- */
 .tng-info-entry {

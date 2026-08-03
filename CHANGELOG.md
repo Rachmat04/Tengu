@@ -1,3 +1,9 @@
+## 2.104.4
+
+### Fixed
+
+* Fixed padlock icons in locked section headers appearing near the checkbox label instead of immediately to the left of the chevron. `.tng-rights-lock` had no left margin, so the chevron's `margin-left: auto` absorbed all free space to its own left, leaving the padlock stranded at the start of the header. The padlock now receives `margin-left: auto` when inside a section header, and the adjacent chevron's auto margin is cancelled, keeping both icons flush at the right edge.
+
 ## 2.104.3
 
 ### Changed
