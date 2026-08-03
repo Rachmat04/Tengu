@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.104.2
+ * Version 2.104.3
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -6126,7 +6126,8 @@ $(function () {
           const divLockAccountStatus = document.createElement("div");
           divLockAccountStatus.className =
             "tng-status-note tng-status-note-loading";
-          divLockAccountStatus.textContent = "Checking steward status...";
+          divLockAccountStatus.textContent =
+            "Steward rights are required to use this feature.";
           bodyLockAccount.appendChild(divLockAccountStatus);
 
           const { row: rowLockAccountReason, field: fieldLockAccountReason } =
@@ -6232,7 +6233,10 @@ $(function () {
               if (badge) badge.remove();
             }
           }
-          applyLockAccountStatusLock(true, "checking steward status.");
+          applyLockAccountStatusLock(
+            true,
+            "steward rights are required to use this feature.",
+          );
 
           // ============================================================================
           // Warn section — user mode only

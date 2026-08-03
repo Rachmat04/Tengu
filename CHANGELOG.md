@@ -1,3 +1,10 @@
+## 2.104.3
+
+### Changed
+
+* The **Lock account** section now appears locked immediately when the dialogue opens, without an intermediate "checking steward status" tooltip. The padlock now reads "steward rights are required to use this feature." from the start; the rights check then either removes the lock (steward confirmed) or updates the reason to "you do not have steward rights on this wiki."
+* Reduced the `[EXPERIMENTAL]` badge font size from `1em` to `0.9em`.
+
 ## 2.104.2
 
 ### Changed
