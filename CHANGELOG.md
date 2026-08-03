@@ -1,3 +1,15 @@
+## 2.104.1
+
+### Fixed
+
+* Fixed padlock icons being positioned inconsistently across locked feature sections. Both `.tng-rights-lock` and `.tng-section-arrow` previously declared `margin-left: auto`; in a flex container, two auto left margins share the available free space equally, placing the padlock near the centre of the header rather than adjacent to the chevron. The padlock's `margin-left` is now a fixed `4px`, so the chevron's `margin-left: auto` absorbs all remaining free space and keeps both icons flush together at the right edge.
+
+### Changed
+
+* Increased the `[EXPERIMENTAL]` badge font size from `0.72em` to `1em` (relative to its parent `.tng-checkrow` context), so the badge text matches the surrounding section title text.
+* Reduced the `[EXPERIMENTAL]` badge border radius from `8px` to `3px`.
+* Reduced the rights badge border radius in the footer panel from `10px` to `3px`, matching the updated badge style.
+
 ## 2.104.0
 
 ### Changed
