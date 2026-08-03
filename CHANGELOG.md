@@ -1,3 +1,14 @@
+## 2.103.2 
+
+### Fixed 
+
+* Fixed the **Lock account** section's steward-status lock (added in v2.103.0) being evaluated regardless of mode, instead of only in user mode. Because the mode lock is also applied to this section in page mode, opening Tengu directly in page mode as a non-steward could append two separate 🔒 badges to the section header. More significantly, switching from page mode back to user mode reset the checkbox to enabled regardless of steward status, since `applyModeLock()`'s unlock path unconditionally clears `disabled`, bypassing the steward-only restriction until the page was reopened.
+* The steward-status lock is now only applied or removed while in user mode. `applyModeRestrictions()` re-evaluates it when switching back to user mode, using a newly stored `isSteward` value on `resolvedRights`, matching the existing pattern already used there for the `hasBlock`/`hasRevdel` rights re-checks. 
+
+### Notes 
+
+* This affects only the Lock account section's lock/badge state when switching between user mode and page mode. The underlying steward-rights check itself (`meta=globaluserinfo`) is unchanged.
+
 ## 2.103.1
 
 ### Fixed

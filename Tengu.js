@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.103.1
+ * Version 2.103.2
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -8471,6 +8471,18 @@ $(function () {
                     "you do not have the deleterevision right on this wiki.",
                   );
                 }
+                // Re-evaluate the Lock account steward-status lock, since it
+                // is only ever applied while in user mode (see the rights
+                // resolution callback), and must be reinstated here when
+                // switching back from page mode.
+                if (resolvedRights.isSteward) {
+                  applyLockAccountStatusLock(false);
+                } else {
+                  applyLockAccountStatusLock(
+                    true,
+                    "you do not have steward rights on this wiki.",
+                  );
+                }
               }
             }
 
@@ -9321,17 +9333,6 @@ $(function () {
               badgeSteward.textContent =
                 (isSteward ? "✔️  " : "❌  ") + "Steward";
 
-              // Lock account requires steward rights and only applies in
-              // user mode; applyModeLock() already governs page mode.
-              if (isSteward) {
-                if (tenguMode === "user") applyLockAccountStatusLock(false);
-              } else {
-                applyLockAccountStatusLock(
-                  true,
-                  "you do not have steward rights on this wiki.",
-                );
-              }
-
               // Store resolved rights so applyModeRestrictions() can re-apply
               // rights-based locks if they fired while page mode was active.
               resolvedRights = {
@@ -9341,7 +9342,25 @@ $(function () {
                 hasProtect,
                 hasRevdel,
                 hasUndelete,
+                isSteward,
               };
+
+              // Lock account requires steward rights and only applies in
+              // user mode; applyModeLock() already governs page mode. The
+              // status lock is only evaluated here while in user mode so it
+              // does not stack with the mode lock applied in page mode.
+              // applyModeRestrictions() re-evaluates this same check when
+              // switching back to user mode, using the stored isSteward value.
+              if (tenguMode === "user") {
+                if (isSteward) {
+                  applyLockAccountStatusLock(false);
+                } else {
+                  applyLockAccountStatusLock(
+                    true,
+                    "you do not have steward rights on this wiki.",
+                  );
+                }
+              }
 
               // If the user lacks the rollback right, automatically switch to undo.
               // The checkbox remains available so users with rollback can still opt in manually.
