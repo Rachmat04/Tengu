@@ -3780,7 +3780,7 @@ window.TenguWarn = {
                 `Saya perhatikan bahwa Anda telah mengembalikan suntingan yang dibuat oleh penyunting lain berkali-kali pada artikel yang sama. Saya memahami bahwa Anda mungkin merasa kuat tentang konten tertentu, tetapi berulang kali membatalkan perubahan penyunting lain tanpa diskusi dapat menciptakan ketegangan dan konflik di komunitas kita. ` +
                 `\n\nWikipedia bekerja paling baik ketika penyunting berkolaborasi dan membicarakan perselisihan mereka. Alih-alih mengembalikan perubahan bolak-balik, silakan coba gunakan halaman pembicaraan artikel untuk mendiskusikan kekhawatiran Anda dengan penyunting lain. Jelaskan mengapa Anda pikir perubahan itu salah, dan dengarkan apa yang dikatakan orang lain. Ini membantu kita mencapai kesepakatan yang dapat diterima semua orang. ` +
                 `\n\nJika Anda baru mengenal Wikipedia, Anda mungkin merasa terbantu untuk membaca tentang cara menyelesaikan perselisihan. Sebagian besar perselisihan dapat diselesaikan melalui percakapan yang tenang dan menghormati. Terima kasih telah memahami, dan silakan hubungi jika Anda memiliki pertanyaan tentang cara mendiskusikan suntingan dengan penyunting lain.` +
-                (isFinal ? finalSentence(false) : "") +
+                (isFinal ? finalSentence(true) : "") +
                 `\n\nJika Anda merasa peringatan ini diberikan secara keliru, silakan tinggalkan pesan di halaman pembicaraan saya. ` +
                 `~`.repeat(4);
               const en = withExtra(

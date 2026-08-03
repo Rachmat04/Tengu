@@ -1,3 +1,13 @@
+## 2.103.1
+
+### Fixed
+
+* Fixed the **"Edit warring (softer wording for newcomers)"** warning template (Single warning group) calling `finalSentence(false)` (English wording) instead of `finalSentence(true)` in its Indonesian notice body. A final warning issued via this template on an Indonesian-language wiki incorrectly inserted an English sentence into an otherwise Indonesian-language notice.
+
+### Notes
+
+* This affects only the Indonesian-language output of the `ew-newcomer` warning template when "This is a final warning" is ticked. The English output, and all other warning templates, were unaffected.
+
 ## 2.103.0
 
 ### Added
