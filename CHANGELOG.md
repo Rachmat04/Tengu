@@ -1,3 +1,9 @@
+## 2.104.7
+
+### Fixed
+
+* Fixed the hardblock/autoblock visibility and the Report to Steward requests/Global reason container (block vs lock) not updating when returning to user mode after visiting page mode. `applyModeRestrictions()` resets `inputTarget.value` directly without dispatching a change event, so the change listener's target-specific logic — which sets `wrapHardblock`/`wrapAutoblock` display and calls `updateSRGFormForTarget()` — was skipped on mode return. Both are now re-evaluated immediately after the target is reset.
+
 ## 2.104.6
 
 ### Fixed

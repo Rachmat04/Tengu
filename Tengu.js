@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.104.6
+ * Version 2.104.7
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -8349,6 +8349,17 @@ $(function () {
               : mw.config.get("wgPageName").replace(/_/g, " ");
             clearInputError(inputTarget);
             btnGetInfo.disabled = !inputTarget.value.trim();
+            // When returning to user mode, re-evaluate target-specific UI that
+            // the change listener would normally update, but that is not triggered
+            // here because applyModeRestrictions() sets inputTarget.value directly
+            // without dispatching a change event.
+            if (isUserModeNow) {
+              const _resetTarget = inputTarget.value.trim();
+              const _resetIsIP = mw.util.isIPAddress(_resetTarget);
+              wrapHardblock.style.display = _resetIsIP ? "" : "none";
+              wrapAutoblock.style.display = _resetIsIP ? "none" : "";
+              updateSRGFormForTarget();
+            }
             // Re-evaluate after the input has been updated to the mode's default
             // target. The value computed above may be stale when switching from
             // user mode (where the input holds a username) to page mode on a
