@@ -1,3 +1,9 @@
+## 2.104.6
+
+### Fixed
+
+* Fixed block notifications being immediately removed when Block and Page deletion are used together with "Also delete the talk page" enabled. When a block notification has been successfully posted to the target user's talk page, that talk page is now skipped during the talk page deletion pass and a warning is logged, so the notification remains visible after the operation completes.
+
 ## 2.104.5
 
 ### Fixed

@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.104.5
+ * Version 2.104.6
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -2584,33 +2584,50 @@ $(function () {
                   const talkTitle = new mw.Title(title)
                     .getTalkPage()
                     .getPrefixedText();
-                  // Check if talk page exists before attempting deletion
-                  const pageInfo = await apiGet({
-                    action: "query",
-                    titles: talkTitle,
-                    formatversion: 2,
-                  });
-
+                  // Skip deleting the target user's own talk page when a block
+                  // notification was successfully posted there, so the
+                  // notification remains visible after the operation completes.
+                  const blockNotifyTalkTitle =
+                    config.block && config.notifyBlock && stats.block > 0
+                      ? new mw.Title(targetVal, 3).getPrefixedText()
+                      : null;
                   if (
-                    pageInfo.query &&
-                    pageInfo.query.pages[0] &&
-                    !pageInfo.query.pages[0].missing
+                    blockNotifyTalkTitle &&
+                    talkTitle === blockNotifyTalkTitle
                   ) {
-                    await apiPost({
-                      action: "delete",
-                      title: talkTitle,
-                      reason:
-                        (useIndonesian
-                          ? "Halaman pembicaraan dari halaman yang dihapus: "
-                          : "Associated talk page of deleted page: ") +
-                        config.massdelReason +
-                        toolTag,
-                    });
                     addLog(
-                      `[Delete] Deleted associated talk page: ${talkTitle}`,
+                      `[Delete] Skipped talk page deletion: ${talkTitle} — block notification is present on this page.`,
+                      "warn",
                     );
-                    stats.delete++;
-                    updateStatusDisplay();
+                  } else {
+                    // Check if talk page exists before attempting deletion
+                    const pageInfo = await apiGet({
+                      action: "query",
+                      titles: talkTitle,
+                      formatversion: 2,
+                    });
+
+                    if (
+                      pageInfo.query &&
+                      pageInfo.query.pages[0] &&
+                      !pageInfo.query.pages[0].missing
+                    ) {
+                      await apiPost({
+                        action: "delete",
+                        title: talkTitle,
+                        reason:
+                          (useIndonesian
+                            ? "Halaman pembicaraan dari halaman yang dihapus: "
+                            : "Associated talk page of deleted page: ") +
+                          config.massdelReason +
+                          toolTag,
+                      });
+                      addLog(
+                        `[Delete] Deleted associated talk page: ${talkTitle}`,
+                      );
+                      stats.delete++;
+                      updateStatusDisplay();
+                    }
                   }
                 } catch (e) {
                   addLog(
