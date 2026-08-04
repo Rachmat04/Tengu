@@ -1,3 +1,9 @@
+## 2.104.5
+
+### Fixed
+
+* Fixed the "Not communicating in the wiki language" and "Creating articles not in the wiki language" warning templates producing malformed `{{#language:}}` calls. `Intl.DisplayNames` was being used to convert the wiki's language code into a display name (e.g. `id` → `"Indonesia"`), which was then passed to `{{#language:...}}`. The parser function expects a BCP 47 language code, not a name, so the output rendered incorrectly. The `wikiLangEn` and `wikiLangId` intermediate variables have been removed; `wikiLangCode` is now passed directly to the template.
+
 ## 2.104.4
 
 ### Fixed

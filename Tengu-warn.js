@@ -2213,14 +2213,6 @@ window.TenguWarn = {
             buildNotice: function (target, extra, isFinal) {
               const wikiLangCode = mw.config.get("wgContentLanguage");
               const siteName = mw.config.get("wgSiteName");
-              const wikiLangEn =
-                new Intl.DisplayNames(["en-GB"], { type: "language" }).of(
-                  wikiLangCode,
-                ) || wikiLangCode;
-              const wikiLangId =
-                new Intl.DisplayNames(["id"], { type: "language" }).of(
-                  wikiLangCode,
-                ) || wikiLangCode;
               const headingEn = isFinal
                 ? "== Final notice: not communicating in the wiki language =="
                 : "== Notice: not communicating in the wiki language ==";
@@ -2241,11 +2233,11 @@ window.TenguWarn = {
                 `~`.repeat(4);
 
               const bodyEn = buildNoticeWithTemplates(bodyEnTemplate, {
-                LANG_EN: `{{#language:${wikiLangEn}}}`,
+                LANG_EN: `{{#language:${wikiLangCode}}}`,
               });
 
               const bodyId = buildNoticeWithTemplates(bodyIdTemplate, {
-                LANG_ID: `{{#language:${wikiLangId}}}`,
+                LANG_ID: `{{#language:${wikiLangCode}}}`,
               });
 
               const en = withExtra(
@@ -2345,14 +2337,6 @@ window.TenguWarn = {
             buildNotice: function (target, extra, isFinal) {
               const wikiLangCode = mw.config.get("wgContentLanguage");
               const siteName = mw.config.get("wgSiteName");
-              const wikiLangEn =
-                new Intl.DisplayNames(["en-GB"], { type: "language" }).of(
-                  wikiLangCode,
-                ) || wikiLangCode;
-              const wikiLangId =
-                new Intl.DisplayNames(["id"], { type: "language" }).of(
-                  wikiLangCode,
-                ) || wikiLangCode;
               const headingEn = isFinal
                 ? "== Final notice: creating articles not in the wiki language =="
                 : "== Notice: creating articles not in the wiki language ==";
@@ -2373,11 +2357,11 @@ window.TenguWarn = {
                 `~`.repeat(4);
 
               const bodyEn = buildNoticeWithTemplates(bodyEnTemplate, {
-                LANG_EN: `{{#language:${wikiLangEn}}}`,
+                LANG_EN: `{{#language:${wikiLangCode}}}`,
               });
 
               const bodyId = buildNoticeWithTemplates(bodyIdTemplate, {
-                LANG_ID: `{{#language:${wikiLangId}}}`,
+                LANG_ID: `{{#language:${wikiLangCode}}}`,
               });
 
               const en = withExtra(
