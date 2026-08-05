@@ -1,3 +1,9 @@
+## 2.106.3
+
+### Changed
+
+* Standardised the border radius of the mode badge (User mode / Page mode) from `10px` to `3px`, matching the border radius already used on rights badges in the footer panel and the `[EXPERIMENTAL]` badge.
+
 ## 2.106.2
 
 ### Fixed
