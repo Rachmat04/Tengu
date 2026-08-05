@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.106.1
+ * Version 2.106.2
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -4769,13 +4769,13 @@ $(function () {
             // both the recent-changes and log-events queries.
             const latest = new Map();
 
-            function considerActivity(user, timestamp) {
+            const considerActivity = function (user, timestamp) {
               if (!user || !timestamp || !sysops.has(user)) return;
               const existing = latest.get(user);
               if (!existing || timestamp > existing) {
                 latest.set(user, timestamp);
               }
-            }
+            };
 
             const rcEntries =
               (rcData.query && rcData.query.recentchanges) || [];

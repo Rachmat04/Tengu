@@ -1,3 +1,9 @@
+## 2.106.2
+
+### Fixed
+
+* Fixed an ESLint `no-inner-declarations` warning on the `considerActivity` function declaration inside the `getActiveAdmins` function body. The declaration was nested inside a `try` block rather than at the root of its enclosing function body. Converted to a `const` function expression, matching the pattern already used for `applyPickerNamespaceFilter` (v2.87.0).
+
 ## 2.106.1
 
 ### Changed
