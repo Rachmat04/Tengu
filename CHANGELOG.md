@@ -1,3 +1,15 @@
+## 2.106.0
+
+### Added
+
+* Added a new **Recently active administrators** feature, accessed via a new 👮 button placed immediately to the left of the dark/light mode toggle. Clicking it opens a dialogue listing administrators active within the last 24 hours, sorted by most recent activity first.
+* An administrator is considered active based on the more recent of: their latest edit, or their latest administrative log action (block, protection, deletion, or any other logged action).
+* Each entry shows the administrator's username (linked to their user page), the timestamp of their most recent activity, and two action buttons: 💬 (opens the administrator's user talk page in a new tab) and 📧 (opens `Special:EmailUser/<username>` in a new tab).
+
+### Notes
+
+* Sysops are identified via `list=allusers&augroup=sysop`. Activity is determined from a single bulk `list=recentchanges` query (edits) and a single bulk `list=logevents` query (log actions), each capped at 500 entries and limited to the last 24 hours, rather than one query per administrator. On a very active wiki, an administrator's most recent action could theoretically fall outside these 500 entries and be missed.
+
 ## 2.105.0
 
 ### Added

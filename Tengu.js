@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.105.0
+ * Version 2.106.0
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -4679,6 +4679,182 @@ $(function () {
         };
 
         // ============================================================================
+        // [Section 08d] Active administrators
+        // Shows administrators who have been active — via an edit or an
+        // administrative log action — within the last 24 hours, sorted by most
+        // recent activity first. Recent changes and log events are each fetched in
+        // a single bulk query rather than one query per administrator, so an
+        // admin's most recent action could be missed if it falls outside the most
+        // recent 500 entries returned by either query on a very active wiki.
+        // ============================================================================
+        const getActiveAdmins = async function () {
+          const { overlay, body, footer } = createDialog({
+            title: "Recently active administrators",
+            icon: "👮",
+            child: true,
+          });
+
+          const loadingEl = document.createElement("div");
+          loadingEl.className = "tng-info-loading";
+          loadingEl.textContent = "Loading recently active administrators...";
+          body.appendChild(loadingEl);
+
+          const btnClose = makeBtn("Close", "quiet");
+          btnClose.addEventListener("click", () => overlay.closeHandler());
+          footer.appendChild(btnClose);
+
+          function fmtTimestamp(ts) {
+            if (!ts) return "Unknown";
+            const d = new Date(ts);
+            if (isNaN(d.getTime())) return "Unknown";
+            return d.toUTCString().replace("GMT", "UTC");
+          }
+
+          try {
+            const cutoff = new Date(
+              Date.now() - 24 * 60 * 60 * 1000,
+            ).toISOString();
+
+            const [sysopsData, rcData, leData] = await Promise.all([
+              apiGet({
+                action: "query",
+                list: "allusers",
+                augroup: "sysop",
+                aulimit: "max",
+                formatversion: 2,
+              }),
+              apiGet({
+                action: "query",
+                list: "recentchanges",
+                rctype: "edit",
+                rcprop: "user|timestamp",
+                rcdir: "older",
+                rcend: cutoff,
+                rclimit: 500,
+                formatversion: 2,
+              }),
+              apiGet({
+                action: "query",
+                list: "logevents",
+                leprop: "user|timestamp",
+                ledir: "older",
+                leend: cutoff,
+                lelimit: 500,
+                formatversion: 2,
+              }),
+            ]);
+
+            const sysops = new Set(
+              ((sysopsData.query && sysopsData.query.allusers) || []).map(
+                function (u) {
+                  return u.name;
+                },
+              ),
+            );
+
+            // Maps username -> latest ISO timestamp seen for that user, across
+            // both the recent-changes and log-events queries.
+            const latest = new Map();
+
+            function considerActivity(user, timestamp) {
+              if (!user || !timestamp || !sysops.has(user)) return;
+              const existing = latest.get(user);
+              if (!existing || timestamp > existing) {
+                latest.set(user, timestamp);
+              }
+            }
+
+            const rcEntries =
+              (rcData.query && rcData.query.recentchanges) || [];
+            for (const e of rcEntries) considerActivity(e.user, e.timestamp);
+
+            const leEntries = (leData.query && leData.query.logevents) || [];
+            for (const e of leEntries) considerActivity(e.user, e.timestamp);
+
+            const activeAdmins = Array.from(latest.entries())
+              .map(function ([user, timestamp]) {
+                return { user, timestamp };
+              })
+              .sort(function (a, b) {
+                return b.timestamp.localeCompare(a.timestamp);
+              });
+
+            body.removeChild(loadingEl);
+
+            if (!activeAdmins.length) {
+              const emptyEl = document.createElement("div");
+              emptyEl.className = "tng-info-empty";
+              emptyEl.textContent =
+                "No administrators appear to have been active within the last 24 hours.";
+              body.appendChild(emptyEl);
+              return;
+            }
+
+            for (const admin of activeAdmins) {
+              const entry = document.createElement("div");
+              entry.className = "tng-info-entry";
+              entry.style.flexDirection = "row";
+              entry.style.alignItems = "center";
+              entry.style.justifyContent = "space-between";
+              entry.style.gap = "8px";
+
+              const infoWrap = document.createElement("div");
+              const link = document.createElement("a");
+              link.href = mw.util.getUrl("User:" + admin.user);
+              link.target = "_blank";
+              link.rel = "noopener noreferrer";
+              link.textContent = admin.user;
+              link.style.fontWeight = "700";
+              infoWrap.appendChild(link);
+              const tsLine = document.createElement("div");
+              tsLine.className = "tng-help";
+              tsLine.style.margin = "0";
+              tsLine.textContent = fmtTimestamp(admin.timestamp);
+              infoWrap.appendChild(tsLine);
+              entry.appendChild(infoWrap);
+
+              const actionsWrap = document.createElement("div");
+              actionsWrap.style.cssText = "display:flex;gap:4px;flex-shrink:0;";
+
+              const btnTalk = makeBtn("💬", "quiet");
+              btnTalk.className += " tng-btn-sm";
+              btnTalk.title = "Open user talk page in a new tab";
+              btnTalk.addEventListener("click", function () {
+                window.open(
+                  mw.util.getUrl("User talk:" + admin.user),
+                  "_blank",
+                  "noopener,noreferrer",
+                );
+              });
+              actionsWrap.appendChild(btnTalk);
+
+              const btnEmail = makeBtn("📧", "quiet");
+              btnEmail.className += " tng-btn-sm";
+              btnEmail.title = "Open Special:EmailUser in a new tab";
+              btnEmail.addEventListener("click", function () {
+                window.open(
+                  mw.util.getUrl("Special:EmailUser/" + admin.user),
+                  "_blank",
+                  "noopener,noreferrer",
+                );
+              });
+              actionsWrap.appendChild(btnEmail);
+
+              entry.appendChild(actionsWrap);
+              body.appendChild(entry);
+            }
+          } catch (e) {
+            body.removeChild(loadingEl);
+            const errEl = document.createElement("div");
+            errEl.className = "tng-log-err";
+            errEl.style.padding = "6px 0";
+            errEl.textContent =
+              "️️⚠️️️ Failed to load active administrators: " + formatApiError(e);
+            body.appendChild(errEl);
+          }
+        };
+
+        // ============================================================================
         // [Section 09] Dialogue builder (input config)
         // Generates configuration layout panel structures, parses package parameters,
         // and configures field states. Also fetches the current user's rights to
@@ -5032,6 +5208,16 @@ $(function () {
           // Manual light/dark mode toggle — same row as the mode toggle
           // buttons. Shows the icon for the mode a click will switch *to*
           // (crescent moon in light mode, sun in dark mode).
+          const btnActiveAdmins = makeBtn("👮", "quiet");
+          btnActiveAdmins.className += " tng-btn-sm";
+          btnActiveAdmins.title =
+            "Show administrators active within the last 24 hours";
+          btnActiveAdmins.style.marginLeft = "auto";
+          btnActiveAdmins.addEventListener("click", function () {
+            getActiveAdmins();
+          });
+          fieldMode.appendChild(btnActiveAdmins);
+
           const btnThemeToggle = makeBtn("🌙", "quiet");
           btnThemeToggle.className += " tng-btn-sm tng-theme-toggle-btn";
           function updateThemeToggleBtn() {
@@ -5048,7 +5234,6 @@ $(function () {
             setTheme(theme === "dark" ? "light" : "dark");
             updateThemeToggleBtn();
           });
-          btnThemeToggle.style.marginLeft = "auto";
           fieldMode.appendChild(btnThemeToggle);
 
           topSection.appendChild(rowMode);
@@ -6153,14 +6338,13 @@ $(function () {
           }
 
           // ============================================================================
-          // Lock account section — user mode only. [EXPERIMENTAL]
+          // [EXPERIMENTAL] Lock account section — user mode only.
           // Globally locks a user account via CentralAuth, preventing it from
           // logging in to any Wikimedia wiki. Normally restricted to
           // stewards. The section stays visible to everyone so its existence
           // is discoverable, but its controls are disabled for non-stewards.
-          // [Unverified] The API call performed in work() has not been
-          // independently confirmed against a live wiki. Please verify
-          // carefully before relying on it.
+          // The API call performed in work() has not been independently confirmed
+          // against a live wiki. Please verify carefully before relying on it.
           // ============================================================================
           const {
             section: secLockAccount,
