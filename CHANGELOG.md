@@ -1,3 +1,9 @@
+## 2.106.1
+
+### Changed
+
+* The **Recently active administrators** dialogue now shows a relative time (e.g. "10 minutes ago") in parentheses after each administrator's absolute UTC timestamp, so the elapsed time since their last activity is visible at a glance without manual calculation.
+
 ## 2.106.0
 
 ### Added

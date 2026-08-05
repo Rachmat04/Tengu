@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.106.0
+ * Version 2.106.1
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -4710,6 +4710,19 @@ $(function () {
             return d.toUTCString().replace("GMT", "UTC");
           }
 
+          function fmtRelative(ts) {
+            if (!ts) return "";
+            const diffSec = Math.floor(
+              (Date.now() - new Date(ts).getTime()) / 1000,
+            );
+            if (diffSec < 60) return "just now";
+            const diffMin = Math.floor(diffSec / 60);
+            if (diffMin < 60)
+              return diffMin + " minute" + (diffMin !== 1 ? "s" : "") + " ago";
+            const diffHr = Math.floor(diffMin / 60);
+            return diffHr + " hour" + (diffHr !== 1 ? "s" : "") + " ago";
+          }
+
           try {
             const cutoff = new Date(
               Date.now() - 24 * 60 * 60 * 1000,
@@ -4809,7 +4822,11 @@ $(function () {
               const tsLine = document.createElement("div");
               tsLine.className = "tng-help";
               tsLine.style.margin = "0";
-              tsLine.textContent = fmtTimestamp(admin.timestamp);
+              tsLine.textContent =
+                fmtTimestamp(admin.timestamp) +
+                " (" +
+                fmtRelative(admin.timestamp) +
+                ")";
               infoWrap.appendChild(tsLine);
               entry.appendChild(infoWrap);
 
