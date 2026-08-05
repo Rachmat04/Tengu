@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.104.7
+ * Version 2.105.0
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -1405,6 +1405,46 @@ $(function () {
               if (config.movePageNoRedirect) moveParams.noredirect = 1;
               if (config.movePageTalk) moveParams.movetalk = 1;
               if (config.movePageSubpages) moveParams.movesubpages = 1;
+
+              // Delete the destination page first, if requested and it exists.
+              // A move fails outright if the destination title is already
+              // occupied by an existing page, so this must run before the
+              // move attempt below.
+              if (config.movePageDeleteDest && !isAborted) {
+                try {
+                  const destExistData = await apiGet({
+                    action: "query",
+                    titles: config.movePageDest,
+                    formatversion: 2,
+                  });
+                  const destPage =
+                    destExistData.query &&
+                    destExistData.query.pages &&
+                    destExistData.query.pages[0];
+                  if (destPage && !destPage.missing) {
+                    await apiPost({
+                      action: "delete",
+                      title: config.movePageDest,
+                      reason:
+                        (useIndonesian
+                          ? "Menghapus halaman tujuan untuk memungkinkan pemindahan halaman: "
+                          : "Deleting destination page to allow page move: ") +
+                        config.movePageReason +
+                        toolTag,
+                    });
+                    addLog(
+                      `[Move] Deleted existing destination page: ${config.movePageDest}`,
+                    );
+                    stats.delete++;
+                    updateStatusDisplay();
+                  }
+                } catch (e) {
+                  addLog(
+                    `[Move] Failed to delete destination page "${config.movePageDest}": ${formatApiError(e)}`,
+                    true,
+                  );
+                }
+              }
 
               let movePageMoveSucceeded = false;
               try {
@@ -7140,6 +7180,14 @@ $(function () {
           wrapMovePageFixDoubleRedirects.title =
             "When ticked, existing redirects that pointed to the source page are updated to point directly to the destination title, avoiding double redirects. Only applies when a redirect is left at the source title (i.e. when 'Suppress redirect' is not used).";
 
+          const { wrap: wrapMovePageDeleteDest, chk: chkMovePageDeleteDest } =
+            makeCheckbox(
+              "Delete destination page if it already exists (destructive)",
+              false,
+            );
+          wrapMovePageDeleteDest.title =
+            "When ticked, if the destination title already has an existing page, that page is deleted immediately before the move is attempted, allowing the move to proceed. This is a destructive, irreversible-by-default action: verify the destination title carefully before enabling this option.";
+
           const checksMovePagePanel = document.createElement("div");
           checksMovePagePanel.className = "tng-checks";
           checksMovePagePanel.style.paddingLeft = "0";
@@ -7147,6 +7195,7 @@ $(function () {
           checksMovePagePanel.appendChild(wrapMovePageTalk);
           checksMovePagePanel.appendChild(wrapMovePageSubpages);
           checksMovePagePanel.appendChild(wrapMovePageFixDoubleRedirects);
+          checksMovePagePanel.appendChild(wrapMovePageDeleteDest);
           divMovePagePanel.appendChild(checksMovePagePanel);
 
           bodyMoveSandbox.appendChild(divMovePagePanel);
@@ -9089,6 +9138,7 @@ $(function () {
               movePageTalk: chkMovePageTalk.checked,
               movePageSubpages: chkMovePageSubpages.checked,
               movePageFixDoubleRedirects: chkMovePageFixDoubleRedirects.checked,
+              movePageDeleteDest: chkMovePageDeleteDest.checked,
               moveSandboxUser: inputMoveSandboxUser.value.trim(),
               moveSandboxSubpage: inputMoveSandboxSubpage.value.trim(),
               moveSandboxDest:

@@ -1,3 +1,15 @@
+## 2.105.0
+
+### Added
+
+* Added a **"Delete destination page if it already exists (destructive)"** option to the **Move page** sub-mode of the Move page section. When ticked, if the destination title already has an existing page, that page is deleted immediately before the move is attempted, allowing the move to proceed without a manual pre-deletion step.
+
+### Notes
+
+* This option is only available in the **Move page** sub-mode; it does not apply to **Move to user's sandbox**, since sandbox destinations are not expected to already exist.
+* The destination page is deleted using the same reason entered for the move itself. This is a destructive action: verify the destination title carefully before enabling this option, since the deleted page is not automatically restored if the subsequent move fails.
+* A `delete` operation counter increment is logged for the destination-page deletion, consistent with other deletion actions in the progress dialogue.
+
 ## 2.104.7
 
 ### Fixed
