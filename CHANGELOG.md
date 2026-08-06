@@ -1,3 +1,9 @@
+## 2.106.6
+
+### Fixed
+
+* Fixed the **Move page** section remaining incorrectly accessible in user mode after switching from page mode. `applySpecialPageLocks(false)` was called after `applyModeLock(secMoveSandbox, …, true, …)`, so in the common case the lock was registered and then immediately removed by the special-page-unlock call. When a special-page lock was already active, `applyModeLock` returned early (since `chkMoveSandbox.disabled` was already true), the user-mode lock was never registered, and `applySpecialPageLocks(false)` cleared the special-page lock with nothing replacing it. Both paths left the section accessible in user mode. The order has been corrected so special-page locks are always cleared before the user-mode lock on `secMoveSandbox` is applied.
+
 ## 2.106.5
 
 ### Fixed

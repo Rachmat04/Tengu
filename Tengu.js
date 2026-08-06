@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.106.5
+ * Version 2.106.6
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -8727,6 +8727,14 @@ $(function () {
                 chkLockAccount,
                 false,
               );
+              // Remove any special page locks that were active while in page mode.
+              // This must run before the move-sandbox lock below: if a special-page
+              // lock has already set chkMoveSandbox.disabled to true, applyModeLock()
+              // returns early and the user-mode lock is never registered. The subsequent
+              // applySpecialPageLocks(false) call would then clear the special-page lock
+              // with no replacement, leaving the Move page section incorrectly accessible
+              // in user mode.
+              applySpecialPageLocks(false);
               // Move to sandbox is page-mode only; lock it when switching to user mode
               applyModeLock(
                 secMoveSandbox,
@@ -8735,8 +8743,6 @@ $(function () {
                 true,
                 "Move page is only available in page mode.",
               );
-              // Remove any special page locks that were active while in page mode
-              applySpecialPageLocks(false);
 
               // Re-evaluate and apply strict rights-based permanent locks if permissions are missing
               if (resolvedRights) {
