@@ -1,3 +1,9 @@
+## 2.106.5
+
+### Fixed
+
+* Fixed the **Protect against recreation** section remaining unlocked when switching from page mode back to user mode after the section had been unlocked in page mode (i.e. the target page was confirmed as non-existent). `updateSectionStatus()` now re-applies the status lock in user mode, matching the existing pattern already used for the Page undeletion section.
+
 ## 2.106.4
 
 ### Fixed

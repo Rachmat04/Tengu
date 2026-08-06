@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.106.4
+ * Version 2.106.5
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -10203,6 +10203,10 @@ $(function () {
               if (!undeleteRightsLocked) {
                 applyUndeleteStatusLock(true, "not applicable in user mode.");
               }
+              applyProtectRecreationStatusLock(
+                true,
+                "not applicable in user mode.",
+              );
 
               // --- Block status ---
               setNote(divBlockStatus, "loading", "Loading block status...");
