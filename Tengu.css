@@ -120,6 +120,20 @@
   overflow: hidden;
   flex-shrink: 0;
 }
+/* Base section body — placed before the disabled and hidden variants so that
+   lower-specificity (0,1,0) rules precede higher-specificity (0,3,0) ones. */
+.tng-section-body {
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-height: 560px;
+  overflow-y: auto;
+  transition:
+    max-height 0.3s cubic-bezier(0, 1, 0.5, 1),
+    padding-top 0.25s ease,
+    padding-bottom 0.25s ease;
+}
 /* When a section is disabled but still open, dim and disable only the body */
 .tng-section.tng-disabled .tng-section-body {
   opacity: 0.45;
@@ -156,19 +170,6 @@
 }
 .tng-section-header:hover {
   background: #e6e8eb;
-}
-
-.tng-section-body {
-  padding: 12px;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  max-height: 560px;
-  overflow-y: auto;
-  transition:
-    max-height 0.3s cubic-bezier(0, 1, 0.5, 1),
-    padding-top 0.25s ease,
-    padding-bottom 0.25s ease;
 }
 
 /* --- Form rows --- */
@@ -252,18 +253,20 @@
   color: #202122;
   font-family: inherit;
 }
-.tng-input:focus,
-.tng-select:focus {
-  outline: none;
-  border-color: #3366cc;
-  box-shadow: 0 0 0 2px rgba(51, 102, 204, 0.18);
-}
+/* Select-specific properties — placed before :focus so that the base
+   selector (0,1,0) precedes the pseudo-class selector (0,2,0). */
 .tng-select {
   cursor: pointer;
   appearance: none;
   -webkit-appearance: none;
   padding-right: 2em;
   text-overflow: ellipsis;
+}
+.tng-input:focus,
+.tng-select:focus {
+  outline: none;
+  border-color: #3366cc;
+  box-shadow: 0 0 0 2px rgba(51, 102, 204, 0.18);
 }
 
 /* --- Custom select wrapper (positions chevron arrow) --- */
@@ -543,13 +546,12 @@
 }
 /* When a padlock is inserted before the chevron in a section header,
    transfer the auto left margin to the padlock so it (and the chevron)
-   are pushed flush to the right edge. The adjacent-sibling rule cancels
-   the chevron's own auto margin to keep the two icons together. */
+   are pushed flush to the right edge. The adjacent-sibling rule
+   (.tng-rights-lock + .tng-section-arrow) cancels the chevron's own auto
+   margin; it is placed after .tng-section-arrow to satisfy specificity
+   ordering. */
 .tng-section-header .tng-rights-lock {
   margin-left: auto;
-}
-.tng-rights-lock + .tng-section-arrow {
-  margin-left: 0;
 }
 
 /* --- User info panel entries --- */
@@ -663,6 +665,13 @@
   transform: rotate(225deg);
   top: 2px;
 }
+/* Cancels the chevron's auto left margin when a padlock is inserted
+   immediately before it in a section header, keeping both icons flush at
+   the right edge. Placed after .tng-section-arrow (0,1,0) so that this
+   adjacent-sibling rule (0,2,0) follows a lower-specificity selector. */
+.tng-rights-lock + .tng-section-arrow {
+  margin-left: 0;
+}
 
 /* --- Mode switch (User/Page toggle, User namespace only) --- */
 .tng-mode-switch-wrap {
@@ -680,9 +689,6 @@
   user-select: none;
   white-space: nowrap;
   transition: color 0.12s;
-}
-.tng-mode-switch-label:hover:not(.tng-mode-switch-label-disabled) {
-  color: #202122;
 }
 .tng-mode-switch-label-active-user {
   color: #7b6fb8;
@@ -725,6 +731,24 @@
   border-radius: 50%;
   transition: transform 0.18s;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+}
+/* The two rules below (0,2,0) are placed here — before the hover and
+   checked rules (0,3,0) — so that lower-specificity selectors precede
+   higher-specificity ones. The transitioning rule adds theme-animation
+   properties; the dark mode rule sets the base label colour. Both were
+   previously in the theme-transition and dark mode blocks respectively. */
+.tng-theme-transitioning .tng-mode-switch-label,
+.tng-theme-transitioning .tng-mode-switch-slider {
+  transition:
+    background-color 0.25s ease,
+    color 0.25s ease,
+    border-color 0.25s ease;
+}
+.tng-theme-dark .tng-mode-switch-label {
+  color: #a2a9b1;
+}
+.tng-mode-switch-label:hover:not(.tng-mode-switch-label-disabled) {
+  color: #202122;
 }
 .tng-mode-switch-input:checked + .tng-mode-switch-slider {
   background: #4f9b8e;
@@ -798,9 +822,7 @@
 .tng-theme-transitioning .tng-mode-badge,
 .tng-theme-transitioning .tng-info-entry,
 .tng-theme-transitioning .tng-user-rights-header,
-.tng-theme-transitioning .tng-user-rights-list,
-.tng-theme-transitioning .tng-mode-switch-label,
-.tng-theme-transitioning .tng-mode-switch-slider {
+.tng-theme-transitioning .tng-user-rights-list {
   transition:
     background-color 0.25s ease,
     color 0.25s ease,
@@ -989,9 +1011,6 @@
 }
 
 /* Dark mode for mode switch */
-.tng-theme-dark .tng-mode-switch-label {
-  color: #a2a9b1;
-}
 .tng-theme-dark
   .tng-mode-switch-label:hover:not(.tng-mode-switch-label-disabled) {
   color: #eaecf0;

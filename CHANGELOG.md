@@ -1,3 +1,9 @@
+## 2.106.4
+
+### Fixed
+
+* Fixed six `no-descending-specificity` CSS lint warnings in `Tengu.css` by reordering rule declarations so lower-specificity selectors precede higher-specificity ones targeting the same elements. No visual or behavioural changes.
+
 ## 2.106.3
 
 ### Changed
