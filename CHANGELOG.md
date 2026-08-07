@@ -1,3 +1,9 @@
+## 2.106.8
+
+### Fixed
+
+* Fixed the **Select specific edits/pages** picker button row remaining visible, and its selection summary and data persisting, after a package was applied while that edits mode was active. Applying a package now always clears the picker state, since no package sets the edits dropdown to "Select specific edits/pages". The execution result in `work()` was already correct (it re-reads `selEndtime.value` at Start time), but the UI was misleading.
+
 ## 2.106.7
 
 ### Fixed

@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.106.7
+ * Version 2.106.8
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -9766,6 +9766,14 @@ $(function () {
                 editGroupBetween.classList.add("tng-hidden");
               }
             }
+
+            // No package sets the edits dropdown to "custom", so if the
+            // picker was previously active, hide its button row and clear
+            // any stale selection state.
+            pickEditsBtnRow.classList.add("tng-hidden");
+            customSelectedPageEdits = {};
+            customSelectedCreations = [];
+            updatePickerSelectionSummary();
 
             const rb = pkg.rollback || {};
             if (!chkRollback.disabled) {
