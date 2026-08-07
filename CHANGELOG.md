@@ -1,3 +1,9 @@
+## 2.106.7
+
+### Fixed
+
+* Fixed `applyPackage()` setting the block expiry to indefinite ("never") for registered account targets whenever `tracingedits.indefregistered` was `true`, regardless of the package's `block.duration` value. The `tracingedits.indefregistered` flag governs only the edits time-range selector; block expiry is now always read from `block.duration` instead. This affected the Default package in particular, which has `tracingedits.indefregistered: true` but `block.duration: "1 day"` — applying it with a registered user target incorrectly pre-filled the block expiry as indefinite.
+
 ## 2.106.6
 
 ### Fixed

@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.106.6
+ * Version 2.106.7
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -9810,23 +9810,18 @@ $(function () {
                 .querySelector(".tng-section-arrow")
                 .classList.toggle("tng-arrow-up", chkBlock.checked);
             }
-            if (trac.indefregistered && !isIP) {
-              selBlockDur.value = "never";
+            const bdur = bl.duration || "1 day";
+            if (
+              [...selBlockDur.options].find(function (o) {
+                return o.value === bdur;
+              })
+            ) {
+              selBlockDur.value = bdur;
               inputBlockDur.classList.add("tng-hidden");
             } else {
-              const bdur = bl.duration || "1 day";
-              if (
-                [...selBlockDur.options].find(function (o) {
-                  return o.value === bdur;
-                })
-              ) {
-                selBlockDur.value = bdur;
-                inputBlockDur.classList.add("tng-hidden");
-              } else {
-                selBlockDur.value = "other";
-                inputBlockDur.value = bdur;
-                inputBlockDur.classList.remove("tng-hidden");
-              }
+              selBlockDur.value = "other";
+              inputBlockDur.value = bdur;
+              inputBlockDur.classList.remove("tng-hidden");
             }
             updateClearTalkState();
 
