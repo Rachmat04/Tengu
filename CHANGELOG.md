@@ -1,3 +1,10 @@
+## 2.107.0
+
+### Added
+
+* Added a **What links here** section (⛓️) to the **Get info** panel in page mode. It appears at the top of the panel and lists pages that link to the current target page, fetched via `list=backlinks`. Each result is a clickable link that opens in a new browser tab. Up to 100 results are shown; a note is displayed if more exist, with a link to `Special:WhatLinksHere/[page title]` for the full list.
+* Sections with results auto-expand, matching the behaviour of the other Get info sections.
+
 ## 2.106.9
 
 ### Fixed

@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.106.9
+ * Version 2.107.0
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -4088,6 +4088,11 @@ $(function () {
 
           // Build the four display-only collapsible sections
           const {
+            section: secWhatLinksHere,
+            sectionBody: bodyWhatLinksHere,
+            arrow: arrowWhatLinksHere,
+          } = makeDisplaySection("What links here", "⛓️");
+          const {
             section: secAbuseLog,
             sectionBody: bodyAbuseLog,
             arrow: arrowAbuseLog,
@@ -4108,11 +4113,13 @@ $(function () {
             arrow: arrowMoveLog,
           } = makeDisplaySection("Move log", "📑");
 
+          setLoading(bodyWhatLinksHere, "Loading pages that link here...");
           setLoading(bodyAbuseLog, "Loading abuse filter log...");
           setLoading(bodyProtectLog, "Loading protection log...");
           setLoading(bodyDeleteLog, "Loading deletion log...");
           setLoading(bodyMoveLog, "Loading move log...");
 
+          body.appendChild(secWhatLinksHere);
           body.appendChild(secAbuseLog);
           body.appendChild(secProtectLog);
           body.appendChild(secDeleteLog);
@@ -4121,6 +4128,54 @@ $(function () {
           const btnClose = makeBtn("Close", "quiet");
           btnClose.addEventListener("click", () => overlay.closeHandler());
           footer.appendChild(btnClose);
+
+          // --- What links here ---
+          (async function () {
+            try {
+              const data = await apiGet({
+                action: "query",
+                list: "backlinks",
+                bltitle: pageName,
+                bllimit: 100,
+                formatversion: 2,
+              });
+              const entries = (data.query && data.query.backlinks) || [];
+              const hasMore = !!data.continue;
+              if (!entries.length) {
+                setEmpty(bodyWhatLinksHere, "No pages link to this page.");
+                return;
+              }
+              // Auto-expand: entries found are likely of interest
+              bodyWhatLinksHere.classList.remove("tng-hidden");
+              arrowWhatLinksHere.classList.add("tng-arrow-up");
+              bodyWhatLinksHere.innerHTML = "";
+              for (const page of entries) {
+                const linkEl = document.createElement("a");
+                linkEl.href = mw.util.getUrl(page.title);
+                linkEl.target = "_blank";
+                linkEl.rel = "noopener noreferrer";
+                linkEl.textContent = page.title;
+                linkEl.style.cssText =
+                  "display:block;padding:3px 0;word-break:break-word;font-size:0.88em;";
+                bodyWhatLinksHere.appendChild(linkEl);
+              }
+              if (hasMore) {
+                const noteEl = document.createElement("div");
+                noteEl.className = "tng-help";
+                noteEl.style.marginTop = "6px";
+                noteEl.textContent =
+                  "Showing the first 100 results. Visit Special:WhatLinksHere/" +
+                  pageName +
+                  " to see all links.";
+                bodyWhatLinksHere.appendChild(noteEl);
+              }
+            } catch (err) {
+              setError(
+                bodyWhatLinksHere,
+                "Failed to load backlinks: " + formatApiError(err),
+              );
+            }
+          })();
 
           // --- Abuse filter log ---
           (async function () {
