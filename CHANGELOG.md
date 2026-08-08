@@ -1,3 +1,10 @@
+## 2.107.1
+
+### Changed
+
+* The **What links here** section in the **Get info** panel (page mode) now numbers each result row.
+* The `Special:WhatLinksHere/[page title]` link in the "more results" note is now a clickable link that opens in a new browser tab, rather than plain text.
+
 ## 2.107.0
 
 ### Added

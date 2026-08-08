@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.107.0
+ * Version 2.107.1
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -4149,24 +4149,43 @@ $(function () {
               bodyWhatLinksHere.classList.remove("tng-hidden");
               arrowWhatLinksHere.classList.add("tng-arrow-up");
               bodyWhatLinksHere.innerHTML = "";
+              let wlhCount = 0;
               for (const page of entries) {
+                wlhCount++;
+                const rowEl = document.createElement("div");
+                rowEl.style.cssText =
+                  "display:flex;gap:5px;padding:3px 0;font-size:0.88em;";
+                const numEl = document.createElement("span");
+                numEl.style.cssText =
+                  "flex-shrink:0;color:#72777d;min-width:2em;text-align:right;";
+                numEl.textContent = wlhCount + ".";
                 const linkEl = document.createElement("a");
                 linkEl.href = mw.util.getUrl(page.title);
                 linkEl.target = "_blank";
                 linkEl.rel = "noopener noreferrer";
                 linkEl.textContent = page.title;
-                linkEl.style.cssText =
-                  "display:block;padding:3px 0;word-break:break-word;font-size:0.88em;";
-                bodyWhatLinksHere.appendChild(linkEl);
+                linkEl.style.cssText = "word-break:break-word;";
+                rowEl.appendChild(numEl);
+                rowEl.appendChild(linkEl);
+                bodyWhatLinksHere.appendChild(rowEl);
               }
               if (hasMore) {
+                const wlhSpecialTitle = "Special:WhatLinksHere/" + pageName;
                 const noteEl = document.createElement("div");
                 noteEl.className = "tng-help";
                 noteEl.style.marginTop = "6px";
-                noteEl.textContent =
-                  "Showing the first 100 results. Visit Special:WhatLinksHere/" +
-                  pageName +
-                  " to see all links.";
+                const notePre = document.createTextNode(
+                  "Showing the first 100 results. Visit ",
+                );
+                const noteLink = document.createElement("a");
+                noteLink.href = mw.util.getUrl(wlhSpecialTitle);
+                noteLink.target = "_blank";
+                noteLink.rel = "noopener noreferrer";
+                noteLink.textContent = wlhSpecialTitle;
+                const notePost = document.createTextNode(" to see all links.");
+                noteEl.appendChild(notePre);
+                noteEl.appendChild(noteLink);
+                noteEl.appendChild(notePost);
                 bodyWhatLinksHere.appendChild(noteEl);
               }
             } catch (err) {
