@@ -1,3 +1,9 @@
+## 2.106.9
+
+### Fixed
+
+* Fixed the **Select specific edits/pages** picker summary label (`lblPickerSummary`) retaining stale selection text after switching away from custom mode via the Edits dropdown. The handler cleared `customSelectedPageEdits` and `customSelectedCreations` but did not call `updatePickerSelectionSummary()`, so the label continued to display the previous count (e.g. "3 edited pages selected.") when the user switched back to custom mode, even though no items were actually selected. The fix brings this in line with `applyPackage()`, which already calls `updatePickerSelectionSummary()` after the same state reset.
+
 ## 2.106.8
 
 ### Fixed
