@@ -1,3 +1,15 @@
+## 2.108.0
+
+### Added
+
+* Added an **Account info** row (edit count, registration date) to the **Access rights** card in the **Get info** panel (user mode). Sourced from the existing local rights request via the `editcount` and `registration` `usprop` values, so no additional API call was required.
+* Added a **Current revision** section (📊) to the **Get info** panel in page mode, shown above **What links here**. Displays page size, last editor, last edited timestamp, revision count, creator, and creation date.
+
+### Notes
+
+* Registration date falls back to "Unknown (may predate registration logging)" when the API does not return a value, since some older accounts predate registration logging on a given wiki.
+* Revision count is capped at 500 per request to avoid an expensive full-history fetch on pages with a long edit history; if more revisions exist, the count is shown as "500+" rather than an exact figure.
+
 ## 2.107.1
 
 ### Changed

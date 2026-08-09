@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.107.1
+ * Version 2.108.0
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -3610,6 +3610,19 @@ $(function () {
           localRow.appendChild(localRightsListEl);
           rightsCardBody.appendChild(localRow);
 
+          // Account info row (edit count and registration date) — local wiki only.
+          const accountInfoRow = document.createElement("div");
+          accountInfoRow.className = "tng-user-rights-row";
+          const accountInfoScope = document.createElement("div");
+          accountInfoScope.className = "tng-user-rights-scope";
+          accountInfoScope.textContent = "Account info";
+          accountInfoRow.appendChild(accountInfoScope);
+          const accountInfoBody = document.createElement("div");
+          accountInfoBody.className = "tng-info-loading";
+          accountInfoBody.textContent = "Loading...";
+          accountInfoRow.appendChild(accountInfoBody);
+          rightsCardBody.appendChild(accountInfoRow);
+
           // Divider between local and global rows
           const rightsHr = document.createElement("hr");
           rightsHr.className = "tng-user-rights-divider";
@@ -3694,14 +3707,16 @@ $(function () {
             }
           }
 
-          // Local rights request
+          // Local rights request. Also requests editcount and registration
+          // date, which are exposed via the same usprop parameter, so no
+          // separate API call is needed for the account info row.
           (async function () {
             try {
               const data = await apiGet({
                 action: "query",
                 list: "users",
                 ususers: username,
-                usprop: "groups|rights",
+                usprop: "groups|rights|editcount|registration",
               });
               const userEntry =
                 data.query && data.query.users && data.query.users[0];
@@ -3711,6 +3726,8 @@ $(function () {
                 msg.className = "tng-info-empty";
                 msg.textContent = "Account not found on this wiki.";
                 localBadgesEl.appendChild(msg);
+                accountInfoBody.className = "tng-info-empty";
+                accountInfoBody.textContent = "Account not found on this wiki.";
               } else {
                 // Filter out implicit groups every account belongs to (*) and (user)
                 const groups = (userEntry.groups || []).filter(function (g) {
@@ -3724,12 +3741,39 @@ $(function () {
                   rights,
                   "local",
                 );
+
+                const editCount =
+                  userEntry.editcount !== undefined
+                    ? userEntry.editcount.toLocaleString()
+                    : "—";
+                // Accounts registered before registration logging
+                // was introduced on a given wiki may not have this field set.
+                const regDate = userEntry.registration
+                  ? fmtTimestamp(userEntry.registration)
+                  : "Unknown (may predate registration logging)";
+
+                accountInfoBody.className = "";
+                accountInfoBody.innerHTML = "";
+                const editCountLine = document.createElement("div");
+                const bEc = document.createElement("b");
+                bEc.textContent = "Edit count: ";
+                editCountLine.appendChild(bEc);
+                editCountLine.appendChild(document.createTextNode(editCount));
+                accountInfoBody.appendChild(editCountLine);
+                const regDateLine = document.createElement("div");
+                const bRd = document.createElement("b");
+                bRd.textContent = "Registration date: ";
+                regDateLine.appendChild(bRd);
+                regDateLine.appendChild(document.createTextNode(regDate));
+                accountInfoBody.appendChild(regDateLine);
               }
             } catch (err) {
               setError(
                 localBadgesEl,
                 "Failed to load local rights: " + formatApiError(err),
               );
+              accountInfoBody.className = "tng-info-empty";
+              accountInfoBody.textContent = "Failed to load account info.";
             }
           })();
 
@@ -4086,7 +4130,12 @@ $(function () {
             container.appendChild(el);
           }
 
-          // Build the four display-only collapsible sections
+          // Build the five display-only collapsible sections
+          const {
+            section: secCurrentRev,
+            sectionBody: bodyCurrentRev,
+            arrow: arrowCurrentRev,
+          } = makeDisplaySection("Current revision", "📊");
           const {
             section: secWhatLinksHere,
             sectionBody: bodyWhatLinksHere,
@@ -4113,12 +4162,14 @@ $(function () {
             arrow: arrowMoveLog,
           } = makeDisplaySection("Move log", "📑");
 
+          setLoading(bodyCurrentRev, "Loading current revision info...");
           setLoading(bodyWhatLinksHere, "Loading pages that link here...");
           setLoading(bodyAbuseLog, "Loading abuse filter log...");
           setLoading(bodyProtectLog, "Loading protection log...");
           setLoading(bodyDeleteLog, "Loading deletion log...");
           setLoading(bodyMoveLog, "Loading move log...");
 
+          body.appendChild(secCurrentRev);
           body.appendChild(secWhatLinksHere);
           body.appendChild(secAbuseLog);
           body.appendChild(secProtectLog);
@@ -4128,6 +4179,116 @@ $(function () {
           const btnClose = makeBtn("Close", "quiet");
           btnClose.addEventListener("click", () => overlay.closeHandler());
           footer.appendChild(btnClose);
+
+          // --- Current revision ---
+          // Page size and last editor/timestamp come from a single prop=info +
+          // prop=revisions request; creation date from a second revisions
+          // request (rvdir=newer, rvlimit=1). Revision count is capped at 500
+          // per request to avoid an expensive full-history fetch on pages with
+          // a long edit history; if more exist, the count is shown as "500+".
+          (async function () {
+            try {
+              const [infoData, latestData, firstData] = await Promise.all([
+                apiGet({
+                  action: "query",
+                  prop: "info",
+                  titles: pageName,
+                  formatversion: 2,
+                }),
+                apiGet({
+                  action: "query",
+                  prop: "revisions",
+                  titles: pageName,
+                  rvlimit: 1,
+                  rvdir: "older",
+                  rvprop: "user|timestamp|size",
+                  formatversion: 2,
+                }),
+                apiGet({
+                  action: "query",
+                  prop: "revisions",
+                  titles: pageName,
+                  rvlimit: 1,
+                  rvdir: "newer",
+                  rvprop: "user|timestamp",
+                  formatversion: 2,
+                }),
+              ]);
+
+              const infoPage =
+                infoData.query &&
+                infoData.query.pages &&
+                infoData.query.pages[0];
+              if (!infoPage || infoPage.missing) {
+                setEmpty(bodyCurrentRev, "This page does not currently exist.");
+                return;
+              }
+
+              const latestPage =
+                latestData.query &&
+                latestData.query.pages &&
+                latestData.query.pages[0];
+              const latestRev =
+                latestPage && latestPage.revisions && latestPage.revisions[0];
+
+              const firstPage =
+                firstData.query &&
+                firstData.query.pages &&
+                firstData.query.pages[0];
+              const firstRev =
+                firstPage && firstPage.revisions && firstPage.revisions[0];
+
+              let revCountLabel = "—";
+              try {
+                const rcData = await apiGet({
+                  action: "query",
+                  prop: "revisions",
+                  titles: pageName,
+                  rvlimit: 500,
+                  rvprop: "ids",
+                  formatversion: 2,
+                });
+                const rcPage =
+                  rcData.query && rcData.query.pages && rcData.query.pages[0];
+                const rcRevs = (rcPage && rcPage.revisions) || [];
+                revCountLabel = rcData.continue
+                  ? rcRevs.length + "+"
+                  : String(rcRevs.length);
+              } catch (e) {
+                // Leave as "—" if this request fails; the rest of the panel is unaffected.
+              }
+
+              bodyCurrentRev.classList.remove("tng-hidden");
+              arrowCurrentRev.classList.add("tng-arrow-up");
+              bodyCurrentRev.innerHTML = "";
+              bodyCurrentRev.appendChild(
+                makeEntry([
+                  [
+                    "Page size",
+                    infoPage.length !== undefined
+                      ? infoPage.length.toLocaleString() + " bytes"
+                      : "—",
+                  ],
+                  ["Last editor", (latestRev && latestRev.user) || "—"],
+                  [
+                    "Last edited",
+                    latestRev ? fmtTimestamp(latestRev.timestamp) : "—",
+                  ],
+                  ["Revision count", revCountLabel],
+                  ["Created by", (firstRev && firstRev.user) || "—"],
+                  [
+                    "Creation date",
+                    firstRev ? fmtTimestamp(firstRev.timestamp) : "—",
+                  ],
+                ]),
+              );
+            } catch (err) {
+              setError(
+                bodyCurrentRev,
+                "Failed to load current revision info: " + formatApiError(err),
+              );
+            }
+          })();
 
           // --- What links here ---
           (async function () {
