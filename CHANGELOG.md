@@ -1,3 +1,10 @@
+## 2.108.1
+
+### Changed
+
+* The **Account info** row in the **Get info** panel (user mode) now renders its content inside a bordered container, matching the visual style and font size of the Rights list directly above it.
+* The **Current revision** section in the **Get info** panel (page mode) now appends a relative time in parentheses after the absolute UTC timestamp for the **Last edited** and **Creation date** rows (for example, "Mon, 10 Aug 2026 10:30:00 UTC (2 hours ago)").
+
 ## 2.108.0
 
 ### Added

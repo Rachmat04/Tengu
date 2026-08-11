@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.108.0
+ * Version 2.108.1
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -3752,7 +3752,7 @@ $(function () {
                   ? fmtTimestamp(userEntry.registration)
                   : "Unknown (may predate registration logging)";
 
-                accountInfoBody.className = "";
+                accountInfoBody.className = "tng-user-rights-list";
                 accountInfoBody.innerHTML = "";
                 const editCountLine = document.createElement("div");
                 const bEc = document.createElement("b");
@@ -4091,6 +4091,22 @@ $(function () {
             return d.toUTCString().replace("GMT", "UTC");
           }
 
+          function fmtRelative(ts) {
+            if (!ts) return "";
+            const d = new Date(ts);
+            if (isNaN(d.getTime())) return "";
+            const diffSec = Math.floor((Date.now() - d.getTime()) / 1000);
+            if (diffSec < 60) return "just now";
+            const diffMin = Math.floor(diffSec / 60);
+            if (diffMin < 60)
+              return diffMin + " minute" + (diffMin !== 1 ? "s" : "") + " ago";
+            const diffHr = Math.floor(diffMin / 60);
+            if (diffHr < 24)
+              return diffHr + " hour" + (diffHr !== 1 ? "s" : "") + " ago";
+            const diffDay = Math.floor(diffHr / 24);
+            return diffDay + " day" + (diffDay !== 1 ? "s" : "") + " ago";
+          }
+
           function makeEntry(rows) {
             const entry = document.createElement("div");
             entry.className = "tng-info-entry";
@@ -4272,13 +4288,23 @@ $(function () {
                   ["Last editor", (latestRev && latestRev.user) || "—"],
                   [
                     "Last edited",
-                    latestRev ? fmtTimestamp(latestRev.timestamp) : "—",
+                    latestRev
+                      ? fmtTimestamp(latestRev.timestamp) +
+                        (fmtRelative(latestRev.timestamp)
+                          ? " (" + fmtRelative(latestRev.timestamp) + ")"
+                          : "")
+                      : "—",
                   ],
                   ["Revision count", revCountLabel],
                   ["Created by", (firstRev && firstRev.user) || "—"],
                   [
                     "Creation date",
-                    firstRev ? fmtTimestamp(firstRev.timestamp) : "—",
+                    firstRev
+                      ? fmtTimestamp(firstRev.timestamp) +
+                        (fmtRelative(firstRev.timestamp)
+                          ? " (" + fmtRelative(firstRev.timestamp) + ")"
+                          : "")
+                      : "—",
                   ],
                 ]),
               );
