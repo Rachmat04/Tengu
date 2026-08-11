@@ -1,3 +1,9 @@
+## 2.108.2
+
+### Changed
+
+* Reduced the vertical padding on each entry row in the **What links here** section of the **Get info** panel (page mode) from 3 px to 1 px, making the list more compact while retaining sufficient spacing for readability.
+
 ## 2.108.1
 
 ### Changed

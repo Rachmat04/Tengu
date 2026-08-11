@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.108.1
+ * Version 2.108.2
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -4341,7 +4341,7 @@ $(function () {
                 wlhCount++;
                 const rowEl = document.createElement("div");
                 rowEl.style.cssText =
-                  "display:flex;gap:5px;padding:3px 0;font-size:0.88em;";
+                  "display:flex;gap:5px;padding:1px 0;font-size:0.88em;";
                 const numEl = document.createElement("span");
                 numEl.style.cssText =
                   "flex-shrink:0;color:#72777d;min-width:2em;text-align:right;";
