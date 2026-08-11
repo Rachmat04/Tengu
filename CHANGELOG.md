@@ -1,3 +1,14 @@
+## 2.109.0
+
+### Changed
+
+* Extended `fmtRelative()` in the **Get info** panel (page mode) to express differences beyond days. Relative timestamps now resolve to weeks (up to 3 weeks), months (up to 11 months), and years, rather than always falling back to a raw day count.
+* Applied the same extended relative-time logic to the **Registration date** row in the **Account info** section of the **Get info** panel (user mode). The absolute UTC timestamp is now followed by a relative time in parentheses — for example, "Mon, 10 Aug 2020 10:30:00 UTC (6 years ago)".
+
+### Added
+
+* Added `fmtRelative()` to `getUserInfo()`, using the same thresholds as the version in `getPageInfo()`.
+
 ## 2.108.2
 
 ### Changed
