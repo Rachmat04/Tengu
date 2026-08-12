@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.110.0
+ * Version 2.111.0
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -931,7 +931,10 @@ $(function () {
           // cached contribution data across abort/resume cycles. On a fresh run all
           // flags are false and all collections are empty. On a resume run the values
           // from the aborted run are reused so already-completed work is skipped.
-          const isResume = !!resumeState;
+          const isMultiTarget =
+            Array.isArray(config.targets) && config.targets.length > 1;
+          // Resume is only supported for single-target runs.
+          const isResume = !isMultiTarget && !!resumeState;
           const rs = isResume
             ? resumeState
             : {
@@ -1088,8 +1091,8 @@ $(function () {
           }
           addLog("⏳ Processing operations... please wait...");
 
-          const targetVal = config.target;
-
+          // Notification edit summaries do not vary per target and are
+          // declared once, outside the per-target loop below.
           const notifySummaryBlock =
             (useIndonesian
               ? "Notifikasi: Pemberitahuan pemblokiran akun"
@@ -1102,908 +1105,903 @@ $(function () {
             (useIndonesian
               ? "Notifikasi: Pemberitahuan perlindungan halaman"
               : "Notification: Page protection notice") + toolTag;
-
           const notifySummaryWarn =
             (useIndonesian
               ? "Notifikasi: Peringatan pengguna"
               : "Notification: User warning") + toolTag;
-
           const notifySummaryRollback =
             (useIndonesian
               ? "Notifikasi: Pemberitahuan pembatalan suntingan"
               : "Notification: Edit reversion notice") + toolTag;
 
-          // --- User warning ---
-          // Only runs in user mode; config.warn is only set when the warn
-          // section is enabled and a message template has been selected.
-          if (
-            !rs.warnDone &&
-            config.warn &&
-            config.mode === "user" &&
-            !isAborted
-          ) {
-            const talkTitle = new mw.Title(targetVal, 3).getPrefixedText();
-            const notice = config.warnNotice;
-            try {
-              const talkExists = await pageExists(talkTitle);
-              await apiPost({
-                action: "edit",
-                title: talkTitle,
-                appendtext: (talkExists ? "\n\n" : "") + notice,
-                summary: notifySummaryWarn,
-                bot: true,
-              });
-              addLog(`[Warn] Warning posted to: ${talkTitle}`);
-            } catch (e) {
-              addLog(
-                `[Warn] Failed to post warning to ${talkTitle}: ${formatApiError(e)}`,
-                "warn",
-              );
-            }
-            rs.warnDone = true;
-          }
+          for (const targetVal of config.targets || [config.target]) {
+            if (isAborted) break;
 
-          // --- Block ---
-          if (
-            !rs.blockDone &&
-            config.block &&
-            config.mode === "user" &&
-            !isAborted
-          ) {
-            let proceedWithBlock = true;
+            if (isMultiTarget) {
+              // Insert a numbered separator into the progress log so runs
+              // involving many targets remain easy to follow.
+              const _targetIdx = (config.targets || []).indexOf(targetVal);
+              const _sepEl = document.createElement("div");
+              _sepEl.className = "tng-log-sep";
+              _sepEl.textContent =
+                "Target " +
+                (_targetIdx + 1) +
+                " of " +
+                config.targets.length +
+                ": " +
+                targetVal;
+              logBox.appendChild(_sepEl);
+              logBox.scrollTop = logBox.scrollHeight;
 
-            // Show a confirmation dialogue only when the target account matches the current user.
-            const isSelfBlock =
-              targetVal.toLowerCase() ===
-              (mw.config.get("wgUserName") || "").toLowerCase();
-            if (isSelfBlock) {
-              const confirmed = await new Promise((resolve) => {
-                const { overlay, body, footer } = createDialog({
-                  title: "Self-block confirmation",
-                  icon: "️️⚠️️️",
-                  child: true,
-                  onClose: () => resolve(false),
-                });
-                body.innerHTML =
-                  "<p>You are about to block your own account. Are you certain you wish to proceed?</p>";
-                const btnCancel = makeBtn("Cancel", "quiet");
-                btnCancel.addEventListener("click", () => {
-                  overlay.closeHandler();
-                  resolve(false);
-                });
-                const btnConfirm = makeBtn("Proceed", "destructive");
-                btnConfirm.addEventListener("click", () => {
-                  overlay.closeHandler();
-                  resolve(true);
-                });
-                footer.appendChild(btnCancel);
-                footer.appendChild(btnConfirm);
-              });
-              if (!confirmed) {
-                addLog("[Block] Self-block cancelled", "warn");
-                proceedWithBlock = false;
-              }
+              // Reset all per-target phase flags and tracking collections so
+              // each target is processed as an independent unit within this run.
+              rs.warnDone = false;
+              rs.blockDone = false;
+              rs.unblockDone = false;
+              rs.lockAccountDone = false;
+              rs.reportGSDone = false;
+              rs.reportSRGDone = false;
+              rs.undeleteDone = false;
+              rs.moveSandboxDone = false;
+              rs.rollbackLoopDone = false;
+              rs.notifyRollbackDone = false;
+              rs.mainProtectLoopDone = false;
+              rs.notifyProtectDone = false;
+              rs.deletionLoopDone = false;
+              rs.notifyDeleteUserDone = false;
+              rs.notifyDeletePageDone = false;
+              rs.protectRecreationDone = false;
+              rs.secondProtectDone = false;
+              rs.unlinkLoopDone = false;
+              rs.processedRollbackTitles = new Set();
+              rs.processedDeletionTitles = new Set();
+              rs.processedUnlinkTitles = new Set();
+              rs.pageEditsCache = null;
+              rs.creationCache = null;
+              rs.pagesToProtectCache = null;
+              rs.pagesToProtectAfterDelCache = null;
+              rs.rollbackNotifiedTitles = [];
+              rs.deletedTitles = [];
+              rs.creatorMap = new Map();
+              rs.notifyQueue = new Map();
             }
 
-            if (proceedWithBlock) {
-              const data = {
-                action: "block",
-                user: targetVal,
-                expiry: config.blockDur,
-                reason: config.blockReason + toolTag,
-              };
-              // If hardblock is checked, we do NOT want anononly=1 (registered users should be blocked too)
-              if (config.isIP) {
-                if (!config.blockAnon) {
-                  data.anononly = 1; // Standard anonymous-only block
-                }
-                // If config.blockAnon is true (meaning chkHardblock was checked), we omit data.anononly or set it to 0
-              } else {
-                if (config.blockAuto) data.autoblock = 1;
-              }
-              if (config.blockCreate) data.nocreate = 1;
-              if (!config.blockTalk) data.allowusertalk = 1;
-              if (config.blockMail) data.noemail = 1;
-              if (config.blockHide) data.hidename = 1;
+            // Resolve IP status per-target so block parameters (anononly vs
+            // autoblock) are correct when the target list mixes IPs and accounts.
+            const isTargetIP = mw.util.isIPAddress(targetVal);
 
+            // --- User warning ---
+            // Only runs in user mode; config.warn is only set when the warn
+            // section is enabled and a message template has been selected.
+            if (
+              !rs.warnDone &&
+              config.warn &&
+              config.mode === "user" &&
+              !isAborted
+            ) {
+              const talkTitle = new mw.Title(targetVal, 3).getPrefixedText();
+              const notice = config.warnNotice;
               try {
-                await apiPost(data);
-                addLog(`[Block] Successfully blocked user ${targetVal}`);
-                stats.block++;
+                const talkExists = await pageExists(talkTitle);
+                await apiPost({
+                  action: "edit",
+                  title: talkTitle,
+                  appendtext: (talkExists ? "\n\n" : "") + notice,
+                  summary: notifySummaryWarn,
+                  bot: true,
+                });
+                addLog(`[Warn] Warning posted to: ${talkTitle}`);
               } catch (e) {
                 addLog(
-                  `[Block] Failed to block ${targetVal}: ${formatApiError(e)}`,
-                  true,
+                  `[Warn] Failed to post warning to ${talkTitle}: ${formatApiError(e)}`,
+                  "warn",
                 );
               }
+              rs.warnDone = true;
+            }
 
-              // Post notification to user talk page (separate from block action above,
-              // so a notification failure does not misreport the block as having failed)
-              if (stats.block > 0 && config.notifyBlock) {
-                const talkTitle = new mw.Title(targetVal, 3).getPrefixedText();
-                const isBlockIndef = config.blockDur === "never";
-                const blockReasonNotice =
-                  config.blockReason && config.blockReason.trim()
-                    ? config.blockReason
-                    : useIndonesian
-                      ? "(tidak ada alasan diberikan)"
-                      : "(no reason given)";
+            // --- Block ---
+            if (
+              !rs.blockDone &&
+              config.block &&
+              config.mode === "user" &&
+              !isAborted
+            ) {
+              let proceedWithBlock = true;
 
-                const notice = useIndonesian
-                  ? isBlockIndef
-                    ? `== Pemberitahuan pemblokiran akun ==\nHalo ${targetVal},\n\nAkun "${targetVal}" telah diblokir secara tidak terbatas dengan alasan berikut: ${blockReasonNotice}.\n\nSelama masa pemblokiran, akun ini mungkin tidak dapat melakukan sebagian atau seluruh tindakan yang biasanya memerlukan hak penyuntingan. Pemblokiran ini tidak berakhir secara otomatis dan akan tetap berlaku kecuali diubah oleh pengurus.\n\nPemberitahuan ini dikirimkan secara otomatis. Silakan sampaikan pertanyaan atau keberatan ke halaman pembicaraan saya. ~~~~`
-                    : `== Pemberitahuan pemblokiran akun ==\nHalo ${targetVal},\n\nAkun "${targetVal}" telah diblokir selama ${translateDurationId(config.blockDur)} dengan alasan berikut: ${blockReasonNotice}.\n\nSelama masa pemblokiran, akun ini mungkin tidak dapat melakukan sebagian atau seluruh tindakan yang biasanya memerlukan hak penyuntingan. Pemblokiran dijadwalkan berakhir pada waktunya, kecuali diubah oleh pengurus.\n\nPemberitahuan ini dikirimkan secara otomatis. Silakan sampaikan pertanyaan atau keberatan ke halaman pembicaraan saya. ~~~~`
-                  : isBlockIndef
-                    ? `== Account block notice ==\nDear ${targetVal},\n\nThe account "${targetVal}" has been blocked indefinitely due to the following reason: ${blockReasonNotice}.\n\nDuring the block period, the account may be unable to perform some or all actions that normally require editing privileges. This block does not expire automatically and will remain in effect unless modified by an administrator.\n\nThis notification was posted automatically. Please direct any questions or concerns to my user talk page. ~~~~`
-                    : `== Account block notice ==\nDear ${targetVal},\n\nThe account "${targetVal}" has been blocked for ${config.blockDur} due to the following reason: ${blockReasonNotice}.\n\nDuring the block period, the account may be unable to perform some or all actions that normally require editing privileges. The block is scheduled to remain in effect until it expires, unless modified by an administrator.\n\nThis notification was posted automatically. Please direct any questions or concerns to my user talk page. ~~~~`;
+              // Show a confirmation dialogue only when the target account matches the current user.
+              const isSelfBlock =
+                targetVal.toLowerCase() ===
+                (mw.config.get("wgUserName") || "").toLowerCase();
+              if (isSelfBlock) {
+                const confirmed = await new Promise((resolve) => {
+                  const { overlay, body, footer } = createDialog({
+                    title: "Self-block confirmation",
+                    icon: "️️⚠️️️",
+                    child: true,
+                    onClose: () => resolve(false),
+                  });
+                  body.innerHTML =
+                    "<p>You are about to block your own account. Are you certain you wish to proceed?</p>";
+                  const btnCancel = makeBtn("Cancel", "quiet");
+                  btnCancel.addEventListener("click", () => {
+                    overlay.closeHandler();
+                    resolve(false);
+                  });
+                  const btnConfirm = makeBtn("Proceed", "destructive");
+                  btnConfirm.addEventListener("click", () => {
+                    overlay.closeHandler();
+                    resolve(true);
+                  });
+                  footer.appendChild(btnCancel);
+                  footer.appendChild(btnConfirm);
+                });
+                if (!confirmed) {
+                  addLog("[Block] Self-block cancelled", "warn");
+                  proceedWithBlock = false;
+                }
+              }
 
-                // When a permanent block is applied with the clear-before-notify option,
-                // replace the talk page with the notice in a single edit rather than
-                // clearing and then appending as two separate operations.
-                const shouldReplace =
-                  config.clearTalkPageBeforeNotify && isBlockIndef;
-                try {
-                  const editParams = {
-                    action: "edit",
-                    title: talkTitle,
-                    summary: notifySummaryBlock,
-                    bot: true,
-                  };
-                  if (shouldReplace) {
-                    editParams.text = notice;
-                  } else {
-                    const talkExists = await pageExists(talkTitle);
-                    editParams.appendtext = (talkExists ? "\n\n" : "") + notice;
+              if (proceedWithBlock) {
+                const data = {
+                  action: "block",
+                  user: targetVal,
+                  expiry: config.blockDur,
+                  reason: config.blockReason + toolTag,
+                };
+                // If hardblock is checked, we do NOT want anononly=1 (registered users should be blocked too)
+                if (isTargetIP) {
+                  if (!config.blockAnon) {
+                    data.anononly = 1; // Standard anonymous-only block
                   }
-                  await apiPost(editParams);
-                  addLog(
-                    shouldReplace
-                      ? `[Notify] Talk page replaced with notification: ${talkTitle}`
-                      : `[Notify] Notification posted to: ${talkTitle}`,
-                  );
-                } catch (e) {
-                  addLog(
-                    `[Notify] Failed to post block notification to ${talkTitle}: ${formatApiError(e)}`,
-                    "warn",
-                  );
+                  // If config.blockAnon is true (meaning chkHardblock was checked), we omit data.anononly or set it to 0
+                } else {
+                  if (config.blockAuto) data.autoblock = 1;
                 }
-              }
-            } // end if (proceedWithBlock)
-            rs.blockDone = true;
-          }
+                if (config.blockCreate) data.nocreate = 1;
+                if (!config.blockTalk) data.allowusertalk = 1;
+                if (config.blockMail) data.noemail = 1;
+                if (config.blockHide) data.hidename = 1;
 
-          // --- Unblock ---
-          if (
-            !rs.unblockDone &&
-            config.unblock &&
-            config.mode === "user" &&
-            !isAborted
-          ) {
-            try {
-              await apiPost({
-                action: "unblock",
-                user: targetVal,
-                reason: config.unblockReason + toolTag,
-              });
-              addLog(`[Unblock] Successfully unblocked ${targetVal}`);
-              stats.unblock++;
-
-              if (config.notifyUnblock) {
-                const talkTitle = new mw.Title(targetVal, 3).getPrefixedText();
-                const notifySummaryUnblock =
-                  (useIndonesian
-                    ? "Notifikasi: Pemberitahuan pencabutan pemblokiran"
-                    : "Notification: Account unblock notice") + toolTag;
-                const notice = useIndonesian
-                  ? `== Pemberitahuan pencabutan pemblokiran ==\nHalo ${targetVal},\n\nPemblokiran pada akun "${targetVal}" telah dicabut dengan alasan berikut: ${config.unblockReason}.\n\nPemberitahuan ini dikirimkan secara otomatis. Silakan sampaikan pertanyaan atau keberatan ke halaman pembicaraan saya. ~~~~`
-                  : `== Account unblock notice ==\nDear ${targetVal},\n\nThe block on the account "${targetVal}" has been lifted due to the following reason: ${config.unblockReason}.\n\nThis notification was posted automatically. Please direct any questions or concerns to my user talk page. ~~~~`;
                 try {
-                  const talkExists = await pageExists(talkTitle);
-                  await apiPost({
-                    action: "edit",
-                    title: talkTitle,
-                    appendtext: (talkExists ? "\n\n" : "") + notice,
-                    summary: notifySummaryUnblock,
-                    bot: true,
-                  });
-                  addLog(`[Notify] Notification posted to: ${talkTitle}`);
+                  await apiPost(data);
+                  addLog(`[Block] Successfully blocked user ${targetVal}`);
+                  stats.block++;
                 } catch (e) {
                   addLog(
-                    `[Notify] Failed to post unblock notification to ${talkTitle}: ${formatApiError(e)}`,
-                    "warn",
-                  );
-                }
-              }
-            } catch (e) {
-              addLog(
-                `[Unblock] Failed to unblock ${targetVal}: ${formatApiError(e)}`,
-                true,
-              );
-            }
-            rs.unblockDone = true;
-          }
-
-          // --- Lock account [EXPERIMENTAL] ---
-          // This calls CentralAuth's global account status API
-          // via a foreign API request to Meta-Wiki, following the same
-          // pattern already used by the Report to global sysops and Report
-          // to Steward requests/Global features above. The exact API module
-          // and parameter names used here (action=setglobalaccountstatus)
-          // have not been independently confirmed against a live wiki, since
-          // testing this feature requires steward rights. Please verify
-          // carefully before relying on it.
-          if (
-            !rs.lockAccountDone &&
-            config.lockAccount &&
-            config.mode === "user" &&
-            !isAborted
-          ) {
-            try {
-              const foreignApi = await getMetaForeignApi();
-              await new Promise((resolve, reject) => {
-                foreignApi
-                  .postWithEditToken({
-                    action: "setglobalaccountstatus",
-                    user: targetVal,
-                    locked: "lock",
-                    reason: config.lockAccountReason + toolTag,
-                    ...(config.lockAccountHideUsername
-                      ? { hidden: "lists" }
-                      : {}),
-                  })
-                  .done(resolve)
-                  .fail((code, err) =>
-                    reject(
-                      code +
-                        (err && err.error && err.error.info
-                          ? ": " + err.error.info
-                          : ""),
-                    ),
-                  );
-              });
-              addLog(`[Lock] Successfully locked account: ${targetVal}`);
-              stats.lockAccount++;
-              updateStatusDisplay();
-
-              if (config.notifyLockAccount) {
-                const talkTitle = new mw.Title(targetVal, 3).getPrefixedText();
-                const notifySummaryLockAccount =
-                  "Notification: Account lock notice" + toolTag;
-                const notice = `== Account lock notice ==\nDear ${targetVal},\n\nYour account has been globally locked due to the following reason: ${config.lockAccountReason}.\n\nThis notification was posted automatically. Please direct any questions or concerns to my user talk page. ~~~~`;
-                try {
-                  const talkExists = await pageExists(talkTitle);
-                  await apiPost({
-                    action: "edit",
-                    title: talkTitle,
-                    appendtext: (talkExists ? "\n\n" : "") + notice,
-                    summary: notifySummaryLockAccount,
-                    bot: true,
-                  });
-                  addLog(`[Notify] Notification posted to: ${talkTitle}`);
-                } catch (e) {
-                  addLog(
-                    `[Notify] Failed to post lock notification to ${talkTitle}: ${formatApiError(e)}`,
-                    "warn",
-                  );
-                }
-              }
-            } catch (e) {
-              addLog(
-                `[Lock] Failed to lock ${targetVal}: ${formatApiError(e)}`,
-                true,
-              );
-            }
-            rs.lockAccountDone = true;
-          }
-
-          // --- Report to global sysops ---
-          // Available in both user mode (reporting an account) and page mode
-          // (reporting a page for global sysops' attention).
-          if (!rs.reportGSDone && config.reportGS && !isAborted) {
-            try {
-              const reportGSSummary =
-                (config.mode === "page"
-                  ? "Reporting page for global sysops' attention"
-                  : "Reporting account for global sysops' attention") + toolTag;
-              await submitGlobalSysopsReport(
-                config.reportGSLine,
-                reportGSSummary,
-              );
-              addLog(
-                `[Report] Submitted report to Global sysops/Requests for ${targetVal}`,
-              );
-              stats.report++;
-              updateStatusDisplay();
-            } catch (e) {
-              addLog(
-                `[Report] Failed to submit report to Global sysops/Requests: ${formatApiError(e)}`,
-                true,
-              );
-            }
-            rs.reportGSDone = true;
-          }
-
-          // --- Report to Steward requests/Global ---
-          // User mode only. Files a global block request when the target is
-          // an IP address, or a global lock request when the target is a
-          // registered account, on Meta-Wiki's Steward requests/Global page.
-          if (!rs.reportSRGDone && config.reportSRG && !isAborted) {
-            try {
-              const srgSummary =
-                "Reporting account for global " +
-                (config.reportSRGKind === "block" ? "block" : "lock") +
-                toolTag;
-              await submitSRGReport(
-                config.reportSRGKind,
-                targetVal,
-                config.reportSRGSection,
-                srgSummary,
-              );
-              addLog(
-                `[Report] Submitted ${config.reportSRGKind === "block" ? "global block" : "global lock"} report to Steward requests/Global for ${targetVal}`,
-              );
-              stats.report++;
-              updateStatusDisplay();
-            } catch (e) {
-              addLog(
-                `[Report] Failed to submit report to Steward requests/Global: ${formatApiError(e)}`,
-                true,
-              );
-            }
-            rs.reportSRGDone = true;
-          }
-
-          // --- Page undeletion ---
-          if (
-            !rs.undeleteDone &&
-            config.undelete &&
-            config.mode === "page" &&
-            !isAborted
-          ) {
-            try {
-              await apiPost({
-                action: "undelete",
-                title: targetVal,
-                reason: config.undeleteReason + toolTag,
-              });
-              addLog(`[Undelete] Successfully restored page: ${targetVal}`);
-              stats.undelete++;
-              updateStatusDisplay();
-            } catch (e) {
-              addLog(
-                `[Undelete] Failed to restore ${targetVal}: ${formatApiError(e)}`,
-                true,
-              );
-            }
-            rs.undeleteDone = true;
-          }
-
-          // --- Move page / Move to user's sandbox ---
-          if (
-            !rs.moveSandboxDone &&
-            config.moveSandbox &&
-            config.mode === "page" &&
-            !isAborted
-          ) {
-            if (config.moveSandboxMode === "movepage") {
-              // General page move. movetalk and movesubpages are native API
-              // parameters so the move, talk page move, and subpage moves are
-              // handled by the API in a single call rather than as separate requests.
-              const moveParams = {
-                action: "move",
-                from: targetVal,
-                to: config.movePageDest,
-                reason: config.movePageReason + toolTag,
-              };
-              if (config.movePageNoRedirect) moveParams.noredirect = 1;
-              if (config.movePageTalk) moveParams.movetalk = 1;
-              if (config.movePageSubpages) moveParams.movesubpages = 1;
-
-              // Delete the destination page first, if requested and it exists.
-              // A move fails outright if the destination title is already
-              // occupied by an existing page, so this must run before the
-              // move attempt below.
-              if (config.movePageDeleteDest && !isAborted) {
-                try {
-                  const destExistData = await apiGet({
-                    action: "query",
-                    titles: config.movePageDest,
-                    formatversion: 2,
-                  });
-                  const destPage =
-                    destExistData.query &&
-                    destExistData.query.pages &&
-                    destExistData.query.pages[0];
-                  if (destPage && !destPage.missing) {
-                    await apiPost({
-                      action: "delete",
-                      title: config.movePageDest,
-                      reason:
-                        (useIndonesian
-                          ? "Menghapus halaman tujuan untuk memungkinkan pemindahan halaman: "
-                          : "Deleting destination page to allow page move: ") +
-                        config.movePageReason +
-                        toolTag,
-                    });
-                    addLog(
-                      `[Move] Deleted existing destination page: ${config.movePageDest}`,
-                    );
-                    stats.delete++;
-                    updateStatusDisplay();
-                  }
-                } catch (e) {
-                  addLog(
-                    `[Move] Failed to delete destination page "${config.movePageDest}": ${formatApiError(e)}`,
+                    `[Block] Failed to block ${targetVal}: ${formatApiError(e)}`,
                     true,
                   );
                 }
-              }
 
-              let movePageMoveSucceeded = false;
-              try {
-                await apiPost(moveParams);
-                addLog(
-                  `[Move] Moved "${targetVal}" to "${config.movePageDest}"`,
-                );
-                stats.move++;
-                updateStatusDisplay();
-                movePageMoveSucceeded = true;
-              } catch (e) {
-                addLog(
-                  `[Move] Failed to move "${targetVal}" to "${config.movePageDest}": ${formatApiError(e)}`,
-                  true,
-                );
-              }
+                // Post notification to user talk page (separate from block action above,
+                // so a notification failure does not misreport the block as having failed)
+                if (stats.block > 0 && config.notifyBlock) {
+                  const talkTitle = new mw.Title(
+                    targetVal,
+                    3,
+                  ).getPrefixedText();
+                  const isBlockIndef = config.blockDur === "never";
+                  const blockReasonNotice =
+                    config.blockReason && config.blockReason.trim()
+                      ? config.blockReason
+                      : useIndonesian
+                        ? "(tidak ada alasan diberikan)"
+                        : "(no reason given)";
 
-              // Fix double redirects. A double redirect occurs when a page
-              // redirects to targetVal, which — following this move — is
-              // itself now a redirect to config.movePageDest, instead of the
-              // pre-existing redirect being updated to point directly to the
-              // final destination. Only relevant when a redirect was left
-              // behind at the old title (i.e. 'Suppress redirect' was not
-              // used), since otherwise there is no intermediate redirect for
-              // other pages to chain through.
-              if (
-                movePageMoveSucceeded &&
-                config.movePageFixDoubleRedirects &&
-                !config.movePageNoRedirect &&
-                !isAborted
-              ) {
-                try {
-                  const drData = await apiGet({
-                    action: "query",
-                    list: "backlinks",
-                    bltitle: targetVal,
-                    blfilterredir: "redirects",
-                    bllimit: "max",
-                    formatversion: 2,
-                  });
-                  const redirectPages =
-                    (drData.query && drData.query.backlinks) || [];
-                  if (!redirectPages.length) {
-                    addLog(
-                      `[Move] No double redirects found pointing to: ${targetVal}`,
-                    );
-                  }
-                  // Detect the local wiki's redirect magic word(s) (e.g.
-                  // "#REDIRECT", "#ALIH") rather than assuming English.
-                  const redirectAliases = await getRedirectMagicWords();
-                  const redirectAliasPattern = redirectAliases
-                    .map(function (a) {
-                      return a.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-                    })
-                    .join("|");
-                  for (const rdPage of redirectPages) {
-                    if (isAborted) break;
-                    try {
-                      const revData = await apiGet({
-                        action: "query",
-                        prop: "revisions",
-                        titles: rdPage.title,
-                        rvprop: "content",
-                        rvslots: "main",
-                        formatversion: 2,
-                      });
-                      const page =
-                        revData.query &&
-                        revData.query.pages &&
-                        revData.query.pages[0];
-                      const slot =
-                        page &&
-                        page.revisions &&
-                        page.revisions[0] &&
-                        page.revisions[0].slots &&
-                        page.revisions[0].slots.main;
-                      if (!slot) continue;
-                      const wikitext = slot.content;
+                  const notice = useIndonesian
+                    ? isBlockIndef
+                      ? `== Pemberitahuan pemblokiran akun ==\nHalo ${targetVal},\n\nAkun "${targetVal}" telah diblokir secara tidak terbatas dengan alasan berikut: ${blockReasonNotice}.\n\nSelama masa pemblokiran, akun ini mungkin tidak dapat melakukan sebagian atau seluruh tindakan yang biasanya memerlukan hak penyuntingan. Pemblokiran ini tidak berakhir secara otomatis dan akan tetap berlaku kecuali diubah oleh pengurus.\n\nPemberitahuan ini dikirimkan secara otomatis. Silakan sampaikan pertanyaan atau keberatan ke halaman pembicaraan saya. ~~~~`
+                      : `== Pemberitahuan pemblokiran akun ==\nHalo ${targetVal},\n\nAkun "${targetVal}" telah diblokir selama ${translateDurationId(config.blockDur)} dengan alasan berikut: ${blockReasonNotice}.\n\nSelama masa pemblokiran, akun ini mungkin tidak dapat melakukan sebagian atau seluruh tindakan yang biasanya memerlukan hak penyuntingan. Pemblokiran dijadwalkan berakhir pada waktunya, kecuali diubah oleh pengurus.\n\nPemberitahuan ini dikirimkan secara otomatis. Silakan sampaikan pertanyaan atau keberatan ke halaman pembicaraan saya. ~~~~`
+                    : isBlockIndef
+                      ? `== Account block notice ==\nDear ${targetVal},\n\nThe account "${targetVal}" has been blocked indefinitely due to the following reason: ${blockReasonNotice}.\n\nDuring the block period, the account may be unable to perform some or all actions that normally require editing privileges. This block does not expire automatically and will remain in effect unless modified by an administrator.\n\nThis notification was posted automatically. Please direct any questions or concerns to my user talk page. ~~~~`
+                      : `== Account block notice ==\nDear ${targetVal},\n\nThe account "${targetVal}" has been blocked for ${config.blockDur} due to the following reason: ${blockReasonNotice}.\n\nDuring the block period, the account may be unable to perform some or all actions that normally require editing privileges. The block is scheduled to remain in effect until it expires, unless modified by an administrator.\n\nThis notification was posted automatically. Please direct any questions or concerns to my user talk page. ~~~~`;
 
-                      // Matches "#REDIRECT [[Old title]]", optionally followed
-                      // by a section anchor (#Section) or a piped display text,
-                      // and rewrites only the title portion, preserving whatever
-                      // follows it.
-                      const escapedOld = targetVal
-                        .replace(/[.*+?^${}()|[\]\\]/g, "\\$&")
-                        .replace(/[ _]/g, "[ _]");
-                      const redirRe = new RegExp(
-                        "((?:" +
-                          redirectAliasPattern +
-                          ")\\s*\\[\\[)\\s*" +
-                          escapedOld +
-                          "\\s*(\\]\\]|\\||#)",
-                        "i",
-                      );
-                      if (!redirRe.test(wikitext)) continue;
-                      const newWikitext = wikitext.replace(
-                        redirRe,
-                        function (match, prefix, tail) {
-                          return prefix + config.movePageDest + tail;
-                        },
-                      );
-                      if (newWikitext === wikitext) continue;
-
-                      await apiPost({
-                        action: "edit",
-                        title: rdPage.title,
-                        text: newWikitext,
-                        summary:
-                          (useIndonesian
-                            ? "Memperbaiki pengalihan ganda setelah pemindahan halaman: "
-                            : "Fixing double redirect following page move: ") +
-                          targetVal +
-                          " → " +
-                          config.movePageDest +
-                          toolTag,
-                        bot: true,
-                      });
-                      addLog(
-                        `[Move] Fixed double redirect: ${rdPage.title} now points directly to "${config.movePageDest}"`,
-                      );
-                      stats.redirfix++;
-                      updateStatusDisplay();
-                    } catch (e) {
-                      addLog(
-                        `[Move] Failed to fix double redirect at ${rdPage.title}: ${formatApiError(e)}`,
-                        true,
-                      );
-                    }
-                    await new Promise((resolve) =>
-                      setTimeout(resolve, THROTTLE_MS),
-                    );
-                  }
-                } catch (e) {
-                  addLog(
-                    `[Move] Failed to fetch redirects pointing to "${targetVal}": ${formatApiError(e)}`,
-                    true,
-                  );
-                }
-              }
-            } else {
-              const moveParams = {
-                action: "move",
-                from: targetVal,
-                to: config.moveSandboxDest,
-                reason: config.moveSandboxReason + toolTag,
-              };
-              if (config.moveSandboxNoRedirect) moveParams.noredirect = 1;
-              try {
-                await apiPost(moveParams);
-                addLog(
-                  `[Move] Moved "${targetVal}" to "${config.moveSandboxDest}"`,
-                );
-                stats.move++;
-                updateStatusDisplay();
-              } catch (e) {
-                addLog(
-                  `[Move] Failed to move "${targetVal}" to "${config.moveSandboxDest}": ${formatApiError(e)}`,
-                  true,
-                );
-              }
-
-              // Move the associated talk page if the option was selected.
-              if (config.moveSandboxTalk && !isAborted) {
-                try {
-                  const sourceTitleObj = new mw.Title(targetVal);
-                  if (sourceTitleObj.isTalkPage()) {
-                    addLog(
-                      "[Move] Skipped talk page move: target is already a talk page",
-                      "warn",
-                    );
-                  } else {
-                    const sourceTalkTitle = sourceTitleObj
-                      .getTalkPage()
-                      .getPrefixedText();
-                    const talkExistData = await apiGet({
-                      action: "query",
-                      titles: sourceTalkTitle,
-                      formatversion: 2,
-                    });
-                    const talkPage =
-                      talkExistData.query &&
-                      talkExistData.query.pages &&
-                      talkExistData.query.pages[0];
-                    if (talkPage && !talkPage.missing) {
-                      const talkMoveParams = {
-                        action: "move",
-                        from: sourceTalkTitle,
-                        to: config.moveSandboxTalkDest,
-                        reason:
-                          (useIndonesian
-                            ? `Halaman pembicaraan dari halaman yang dipindahkan: ${config.moveSandboxReason}`
-                            : `Talk page of moved page: ${config.moveSandboxReason}`) +
-                          toolTag,
-                      };
-                      if (config.moveSandboxNoRedirect)
-                        talkMoveParams.noredirect = 1;
-                      await apiPost(talkMoveParams);
-                      addLog(
-                        `[Move] Moved talk page "${sourceTalkTitle}" to "${config.moveSandboxTalkDest}"`,
-                      );
-                      stats.move++;
-                      updateStatusDisplay();
+                  // When a permanent block is applied with the clear-before-notify option,
+                  // replace the talk page with the notice in a single edit rather than
+                  // clearing and then appending as two separate operations.
+                  const shouldReplace =
+                    config.clearTalkPageBeforeNotify && isBlockIndef;
+                  try {
+                    const editParams = {
+                      action: "edit",
+                      title: talkTitle,
+                      summary: notifySummaryBlock,
+                      bot: true,
+                    };
+                    if (shouldReplace) {
+                      editParams.text = notice;
                     } else {
-                      addLog(
-                        `[Move] Skipped talk page move: "${sourceTalkTitle}" does not exist`,
-                        "warn",
-                      );
+                      const talkExists = await pageExists(talkTitle);
+                      editParams.appendtext =
+                        (talkExists ? "\n\n" : "") + notice;
                     }
+                    await apiPost(editParams);
+                    addLog(
+                      shouldReplace
+                        ? `[Notify] Talk page replaced with notification: ${talkTitle}`
+                        : `[Notify] Notification posted to: ${talkTitle}`,
+                    );
+                  } catch (e) {
+                    addLog(
+                      `[Notify] Failed to post block notification to ${talkTitle}: ${formatApiError(e)}`,
+                      "warn",
+                    );
                   }
+                }
+              } // end if (proceedWithBlock)
+              rs.blockDone = true;
+            }
+
+            // --- Unblock ---
+            if (
+              !rs.unblockDone &&
+              config.unblock &&
+              config.mode === "user" &&
+              !isAborted
+            ) {
+              try {
+                await apiPost({
+                  action: "unblock",
+                  user: targetVal,
+                  reason: config.unblockReason + toolTag,
+                });
+                addLog(`[Unblock] Successfully unblocked ${targetVal}`);
+                stats.unblock++;
+
+                if (config.notifyUnblock) {
+                  const talkTitle = new mw.Title(
+                    targetVal,
+                    3,
+                  ).getPrefixedText();
+                  const notifySummaryUnblock =
+                    (useIndonesian
+                      ? "Notifikasi: Pemberitahuan pencabutan pemblokiran"
+                      : "Notification: Account unblock notice") + toolTag;
+                  const notice = useIndonesian
+                    ? `== Pemberitahuan pencabutan pemblokiran ==\nHalo ${targetVal},\n\nPemblokiran pada akun "${targetVal}" telah dicabut dengan alasan berikut: ${config.unblockReason}.\n\nPemberitahuan ini dikirimkan secara otomatis. Silakan sampaikan pertanyaan atau keberatan ke halaman pembicaraan saya. ~~~~`
+                    : `== Account unblock notice ==\nDear ${targetVal},\n\nThe block on the account "${targetVal}" has been lifted due to the following reason: ${config.unblockReason}.\n\nThis notification was posted automatically. Please direct any questions or concerns to my user talk page. ~~~~`;
+                  try {
+                    const talkExists = await pageExists(talkTitle);
+                    await apiPost({
+                      action: "edit",
+                      title: talkTitle,
+                      appendtext: (talkExists ? "\n\n" : "") + notice,
+                      summary: notifySummaryUnblock,
+                      bot: true,
+                    });
+                    addLog(`[Notify] Notification posted to: ${talkTitle}`);
+                  } catch (e) {
+                    addLog(
+                      `[Notify] Failed to post unblock notification to ${talkTitle}: ${formatApiError(e)}`,
+                      "warn",
+                    );
+                  }
+                }
+              } catch (e) {
+                addLog(
+                  `[Unblock] Failed to unblock ${targetVal}: ${formatApiError(e)}`,
+                  true,
+                );
+              }
+              rs.unblockDone = true;
+            }
+
+            // --- Lock account [EXPERIMENTAL] ---
+            // This calls CentralAuth's global account status API
+            // via a foreign API request to Meta-Wiki, following the same
+            // pattern already used by the Report to global sysops and Report
+            // to Steward requests/Global features above. The exact API module
+            // and parameter names used here (action=setglobalaccountstatus)
+            // have not been independently confirmed against a live wiki, since
+            // testing this feature requires steward rights. Please verify
+            // carefully before relying on it.
+            if (
+              !rs.lockAccountDone &&
+              config.lockAccount &&
+              config.mode === "user" &&
+              !isAborted
+            ) {
+              try {
+                const foreignApi = await getMetaForeignApi();
+                await new Promise((resolve, reject) => {
+                  foreignApi
+                    .postWithEditToken({
+                      action: "setglobalaccountstatus",
+                      user: targetVal,
+                      locked: "lock",
+                      reason: config.lockAccountReason + toolTag,
+                      ...(config.lockAccountHideUsername
+                        ? { hidden: "lists" }
+                        : {}),
+                    })
+                    .done(resolve)
+                    .fail((code, err) =>
+                      reject(
+                        code +
+                          (err && err.error && err.error.info
+                            ? ": " + err.error.info
+                            : ""),
+                      ),
+                    );
+                });
+                addLog(`[Lock] Successfully locked account: ${targetVal}`);
+                stats.lockAccount++;
+                updateStatusDisplay();
+
+                if (config.notifyLockAccount) {
+                  const talkTitle = new mw.Title(
+                    targetVal,
+                    3,
+                  ).getPrefixedText();
+                  const notifySummaryLockAccount =
+                    "Notification: Account lock notice" + toolTag;
+                  const notice = `== Account lock notice ==\nDear ${targetVal},\n\nYour account has been globally locked due to the following reason: ${config.lockAccountReason}.\n\nThis notification was posted automatically. Please direct any questions or concerns to my user talk page. ~~~~`;
+                  try {
+                    const talkExists = await pageExists(talkTitle);
+                    await apiPost({
+                      action: "edit",
+                      title: talkTitle,
+                      appendtext: (talkExists ? "\n\n" : "") + notice,
+                      summary: notifySummaryLockAccount,
+                      bot: true,
+                    });
+                    addLog(`[Notify] Notification posted to: ${talkTitle}`);
+                  } catch (e) {
+                    addLog(
+                      `[Notify] Failed to post lock notification to ${talkTitle}: ${formatApiError(e)}`,
+                      "warn",
+                    );
+                  }
+                }
+              } catch (e) {
+                addLog(
+                  `[Lock] Failed to lock ${targetVal}: ${formatApiError(e)}`,
+                  true,
+                );
+              }
+              rs.lockAccountDone = true;
+            }
+
+            // --- Report to global sysops ---
+            // Available in both user mode (reporting an account) and page mode
+            // (reporting a page for global sysops' attention).
+            // In multi-target mode the report line is pre-built for the primary
+            // target, so GS reports are only submitted for that target.
+            if (
+              !rs.reportGSDone &&
+              config.reportGS &&
+              !isAborted &&
+              (!isMultiTarget || targetVal === config.target)
+            ) {
+              try {
+                const reportGSSummary =
+                  (config.mode === "page"
+                    ? "Reporting page for global sysops' attention"
+                    : "Reporting account for global sysops' attention") +
+                  toolTag;
+                await submitGlobalSysopsReport(
+                  config.reportGSLine,
+                  reportGSSummary,
+                );
+                addLog(
+                  `[Report] Submitted report to Global sysops/Requests for ${targetVal}`,
+                );
+                stats.report++;
+                updateStatusDisplay();
+              } catch (e) {
+                addLog(
+                  `[Report] Failed to submit report to Global sysops/Requests: ${formatApiError(e)}`,
+                  true,
+                );
+              }
+              rs.reportGSDone = true;
+            }
+
+            // --- Report to Steward requests/Global ---
+            // User mode only. Files a global block request when the target is
+            // an IP address, or a global lock request when the target is a
+            // registered account, on Meta-Wiki's Steward requests/Global page.
+            // In multi-target mode the report section is pre-built for the primary
+            // target, so SRG reports are only submitted for that target.
+            if (
+              !rs.reportSRGDone &&
+              config.reportSRG &&
+              !isAborted &&
+              (!isMultiTarget || targetVal === config.target)
+            ) {
+              try {
+                const srgSummary =
+                  "Reporting account for global " +
+                  (config.reportSRGKind === "block" ? "block" : "lock") +
+                  toolTag;
+                await submitSRGReport(
+                  config.reportSRGKind,
+                  targetVal,
+                  config.reportSRGSection,
+                  srgSummary,
+                );
+                addLog(
+                  `[Report] Submitted ${config.reportSRGKind === "block" ? "global block" : "global lock"} report to Steward requests/Global for ${targetVal}`,
+                );
+                stats.report++;
+                updateStatusDisplay();
+              } catch (e) {
+                addLog(
+                  `[Report] Failed to submit report to Steward requests/Global: ${formatApiError(e)}`,
+                  true,
+                );
+              }
+              rs.reportSRGDone = true;
+            }
+
+            // --- Page undeletion ---
+            if (
+              !rs.undeleteDone &&
+              config.undelete &&
+              config.mode === "page" &&
+              !isAborted
+            ) {
+              try {
+                await apiPost({
+                  action: "undelete",
+                  title: targetVal,
+                  reason: config.undeleteReason + toolTag,
+                });
+                addLog(`[Undelete] Successfully restored page: ${targetVal}`);
+                stats.undelete++;
+                updateStatusDisplay();
+              } catch (e) {
+                addLog(
+                  `[Undelete] Failed to restore ${targetVal}: ${formatApiError(e)}`,
+                  true,
+                );
+              }
+              rs.undeleteDone = true;
+            }
+
+            // --- Move page / Move to user's sandbox ---
+            if (
+              !rs.moveSandboxDone &&
+              config.moveSandbox &&
+              config.mode === "page" &&
+              !isAborted
+            ) {
+              if (config.moveSandboxMode === "movepage") {
+                // General page move. movetalk and movesubpages are native API
+                // parameters so the move, talk page move, and subpage moves are
+                // handled by the API in a single call rather than as separate requests.
+                const moveParams = {
+                  action: "move",
+                  from: targetVal,
+                  to: config.movePageDest,
+                  reason: config.movePageReason + toolTag,
+                };
+                if (config.movePageNoRedirect) moveParams.noredirect = 1;
+                if (config.movePageTalk) moveParams.movetalk = 1;
+                if (config.movePageSubpages) moveParams.movesubpages = 1;
+
+                // Delete the destination page first, if requested and it exists.
+                // A move fails outright if the destination title is already
+                // occupied by an existing page, so this must run before the
+                // move attempt below.
+                if (config.movePageDeleteDest && !isAborted) {
+                  try {
+                    const destExistData = await apiGet({
+                      action: "query",
+                      titles: config.movePageDest,
+                      formatversion: 2,
+                    });
+                    const destPage =
+                      destExistData.query &&
+                      destExistData.query.pages &&
+                      destExistData.query.pages[0];
+                    if (destPage && !destPage.missing) {
+                      await apiPost({
+                        action: "delete",
+                        title: config.movePageDest,
+                        reason:
+                          (useIndonesian
+                            ? "Menghapus halaman tujuan untuk memungkinkan pemindahan halaman: "
+                            : "Deleting destination page to allow page move: ") +
+                          config.movePageReason +
+                          toolTag,
+                      });
+                      addLog(
+                        `[Move] Deleted existing destination page: ${config.movePageDest}`,
+                      );
+                      stats.delete++;
+                      updateStatusDisplay();
+                    }
+                  } catch (e) {
+                    addLog(
+                      `[Move] Failed to delete destination page "${config.movePageDest}": ${formatApiError(e)}`,
+                      true,
+                    );
+                  }
+                }
+
+                let movePageMoveSucceeded = false;
+                try {
+                  await apiPost(moveParams);
+                  addLog(
+                    `[Move] Moved "${targetVal}" to "${config.movePageDest}"`,
+                  );
+                  stats.move++;
+                  updateStatusDisplay();
+                  movePageMoveSucceeded = true;
                 } catch (e) {
                   addLog(
-                    `[Move] Failed to move talk page to "${config.moveSandboxTalkDest}": ${formatApiError(e)}`,
+                    `[Move] Failed to move "${targetVal}" to "${config.movePageDest}": ${formatApiError(e)}`,
                     true,
                   );
                 }
-              }
 
-              // Move all subpages if the option was selected.
-              if (config.moveSandboxSubpages && !isAborted) {
-                try {
-                  const sourceTitleObj = new mw.Title(targetVal);
-                  if (sourceTitleObj.isTalkPage()) {
-                    addLog(
-                      "[Move] Skipped subpage moves: target is already a talk page",
-                      "warn",
-                    );
-                  } else {
-                    const ns = sourceTitleObj.getNamespaceId();
-                    const mainText = sourceTitleObj.getMain();
-                    const spData = await apiGet({
+                // Fix double redirects. A double redirect occurs when a page
+                // redirects to targetVal, which — following this move — is
+                // itself now a redirect to config.movePageDest, instead of the
+                // pre-existing redirect being updated to point directly to the
+                // final destination. Only relevant when a redirect was left
+                // behind at the old title (i.e. 'Suppress redirect' was not
+                // used), since otherwise there is no intermediate redirect for
+                // other pages to chain through.
+                if (
+                  movePageMoveSucceeded &&
+                  config.movePageFixDoubleRedirects &&
+                  !config.movePageNoRedirect &&
+                  !isAborted
+                ) {
+                  try {
+                    const drData = await apiGet({
                       action: "query",
-                      list: "allpages",
-                      apprefix: mainText + "/",
-                      apnamespace: ns,
-                      aplimit: "max",
+                      list: "backlinks",
+                      bltitle: targetVal,
+                      blfilterredir: "redirects",
+                      bllimit: "max",
                       formatversion: 2,
                     });
-                    const subpages =
-                      (spData.query && spData.query.allpages) || [];
-                    if (!subpages.length) {
+                    const redirectPages =
+                      (drData.query && drData.query.backlinks) || [];
+                    if (!redirectPages.length) {
                       addLog(
-                        `[Move] No subpages found for: ${targetVal}`,
-                        "warn",
+                        `[Move] No double redirects found pointing to: ${targetVal}`,
                       );
                     }
-                    // Normalise the source prefix so that the suffix can be
-                    // extracted reliably regardless of how the user typed it.
-                    const normalizedSource = sourceTitleObj.getPrefixedText();
-                    for (const sp of subpages) {
+                    // Detect the local wiki's redirect magic word(s) (e.g.
+                    // "#REDIRECT", "#ALIH") rather than assuming English.
+                    const redirectAliases = await getRedirectMagicWords();
+                    const redirectAliasPattern = redirectAliases
+                      .map(function (a) {
+                        return a.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+                      })
+                      .join("|");
+                    for (const rdPage of redirectPages) {
                       if (isAborted) break;
-                      const suffix = sp.title.slice(normalizedSource.length); // e.g. "/Section"
-                      const spDest = config.moveSandboxDest + suffix;
-                      const spMoveParams = {
-                        action: "move",
-                        from: sp.title,
-                        to: spDest,
-                        reason:
-                          (useIndonesian
-                            ? `Memindahkan subhalaman karena halaman utama yang terkait telah dipindahkan: ${config.moveSandboxReason}`
-                            : `Moving subpage because its associated main page has been moved: ${config.moveSandboxReason}`) +
-                          toolTag,
-                      };
-                      if (config.moveSandboxNoRedirect)
-                        spMoveParams.noredirect = 1;
                       try {
-                        await apiPost(spMoveParams);
-                        addLog(
-                          `[Move] Moved subpage "${sp.title}" to "${spDest}"`,
+                        const revData = await apiGet({
+                          action: "query",
+                          prop: "revisions",
+                          titles: rdPage.title,
+                          rvprop: "content",
+                          rvslots: "main",
+                          formatversion: 2,
+                        });
+                        const page =
+                          revData.query &&
+                          revData.query.pages &&
+                          revData.query.pages[0];
+                        const slot =
+                          page &&
+                          page.revisions &&
+                          page.revisions[0] &&
+                          page.revisions[0].slots &&
+                          page.revisions[0].slots.main;
+                        if (!slot) continue;
+                        const wikitext = slot.content;
+
+                        // Matches "#REDIRECT [[Old title]]", optionally followed
+                        // by a section anchor (#Section) or a piped display text,
+                        // and rewrites only the title portion, preserving whatever
+                        // follows it.
+                        const escapedOld = targetVal
+                          .replace(/[.*+?^${}()|[\]\\]/g, "\\$&")
+                          .replace(/[ _]/g, "[ _]");
+                        const redirRe = new RegExp(
+                          "((?:" +
+                            redirectAliasPattern +
+                            ")\\s*\\[\\[)\\s*" +
+                            escapedOld +
+                            "\\s*(\\]\\]|\\||#)",
+                          "i",
                         );
-                        stats.move++;
+                        if (!redirRe.test(wikitext)) continue;
+                        const newWikitext = wikitext.replace(
+                          redirRe,
+                          function (match, prefix, tail) {
+                            return prefix + config.movePageDest + tail;
+                          },
+                        );
+                        if (newWikitext === wikitext) continue;
+
+                        await apiPost({
+                          action: "edit",
+                          title: rdPage.title,
+                          text: newWikitext,
+                          summary:
+                            (useIndonesian
+                              ? "Memperbaiki pengalihan ganda setelah pemindahan halaman: "
+                              : "Fixing double redirect following page move: ") +
+                            targetVal +
+                            " → " +
+                            config.movePageDest +
+                            toolTag,
+                          bot: true,
+                        });
+                        addLog(
+                          `[Move] Fixed double redirect: ${rdPage.title} now points directly to "${config.movePageDest}"`,
+                        );
+                        stats.redirfix++;
                         updateStatusDisplay();
                       } catch (e) {
                         addLog(
-                          `[Move] Failed to move subpage "${sp.title}" to "${spDest}": ${formatApiError(e)}`,
+                          `[Move] Failed to fix double redirect at ${rdPage.title}: ${formatApiError(e)}`,
                           true,
                         );
                       }
-
-                      // Move the talk page of this subpage if the option is selected.
-                      if (config.moveSandboxTalk && !isAborted) {
-                        try {
-                          const spTitleObj = new mw.Title(sp.title);
-                          const spTalkTitle = spTitleObj
-                            .getTalkPage()
-                            .getPrefixedText();
-                          const spTalkExistData = await apiGet({
-                            action: "query",
-                            titles: spTalkTitle,
-                            formatversion: 2,
-                          });
-                          const spTalkPage =
-                            spTalkExistData.query &&
-                            spTalkExistData.query.pages &&
-                            spTalkExistData.query.pages[0];
-                          if (spTalkPage && !spTalkPage.missing) {
-                            const spTalkDest =
-                              config.moveSandboxTalkDest + suffix;
-                            const spTalkMoveParams = {
-                              action: "move",
-                              from: spTalkTitle,
-                              to: spTalkDest,
-                              reason:
-                                (useIndonesian
-                                  ? `Halaman pembicaraan dari subhalaman yang dipindahkan: ${config.moveSandboxReason}`
-                                  : `Talk page of moved subpage: ${config.moveSandboxReason}`) +
-                                toolTag,
-                            };
-                            if (config.moveSandboxNoRedirect)
-                              spTalkMoveParams.noredirect = 1;
-                            await apiPost(spTalkMoveParams);
-                            addLog(
-                              `[Move] Moved subpage talk page "${spTalkTitle}" to "${spTalkDest}"`,
-                            );
-                            stats.move++;
-                            updateStatusDisplay();
-                          } else {
-                            addLog(
-                              `[Move] Skipped subpage talk page move: "${spTalkTitle}" does not exist`,
-                              "warn",
-                            );
-                          }
-                        } catch (e) {
-                          addLog(
-                            `[Move] Failed to move talk page for subpage "${sp.title}": ${formatApiError(e)}`,
-                            true,
-                          );
-                        }
-                      }
-
                       await new Promise((resolve) =>
                         setTimeout(resolve, THROTTLE_MS),
                       );
                     }
+                  } catch (e) {
+                    addLog(
+                      `[Move] Failed to fetch redirects pointing to "${targetVal}": ${formatApiError(e)}`,
+                      true,
+                    );
                   }
+                }
+              } else {
+                const moveParams = {
+                  action: "move",
+                  from: targetVal,
+                  to: config.moveSandboxDest,
+                  reason: config.moveSandboxReason + toolTag,
+                };
+                if (config.moveSandboxNoRedirect) moveParams.noredirect = 1;
+                try {
+                  await apiPost(moveParams);
+                  addLog(
+                    `[Move] Moved "${targetVal}" to "${config.moveSandboxDest}"`,
+                  );
+                  stats.move++;
+                  updateStatusDisplay();
                 } catch (e) {
                   addLog(
-                    `[Move] Failed to fetch subpages for "${targetVal}": ${formatApiError(e)}`,
+                    `[Move] Failed to move "${targetVal}" to "${config.moveSandboxDest}": ${formatApiError(e)}`,
                     true,
                   );
                 }
-              }
-            } // end else (sandbox mode)
-            rs.moveSandboxDone = true;
-          }
 
-          // --- Fetch user contributions OR prepare target page ---
-          // On a resume run, contribution data is loaded from the cache stored in rs,
-          // avoiding a repeat API call. On a fresh run data is fetched normally then cached.
-          let pageEdits = {};
-          let creation = [];
-          let pagesToProtect = new Set();
-          let pagesToProtectAfterDel;
-          const skipContribFetch = rs.pageEditsCache !== null;
-          if (skipContribFetch) {
-            pageEdits = rs.pageEditsCache;
-            creation = rs.creationCache;
-            pagesToProtect = rs.pagesToProtectCache;
-            pagesToProtectAfterDel = rs.pagesToProtectAfterDelCache;
-            addLog("▶️ Contribution data reloaded from the previous run.");
-          }
-
-          if (
-            !skipContribFetch &&
-            config.mode === "user" &&
-            config.customSelection
-          ) {
-            // Custom-selection mode: use the items chosen in the picker rather
-            // than fetching contributions from the API.
-            for (const [title, info] of Object.entries(
-              config.selectedPageEdits,
-            )) {
-              pageEdits[title] = info;
-            }
-            for (const t of config.selectedCreations) {
-              creation.push(t);
-            }
-            if (!Object.keys(pageEdits).length && !creation.length) {
-              addLog(
-                "[Info] Custom selection is active but no items were selected — no edits or pages will be processed.",
-                "warn",
-              );
-            }
-            if (config.protect) {
-              for (const title of Object.keys(pageEdits)) {
-                pagesToProtect.add(title);
-              }
-              if (!config.massdel) {
-                for (const title of creation) {
-                  pagesToProtect.add(title);
-                }
-              }
-            }
-          }
-
-          if (
-            !skipContribFetch &&
-            config.mode === "user" &&
-            !config.customSelection
-          ) {
-            const contribParams = {
-              action: "query",
-              list: "usercontribs",
-              ucuser: targetVal,
-              uclimit: "max",
-            };
-            if (config.betweenMode) {
-              // Between-dates mode: ucend is the older (from) boundary;
-              // ucstart is the newer (to) boundary. Either may be null if
-              // the user left that picker blank, in which case the API
-              // returns edits up to or from the filled-in date with no
-              // constraint on the other end.
-              if (config.betweenFrom) contribParams.ucend = config.betweenFrom;
-              if (config.betweenTo) contribParams.ucstart = config.betweenTo;
-            } else if (config.endtime !== "inf") {
-              const untildate = new Date();
-              untildate.setSeconds(
-                untildate.getSeconds() - parseInt(config.endtime),
-              );
-              contribParams.ucend = untildate.toISOString();
-            }
-
-            let contribs = [];
-            let hasMore = true;
-            let continueToken = {};
-
-            while (hasMore && !isAborted) {
-              const params = Object.assign({}, contribParams, continueToken);
-              try {
-                const data = await apiGet(params);
-                if (data.query && data.query.usercontribs) {
-                  contribs = contribs.concat(data.query.usercontribs);
-                }
-                if (data.continue) {
-                  continueToken = data.continue;
-                } else {
-                  hasMore = false;
-                }
-              } catch (e) {
-                addLog(
-                  `[Error] Failed to fetch contribution history: ${formatApiError(e)}`,
-                  true,
-                );
-                hasMore = false;
-              }
-            }
-
-            if (!contribs.length && !isAborted) {
-              addLog("[Info] No contributions found within this timeframe");
-            } else if (!isAborted) {
-              for (const edit of contribs) {
-                if (edit.new === "") {
-                  creation.push(edit.title);
-                } else {
-                  if (!pageEdits[edit.title]) {
-                    pageEdits[edit.title] = {
-                      revids: [],
-                      latest: edit.revid,
-                      oldestParent: edit.parentid,
-                    };
+                // Move the associated talk page if the option was selected.
+                if (config.moveSandboxTalk && !isAborted) {
+                  try {
+                    const sourceTitleObj = new mw.Title(targetVal);
+                    if (sourceTitleObj.isTalkPage()) {
+                      addLog(
+                        "[Move] Skipped talk page move: target is already a talk page",
+                        "warn",
+                      );
+                    } else {
+                      const sourceTalkTitle = sourceTitleObj
+                        .getTalkPage()
+                        .getPrefixedText();
+                      const talkExistData = await apiGet({
+                        action: "query",
+                        titles: sourceTalkTitle,
+                        formatversion: 2,
+                      });
+                      const talkPage =
+                        talkExistData.query &&
+                        talkExistData.query.pages &&
+                        talkExistData.query.pages[0];
+                      if (talkPage && !talkPage.missing) {
+                        const talkMoveParams = {
+                          action: "move",
+                          from: sourceTalkTitle,
+                          to: config.moveSandboxTalkDest,
+                          reason:
+                            (useIndonesian
+                              ? `Halaman pembicaraan dari halaman yang dipindahkan: ${config.moveSandboxReason}`
+                              : `Talk page of moved page: ${config.moveSandboxReason}`) +
+                            toolTag,
+                        };
+                        if (config.moveSandboxNoRedirect)
+                          talkMoveParams.noredirect = 1;
+                        await apiPost(talkMoveParams);
+                        addLog(
+                          `[Move] Moved talk page "${sourceTalkTitle}" to "${config.moveSandboxTalkDest}"`,
+                        );
+                        stats.move++;
+                        updateStatusDisplay();
+                      } else {
+                        addLog(
+                          `[Move] Skipped talk page move: "${sourceTalkTitle}" does not exist`,
+                          "warn",
+                        );
+                      }
+                    }
+                  } catch (e) {
+                    addLog(
+                      `[Move] Failed to move talk page to "${config.moveSandboxTalkDest}": ${formatApiError(e)}`,
+                      true,
+                    );
                   }
-                  pageEdits[edit.title].revids.push(edit.revid);
-                  pageEdits[edit.title].oldestParent = edit.parentid;
                 }
-              }
 
-              // Aggregate pages for mass protection to avoid duplicates and skip deleted records
+                // Move all subpages if the option was selected.
+                if (config.moveSandboxSubpages && !isAborted) {
+                  try {
+                    const sourceTitleObj = new mw.Title(targetVal);
+                    if (sourceTitleObj.isTalkPage()) {
+                      addLog(
+                        "[Move] Skipped subpage moves: target is already a talk page",
+                        "warn",
+                      );
+                    } else {
+                      const ns = sourceTitleObj.getNamespaceId();
+                      const mainText = sourceTitleObj.getMain();
+                      const spData = await apiGet({
+                        action: "query",
+                        list: "allpages",
+                        apprefix: mainText + "/",
+                        apnamespace: ns,
+                        aplimit: "max",
+                        formatversion: 2,
+                      });
+                      const subpages =
+                        (spData.query && spData.query.allpages) || [];
+                      if (!subpages.length) {
+                        addLog(
+                          `[Move] No subpages found for: ${targetVal}`,
+                          "warn",
+                        );
+                      }
+                      // Normalise the source prefix so that the suffix can be
+                      // extracted reliably regardless of how the user typed it.
+                      const normalizedSource = sourceTitleObj.getPrefixedText();
+                      for (const sp of subpages) {
+                        if (isAborted) break;
+                        const suffix = sp.title.slice(normalizedSource.length); // e.g. "/Section"
+                        const spDest = config.moveSandboxDest + suffix;
+                        const spMoveParams = {
+                          action: "move",
+                          from: sp.title,
+                          to: spDest,
+                          reason:
+                            (useIndonesian
+                              ? `Memindahkan subhalaman karena halaman utama yang terkait telah dipindahkan: ${config.moveSandboxReason}`
+                              : `Moving subpage because its associated main page has been moved: ${config.moveSandboxReason}`) +
+                            toolTag,
+                        };
+                        if (config.moveSandboxNoRedirect)
+                          spMoveParams.noredirect = 1;
+                        try {
+                          await apiPost(spMoveParams);
+                          addLog(
+                            `[Move] Moved subpage "${sp.title}" to "${spDest}"`,
+                          );
+                          stats.move++;
+                          updateStatusDisplay();
+                        } catch (e) {
+                          addLog(
+                            `[Move] Failed to move subpage "${sp.title}" to "${spDest}": ${formatApiError(e)}`,
+                            true,
+                          );
+                        }
+
+                        // Move the talk page of this subpage if the option is selected.
+                        if (config.moveSandboxTalk && !isAborted) {
+                          try {
+                            const spTitleObj = new mw.Title(sp.title);
+                            const spTalkTitle = spTitleObj
+                              .getTalkPage()
+                              .getPrefixedText();
+                            const spTalkExistData = await apiGet({
+                              action: "query",
+                              titles: spTalkTitle,
+                              formatversion: 2,
+                            });
+                            const spTalkPage =
+                              spTalkExistData.query &&
+                              spTalkExistData.query.pages &&
+                              spTalkExistData.query.pages[0];
+                            if (spTalkPage && !spTalkPage.missing) {
+                              const spTalkDest =
+                                config.moveSandboxTalkDest + suffix;
+                              const spTalkMoveParams = {
+                                action: "move",
+                                from: spTalkTitle,
+                                to: spTalkDest,
+                                reason:
+                                  (useIndonesian
+                                    ? `Halaman pembicaraan dari subhalaman yang dipindahkan: ${config.moveSandboxReason}`
+                                    : `Talk page of moved subpage: ${config.moveSandboxReason}`) +
+                                  toolTag,
+                              };
+                              if (config.moveSandboxNoRedirect)
+                                spTalkMoveParams.noredirect = 1;
+                              await apiPost(spTalkMoveParams);
+                              addLog(
+                                `[Move] Moved subpage talk page "${spTalkTitle}" to "${spTalkDest}"`,
+                              );
+                              stats.move++;
+                              updateStatusDisplay();
+                            } else {
+                              addLog(
+                                `[Move] Skipped subpage talk page move: "${spTalkTitle}" does not exist`,
+                                "warn",
+                              );
+                            }
+                          } catch (e) {
+                            addLog(
+                              `[Move] Failed to move talk page for subpage "${sp.title}": ${formatApiError(e)}`,
+                              true,
+                            );
+                          }
+                        }
+
+                        await new Promise((resolve) =>
+                          setTimeout(resolve, THROTTLE_MS),
+                        );
+                      }
+                    }
+                  } catch (e) {
+                    addLog(
+                      `[Move] Failed to fetch subpages for "${targetVal}": ${formatApiError(e)}`,
+                      true,
+                    );
+                  }
+                }
+              } // end else (sandbox mode)
+              rs.moveSandboxDone = true;
+            }
+
+            // --- Fetch user contributions OR prepare target page ---
+            // On a resume run, contribution data is loaded from the cache stored in rs,
+            // avoiding a repeat API call. On a fresh run data is fetched normally then cached.
+            let pageEdits = {};
+            let creation = [];
+            let pagesToProtect = new Set();
+            let pagesToProtectAfterDel;
+            const skipContribFetch = rs.pageEditsCache !== null;
+            if (skipContribFetch) {
+              pageEdits = rs.pageEditsCache;
+              creation = rs.creationCache;
+              pagesToProtect = rs.pagesToProtectCache;
+              pagesToProtectAfterDel = rs.pagesToProtectAfterDelCache;
+              addLog("▶️ Contribution data reloaded from the previous run.");
+            }
+
+            if (
+              !skipContribFetch &&
+              config.mode === "user" &&
+              config.customSelection
+            ) {
+              // Custom-selection mode: use the items chosen in the picker rather
+              // than fetching contributions from the API.
+              for (const [title, info] of Object.entries(
+                config.selectedPageEdits,
+              )) {
+                pageEdits[title] = info;
+              }
+              for (const t of config.selectedCreations) {
+                creation.push(t);
+              }
+              if (!Object.keys(pageEdits).length && !creation.length) {
+                addLog(
+                  "[Info] Custom selection is active but no items were selected — no edits or pages will be processed.",
+                  "warn",
+                );
+              }
               if (config.protect) {
                 for (const title of Object.keys(pageEdits)) {
                   pagesToProtect.add(title);
@@ -2015,49 +2013,426 @@ $(function () {
                 }
               }
             }
-          } else if (!skipContribFetch && config.mode === "page") {
-            // Page mode: bypass fetching and apply operations directly to the target page
-            if (config.protect) pagesToProtect.add(targetVal);
-            if (config.massdel) creation.push(targetVal);
-          }
 
-          // Pages scheduled for both deletion and protection must be deleted first,
-          // then protected against recreation. Protecting before deletion causes the
-          // protection to be lost when the page is removed. Identify the overlap now
-          // and defer those pages to a second protect pass that runs after deletion.
-          if (!skipContribFetch) {
-            const creationSet = new Set(creation);
-            pagesToProtectAfterDel = new Set(
-              [...pagesToProtect].filter(function (t) {
-                return creationSet.has(t);
-              }),
-            );
-            for (const t of pagesToProtectAfterDel) {
-              pagesToProtect.delete(t);
+            if (
+              !skipContribFetch &&
+              config.mode === "user" &&
+              !config.customSelection
+            ) {
+              const contribParams = {
+                action: "query",
+                list: "usercontribs",
+                ucuser: targetVal,
+                uclimit: "max",
+              };
+              if (config.betweenMode) {
+                // Between-dates mode: ucend is the older (from) boundary;
+                // ucstart is the newer (to) boundary. Either may be null if
+                // the user left that picker blank, in which case the API
+                // returns edits up to or from the filled-in date with no
+                // constraint on the other end.
+                if (config.betweenFrom)
+                  contribParams.ucend = config.betweenFrom;
+                if (config.betweenTo) contribParams.ucstart = config.betweenTo;
+              } else if (config.endtime !== "inf") {
+                const untildate = new Date();
+                untildate.setSeconds(
+                  untildate.getSeconds() - parseInt(config.endtime),
+                );
+                contribParams.ucend = untildate.toISOString();
+              }
+
+              let contribs = [];
+              let hasMore = true;
+              let continueToken = {};
+
+              while (hasMore && !isAborted) {
+                const params = Object.assign({}, contribParams, continueToken);
+                try {
+                  const data = await apiGet(params);
+                  if (data.query && data.query.usercontribs) {
+                    contribs = contribs.concat(data.query.usercontribs);
+                  }
+                  if (data.continue) {
+                    continueToken = data.continue;
+                  } else {
+                    hasMore = false;
+                  }
+                } catch (e) {
+                  addLog(
+                    `[Error] Failed to fetch contribution history: ${formatApiError(e)}`,
+                    true,
+                  );
+                  hasMore = false;
+                }
+              }
+
+              if (!contribs.length && !isAborted) {
+                addLog("[Info] No contributions found within this timeframe");
+              } else if (!isAborted) {
+                for (const edit of contribs) {
+                  if (edit.new === "") {
+                    creation.push(edit.title);
+                  } else {
+                    if (!pageEdits[edit.title]) {
+                      pageEdits[edit.title] = {
+                        revids: [],
+                        latest: edit.revid,
+                        oldestParent: edit.parentid,
+                      };
+                    }
+                    pageEdits[edit.title].revids.push(edit.revid);
+                    pageEdits[edit.title].oldestParent = edit.parentid;
+                  }
+                }
+
+                // Aggregate pages for mass protection to avoid duplicates and skip deleted records
+                if (config.protect) {
+                  for (const title of Object.keys(pageEdits)) {
+                    pagesToProtect.add(title);
+                  }
+                  if (!config.massdel) {
+                    for (const title of creation) {
+                      pagesToProtect.add(title);
+                    }
+                  }
+                }
+              }
+            } else if (!skipContribFetch && config.mode === "page") {
+              // Page mode: bypass fetching and apply operations directly to the target page
+              if (config.protect) pagesToProtect.add(targetVal);
+              if (config.massdel) creation.push(targetVal);
             }
-            // Cache contribution data and computed page sets for a potential resume run.
-            rs.pageEditsCache = pageEdits;
-            rs.creationCache = creation;
-            rs.pagesToProtectCache = pagesToProtect;
-            rs.pagesToProtectAfterDelCache = pagesToProtectAfterDel;
-          }
 
-          // Titles successfully reverted via rollback/undo, collected so a single
-          // consolidated notification can be sent to the target user's talk page
-          // (if enabled), instead of one notification per page. On resume, reuse the
-          // array from rs so all reverted titles across runs are included.
-          const rollbackNotifiedTitles = rs.rollbackNotifiedTitles;
+            // Pages scheduled for both deletion and protection must be deleted first,
+            // then protected against recreation. Protecting before deletion causes the
+            // protection to be lost when the page is removed. Identify the overlap now
+            // and defer those pages to a second protect pass that runs after deletion.
+            if (!skipContribFetch) {
+              const creationSet = new Set(creation);
+              pagesToProtectAfterDel = new Set(
+                [...pagesToProtect].filter(function (t) {
+                  return creationSet.has(t);
+                }),
+              );
+              for (const t of pagesToProtectAfterDel) {
+                pagesToProtect.delete(t);
+              }
+              // Cache contribution data and computed page sets for a potential resume run.
+              rs.pageEditsCache = pageEdits;
+              rs.creationCache = creation;
+              rs.pagesToProtectCache = pagesToProtect;
+              rs.pagesToProtectAfterDelCache = pagesToProtectAfterDel;
+            }
 
-          // Process rollbacks, undos and revision deletions sequentially with a throttling buffer delay
-          for (const [title, info] of Object.entries(pageEdits)) {
-            if (isAborted) break;
-            if (rs.processedRollbackTitles.has(title)) continue;
+            // Titles successfully reverted via rollback/undo, collected so a single
+            // consolidated notification can be sent to the target user's talk page
+            // (if enabled), instead of one notification per page. On resume, reuse the
+            // array from rs so all reverted titles across runs are included.
+            const rollbackNotifiedTitles = rs.rollbackNotifiedTitles;
 
-            const idlist = info.revids;
+            // Process rollbacks, undos and revision deletions sequentially with a throttling buffer delay
+            for (const [title, info] of Object.entries(pageEdits)) {
+              if (isAborted) break;
+              if (rs.processedRollbackTitles.has(title)) continue;
 
-            if (!config.rollback) {
-              // Only revision delete
-              if (config.rd) {
+              const idlist = info.revids;
+
+              if (!config.rollback) {
+                // Only revision delete
+                if (config.rd) {
+                  try {
+                    await apiPost({
+                      action: "revisiondelete",
+                      type: "revision",
+                      ids: idlist,
+                      hide: config.rdHides,
+                      reason: config.rdReason + toolTag,
+                      suppress: config.os ? "yes" : "nochange",
+                    });
+                    addLog(
+                      `[Revdel] Hiding ${idlist.length} revisions at: ${title}`,
+                    );
+                    stats.revdel++;
+                    updateStatusDisplay();
+                  } catch (e) {
+                    addLog(
+                      `[Revdel] Failed at ${title}: ${formatApiError(e)}`,
+                      true,
+                    );
+                  }
+                }
+                await new Promise((resolve) =>
+                  setTimeout(resolve, THROTTLE_MS),
+                ); // Rate limit buffer
+                continue;
+              }
+
+              // --- MEDIAINFO / STRUCTURED DATA CHECK ---
+              // Because structured data edits cannot be undone natively via rollback or normal undo,
+              // we independently check if the mediainfo slot was modified in this revision range.
+              let mediainfoNeedsRevert = false;
+              let goodMediaInfo = null;
+              let pageId = null;
+              // Content model of the current page's main slot. Set during the
+              // revision fetch below; used to detect ZObject pages (Wikifunctions)
+              // and choose the appropriate revert method.
+              // ZObjects may not be reliably reverted via action=edit undo, since
+              // the undo path depends on a wikitext three-way merge that may not
+              // work for JSON-structured content.
+              let pageContentModel = null;
+              // Username of the author of the revision being reverted to (the
+              // parent of the target's earliest edit in this batch). Used below
+              // to make the undo edit summary clearer about which revision was
+              // restored.
+              let previousEditorUser = null;
+
+              try {
+                const revidsToFetch = info.oldestParent
+                  ? `${info.latest}|${info.oldestParent}`
+                  : `${info.latest}`;
+                const compData = await apiGet({
+                  action: "query",
+                  prop: "revisions",
+                  revids: revidsToFetch,
+                  rvprop: "ids|content|user|contentmodel",
+                  rvslots: "mediainfo",
+                });
+
+                const pages = compData.query && compData.query.pages;
+                if (pages) {
+                  pageId = Object.keys(pages)[0];
+                  const revs = pages[pageId].revisions;
+                  if (revs && revs.length > 0) {
+                    let latestMI = null;
+                    let oldestMI = null;
+                    for (const r of revs) {
+                      if (r.revid === info.oldestParent) {
+                        previousEditorUser = r.user || null;
+                      }
+                      if (r.revid === info.latest) {
+                        pageContentModel = r.contentmodel || null;
+                      }
+                      if (r.slots && r.slots.mediainfo) {
+                        if (r.revid === info.latest)
+                          latestMI = r.slots.mediainfo["*"];
+                        if (r.revid === info.oldestParent)
+                          oldestMI = r.slots.mediainfo["*"];
+                      }
+                    }
+
+                    if (latestMI !== null && latestMI !== oldestMI) {
+                      mediainfoNeedsRevert = true;
+                      goodMediaInfo = oldestMI
+                        ? JSON.parse(oldestMI)
+                        : { statements: {} };
+                    }
+                  }
+                }
+              } catch (e) {
+                // Gracefully ignore on wikis without Wikibase/MediaInfo configured,
+                // or on pages/namespaces where the mediainfo slot is fundamentally unavailable.
+                // This also covers ZObject pages on Wikifunctions, where the mediainfo
+                // slot is absent; pageContentModel is set within the same try block and
+                // is used separately below to choose the appropriate revert method.
+                // previousEditorUser remains null in this case; the undo summary
+                // falls back to its previous wording below.
+              }
+
+              // ZObjects (Wikifunctions content model "zobject") are stored as JSON
+              // and cannot be reliably reverted via action=edit undo, since the undo
+              // path performs a wikitext three-way merge. When undo is selected and a
+              // ZObject page is detected, Tengu falls back to native rollback, which
+              // operates at the database level and is not content-model-specific.
+              const isZObject = pageContentModel === "zobject";
+              if (isZObject && config.rollbackMethod === "undo") {
+                addLog(
+                  `[Rollback] ZObject content model detected at ${title}: undo is not supported for this content model. Falling back to native rollback.`,
+                  "warn",
+                );
+              }
+
+              let standardRevertSuccess = false;
+              let standardErr = null;
+
+              // Builds the shared "Reverted [[Special:Diff/X|edit]] by ..." wording
+              // used by both the undo and native rollback summaries below. Always
+              // links to the diff of the reverted revision. When a custom reason is
+              // supplied, the summary reads "Reverted [[Special:Diff/X|edit]] by
+              // [user]: [reason]"; otherwise it names the author of the revision
+              // being restored, where known, so it is clear which revision the page
+              // was reverted to. Falls back to omitting the "to the previous
+              // revision by..." clause when the previous editor could not be
+              // determined (e.g. the lookup above failed, or there is no parent
+              // revision), and to omitting the username entirely when "Show
+              // username in summary" is unticked.
+              const revertedRevId = info.latest;
+              // Links to the full diff between the revision immediately before the
+              // reverted edit(s) and the latest reverted revision, using MediaWiki's
+              // two-ID Special:Diff/<oldid>/<diffid> form, rather than the single-ID
+              // form (Special:Diff/<diffid>), which only shows that one revision's
+              // individual change against its immediate parent. This matters when
+              // rollback reverts several consecutive edits at once: the single-ID
+              // form would only reflect the last of those edits, not the cumulative
+              // change being reverted. Falls back to the single-ID form when no
+              // parent revision is known (info.oldestParent is unset).
+              const diffLinkTarget = info.oldestParent
+                ? `${info.oldestParent}/${revertedRevId}`
+                : `${revertedRevId}`;
+              const buildRevertSummaryText = function () {
+                if (config.rollbackReason) {
+                  return useIndonesian
+                    ? `Membalikkan [[Special:Diff/${diffLinkTarget}|suntingan]] oleh ${targetVal}: ${config.rollbackReason}`
+                    : `Reverted [[Special:Diff/${diffLinkTarget}|edit]] by ${targetVal}: ${config.rollbackReason}`;
+                }
+                if (!config.rollbackShow) {
+                  return useIndonesian
+                    ? `Membalikkan [[Special:Diff/${diffLinkTarget}|suntingan]]`
+                    : `Reverted [[Special:Diff/${diffLinkTarget}|edit]]`;
+                }
+                if (previousEditorUser) {
+                  return useIndonesian
+                    ? `Membalikkan [[Special:Diff/${diffLinkTarget}|suntingan]] oleh ${targetVal} ke revisi sebelumnya oleh ${previousEditorUser}`
+                    : `Reverted [[Special:Diff/${diffLinkTarget}|edit]] by ${targetVal} to the previous revision by ${previousEditorUser}`;
+                }
+                return useIndonesian
+                  ? `Membalikkan [[Special:Diff/${diffLinkTarget}|suntingan]] oleh ${targetVal}`
+                  : `Reverted [[Special:Diff/${diffLinkTarget}|edit]] by ${targetVal}`;
+              };
+
+              const undoSummaryStr = buildRevertSummaryText() + toolTag;
+              const rbSummaryStr = buildRevertSummaryText() + toolTag;
+
+              // Execute standard rollback or undo operation sequentially based on settings
+              if (config.rollbackMethod === "undo" && !isZObject) {
+                const undoData = {
+                  action: "edit",
+                  title: title,
+                  undo: info.latest,
+                  summary: undoSummaryStr,
+                };
+                if (info.oldestParent) undoData.undoafter = info.oldestParent;
+                if (config.rollbackBot) undoData.bot = 1;
+
+                try {
+                  const undoResult = await apiPost(undoData);
+                  const editResult = undoResult && undoResult.edit;
+                  const noChangeMade = !!(
+                    editResult &&
+                    Object.prototype.hasOwnProperty.call(editResult, "nochange")
+                  );
+                  if (noChangeMade) {
+                    if (!mediainfoNeedsRevert) {
+                      addLog(
+                        `[Undo] Skipped: ${title} — the edit appears to have already been undone; no changes were made`,
+                        "warn",
+                      );
+                    }
+                  } else {
+                    addLog(
+                      `[Undo] Successfully reverted edits via undo: ${title}`,
+                    );
+                    standardRevertSuccess = true;
+                    stats.rollback++;
+                    rollbackNotifiedTitles.push(title);
+                    updateStatusDisplay();
+                  }
+                } catch (e) {
+                  standardErr = String(e);
+                  if (
+                    standardErr.includes("alreadyreverted") ||
+                    standardErr.includes("nothingtorevert")
+                  ) {
+                    if (!mediainfoNeedsRevert) {
+                      addLog(
+                        `[Undo] Skipped: ${title} — page had already been reverted by another user; undo was not applied by this operation`,
+                        "warn",
+                      );
+                    }
+                  } else {
+                    addLog(
+                      `[Undo] Failed at ${title}: ${formatApiError(e)}`,
+                      true,
+                    );
+                  }
+                }
+              } else {
+                // Native rollback
+                const rbData = config.rollbackBot ? { markbot: 1 } : {};
+                rbData.summary = rbSummaryStr;
+
+                try {
+                  await apiRollback(title, targetVal, rbData);
+                  addLog(`[Rollback] Successfully reverted: ${title}`);
+                  standardRevertSuccess = true;
+                  stats.rollback++;
+                  rollbackNotifiedTitles.push(title);
+                  updateStatusDisplay();
+                } catch (e) {
+                  standardErr = String(e);
+                  if (
+                    standardErr.includes("alreadyreverted") ||
+                    standardErr.includes("onlyauthor")
+                  ) {
+                    if (!mediainfoNeedsRevert) {
+                      addLog(
+                        `[Rollback] Skipped: ${title} — already reverted or user is the only author`,
+                        "warn",
+                      );
+                    }
+                  } else {
+                    addLog(
+                      `[Rollback] Failed at ${title}: ${formatApiError(e)}`,
+                      true,
+                    );
+                  }
+                }
+              }
+
+              // --- MEDIAINFO / STRUCTURED DATA REVERT EXECUTION ---
+              if (mediainfoNeedsRevert && pageId) {
+                try {
+                  let restoredData = Object.assign({}, goodMediaInfo);
+                  if (restoredData.statements) {
+                    restoredData.claims = restoredData.statements;
+                    delete restoredData.statements;
+                  } else if (!restoredData.claims) {
+                    restoredData.claims = {};
+                  }
+
+                  await apiPost({
+                    action: "wbeditentity",
+                    id: "M" + pageId,
+                    clear: true,
+                    data: JSON.stringify(restoredData),
+                    summary:
+                      config.rollbackMethod === "undo"
+                        ? undoSummaryStr
+                        : rbSummaryStr || undoSummaryStr,
+                    bot: config.rollbackBot ? 1 : 0,
+                  });
+                  addLog(
+                    `[Undo] Successfully reverted structured data at: ${title}`,
+                  );
+                  if (!standardRevertSuccess) {
+                    stats.rollback++;
+                    rollbackNotifiedTitles.push(title);
+                    updateStatusDisplay();
+                  }
+                } catch (e) {
+                  addLog(
+                    `[Undo] Failed to revert structured data at ${title}: ${formatApiError(e)}`,
+                    true,
+                  );
+                }
+              }
+
+              // Trigger revision deletion if either standard or mediainfo revert succeeded, or if we need to revdel anyway.
+              if (
+                config.rd &&
+                !isAborted &&
+                (standardRevertSuccess || mediainfoNeedsRevert)
+              ) {
                 try {
                   await apiPost({
                     action: "revisiondelete",
@@ -2067,9 +2442,7 @@ $(function () {
                     reason: config.rdReason + toolTag,
                     suppress: config.os ? "yes" : "nochange",
                   });
-                  addLog(
-                    `[Revdel] Hiding ${idlist.length} revisions at: ${title}`,
-                  );
+                  addLog(`[Revdel] Hiding revisions at: ${title}`);
                   stats.revdel++;
                   updateStatusDisplay();
                 } catch (e) {
@@ -2079,669 +2452,160 @@ $(function () {
                   );
                 }
               }
-              await new Promise((resolve) => setTimeout(resolve, THROTTLE_MS)); // Rate limit buffer
-              continue;
+
+              rs.processedRollbackTitles.add(title);
+              await new Promise((resolve) => setTimeout(resolve, THROTTLE_MS)); // Throttling window
             }
+            if (!isAborted) rs.rollbackLoopDone = true;
 
-            // --- MEDIAINFO / STRUCTURED DATA CHECK ---
-            // Because structured data edits cannot be undone natively via rollback or normal undo,
-            // we independently check if the mediainfo slot was modified in this revision range.
-            let mediainfoNeedsRevert = false;
-            let goodMediaInfo = null;
-            let pageId = null;
-            // Content model of the current page's main slot. Set during the
-            // revision fetch below; used to detect ZObject pages (Wikifunctions)
-            // and choose the appropriate revert method.
-            // ZObjects may not be reliably reverted via action=edit undo, since
-            // the undo path depends on a wikitext three-way merge that may not
-            // work for JSON-structured content.
-            let pageContentModel = null;
-            // Username of the author of the revision being reverted to (the
-            // parent of the target's earliest edit in this batch). Used below
-            // to make the undo edit summary clearer about which revision was
-            // restored.
-            let previousEditorUser = null;
-
-            try {
-              const revidsToFetch = info.oldestParent
-                ? `${info.latest}|${info.oldestParent}`
-                : `${info.latest}`;
-              const compData = await apiGet({
-                action: "query",
-                prop: "revisions",
-                revids: revidsToFetch,
-                rvprop: "ids|content|user|contentmodel",
-                rvslots: "mediainfo",
-              });
-
-              const pages = compData.query && compData.query.pages;
-              if (pages) {
-                pageId = Object.keys(pages)[0];
-                const revs = pages[pageId].revisions;
-                if (revs && revs.length > 0) {
-                  let latestMI = null;
-                  let oldestMI = null;
-                  for (const r of revs) {
-                    if (r.revid === info.oldestParent) {
-                      previousEditorUser = r.user || null;
-                    }
-                    if (r.revid === info.latest) {
-                      pageContentModel = r.contentmodel || null;
-                    }
-                    if (r.slots && r.slots.mediainfo) {
-                      if (r.revid === info.latest)
-                        latestMI = r.slots.mediainfo["*"];
-                      if (r.revid === info.oldestParent)
-                        oldestMI = r.slots.mediainfo["*"];
-                    }
-                  }
-
-                  if (latestMI !== null && latestMI !== oldestMI) {
-                    mediainfoNeedsRevert = true;
-                    goodMediaInfo = oldestMI
-                      ? JSON.parse(oldestMI)
-                      : { statements: {} };
-                  }
-                }
-              }
-            } catch (e) {
-              // Gracefully ignore on wikis without Wikibase/MediaInfo configured,
-              // or on pages/namespaces where the mediainfo slot is fundamentally unavailable.
-              // This also covers ZObject pages on Wikifunctions, where the mediainfo
-              // slot is absent; pageContentModel is set within the same try block and
-              // is used separately below to choose the appropriate revert method.
-              // previousEditorUser remains null in this case; the undo summary
-              // falls back to its previous wording below.
-            }
-
-            // ZObjects (Wikifunctions content model "zobject") are stored as JSON
-            // and cannot be reliably reverted via action=edit undo, since the undo
-            // path performs a wikitext three-way merge. When undo is selected and a
-            // ZObject page is detected, Tengu falls back to native rollback, which
-            // operates at the database level and is not content-model-specific.
-            const isZObject = pageContentModel === "zobject";
-            if (isZObject && config.rollbackMethod === "undo") {
-              addLog(
-                `[Rollback] ZObject content model detected at ${title}: undo is not supported for this content model. Falling back to native rollback.`,
-                "warn",
-              );
-            }
-
-            let standardRevertSuccess = false;
-            let standardErr = null;
-
-            // Builds the shared "Reverted [[Special:Diff/X|edit]] by ..." wording
-            // used by both the undo and native rollback summaries below. Always
-            // links to the diff of the reverted revision. When a custom reason is
-            // supplied, the summary reads "Reverted [[Special:Diff/X|edit]] by
-            // [user]: [reason]"; otherwise it names the author of the revision
-            // being restored, where known, so it is clear which revision the page
-            // was reverted to. Falls back to omitting the "to the previous
-            // revision by..." clause when the previous editor could not be
-            // determined (e.g. the lookup above failed, or there is no parent
-            // revision), and to omitting the username entirely when "Show
-            // username in summary" is unticked.
-            const revertedRevId = info.latest;
-            // Links to the full diff between the revision immediately before the
-            // reverted edit(s) and the latest reverted revision, using MediaWiki's
-            // two-ID Special:Diff/<oldid>/<diffid> form, rather than the single-ID
-            // form (Special:Diff/<diffid>), which only shows that one revision's
-            // individual change against its immediate parent. This matters when
-            // rollback reverts several consecutive edits at once: the single-ID
-            // form would only reflect the last of those edits, not the cumulative
-            // change being reverted. Falls back to the single-ID form when no
-            // parent revision is known (info.oldestParent is unset).
-            const diffLinkTarget = info.oldestParent
-              ? `${info.oldestParent}/${revertedRevId}`
-              : `${revertedRevId}`;
-            const buildRevertSummaryText = function () {
-              if (config.rollbackReason) {
-                return useIndonesian
-                  ? `Membalikkan [[Special:Diff/${diffLinkTarget}|suntingan]] oleh ${targetVal}: ${config.rollbackReason}`
-                  : `Reverted [[Special:Diff/${diffLinkTarget}|edit]] by ${targetVal}: ${config.rollbackReason}`;
-              }
-              if (!config.rollbackShow) {
-                return useIndonesian
-                  ? `Membalikkan [[Special:Diff/${diffLinkTarget}|suntingan]]`
-                  : `Reverted [[Special:Diff/${diffLinkTarget}|edit]]`;
-              }
-              if (previousEditorUser) {
-                return useIndonesian
-                  ? `Membalikkan [[Special:Diff/${diffLinkTarget}|suntingan]] oleh ${targetVal} ke revisi sebelumnya oleh ${previousEditorUser}`
-                  : `Reverted [[Special:Diff/${diffLinkTarget}|edit]] by ${targetVal} to the previous revision by ${previousEditorUser}`;
-              }
-              return useIndonesian
-                ? `Membalikkan [[Special:Diff/${diffLinkTarget}|suntingan]] oleh ${targetVal}`
-                : `Reverted [[Special:Diff/${diffLinkTarget}|edit]] by ${targetVal}`;
-            };
-
-            const undoSummaryStr = buildRevertSummaryText() + toolTag;
-            const rbSummaryStr = buildRevertSummaryText() + toolTag;
-
-            // Execute standard rollback or undo operation sequentially based on settings
-            if (config.rollbackMethod === "undo" && !isZObject) {
-              const undoData = {
-                action: "edit",
-                title: title,
-                undo: info.latest,
-                summary: undoSummaryStr,
-              };
-              if (info.oldestParent) undoData.undoafter = info.oldestParent;
-              if (config.rollbackBot) undoData.bot = 1;
-
-              try {
-                const undoResult = await apiPost(undoData);
-                const editResult = undoResult && undoResult.edit;
-                const noChangeMade = !!(
-                  editResult &&
-                  Object.prototype.hasOwnProperty.call(editResult, "nochange")
-                );
-                if (noChangeMade) {
-                  if (!mediainfoNeedsRevert) {
-                    addLog(
-                      `[Undo] Skipped: ${title} — the edit appears to have already been undone; no changes were made`,
-                      "warn",
-                    );
-                  }
-                } else {
-                  addLog(
-                    `[Undo] Successfully reverted edits via undo: ${title}`,
-                  );
-                  standardRevertSuccess = true;
-                  stats.rollback++;
-                  rollbackNotifiedTitles.push(title);
-                  updateStatusDisplay();
-                }
-              } catch (e) {
-                standardErr = String(e);
-                if (
-                  standardErr.includes("alreadyreverted") ||
-                  standardErr.includes("nothingtorevert")
-                ) {
-                  if (!mediainfoNeedsRevert) {
-                    addLog(
-                      `[Undo] Skipped: ${title} — page had already been reverted by another user; undo was not applied by this operation`,
-                      "warn",
-                    );
-                  }
-                } else {
-                  addLog(
-                    `[Undo] Failed at ${title}: ${formatApiError(e)}`,
-                    true,
-                  );
-                }
-              }
-            } else {
-              // Native rollback
-              const rbData = config.rollbackBot ? { markbot: 1 } : {};
-              rbData.summary = rbSummaryStr;
-
-              try {
-                await apiRollback(title, targetVal, rbData);
-                addLog(`[Rollback] Successfully reverted: ${title}`);
-                standardRevertSuccess = true;
-                stats.rollback++;
-                rollbackNotifiedTitles.push(title);
-                updateStatusDisplay();
-              } catch (e) {
-                standardErr = String(e);
-                if (
-                  standardErr.includes("alreadyreverted") ||
-                  standardErr.includes("onlyauthor")
-                ) {
-                  if (!mediainfoNeedsRevert) {
-                    addLog(
-                      `[Rollback] Skipped: ${title} — already reverted or user is the only author`,
-                      "warn",
-                    );
-                  }
-                } else {
-                  addLog(
-                    `[Rollback] Failed at ${title}: ${formatApiError(e)}`,
-                    true,
-                  );
-                }
-              }
-            }
-
-            // --- MEDIAINFO / STRUCTURED DATA REVERT EXECUTION ---
-            if (mediainfoNeedsRevert && pageId) {
-              try {
-                let restoredData = Object.assign({}, goodMediaInfo);
-                if (restoredData.statements) {
-                  restoredData.claims = restoredData.statements;
-                  delete restoredData.statements;
-                } else if (!restoredData.claims) {
-                  restoredData.claims = {};
-                }
-
-                await apiPost({
-                  action: "wbeditentity",
-                  id: "M" + pageId,
-                  clear: true,
-                  data: JSON.stringify(restoredData),
-                  summary:
-                    config.rollbackMethod === "undo"
-                      ? undoSummaryStr
-                      : rbSummaryStr || undoSummaryStr,
-                  bot: config.rollbackBot ? 1 : 0,
-                });
-                addLog(
-                  `[Undo] Successfully reverted structured data at: ${title}`,
-                );
-                if (!standardRevertSuccess) {
-                  stats.rollback++;
-                  rollbackNotifiedTitles.push(title);
-                  updateStatusDisplay();
-                }
-              } catch (e) {
-                addLog(
-                  `[Undo] Failed to revert structured data at ${title}: ${formatApiError(e)}`,
-                  true,
-                );
-              }
-            }
-
-            // Trigger revision deletion if either standard or mediainfo revert succeeded, or if we need to revdel anyway.
+            // --- Rollback/undo notification ---
+            // Posted once per run to the target user's talk page, listing every
+            // page successfully reverted (rather than one notification per page).
             if (
-              config.rd &&
-              !isAborted &&
-              (standardRevertSuccess || mediainfoNeedsRevert)
+              !rs.notifyRollbackDone &&
+              config.notifyRollback &&
+              config.mode === "user" &&
+              rollbackNotifiedTitles.length > 0 &&
+              !isAborted
             ) {
-              try {
-                await apiPost({
-                  action: "revisiondelete",
-                  type: "revision",
-                  ids: idlist,
-                  hide: config.rdHides,
-                  reason: config.rdReason + toolTag,
-                  suppress: config.os ? "yes" : "nochange",
-                });
-                addLog(`[Revdel] Hiding revisions at: ${title}`);
-                stats.revdel++;
-                updateStatusDisplay();
-              } catch (e) {
-                addLog(
-                  `[Revdel] Failed at ${title}: ${formatApiError(e)}`,
-                  true,
-                );
-              }
-            }
-
-            rs.processedRollbackTitles.add(title);
-            await new Promise((resolve) => setTimeout(resolve, THROTTLE_MS)); // Throttling window
-          }
-          if (!isAborted) rs.rollbackLoopDone = true;
-
-          // --- Rollback/undo notification ---
-          // Posted once per run to the target user's talk page, listing every
-          // page successfully reverted (rather than one notification per page).
-          if (
-            !rs.notifyRollbackDone &&
-            config.notifyRollback &&
-            config.mode === "user" &&
-            rollbackNotifiedTitles.length > 0 &&
-            !isAborted
-          ) {
-            const talkTitle = new mw.Title(targetVal, 3).getPrefixedText();
-            const reasonText =
-              config.rollbackReason ||
-              (useIndonesian
-                ? "(tidak ada alasan diberikan)"
-                : "(no reason given)");
-            try {
-              const talkExists = await pageExists(talkTitle);
-              let notice;
-              if (rollbackNotifiedTitles.length === 1) {
-                notice = useIndonesian
-                  ? `== Pemberitahuan pembatalan suntingan ==\nHalo ${targetVal},\n\nSuntingan Anda pada halaman "${rollbackNotifiedTitles[0]}" telah dibatalkan dengan alasan berikut: ${reasonText}.\n\nPemberitahuan ini dikirimkan secara otomatis. Silakan sampaikan pertanyaan atau keberatan ke halaman pembicaraan saya. ~~~~`
-                  : `== Edit reversion notice ==\nDear ${targetVal},\n\nYour edit to the page "${rollbackNotifiedTitles[0]}" has been reverted due to the following reason: ${reasonText}.\n\nThis notification was posted automatically. Please direct any questions or concerns to my user talk page. ~~~~`;
-              } else {
-                const listed = rollbackNotifiedTitles
-                  .map((t) => `* "${t}"`)
-                  .join("\n");
-                notice = useIndonesian
-                  ? `== Pemberitahuan pembatalan suntingan ==\nHalo ${targetVal},\n\nSuntingan Anda pada halaman-halaman berikut telah dibatalkan dengan alasan berikut: ${reasonText}.\n\n${listed}\n\nPemberitahuan ini dikirimkan secara otomatis. Silakan sampaikan pertanyaan atau keberatan ke halaman pembicaraan saya. ~~~~`
-                  : `== Edit reversion notice ==\nDear ${targetVal},\n\nYour edits to the following pages have been reverted due to the following reason: ${reasonText}.\n\n${listed}\n\nThis notification was posted automatically. Please direct any questions or concerns to my user talk page. ~~~~`;
-              }
-              await apiPost({
-                action: "edit",
-                title: talkTitle,
-                appendtext: (talkExists ? "\n\n" : "") + notice,
-                summary: notifySummaryRollback,
-                bot: true,
-              });
-              addLog(`[Notify] Reversion notification posted to: ${talkTitle}`);
-            } catch (e) {
-              addLog(
-                `[Notify] Failed to post reversion notification to ${talkTitle}: ${formatApiError(e)}`,
-                "warn",
-              );
-            }
-            rs.notifyRollbackDone = true;
-          }
-
-          // On resume, reuse the notification queue from the previous run.
-          const notifyQueue = rs.notifyQueue;
-
-          // Builds the protections parameter for a page protection request, adding
-          // upload= for File-namespace pages. Assumes upload-level
-          // protection is submitted through the same action=protect call as edit/move;
-          // this has not been independently confirmed against the MediaWiki API.
-          function buildPageProtections(title) {
-            let protections = `edit=${config.protectEdit}|move=${config.protectMove}`;
-            try {
-              if (new mw.Title(title).getNamespaceId() === 6) {
-                protections += `|upload=${config.protectUpload}`;
-              }
-            } catch (e) {
-              // Skip if the title cannot be resolved
-            }
-            return protections;
-          }
-
-          // Builds the expiry parameter matching the pipe-separated order of
-          // buildPageProtections(): edit expiry, then move expiry, then (for
-          // file pages) upload expiry. The MediaWiki protect API accepts a
-          // pipe-separated expiry list that is matched positionally against
-          // the pipe-separated protections list, so edit and move restrictions
-          // can expire independently in a single action=protect call. Upload
-          // restriction has no dedicated expiry control and reuses the edit
-          // protection expiry.
-          function buildPageProtectionExpiries(title) {
-            let expiries = `${config.protectExpiry}|${config.protectMoveExpiry}`;
-            try {
-              if (new mw.Title(title).getNamespaceId() === 6) {
-                expiries += `|${config.protectExpiry}`;
-              }
-            } catch (e) {
-              // Skip if the title cannot be resolved
-            }
-            return expiries;
-          }
-
-          // Execute sequential page protections if enabled
-          if (
-            config.protect &&
-            pagesToProtect.size > 0 &&
-            !rs.mainProtectLoopDone
-          ) {
-            for (const title of pagesToProtect) {
-              if (isAborted) break;
-              try {
-                const protectData = {
-                  action: "protect",
-                  title: title,
-                  protections: buildPageProtections(title),
-                  expiry: buildPageProtectionExpiries(title),
-                  reason: config.protectReason + toolTag,
-                  ...(config.protectCascade ? { cascade: "" } : {}),
-                };
-                await apiPost(protectData);
-                addLog(`[Protect] Protected page: ${title}`);
-                stats.protect++;
-                updateStatusDisplay();
-              } catch (e) {
-                addLog(
-                  `[Protect] Failed to protect ${title}: ${formatApiError(e)}`,
-                  true,
-                );
-                await new Promise((resolve) =>
-                  setTimeout(resolve, THROTTLE_MS),
-                );
-                continue;
-              }
-
-              // Pending changes (FlaggedRevs) protection. Assumes
-              // the stabilize API module accepts protectlevel/expiry/reason
-              // parameters analogous to action=protect.
-              if (config.protectPendingChanges) {
-                try {
-                  await apiPost({
-                    action: "stabilize",
-                    title: title,
-                    protectlevel: config.protectPendingChangesLevel,
-                    // action=stabilize may not accept "never" as
-                    // an indefinite-expiry alias the way action=protect does;
-                    // this appears to be the cause of the previous
-                    // stabilize_expiry_invalid error and is translated here.
-                    expiry:
-                      config.protectPendingChangesExpiry === "never"
-                        ? "infinite"
-                        : config.protectPendingChangesExpiry,
-                    reason: config.protectReason + toolTag,
-                  });
-                  addLog(
-                    `[Protect] Enabled pending changes protection: ${title}`,
-                  );
-                  stats.protect++;
-                  updateStatusDisplay();
-                } catch (e) {
-                  addLog(
-                    `[Protect] Failed to enable pending changes protection for ${title}: ${formatApiError(e)}`,
-                    true,
-                  );
-                }
-                await new Promise((resolve) =>
-                  setTimeout(resolve, THROTTLE_MS),
-                );
-              }
-
-              // Also protect the talk page if that option was selected and this
-              // page is not itself a talk page (talk pages have no talk page).
-              if (config.protectTalk) {
-                let talkForProtect = null;
-                try {
-                  const titleObj = new mw.Title(title);
-                  if (!titleObj.isTalkPage()) {
-                    talkForProtect = titleObj.getTalkPage().getPrefixedText();
-                  }
-                } catch (e) {
-                  // Skip if the title cannot be resolved to a talk page.
-                }
-                if (talkForProtect) {
-                  try {
-                    await apiPost({
-                      action: "protect",
-                      title: talkForProtect,
-                      protections: `edit=${config.protectEdit}|move=${config.protectMove}`,
-                      expiry: `${config.protectExpiry}|${config.protectMoveExpiry}`,
-                      reason: config.protectReason + toolTag,
-                      ...(config.protectCascade ? { cascade: "" } : {}),
-                    });
-                    addLog(`[Protect] Protected talk page: ${talkForProtect}`);
-                    stats.protect++;
-                    updateStatusDisplay();
-                  } catch (e) {
-                    addLog(
-                      `[Protect] Failed to protect talk page ${talkForProtect}: ${formatApiError(e)}`,
-                      true,
-                    );
-                  }
-                  await new Promise((resolve) =>
-                    setTimeout(resolve, THROTTLE_MS),
-                  );
-                }
-              }
-
-              // Queue this page for notification. Dispatched after the protection
-              // loop so pages sharing a talk page receive a single combined notice.
-              try {
-                const talkTitle = new mw.Title(title)
-                  .getTalkPage()
-                  .getPrefixedText();
-                if (!notifyQueue.has(talkTitle)) notifyQueue.set(talkTitle, []);
-                notifyQueue.get(talkTitle).push(title);
-              } catch (e) {
-                // Title has no talk page (e.g. it is itself a talk page); skip.
-              }
-              await new Promise((resolve) => setTimeout(resolve, THROTTLE_MS));
-            }
-            if (!isAborted) rs.mainProtectLoopDone = true;
-          }
-
-          // Dispatch protection notifications. If two or more protected pages resolve
-          // to the same talk page, a single consolidated notice is posted instead of
-          // one per page, whilst still listing every affected page by name.
-          if (
-            !rs.notifyProtectDone &&
-            notifyQueue.size > 0 &&
-            config.notifyProtect
-          ) {
-            const protectExpiryDisplay =
-              config.protectExpiry === "never"
-                ? "indefinitely"
-                : `for ${config.protectExpiry}`;
-            const protectExpiryText =
-              config.protectExpiry === "never"
-                ? "This protection does not expire automatically and will remain in effect unless modified by an administrator."
-                : "The protection is scheduled to remain in effect until it expires, unless modified by an administrator.";
-
-            for (const [talkTitle, titles] of notifyQueue) {
-              if (isAborted) break;
+              const talkTitle = new mw.Title(targetVal, 3).getPrefixedText();
+              const reasonText =
+                config.rollbackReason ||
+                (useIndonesian
+                  ? "(tidak ada alasan diberikan)"
+                  : "(no reason given)");
               try {
                 const talkExists = await pageExists(talkTitle);
                 let notice;
-                const isProtectIndef = config.protectExpiry === "never";
-                const protectReasonNotice =
-                  config.protectReason && config.protectReason.trim()
-                    ? config.protectReason
-                    : useIndonesian
-                      ? "(tidak ada alasan diberikan)"
-                      : "(no reason given)";
-                if (titles.length === 1) {
+                if (rollbackNotifiedTitles.length === 1) {
                   notice = useIndonesian
-                    ? isProtectIndef
-                      ? `== Pemberitahuan perlindungan halaman ==\nHalaman "${titles[0]}" telah dilindungi secara tidak terbatas dengan alasan berikut: ${protectReasonNotice}.\n\nSelama masa perlindungan, sebagian atau seluruh tindakan penyuntingan mungkin dibatasi bergantung pada tingkat perlindungan yang diterapkan. Perlindungan ini tidak berakhir secara otomatis dan akan tetap berlaku kecuali diubah oleh pengurus.\n\nPemberitahuan ini dikirimkan secara otomatis. Silakan sampaikan pertanyaan atau keberatan ke halaman pembicaraan saya. ~~~~`
-                      : `== Pemberitahuan perlindungan halaman ==\nHalaman "${titles[0]}" telah dilindungi selama ${translateDurationId(config.protectExpiry)} dengan alasan berikut: ${protectReasonNotice}.\n\nSelama masa perlindungan, sebagian atau seluruh tindakan penyuntingan mungkin dibatasi bergantung pada tingkat perlindungan yang diterapkan. Perlindungan dijadwalkan berakhir pada waktunya, kecuali diubah oleh pengurus.\n\nPemberitahuan ini dikirimkan secara otomatis. Silakan sampaikan pertanyaan atau keberatan ke halaman pembicaraan saya. ~~~~`
-                    : `== Page protection notice ==\nThe page "${titles[0]}" has been protected ${protectExpiryDisplay} due to the following reason: ${protectReasonNotice}.\n\nDuring the protection period, some or all editing actions may be restricted depending on the level of protection applied. ${protectExpiryText}\n\nThis notification was posted automatically. Please direct any questions or concerns to my user talk page. ~~~~`;
+                    ? `== Pemberitahuan pembatalan suntingan ==\nHalo ${targetVal},\n\nSuntingan Anda pada halaman "${rollbackNotifiedTitles[0]}" telah dibatalkan dengan alasan berikut: ${reasonText}.\n\nPemberitahuan ini dikirimkan secara otomatis. Silakan sampaikan pertanyaan atau keberatan ke halaman pembicaraan saya. ~~~~`
+                    : `== Edit reversion notice ==\nDear ${targetVal},\n\nYour edit to the page "${rollbackNotifiedTitles[0]}" has been reverted due to the following reason: ${reasonText}.\n\nThis notification was posted automatically. Please direct any questions or concerns to my user talk page. ~~~~`;
                 } else {
-                  const listed = titles.map((t) => `"${t}"`).join(" and ");
-                  const listedId = titles.map((t) => `"${t}"`).join(" dan ");
+                  const listed = rollbackNotifiedTitles
+                    .map((t) => `* "${t}"`)
+                    .join("\n");
                   notice = useIndonesian
-                    ? isProtectIndef
-                      ? `== Pemberitahuan perlindungan halaman ==\nHalaman-halaman berikut telah dilindungi secara tidak terbatas dengan alasan berikut: ${protectReasonNotice}.\n\n${listedId}\n\nSelama masa perlindungan, sebagian atau seluruh tindakan penyuntingan pada halaman-halaman ini mungkin dibatasi bergantung pada tingkat perlindungan yang diterapkan. Perlindungan ini tidak berakhir secara otomatis dan akan tetap berlaku kecuali diubah oleh pengurus.\n\nPemberitahuan ini dikirimkan secara otomatis. Silakan sampaikan pertanyaan atau keberatan ke halaman pembicaraan saya. ~~~~`
-                      : `== Pemberitahuan perlindungan halaman ==\nHalaman-halaman berikut telah dilindungi selama ${translateDurationId(config.protectExpiry)} dengan alasan berikut: ${protectReasonNotice}.\n\n${listedId}\n\nSelama masa perlindungan, sebagian atau seluruh tindakan penyuntingan pada halaman-halaman ini mungkin dibatasi bergantung pada tingkat perlindungan yang diterapkan. Perlindungan dijadwalkan berakhir pada waktunya, kecuali diubah oleh pengurus.\n\nPemberitahuan ini dikirimkan secara otomatis. Silakan sampaikan pertanyaan atau keberatan ke halaman pembicaraan saya. ~~~~`
-                    : `== Page protection notice ==\nThe following pages have been protected ${protectExpiryDisplay} due to the following reason: ${protectReasonNotice}.\n\n${listed}\n\nDuring the protection period, some or all editing actions on these pages may be restricted depending on the level of protection applied. ${protectExpiryText}\n\nThis notification was posted automatically. Please direct any questions or concerns to my user talk page. ~~~~`;
+                    ? `== Pemberitahuan pembatalan suntingan ==\nHalo ${targetVal},\n\nSuntingan Anda pada halaman-halaman berikut telah dibatalkan dengan alasan berikut: ${reasonText}.\n\n${listed}\n\nPemberitahuan ini dikirimkan secara otomatis. Silakan sampaikan pertanyaan atau keberatan ke halaman pembicaraan saya. ~~~~`
+                    : `== Edit reversion notice ==\nDear ${targetVal},\n\nYour edits to the following pages have been reverted due to the following reason: ${reasonText}.\n\n${listed}\n\nThis notification was posted automatically. Please direct any questions or concerns to my user talk page. ~~~~`;
                 }
                 await apiPost({
                   action: "edit",
                   title: talkTitle,
                   appendtext: (talkExists ? "\n\n" : "") + notice,
-                  summary: notifySummaryProtect,
+                  summary: notifySummaryRollback,
                   bot: true,
                 });
-                addLog(`[Notify] Notification posted to: ${talkTitle}`);
+                addLog(
+                  `[Notify] Reversion notification posted to: ${talkTitle}`,
+                );
               } catch (e) {
                 addLog(
-                  `[Notify] Failed to post protection notification to ${talkTitle}: ${formatApiError(e)}`,
+                  `[Notify] Failed to post reversion notification to ${talkTitle}: ${formatApiError(e)}`,
                   "warn",
                 );
               }
-              await new Promise((resolve) => setTimeout(resolve, THROTTLE_MS));
+              rs.notifyRollbackDone = true;
             }
-            if (!isAborted) rs.notifyProtectDone = true;
-          }
 
-          // On resume, reuse accumulated deletion data from the previous run.
-          const deletedTitles = rs.deletedTitles;
-          // Maps creator username → deleted page titles, for page mode notifications.
-          // Populated during the deletion loop (after each successful delete) so only
-          // confirmed deletions are included. Lookup must occur before deletion because
-          // the standard query API cannot return revision data for deleted pages.
-          const creatorMap = rs.creatorMap;
+            // On resume, reuse the notification queue from the previous run.
+            const notifyQueue = rs.notifyQueue;
 
-          // Mass-delete pages sequentially
-          if (config.massdel && !rs.deletionLoopDone) {
-            for (const title of creation) {
-              if (isAborted) break;
-              if (rs.processedDeletionTitles.has(title)) continue;
+            // Builds the protections parameter for a page protection request, adding
+            // upload= for File-namespace pages. Assumes upload-level
+            // protection is submitted through the same action=protect call as edit/move;
+            // this has not been independently confirmed against the MediaWiki API.
+            function buildPageProtections(title) {
+              let protections = `edit=${config.protectEdit}|move=${config.protectMove}`;
+              try {
+                if (new mw.Title(title).getNamespaceId() === 6) {
+                  protections += `|upload=${config.protectUpload}`;
+                }
+              } catch (e) {
+                // Skip if the title cannot be resolved
+              }
+              return protections;
+            }
 
-              // In page mode, fetch the page creator before deleting.
-              // The result is needed for the post-deletion notification.
-              // This must happen before the delete call: once a page is gone the
-              // standard query API no longer returns its revision history.
-              let pageCreator = null;
-              if (config.mode === "page") {
+            // Builds the expiry parameter matching the pipe-separated order of
+            // buildPageProtections(): edit expiry, then move expiry, then (for
+            // file pages) upload expiry. The MediaWiki protect API accepts a
+            // pipe-separated expiry list that is matched positionally against
+            // the pipe-separated protections list, so edit and move restrictions
+            // can expire independently in a single action=protect call. Upload
+            // restriction has no dedicated expiry control and reuses the edit
+            // protection expiry.
+            function buildPageProtectionExpiries(title) {
+              let expiries = `${config.protectExpiry}|${config.protectMoveExpiry}`;
+              try {
+                if (new mw.Title(title).getNamespaceId() === 6) {
+                  expiries += `|${config.protectExpiry}`;
+                }
+              } catch (e) {
+                // Skip if the title cannot be resolved
+              }
+              return expiries;
+            }
+
+            // Execute sequential page protections if enabled
+            if (
+              config.protect &&
+              pagesToProtect.size > 0 &&
+              !rs.mainProtectLoopDone
+            ) {
+              for (const title of pagesToProtect) {
+                if (isAborted) break;
                 try {
-                  const creatorData = await apiGet({
-                    action: "query",
-                    prop: "revisions",
-                    titles: title,
-                    rvdir: "newer",
-                    rvlimit: 1,
-                    rvprop: "user",
-                    formatversion: 2,
-                  });
-                  const cp =
-                    creatorData.query &&
-                    creatorData.query.pages &&
-                    creatorData.query.pages[0];
-                  pageCreator =
-                    (cp &&
-                      !cp.missing &&
-                      cp.revisions &&
-                      cp.revisions[0] &&
-                      cp.revisions[0].user) ||
-                    null;
+                  const protectData = {
+                    action: "protect",
+                    title: title,
+                    protections: buildPageProtections(title),
+                    expiry: buildPageProtectionExpiries(title),
+                    reason: config.protectReason + toolTag,
+                    ...(config.protectCascade ? { cascade: "" } : {}),
+                  };
+                  await apiPost(protectData);
+                  addLog(`[Protect] Protected page: ${title}`);
+                  stats.protect++;
+                  updateStatusDisplay();
                 } catch (e) {
                   addLog(
-                    `[Notify] Could not look up creator for ${title}: ${formatApiError(e)}`,
-                    "warn",
+                    `[Protect] Failed to protect ${title}: ${formatApiError(e)}`,
+                    true,
                   );
-                }
-              }
-
-              // Delete the main page (separate try/catch from talk page below,
-              // so a talk-page failure does not misreport the main deletion as having failed)
-              let mainDeleted = false;
-              try {
-                await apiPost({
-                  action: "delete",
-                  title: title,
-                  reason: config.massdelReason + toolTag,
-                });
-                addLog(`[Delete] Deleted page: ${title}`);
-                stats.delete++;
-                updateStatusDisplay();
-                mainDeleted = true;
-                deletedTitles.push(title);
-                // Record the creator mapping now that deletion is confirmed.
-                if (config.mode === "page" && pageCreator) {
-                  const currentUser = mw.config.get("wgUserName") || "";
-                  if (pageCreator.toLowerCase() !== currentUser.toLowerCase()) {
-                    if (!creatorMap.has(pageCreator))
-                      creatorMap.set(pageCreator, []);
-                    creatorMap.get(pageCreator).push(title);
-                  } else {
-                    addLog(
-                      `[Notify] Skipped deletion notification for ${title}: page was created and deleted by the same user`,
-                      "warn",
-                    );
-                  }
+                  await new Promise((resolve) =>
+                    setTimeout(resolve, THROTTLE_MS),
+                  );
+                  continue;
                 }
 
-                // Protect the deleted page against recreation if that option was selected.
-                // Must run here, after deletion, because MediaWiki only accepts create-level
-                // protection for non-existent titles.
-                if (config.massdelProtectRecreation) {
+                // Pending changes (FlaggedRevs) protection. Assumes
+                // the stabilize API module accepts protectlevel/expiry/reason
+                // parameters analogous to action=protect.
+                if (config.protectPendingChanges) {
                   try {
                     await apiPost({
-                      action: "protect",
+                      action: "stabilize",
                       title: title,
-                      protections:
-                        "create=" + config.massdelProtectRecreationLevel,
-                      expiry: config.massdelProtectRecreationExpiry,
-                      reason: config.massdelProtectRecreationReason + toolTag,
+                      protectlevel: config.protectPendingChangesLevel,
+                      // action=stabilize may not accept "never" as
+                      // an indefinite-expiry alias the way action=protect does;
+                      // this appears to be the cause of the previous
+                      // stabilize_expiry_invalid error and is translated here.
+                      expiry:
+                        config.protectPendingChangesExpiry === "never"
+                          ? "infinite"
+                          : config.protectPendingChangesExpiry,
+                      reason: config.protectReason + toolTag,
                     });
                     addLog(
-                      `[Protect] Protected deleted page against recreation: ${title}`,
+                      `[Protect] Enabled pending changes protection: ${title}`,
                     );
                     stats.protect++;
                     updateStatusDisplay();
                   } catch (e) {
                     addLog(
-                      `[Protect] Failed to protect ${title} against recreation: ${formatApiError(e)}`,
+                      `[Protect] Failed to enable pending changes protection for ${title}: ${formatApiError(e)}`,
                       true,
                     );
                   }
@@ -2749,107 +2613,231 @@ $(function () {
                     setTimeout(resolve, THROTTLE_MS),
                   );
                 }
-              } catch (e) {
-                addLog(
-                  `[Delete] Failed to delete ${title}: ${formatApiError(e)}`,
-                  true,
-                );
-              }
 
-              // Delete the associated talk page if the main page was deleted
-              // and the user opted into it via the checkbox
-              if (mainDeleted && config.massdelTalk) {
+                // Also protect the talk page if that option was selected and this
+                // page is not itself a talk page (talk pages have no talk page).
+                if (config.protectTalk) {
+                  let talkForProtect = null;
+                  try {
+                    const titleObj = new mw.Title(title);
+                    if (!titleObj.isTalkPage()) {
+                      talkForProtect = titleObj.getTalkPage().getPrefixedText();
+                    }
+                  } catch (e) {
+                    // Skip if the title cannot be resolved to a talk page.
+                  }
+                  if (talkForProtect) {
+                    try {
+                      await apiPost({
+                        action: "protect",
+                        title: talkForProtect,
+                        protections: `edit=${config.protectEdit}|move=${config.protectMove}`,
+                        expiry: `${config.protectExpiry}|${config.protectMoveExpiry}`,
+                        reason: config.protectReason + toolTag,
+                        ...(config.protectCascade ? { cascade: "" } : {}),
+                      });
+                      addLog(
+                        `[Protect] Protected talk page: ${talkForProtect}`,
+                      );
+                      stats.protect++;
+                      updateStatusDisplay();
+                    } catch (e) {
+                      addLog(
+                        `[Protect] Failed to protect talk page ${talkForProtect}: ${formatApiError(e)}`,
+                        true,
+                      );
+                    }
+                    await new Promise((resolve) =>
+                      setTimeout(resolve, THROTTLE_MS),
+                    );
+                  }
+                }
+
+                // Queue this page for notification. Dispatched after the protection
+                // loop so pages sharing a talk page receive a single combined notice.
                 try {
                   const talkTitle = new mw.Title(title)
                     .getTalkPage()
                     .getPrefixedText();
-                  // Skip deleting the target user's own talk page when a block
-                  // notification was successfully posted there, so the
-                  // notification remains visible after the operation completes.
-                  const blockNotifyTalkTitle =
-                    config.block && config.notifyBlock && stats.block > 0
-                      ? new mw.Title(targetVal, 3).getPrefixedText()
-                      : null;
-                  if (
-                    blockNotifyTalkTitle &&
-                    talkTitle === blockNotifyTalkTitle
-                  ) {
-                    addLog(
-                      `[Delete] Skipped talk page deletion: ${talkTitle} — block notification is present on this page.`,
-                      "warn",
-                    );
-                  } else {
-                    // Check if talk page exists before attempting deletion
-                    const pageInfo = await apiGet({
-                      action: "query",
-                      titles: talkTitle,
-                      formatversion: 2,
-                    });
+                  if (!notifyQueue.has(talkTitle))
+                    notifyQueue.set(talkTitle, []);
+                  notifyQueue.get(talkTitle).push(title);
+                } catch (e) {
+                  // Title has no talk page (e.g. it is itself a talk page); skip.
+                }
+                await new Promise((resolve) =>
+                  setTimeout(resolve, THROTTLE_MS),
+                );
+              }
+              if (!isAborted) rs.mainProtectLoopDone = true;
+            }
 
-                    if (
-                      pageInfo.query &&
-                      pageInfo.query.pages[0] &&
-                      !pageInfo.query.pages[0].missing
-                    ) {
-                      await apiPost({
-                        action: "delete",
-                        title: talkTitle,
-                        reason:
-                          (useIndonesian
-                            ? "Halaman pembicaraan dari halaman yang dihapus: "
-                            : "Associated talk page of deleted page: ") +
-                          config.massdelReason +
-                          toolTag,
-                      });
-                      addLog(
-                        `[Delete] Deleted associated talk page: ${talkTitle}`,
-                      );
-                      stats.delete++;
-                      updateStatusDisplay();
-                    }
+            // Dispatch protection notifications. If two or more protected pages resolve
+            // to the same talk page, a single consolidated notice is posted instead of
+            // one per page, whilst still listing every affected page by name.
+            if (
+              !rs.notifyProtectDone &&
+              notifyQueue.size > 0 &&
+              config.notifyProtect
+            ) {
+              const protectExpiryDisplay =
+                config.protectExpiry === "never"
+                  ? "indefinitely"
+                  : `for ${config.protectExpiry}`;
+              const protectExpiryText =
+                config.protectExpiry === "never"
+                  ? "This protection does not expire automatically and will remain in effect unless modified by an administrator."
+                  : "The protection is scheduled to remain in effect until it expires, unless modified by an administrator.";
+
+              for (const [talkTitle, titles] of notifyQueue) {
+                if (isAborted) break;
+                try {
+                  const talkExists = await pageExists(talkTitle);
+                  let notice;
+                  const isProtectIndef = config.protectExpiry === "never";
+                  const protectReasonNotice =
+                    config.protectReason && config.protectReason.trim()
+                      ? config.protectReason
+                      : useIndonesian
+                        ? "(tidak ada alasan diberikan)"
+                        : "(no reason given)";
+                  if (titles.length === 1) {
+                    notice = useIndonesian
+                      ? isProtectIndef
+                        ? `== Pemberitahuan perlindungan halaman ==\nHalaman "${titles[0]}" telah dilindungi secara tidak terbatas dengan alasan berikut: ${protectReasonNotice}.\n\nSelama masa perlindungan, sebagian atau seluruh tindakan penyuntingan mungkin dibatasi bergantung pada tingkat perlindungan yang diterapkan. Perlindungan ini tidak berakhir secara otomatis dan akan tetap berlaku kecuali diubah oleh pengurus.\n\nPemberitahuan ini dikirimkan secara otomatis. Silakan sampaikan pertanyaan atau keberatan ke halaman pembicaraan saya. ~~~~`
+                        : `== Pemberitahuan perlindungan halaman ==\nHalaman "${titles[0]}" telah dilindungi selama ${translateDurationId(config.protectExpiry)} dengan alasan berikut: ${protectReasonNotice}.\n\nSelama masa perlindungan, sebagian atau seluruh tindakan penyuntingan mungkin dibatasi bergantung pada tingkat perlindungan yang diterapkan. Perlindungan dijadwalkan berakhir pada waktunya, kecuali diubah oleh pengurus.\n\nPemberitahuan ini dikirimkan secara otomatis. Silakan sampaikan pertanyaan atau keberatan ke halaman pembicaraan saya. ~~~~`
+                      : `== Page protection notice ==\nThe page "${titles[0]}" has been protected ${protectExpiryDisplay} due to the following reason: ${protectReasonNotice}.\n\nDuring the protection period, some or all editing actions may be restricted depending on the level of protection applied. ${protectExpiryText}\n\nThis notification was posted automatically. Please direct any questions or concerns to my user talk page. ~~~~`;
+                  } else {
+                    const listed = titles.map((t) => `"${t}"`).join(" and ");
+                    const listedId = titles.map((t) => `"${t}"`).join(" dan ");
+                    notice = useIndonesian
+                      ? isProtectIndef
+                        ? `== Pemberitahuan perlindungan halaman ==\nHalaman-halaman berikut telah dilindungi secara tidak terbatas dengan alasan berikut: ${protectReasonNotice}.\n\n${listedId}\n\nSelama masa perlindungan, sebagian atau seluruh tindakan penyuntingan pada halaman-halaman ini mungkin dibatasi bergantung pada tingkat perlindungan yang diterapkan. Perlindungan ini tidak berakhir secara otomatis dan akan tetap berlaku kecuali diubah oleh pengurus.\n\nPemberitahuan ini dikirimkan secara otomatis. Silakan sampaikan pertanyaan atau keberatan ke halaman pembicaraan saya. ~~~~`
+                        : `== Pemberitahuan perlindungan halaman ==\nHalaman-halaman berikut telah dilindungi selama ${translateDurationId(config.protectExpiry)} dengan alasan berikut: ${protectReasonNotice}.\n\n${listedId}\n\nSelama masa perlindungan, sebagian atau seluruh tindakan penyuntingan pada halaman-halaman ini mungkin dibatasi bergantung pada tingkat perlindungan yang diterapkan. Perlindungan dijadwalkan berakhir pada waktunya, kecuali diubah oleh pengurus.\n\nPemberitahuan ini dikirimkan secara otomatis. Silakan sampaikan pertanyaan atau keberatan ke halaman pembicaraan saya. ~~~~`
+                      : `== Page protection notice ==\nThe following pages have been protected ${protectExpiryDisplay} due to the following reason: ${protectReasonNotice}.\n\n${listed}\n\nDuring the protection period, some or all editing actions on these pages may be restricted depending on the level of protection applied. ${protectExpiryText}\n\nThis notification was posted automatically. Please direct any questions or concerns to my user talk page. ~~~~`;
                   }
+                  await apiPost({
+                    action: "edit",
+                    title: talkTitle,
+                    appendtext: (talkExists ? "\n\n" : "") + notice,
+                    summary: notifySummaryProtect,
+                    bot: true,
+                  });
+                  addLog(`[Notify] Notification posted to: ${talkTitle}`);
                 } catch (e) {
                   addLog(
-                    `[Delete] Failed to delete talk page for ${title}: ${formatApiError(e)}`,
-                    true,
+                    `[Notify] Failed to post protection notification to ${talkTitle}: ${formatApiError(e)}`,
+                    "warn",
                   );
                 }
+                await new Promise((resolve) =>
+                  setTimeout(resolve, THROTTLE_MS),
+                );
               }
+              if (!isAborted) rs.notifyProtectDone = true;
+            }
 
-              // Delete redirects to the deleted page if the option was selected.
-              // Uses list=backlinks with blfilterredir=redirects to find only redirects.
-              if (mainDeleted && config.massdelRedirects) {
+            // On resume, reuse accumulated deletion data from the previous run.
+            const deletedTitles = rs.deletedTitles;
+            // Maps creator username → deleted page titles, for page mode notifications.
+            // Populated during the deletion loop (after each successful delete) so only
+            // confirmed deletions are included. Lookup must occur before deletion because
+            // the standard query API cannot return revision data for deleted pages.
+            const creatorMap = rs.creatorMap;
+
+            // Mass-delete pages sequentially
+            if (config.massdel && !rs.deletionLoopDone) {
+              for (const title of creation) {
+                if (isAborted) break;
+                if (rs.processedDeletionTitles.has(title)) continue;
+
+                // In page mode, fetch the page creator before deleting.
+                // The result is needed for the post-deletion notification.
+                // This must happen before the delete call: once a page is gone the
+                // standard query API no longer returns its revision history.
+                let pageCreator = null;
+                if (config.mode === "page") {
+                  try {
+                    const creatorData = await apiGet({
+                      action: "query",
+                      prop: "revisions",
+                      titles: title,
+                      rvdir: "newer",
+                      rvlimit: 1,
+                      rvprop: "user",
+                      formatversion: 2,
+                    });
+                    const cp =
+                      creatorData.query &&
+                      creatorData.query.pages &&
+                      creatorData.query.pages[0];
+                    pageCreator =
+                      (cp &&
+                        !cp.missing &&
+                        cp.revisions &&
+                        cp.revisions[0] &&
+                        cp.revisions[0].user) ||
+                      null;
+                  } catch (e) {
+                    addLog(
+                      `[Notify] Could not look up creator for ${title}: ${formatApiError(e)}`,
+                      "warn",
+                    );
+                  }
+                }
+
+                // Delete the main page (separate try/catch from talk page below,
+                // so a talk-page failure does not misreport the main deletion as having failed)
+                let mainDeleted = false;
                 try {
-                  const rdData = await apiGet({
-                    action: "query",
-                    list: "backlinks",
-                    bltitle: title,
-                    blfilterredir: "redirects",
-                    bllimit: "max",
-                    formatversion: 2,
+                  await apiPost({
+                    action: "delete",
+                    title: title,
+                    reason: config.massdelReason + toolTag,
                   });
-                  const redirectPages =
-                    (rdData.query && rdData.query.backlinks) || [];
-                  for (const rdPage of redirectPages) {
+                  addLog(`[Delete] Deleted page: ${title}`);
+                  stats.delete++;
+                  updateStatusDisplay();
+                  mainDeleted = true;
+                  deletedTitles.push(title);
+                  // Record the creator mapping now that deletion is confirmed.
+                  if (config.mode === "page" && pageCreator) {
+                    const currentUser = mw.config.get("wgUserName") || "";
+                    if (
+                      pageCreator.toLowerCase() !== currentUser.toLowerCase()
+                    ) {
+                      if (!creatorMap.has(pageCreator))
+                        creatorMap.set(pageCreator, []);
+                      creatorMap.get(pageCreator).push(title);
+                    } else {
+                      addLog(
+                        `[Notify] Skipped deletion notification for ${title}: page was created and deleted by the same user`,
+                        "warn",
+                      );
+                    }
+                  }
+
+                  // Protect the deleted page against recreation if that option was selected.
+                  // Must run here, after deletion, because MediaWiki only accepts create-level
+                  // protection for non-existent titles.
+                  if (config.massdelProtectRecreation) {
                     try {
                       await apiPost({
-                        action: "delete",
-                        title: rdPage.title,
-                        reason:
-                          (useIndonesian
-                            ? "Pengalihan ke halaman yang dihapus: "
-                            : "Redirect to deleted page: ") +
-                          config.massdelReason +
-                          toolTag,
+                        action: "protect",
+                        title: title,
+                        protections:
+                          "create=" + config.massdelProtectRecreationLevel,
+                        expiry: config.massdelProtectRecreationExpiry,
+                        reason: config.massdelProtectRecreationReason + toolTag,
                       });
                       addLog(
-                        `[Delete] Deleted redirect to deleted page: ${rdPage.title}`,
+                        `[Protect] Protected deleted page against recreation: ${title}`,
                       );
-                      stats.delete++;
+                      stats.protect++;
                       updateStatusDisplay();
                     } catch (e) {
                       addLog(
-                        `[Delete] Failed to delete redirect ${rdPage.title}: ${formatApiError(e)}`,
+                        `[Protect] Failed to protect ${title} against recreation: ${formatApiError(e)}`,
                         true,
                       );
                     }
@@ -2859,94 +2847,105 @@ $(function () {
                   }
                 } catch (e) {
                   addLog(
-                    `[Delete] Failed to fetch redirects for ${title}: ${formatApiError(e)}`,
+                    `[Delete] Failed to delete ${title}: ${formatApiError(e)}`,
                     true,
                   );
                 }
-              }
 
-              // Delete subpages of the deleted page if the option was selected.
-              // Uses list=allpages with apprefix to find all subpages.
-              if (mainDeleted && config.massdelSubpages) {
-                try {
-                  const titleObj = new mw.Title(title);
-                  const ns = titleObj.getNamespaceId();
-                  const mainText = titleObj.getMain(); // Title without namespace prefix
-                  const spData = await apiGet({
-                    action: "query",
-                    list: "allpages",
-                    apprefix: mainText + "/",
-                    apnamespace: ns,
-                    aplimit: "max",
-                    formatversion: 2,
-                  });
-                  const subpages =
-                    (spData.query && spData.query.allpages) || [];
-                  for (const sp of subpages) {
-                    let subpageDeleted = false;
-                    try {
-                      await apiPost({
-                        action: "delete",
-                        title: sp.title,
-                        reason:
-                          (useIndonesian
-                            ? "Subhalaman dari halaman yang dihapus: "
-                            : "Subpage of deleted page: ") +
-                          config.massdelReason +
-                          toolTag,
+                // Delete the associated talk page if the main page was deleted
+                // and the user opted into it via the checkbox
+                if (mainDeleted && config.massdelTalk) {
+                  try {
+                    const talkTitle = new mw.Title(title)
+                      .getTalkPage()
+                      .getPrefixedText();
+                    // Skip deleting the target user's own talk page when a block
+                    // notification was successfully posted there, so the
+                    // notification remains visible after the operation completes.
+                    const blockNotifyTalkTitle =
+                      config.block && config.notifyBlock && stats.block > 0
+                        ? new mw.Title(targetVal, 3).getPrefixedText()
+                        : null;
+                    if (
+                      blockNotifyTalkTitle &&
+                      talkTitle === blockNotifyTalkTitle
+                    ) {
+                      addLog(
+                        `[Delete] Skipped talk page deletion: ${talkTitle} — block notification is present on this page.`,
+                        "warn",
+                      );
+                    } else {
+                      // Check if talk page exists before attempting deletion
+                      const pageInfo = await apiGet({
+                        action: "query",
+                        titles: talkTitle,
+                        formatversion: 2,
                       });
-                      addLog(
-                        `[Delete] Deleted subpage of deleted page: ${sp.title}`,
-                      );
-                      stats.delete++;
-                      updateStatusDisplay();
-                      subpageDeleted = true;
-                    } catch (e) {
-                      addLog(
-                        `[Delete] Failed to delete subpage ${sp.title}: ${formatApiError(e)}`,
-                        true,
-                      );
-                    }
 
-                    // Also delete the subpage's talk page, reusing the
-                    // 'Also delete the talk page' option applied to the main page.
-                    if (subpageDeleted && config.massdelTalk) {
+                      if (
+                        pageInfo.query &&
+                        pageInfo.query.pages[0] &&
+                        !pageInfo.query.pages[0].missing
+                      ) {
+                        await apiPost({
+                          action: "delete",
+                          title: talkTitle,
+                          reason:
+                            (useIndonesian
+                              ? "Halaman pembicaraan dari halaman yang dihapus: "
+                              : "Associated talk page of deleted page: ") +
+                            config.massdelReason +
+                            toolTag,
+                        });
+                        addLog(
+                          `[Delete] Deleted associated talk page: ${talkTitle}`,
+                        );
+                        stats.delete++;
+                        updateStatusDisplay();
+                      }
+                    }
+                  } catch (e) {
+                    addLog(
+                      `[Delete] Failed to delete talk page for ${title}: ${formatApiError(e)}`,
+                      true,
+                    );
+                  }
+                }
+
+                // Delete redirects to the deleted page if the option was selected.
+                // Uses list=backlinks with blfilterredir=redirects to find only redirects.
+                if (mainDeleted && config.massdelRedirects) {
+                  try {
+                    const rdData = await apiGet({
+                      action: "query",
+                      list: "backlinks",
+                      bltitle: title,
+                      blfilterredir: "redirects",
+                      bllimit: "max",
+                      formatversion: 2,
+                    });
+                    const redirectPages =
+                      (rdData.query && rdData.query.backlinks) || [];
+                    for (const rdPage of redirectPages) {
                       try {
-                        const spTitleObj = new mw.Title(sp.title);
-                        if (!spTitleObj.isTalkPage()) {
-                          const spTalkTitle = spTitleObj
-                            .getTalkPage()
-                            .getPrefixedText();
-                          const spTalkInfo = await apiGet({
-                            action: "query",
-                            titles: spTalkTitle,
-                            formatversion: 2,
-                          });
-                          if (
-                            spTalkInfo.query &&
-                            spTalkInfo.query.pages[0] &&
-                            !spTalkInfo.query.pages[0].missing
-                          ) {
-                            await apiPost({
-                              action: "delete",
-                              title: spTalkTitle,
-                              reason:
-                                (useIndonesian
-                                  ? "Halaman pembicaraan dari subhalaman yang dihapus: "
-                                  : "Associated talk page of deleted subpage: ") +
-                                config.massdelReason +
-                                toolTag,
-                            });
-                            addLog(
-                              `[Delete] Deleted associated talk page of subpage: ${spTalkTitle}`,
-                            );
-                            stats.delete++;
-                            updateStatusDisplay();
-                          }
-                        }
+                        await apiPost({
+                          action: "delete",
+                          title: rdPage.title,
+                          reason:
+                            (useIndonesian
+                              ? "Pengalihan ke halaman yang dihapus: "
+                              : "Redirect to deleted page: ") +
+                            config.massdelReason +
+                            toolTag,
+                        });
+                        addLog(
+                          `[Delete] Deleted redirect to deleted page: ${rdPage.title}`,
+                        );
+                        stats.delete++;
+                        updateStatusDisplay();
                       } catch (e) {
                         addLog(
-                          `[Delete] Failed to delete talk page for subpage ${sp.title}: ${formatApiError(e)}`,
+                          `[Delete] Failed to delete redirect ${rdPage.title}: ${formatApiError(e)}`,
                           true,
                         );
                       }
@@ -2954,140 +2953,189 @@ $(function () {
                         setTimeout(resolve, THROTTLE_MS),
                       );
                     }
+                  } catch (e) {
+                    addLog(
+                      `[Delete] Failed to fetch redirects for ${title}: ${formatApiError(e)}`,
+                      true,
+                    );
+                  }
+                }
 
-                    // Also delete redirects pointing to the subpage, reusing the
-                    // 'Delete redirects to deleted page' option applied to the main page.
-                    if (subpageDeleted && config.massdelRedirects) {
+                // Delete subpages of the deleted page if the option was selected.
+                // Uses list=allpages with apprefix to find all subpages.
+                if (mainDeleted && config.massdelSubpages) {
+                  try {
+                    const titleObj = new mw.Title(title);
+                    const ns = titleObj.getNamespaceId();
+                    const mainText = titleObj.getMain(); // Title without namespace prefix
+                    const spData = await apiGet({
+                      action: "query",
+                      list: "allpages",
+                      apprefix: mainText + "/",
+                      apnamespace: ns,
+                      aplimit: "max",
+                      formatversion: 2,
+                    });
+                    const subpages =
+                      (spData.query && spData.query.allpages) || [];
+                    for (const sp of subpages) {
+                      let subpageDeleted = false;
                       try {
-                        const spRdData = await apiGet({
-                          action: "query",
-                          list: "backlinks",
-                          bltitle: sp.title,
-                          blfilterredir: "redirects",
-                          bllimit: "max",
-                          formatversion: 2,
+                        await apiPost({
+                          action: "delete",
+                          title: sp.title,
+                          reason:
+                            (useIndonesian
+                              ? "Subhalaman dari halaman yang dihapus: "
+                              : "Subpage of deleted page: ") +
+                            config.massdelReason +
+                            toolTag,
                         });
-                        const spRedirectPages =
-                          (spRdData.query && spRdData.query.backlinks) || [];
-                        for (const rdPage of spRedirectPages) {
-                          try {
-                            await apiPost({
-                              action: "delete",
-                              title: rdPage.title,
-                              reason:
-                                (useIndonesian
-                                  ? "Pengalihan ke subhalaman yang dihapus: "
-                                  : "Redirect to deleted subpage: ") +
-                                config.massdelReason +
-                                toolTag,
-                            });
-                            addLog(
-                              `[Delete] Deleted redirect to deleted subpage: ${rdPage.title}`,
-                            );
-                            stats.delete++;
-                            updateStatusDisplay();
-                          } catch (e) {
-                            addLog(
-                              `[Delete] Failed to delete redirect ${rdPage.title}: ${formatApiError(e)}`,
-                              true,
-                            );
-                          }
-                          await new Promise((resolve) =>
-                            setTimeout(resolve, THROTTLE_MS),
-                          );
-                        }
+                        addLog(
+                          `[Delete] Deleted subpage of deleted page: ${sp.title}`,
+                        );
+                        stats.delete++;
+                        updateStatusDisplay();
+                        subpageDeleted = true;
                       } catch (e) {
                         addLog(
-                          `[Delete] Failed to fetch redirects for subpage ${sp.title}: ${formatApiError(e)}`,
+                          `[Delete] Failed to delete subpage ${sp.title}: ${formatApiError(e)}`,
                           true,
                         );
                       }
-                    }
 
-                    await new Promise((resolve) =>
-                      setTimeout(resolve, THROTTLE_MS),
+                      // Also delete the subpage's talk page, reusing the
+                      // 'Also delete the talk page' option applied to the main page.
+                      if (subpageDeleted && config.massdelTalk) {
+                        try {
+                          const spTitleObj = new mw.Title(sp.title);
+                          if (!spTitleObj.isTalkPage()) {
+                            const spTalkTitle = spTitleObj
+                              .getTalkPage()
+                              .getPrefixedText();
+                            const spTalkInfo = await apiGet({
+                              action: "query",
+                              titles: spTalkTitle,
+                              formatversion: 2,
+                            });
+                            if (
+                              spTalkInfo.query &&
+                              spTalkInfo.query.pages[0] &&
+                              !spTalkInfo.query.pages[0].missing
+                            ) {
+                              await apiPost({
+                                action: "delete",
+                                title: spTalkTitle,
+                                reason:
+                                  (useIndonesian
+                                    ? "Halaman pembicaraan dari subhalaman yang dihapus: "
+                                    : "Associated talk page of deleted subpage: ") +
+                                  config.massdelReason +
+                                  toolTag,
+                              });
+                              addLog(
+                                `[Delete] Deleted associated talk page of subpage: ${spTalkTitle}`,
+                              );
+                              stats.delete++;
+                              updateStatusDisplay();
+                            }
+                          }
+                        } catch (e) {
+                          addLog(
+                            `[Delete] Failed to delete talk page for subpage ${sp.title}: ${formatApiError(e)}`,
+                            true,
+                          );
+                        }
+                        await new Promise((resolve) =>
+                          setTimeout(resolve, THROTTLE_MS),
+                        );
+                      }
+
+                      // Also delete redirects pointing to the subpage, reusing the
+                      // 'Delete redirects to deleted page' option applied to the main page.
+                      if (subpageDeleted && config.massdelRedirects) {
+                        try {
+                          const spRdData = await apiGet({
+                            action: "query",
+                            list: "backlinks",
+                            bltitle: sp.title,
+                            blfilterredir: "redirects",
+                            bllimit: "max",
+                            formatversion: 2,
+                          });
+                          const spRedirectPages =
+                            (spRdData.query && spRdData.query.backlinks) || [];
+                          for (const rdPage of spRedirectPages) {
+                            try {
+                              await apiPost({
+                                action: "delete",
+                                title: rdPage.title,
+                                reason:
+                                  (useIndonesian
+                                    ? "Pengalihan ke subhalaman yang dihapus: "
+                                    : "Redirect to deleted subpage: ") +
+                                  config.massdelReason +
+                                  toolTag,
+                              });
+                              addLog(
+                                `[Delete] Deleted redirect to deleted subpage: ${rdPage.title}`,
+                              );
+                              stats.delete++;
+                              updateStatusDisplay();
+                            } catch (e) {
+                              addLog(
+                                `[Delete] Failed to delete redirect ${rdPage.title}: ${formatApiError(e)}`,
+                                true,
+                              );
+                            }
+                            await new Promise((resolve) =>
+                              setTimeout(resolve, THROTTLE_MS),
+                            );
+                          }
+                        } catch (e) {
+                          addLog(
+                            `[Delete] Failed to fetch redirects for subpage ${sp.title}: ${formatApiError(e)}`,
+                            true,
+                          );
+                        }
+                      }
+
+                      await new Promise((resolve) =>
+                        setTimeout(resolve, THROTTLE_MS),
+                      );
+                    }
+                  } catch (e) {
+                    addLog(
+                      `[Delete] Failed to fetch subpages for ${title}: ${formatApiError(e)}`,
+                      true,
                     );
                   }
-                } catch (e) {
-                  addLog(
-                    `[Delete] Failed to fetch subpages for ${title}: ${formatApiError(e)}`,
-                    true,
-                  );
                 }
+
+                rs.processedDeletionTitles.add(title);
+                await new Promise((resolve) =>
+                  setTimeout(resolve, THROTTLE_MS),
+                ); // Throttling window
               }
-
-              rs.processedDeletionTitles.add(title);
-              await new Promise((resolve) => setTimeout(resolve, THROTTLE_MS)); // Throttling window
+              if (!isAborted) rs.deletionLoopDone = true;
             }
-            if (!isAborted) rs.deletionLoopDone = true;
-          }
 
-          // Post deletion notification to the target user's talk page (user mode).
-          // All deleted pages were created by the same user, so a single notice is
-          // posted regardless of how many pages were deleted.
-          const isSelfDeletion =
-            config.mode === "user" &&
-            targetVal.toLowerCase() ===
-              (mw.config.get("wgUserName") || "").toLowerCase();
-          if (
-            !rs.notifyDeleteUserDone &&
-            config.massdel &&
-            config.mode === "user" &&
-            deletedTitles.length > 0 &&
-            config.notifyDelete &&
-            !isSelfDeletion
-          ) {
-            const talkTitle = new mw.Title(targetVal, 3).getPrefixedText();
-            try {
-              const talkExists = await pageExists(talkTitle);
-              const massdelReasonNotice =
-                config.massdelReason && config.massdelReason.trim()
-                  ? config.massdelReason
-                  : useIndonesian
-                    ? "(tidak ada alasan diberikan)"
-                    : "(no reason given)";
-              let notice;
-              if (deletedTitles.length === 1) {
-                notice = useIndonesian
-                  ? `== Pemberitahuan penghapusan halaman ==\nHalo ${targetVal},\n\nHalaman "${deletedTitles[0]}" yang Anda buat telah dihapus dengan alasan berikut: ${massdelReasonNotice}.\n\nHalaman yang dihapus tidak lagi dapat diakses secara publik. Jika Anda yakin penghapusan ini keliru, silakan sampaikan di halaman pembicaraan saya atau ikuti prosedur pemulihan halaman wiki ini.\n\nPemberitahuan ini dikirimkan secara otomatis. Silakan sampaikan pertanyaan atau keberatan ke halaman pembicaraan saya. ~~~~`
-                  : `== Page deletion notice ==\nDear ${targetVal},\n\nThe page "${deletedTitles[0]}" you created has been deleted due to the following reason: ${massdelReasonNotice}.\n\nDeleted pages are no longer publicly accessible. If you believe this deletion was in error, please raise the matter on my user talk page or follow your wiki's undeletion process.\n\nThis notification was posted automatically. Please direct any questions or concerns to my user talk page. ~~~~`;
-              } else {
-                const listed = deletedTitles.map((t) => `* "${t}"`).join("\n");
-                notice = useIndonesian
-                  ? `== Pemberitahuan penghapusan halaman ==\nHalo ${targetVal},\n\nHalaman-halaman berikut yang Anda buat telah dihapus dengan alasan berikut: ${massdelReasonNotice}.\n\n${listed}\n\nHalaman yang dihapus tidak lagi dapat diakses secara publik. Jika Anda yakin ada penghapusan yang keliru, silakan sampaikan di halaman pembicaraan saya atau ikuti prosedur pemulihan halaman wiki ini.\n\nPemberitahuan ini dikirimkan secara otomatis. Silakan sampaikan pertanyaan atau keberatan ke halaman pembicaraan saya. ~~~~`
-                  : `== Page deletion notice ==\nDear ${targetVal},\n\nThe following pages you created have been deleted due to the following reason: ${massdelReasonNotice}.\n\n${listed}\n\nDeleted pages are no longer publicly accessible. If you believe any of these deletions were in error, please raise the matter on my user talk page or follow your wiki's undeletion process.\n\nThis notification was posted automatically. Please direct any questions or concerns to my user talk page. ~~~~`;
-              }
-              await apiPost({
-                action: "edit",
-                title: talkTitle,
-                appendtext: (talkExists ? "\n\n" : "") + notice,
-                summary: notifySummaryDelete,
-                bot: true,
-              });
-              addLog(`[Notify] Deletion notification posted to: ${talkTitle}`);
-            } catch (e) {
-              addLog(
-                `[Notify] Failed to post deletion notification to ${talkTitle}: ${formatApiError(e)}`,
-                "warn",
-              );
-            }
-            rs.notifyDeleteUserDone = true;
-          }
-
-          // Post deletion notifications in page mode, grouped by creator.
-          // Each unique creator receives one consolidated notice listing all pages
-          // deleted during this session that they created. The creatorMap was populated
-          // during the deletion loop; entries are only present for confirmed deletions.
-          if (
-            !rs.notifyDeletePageDone &&
-            config.massdel &&
-            config.mode === "page" &&
-            creatorMap.size > 0 &&
-            config.notifyDelete
-          ) {
-            for (const [creator, titles] of creatorMap) {
-              if (isAborted) break;
-              const talkTitle = new mw.Title(creator, 3).getPrefixedText();
+            // Post deletion notification to the target user's talk page (user mode).
+            // All deleted pages were created by the same user, so a single notice is
+            // posted regardless of how many pages were deleted.
+            const isSelfDeletion =
+              config.mode === "user" &&
+              targetVal.toLowerCase() ===
+                (mw.config.get("wgUserName") || "").toLowerCase();
+            if (
+              !rs.notifyDeleteUserDone &&
+              config.massdel &&
+              config.mode === "user" &&
+              deletedTitles.length > 0 &&
+              config.notifyDelete &&
+              !isSelfDeletion
+            ) {
+              const talkTitle = new mw.Title(targetVal, 3).getPrefixedText();
               try {
                 const talkExists = await pageExists(talkTitle);
                 const massdelReasonNotice =
@@ -3097,15 +3145,17 @@ $(function () {
                       ? "(tidak ada alasan diberikan)"
                       : "(no reason given)";
                 let notice;
-                if (titles.length === 1) {
+                if (deletedTitles.length === 1) {
                   notice = useIndonesian
-                    ? `== Pemberitahuan penghapusan halaman ==\nHalo ${creator},\n\nHalaman "${titles[0]}" yang Anda buat telah dihapus dengan alasan berikut: ${massdelReasonNotice}.\n\nHalaman yang dihapus tidak lagi dapat diakses secara publik. Jika Anda yakin penghapusan ini keliru, silakan sampaikan di halaman pembicaraan saya atau ikuti prosedur pemulihan halaman wiki ini.\n\nPemberitahuan ini dikirimkan secara otomatis. Silakan sampaikan pertanyaan atau keberatan ke halaman pembicaraan saya. ~~~~`
-                    : `== Page deletion notice ==\nDear ${creator},\n\nThe page "${titles[0]}" you created has been deleted due to the following reason: ${massdelReasonNotice}.\n\nDeleted pages are no longer publicly accessible. If you believe this deletion was in error, please raise the matter on my user talk page or follow your wiki's undeletion process.\n\nThis notification was posted automatically. Please direct any questions or concerns to my user talk page. ~~~~`;
+                    ? `== Pemberitahuan penghapusan halaman ==\nHalo ${targetVal},\n\nHalaman "${deletedTitles[0]}" yang Anda buat telah dihapus dengan alasan berikut: ${massdelReasonNotice}.\n\nHalaman yang dihapus tidak lagi dapat diakses secara publik. Jika Anda yakin penghapusan ini keliru, silakan sampaikan di halaman pembicaraan saya atau ikuti prosedur pemulihan halaman wiki ini.\n\nPemberitahuan ini dikirimkan secara otomatis. Silakan sampaikan pertanyaan atau keberatan ke halaman pembicaraan saya. ~~~~`
+                    : `== Page deletion notice ==\nDear ${targetVal},\n\nThe page "${deletedTitles[0]}" you created has been deleted due to the following reason: ${massdelReasonNotice}.\n\nDeleted pages are no longer publicly accessible. If you believe this deletion was in error, please raise the matter on my user talk page or follow your wiki's undeletion process.\n\nThis notification was posted automatically. Please direct any questions or concerns to my user talk page. ~~~~`;
                 } else {
-                  const listed = titles.map((t) => `* "${t}"`).join("\n");
+                  const listed = deletedTitles
+                    .map((t) => `* "${t}"`)
+                    .join("\n");
                   notice = useIndonesian
-                    ? `== Pemberitahuan penghapusan halaman ==\nHalo ${creator},\n\nHalaman-halaman berikut yang Anda buat telah dihapus dengan alasan berikut: ${massdelReasonNotice}.\n\n${listed}\n\nHalaman yang dihapus tidak lagi dapat diakses secara publik. Jika Anda yakin ada penghapusan yang keliru, silakan sampaikan di halaman pembicaraan saya atau ikuti prosedur pemulihan halaman wiki ini.\n\nPemberitahuan ini dikirimkan secara otomatis. Silakan sampaikan pertanyaan atau keberatan ke halaman pembicaraan saya. ~~~~`
-                    : `== Page deletion notice ==\nDear ${creator},\n\nThe following pages you created have been deleted due to the following reason: ${massdelReasonNotice}.\n\n${listed}\n\nDeleted pages are no longer publicly accessible. If you believe any of these deletions were in error, please raise the matter on my user talk page or follow your wiki's undeletion process.\n\nThis notification was posted automatically. Please direct any questions or concerns to my user talk page. ~~~~`;
+                    ? `== Pemberitahuan penghapusan halaman ==\nHalo ${targetVal},\n\nHalaman-halaman berikut yang Anda buat telah dihapus dengan alasan berikut: ${massdelReasonNotice}.\n\n${listed}\n\nHalaman yang dihapus tidak lagi dapat diakses secara publik. Jika Anda yakin ada penghapusan yang keliru, silakan sampaikan di halaman pembicaraan saya atau ikuti prosedur pemulihan halaman wiki ini.\n\nPemberitahuan ini dikirimkan secara otomatis. Silakan sampaikan pertanyaan atau keberatan ke halaman pembicaraan saya. ~~~~`
+                    : `== Page deletion notice ==\nDear ${targetVal},\n\nThe following pages you created have been deleted due to the following reason: ${massdelReasonNotice}.\n\n${listed}\n\nDeleted pages are no longer publicly accessible. If you believe any of these deletions were in error, please raise the matter on my user talk page or follow your wiki's undeletion process.\n\nThis notification was posted automatically. Please direct any questions or concerns to my user talk page. ~~~~`;
                 }
                 await apiPost({
                   action: "edit",
@@ -3123,200 +3173,137 @@ $(function () {
                   "warn",
                 );
               }
-              await new Promise((resolve) => setTimeout(resolve, THROTTLE_MS));
+              rs.notifyDeleteUserDone = true;
             }
-            if (!isAborted) rs.notifyDeletePageDone = true;
-          }
 
-          // --- Recreation protection (page mode, non-existent page) ---
-          // Uses create= protection, which is the correct API parameter for
-          // preventing a deleted or never-created page from being recreated.
-          // Unlike edit=/move= protection, this only applies to missing pages.
-          if (
-            !rs.protectRecreationDone &&
-            config.protectRecreation &&
-            config.mode === "page" &&
-            !isAborted
-          ) {
-            try {
-              await apiPost({
-                action: "protect",
-                title: targetVal,
-                protections: "create=" + config.protectRecreationLevel,
-                expiry: config.protectRecreationExpiry,
-                reason: config.protectRecreationReason + toolTag,
-              });
-              addLog(
-                "[Protect] Protected page against recreation: " + targetVal,
-              );
-              stats.protect++;
-              updateStatusDisplay();
-            } catch (e) {
-              addLog(
-                "[Protect] Failed to protect " +
-                  targetVal +
-                  " against recreation: " +
-                  formatApiError(e),
-                true,
-              );
-            }
-            rs.protectRecreationDone = true;
-          }
-
-          // Second protect pass: protect pages that were deferred until after deletion.
-          // Only pages that were actually deleted are protected here.
-          if (
-            config.protect &&
-            pagesToProtectAfterDel.size > 0 &&
-            !rs.secondProtectDone
-          ) {
-            const notifyQueueDeferred = new Map();
-            for (const title of pagesToProtectAfterDel) {
-              if (isAborted) break;
-              if (!deletedTitles.includes(title)) {
-                addLog(
-                  `[Protect] Skipped deferred protection for ${title}: page was not deleted`,
-                  "warn",
+            // Post deletion notifications in page mode, grouped by creator.
+            // Each unique creator receives one consolidated notice listing all pages
+            // deleted during this session that they created. The creatorMap was populated
+            // during the deletion loop; entries are only present for confirmed deletions.
+            if (
+              !rs.notifyDeletePageDone &&
+              config.massdel &&
+              config.mode === "page" &&
+              creatorMap.size > 0 &&
+              config.notifyDelete
+            ) {
+              for (const [creator, titles] of creatorMap) {
+                if (isAborted) break;
+                const talkTitle = new mw.Title(creator, 3).getPrefixedText();
+                try {
+                  const talkExists = await pageExists(talkTitle);
+                  const massdelReasonNotice =
+                    config.massdelReason && config.massdelReason.trim()
+                      ? config.massdelReason
+                      : useIndonesian
+                        ? "(tidak ada alasan diberikan)"
+                        : "(no reason given)";
+                  let notice;
+                  if (titles.length === 1) {
+                    notice = useIndonesian
+                      ? `== Pemberitahuan penghapusan halaman ==\nHalo ${creator},\n\nHalaman "${titles[0]}" yang Anda buat telah dihapus dengan alasan berikut: ${massdelReasonNotice}.\n\nHalaman yang dihapus tidak lagi dapat diakses secara publik. Jika Anda yakin penghapusan ini keliru, silakan sampaikan di halaman pembicaraan saya atau ikuti prosedur pemulihan halaman wiki ini.\n\nPemberitahuan ini dikirimkan secara otomatis. Silakan sampaikan pertanyaan atau keberatan ke halaman pembicaraan saya. ~~~~`
+                      : `== Page deletion notice ==\nDear ${creator},\n\nThe page "${titles[0]}" you created has been deleted due to the following reason: ${massdelReasonNotice}.\n\nDeleted pages are no longer publicly accessible. If you believe this deletion was in error, please raise the matter on my user talk page or follow your wiki's undeletion process.\n\nThis notification was posted automatically. Please direct any questions or concerns to my user talk page. ~~~~`;
+                  } else {
+                    const listed = titles.map((t) => `* "${t}"`).join("\n");
+                    notice = useIndonesian
+                      ? `== Pemberitahuan penghapusan halaman ==\nHalo ${creator},\n\nHalaman-halaman berikut yang Anda buat telah dihapus dengan alasan berikut: ${massdelReasonNotice}.\n\n${listed}\n\nHalaman yang dihapus tidak lagi dapat diakses secara publik. Jika Anda yakin ada penghapusan yang keliru, silakan sampaikan di halaman pembicaraan saya atau ikuti prosedur pemulihan halaman wiki ini.\n\nPemberitahuan ini dikirimkan secara otomatis. Silakan sampaikan pertanyaan atau keberatan ke halaman pembicaraan saya. ~~~~`
+                      : `== Page deletion notice ==\nDear ${creator},\n\nThe following pages you created have been deleted due to the following reason: ${massdelReasonNotice}.\n\n${listed}\n\nDeleted pages are no longer publicly accessible. If you believe any of these deletions were in error, please raise the matter on my user talk page or follow your wiki's undeletion process.\n\nThis notification was posted automatically. Please direct any questions or concerns to my user talk page. ~~~~`;
+                  }
+                  await apiPost({
+                    action: "edit",
+                    title: talkTitle,
+                    appendtext: (talkExists ? "\n\n" : "") + notice,
+                    summary: notifySummaryDelete,
+                    bot: true,
+                  });
+                  addLog(
+                    `[Notify] Deletion notification posted to: ${talkTitle}`,
+                  );
+                } catch (e) {
+                  addLog(
+                    `[Notify] Failed to post deletion notification to ${talkTitle}: ${formatApiError(e)}`,
+                    "warn",
+                  );
+                }
+                await new Promise((resolve) =>
+                  setTimeout(resolve, THROTTLE_MS),
                 );
-                continue;
               }
+              if (!isAborted) rs.notifyDeletePageDone = true;
+            }
+
+            // --- Recreation protection (page mode, non-existent page) ---
+            // Uses create= protection, which is the correct API parameter for
+            // preventing a deleted or never-created page from being recreated.
+            // Unlike edit=/move= protection, this only applies to missing pages.
+            if (
+              !rs.protectRecreationDone &&
+              config.protectRecreation &&
+              config.mode === "page" &&
+              !isAborted
+            ) {
               try {
-                // Deleted pages only accept create-level protection.
-                // The edit-restriction level is reused as the create-protection level.
-                // Cascade is not applicable for create-only protection and is omitted.
                 await apiPost({
                   action: "protect",
-                  title: title,
-                  protections: `create=${config.protectEdit}`,
-                  expiry: config.protectExpiry,
-                  reason: config.protectReason + toolTag,
+                  title: targetVal,
+                  protections: "create=" + config.protectRecreationLevel,
+                  expiry: config.protectRecreationExpiry,
+                  reason: config.protectRecreationReason + toolTag,
                 });
                 addLog(
-                  `[Protect] Protected deleted page against recreation: ${title}`,
+                  "[Protect] Protected page against recreation: " + targetVal,
                 );
                 stats.protect++;
                 updateStatusDisplay();
               } catch (e) {
                 addLog(
-                  `[Protect] Failed to protect ${title}: ${formatApiError(e)}`,
+                  "[Protect] Failed to protect " +
+                    targetVal +
+                    " against recreation: " +
+                    formatApiError(e),
                   true,
                 );
-                await new Promise((resolve) =>
-                  setTimeout(resolve, THROTTLE_MS),
-                );
-                continue;
               }
-
-              // Also protect the talk page if that option was selected
-              if (config.protectTalk) {
-                let talkForProtect = null;
-                try {
-                  const titleObj = new mw.Title(title);
-                  if (!titleObj.isTalkPage()) {
-                    talkForProtect = titleObj.getTalkPage().getPrefixedText();
-                  }
-                } catch (e) {
-                  // Skip if the title cannot be resolved to a talk page.
-                }
-                if (talkForProtect) {
-                  try {
-                    // The talk page may have been deleted if 'Also delete the talk page'
-                    // was selected. Check existence first and use the appropriate
-                    // protection type: create= for a deleted page, edit=|move= for an
-                    // existing one.
-                    const talkExistCheck = await apiGet({
-                      action: "query",
-                      titles: talkForProtect,
-                      formatversion: 2,
-                    });
-                    const talkExists =
-                      talkExistCheck.query &&
-                      talkExistCheck.query.pages &&
-                      !talkExistCheck.query.pages[0].missing;
-                    const talkProtections = talkExists
-                      ? `edit=${config.protectEdit}|move=${config.protectMove}`
-                      : `create=${config.protectEdit}`;
-                    const talkProtectParams = {
-                      action: "protect",
-                      title: talkForProtect,
-                      protections: talkProtections,
-                      reason: config.protectReason + toolTag,
-                    };
-                    // Expiry and cascade only apply when the page exists.
-                    if (talkExists) {
-                      talkProtectParams.expiry = `${config.protectExpiry}|${config.protectMoveExpiry}`;
-                      if (config.protectCascade) talkProtectParams.cascade = "";
-                    }
-                    await apiPost(talkProtectParams);
-                    addLog(`[Protect] Protected talk page: ${talkForProtect}`);
-                    stats.protect++;
-                    updateStatusDisplay();
-                  } catch (e) {
-                    addLog(
-                      `[Protect] Failed to protect talk page ${talkForProtect}: ${formatApiError(e)}`,
-                      true,
-                    );
-                  }
-                  await new Promise((resolve) =>
-                    setTimeout(resolve, THROTTLE_MS),
-                  );
-                }
-              }
-
-              // Queue for notification
-              try {
-                const talkTitle = new mw.Title(title)
-                  .getTalkPage()
-                  .getPrefixedText();
-                if (!notifyQueueDeferred.has(talkTitle))
-                  notifyQueueDeferred.set(talkTitle, []);
-                notifyQueueDeferred.get(talkTitle).push(title);
-              } catch (e) {
-                // Title has no talk page; skip.
-              }
-              await new Promise((resolve) => setTimeout(resolve, THROTTLE_MS));
+              rs.protectRecreationDone = true;
             }
 
-            // Dispatch notifications for the deferred protect pass
-            if (notifyQueueDeferred.size > 0 && config.notifyProtect) {
-              const protectExpiryDisplay =
-                config.protectExpiry === "never"
-                  ? "indefinitely"
-                  : `for ${config.protectExpiry}`;
-              const protectExpiryText =
-                config.protectExpiry === "never"
-                  ? "This protection does not expire automatically and will remain in effect unless modified by an administrator."
-                  : "The protection is scheduled to remain in effect until it expires, unless modified by an administrator.";
-              for (const [talkTitle, titles] of notifyQueueDeferred) {
+            // Second protect pass: protect pages that were deferred until after deletion.
+            // Only pages that were actually deleted are protected here.
+            if (
+              config.protect &&
+              pagesToProtectAfterDel.size > 0 &&
+              !rs.secondProtectDone
+            ) {
+              const notifyQueueDeferred = new Map();
+              for (const title of pagesToProtectAfterDel) {
                 if (isAborted) break;
-
-                // Skip notification if the talk page no longer exists.
-                // This can happen when 'Also delete the talk page' was selected,
-                // in which case posting would recreate a deleted page.
+                if (!deletedTitles.includes(title)) {
+                  addLog(
+                    `[Protect] Skipped deferred protection for ${title}: page was not deleted`,
+                    "warn",
+                  );
+                  continue;
+                }
                 try {
-                  const talkExistCheck = await apiGet({
-                    action: "query",
-                    titles: talkTitle,
-                    formatversion: 2,
+                  // Deleted pages only accept create-level protection.
+                  // The edit-restriction level is reused as the create-protection level.
+                  // Cascade is not applicable for create-only protection and is omitted.
+                  await apiPost({
+                    action: "protect",
+                    title: title,
+                    protections: `create=${config.protectEdit}`,
+                    expiry: config.protectExpiry,
+                    reason: config.protectReason + toolTag,
                   });
-                  const talkExists =
-                    talkExistCheck.query &&
-                    talkExistCheck.query.pages &&
-                    !talkExistCheck.query.pages[0].missing;
-                  if (!talkExists) {
-                    addLog(
-                      `[Notify] Skipped protection notification for ${talkTitle}: talk page no longer exists`,
-                      "warn",
-                    );
-                    await new Promise((resolve) =>
-                      setTimeout(resolve, THROTTLE_MS),
-                    );
-                    continue;
-                  }
+                  addLog(
+                    `[Protect] Protected deleted page against recreation: ${title}`,
+                  );
+                  stats.protect++;
+                  updateStatusDisplay();
                 } catch (e) {
                   addLog(
-                    `[Notify] Could not check talk page existence for ${talkTitle}: ${formatApiError(e)}`,
-                    "warn",
+                    `[Protect] Failed to protect ${title}: ${formatApiError(e)}`,
+                    true,
                   );
                   await new Promise((resolve) =>
                     setTimeout(resolve, THROTTLE_MS),
@@ -3324,239 +3311,56 @@ $(function () {
                   continue;
                 }
 
-                try {
-                  let notice;
-                  const isProtectIndefDeferred =
-                    config.protectExpiry === "never";
-                  const protectReasonNotice =
-                    config.protectReason && config.protectReason.trim()
-                      ? config.protectReason
-                      : useIndonesian
-                        ? "(tidak ada alasan diberikan)"
-                        : "(no reason given)";
-                  if (titles.length === 1) {
-                    notice = useIndonesian
-                      ? isProtectIndefDeferred
-                        ? `== Pemberitahuan perlindungan halaman ==\nHalaman "${titles[0]}" telah dilindungi secara tidak terbatas dengan alasan berikut: ${protectReasonNotice}.\n\nSelama masa perlindungan, sebagian atau seluruh tindakan penyuntingan mungkin dibatasi bergantung pada tingkat perlindungan yang diterapkan. Perlindungan ini tidak berakhir secara otomatis dan akan tetap berlaku kecuali diubah oleh pengurus.\n\nPemberitahuan ini dikirimkan secara otomatis. Silakan sampaikan pertanyaan atau keberatan ke halaman pembicaraan saya. ~~~~`
-                        : `== Pemberitahuan perlindungan halaman ==\nHalaman "${titles[0]}" telah dilindungi selama ${translateDurationId(config.protectExpiry)} dengan alasan berikut: ${protectReasonNotice}.\n\nSelama masa perlindungan, sebagian atau seluruh tindakan penyuntingan mungkin dibatasi bergantung pada tingkat perlindungan yang diterapkan. Perlindungan dijadwalkan berakhir pada waktunya, kecuali diubah oleh pengurus.\n\nPemberitahuan ini dikirimkan secara otomatis. Silakan sampaikan pertanyaan atau keberatan ke halaman pembicaraan saya. ~~~~`
-                      : `== Page protection notice ==\nThe page "${titles[0]}" has been protected ${protectExpiryDisplay} due to the following reason: ${protectReasonNotice}.\n\nDuring the protection period, some or all editing actions may be restricted depending on the level of protection applied. ${protectExpiryText}\n\nThis notification was posted automatically. Please direct any questions or concerns to my user talk page. ~~~~`;
-                  } else {
-                    const listed = titles.map((t) => `"${t}"`).join(" and ");
-                    const listedId = titles.map((t) => `"${t}"`).join(" dan ");
-                    notice = useIndonesian
-                      ? isProtectIndefDeferred
-                        ? `== Pemberitahuan perlindungan halaman ==\nHalaman-halaman berikut telah dilindungi secara tidak terbatas dengan alasan berikut: ${protectReasonNotice}.\n\n${listedId}\n\nSelama masa perlindungan, sebagian atau seluruh tindakan penyuntingan pada halaman-halaman ini mungkin dibatasi bergantung pada tingkat perlindungan yang diterapkan. Perlindungan ini tidak berakhir secara otomatis dan akan tetap berlaku kecuali diubah oleh pengurus.\n\nPemberitahuan ini dikirimkan secara otomatis. Silakan sampaikan pertanyaan atau keberatan ke halaman pembicaraan saya. ~~~~`
-                        : `== Pemberitahuan perlindungan halaman ==\nHalaman-halaman berikut telah dilindungi selama ${translateDurationId(config.protectExpiry)} dengan alasan berikut: ${protectReasonNotice}.\n\n${listedId}\n\nSelama masa perlindungan, sebagian atau seluruh tindakan penyuntingan pada halaman-halaman ini mungkin dibatasi bergantung pada tingkat perlindungan yang diterapkan. Perlindungan dijadwalkan berakhir pada waktunya, kecuali diubah oleh pengurus.\n\nPemberitahuan ini dikirimkan secara otomatis. Silakan sampaikan pertanyaan atau keberatan ke halaman pembicaraan saya. ~~~~`
-                      : `== Page protection notice ==\nThe following pages have been protected ${protectExpiryDisplay} due to the following reason: ${protectReasonNotice}.\n\n${listed}\n\nDuring the protection period, some or all editing actions on these pages may be restricted depending on the level of protection applied. ${protectExpiryText}\n\nThis notification was posted automatically. Please direct any questions or concerns to my user talk page. ~~~~`;
+                // Also protect the talk page if that option was selected
+                if (config.protectTalk) {
+                  let talkForProtect = null;
+                  try {
+                    const titleObj = new mw.Title(title);
+                    if (!titleObj.isTalkPage()) {
+                      talkForProtect = titleObj.getTalkPage().getPrefixedText();
+                    }
+                  } catch (e) {
+                    // Skip if the title cannot be resolved to a talk page.
                   }
-                  await apiPost({
-                    action: "edit",
-                    title: talkTitle,
-                    appendtext: "\n\n" + notice,
-                    summary: notifySummaryProtect,
-                    bot: true,
-                  });
-                  addLog(`[Notify] Notification posted to: ${talkTitle}`);
-                } catch (e) {
-                  addLog(
-                    `[Notify] Failed to post protection notification to ${talkTitle}: ${formatApiError(e)}`,
-                    "warn",
-                  );
-                }
-                await new Promise((resolve) =>
-                  setTimeout(resolve, THROTTLE_MS),
-                );
-              }
-            }
-            if (!isAborted) rs.secondProtectDone = true;
-          }
-
-          // Remove wikilinks to deleted pages from articles in the main namespace.
-          // Skips all namespaces other than NS0. Runs for each successfully deleted
-          // page. Each matching article is fetched, its wikilinks replaced with
-          // plain text, and saved with a labelled edit summary.
-          if (
-            config.massdelUnlink &&
-            deletedTitles.length > 0 &&
-            !rs.unlinkLoopDone
-          ) {
-            for (const delTitle of deletedTitles) {
-              if (isAborted) break;
-              if (rs.processedUnlinkTitles.has(delTitle)) continue;
-
-              // Detect whether the deleted item is a file. File embeds and
-              // gallery entries use different wikitext forms than plain page
-              // links, and MediaWiki tracks file usage via imageinfo/imageusage
-              // rather than the pagelinks table used by list=backlinks.
-              // [NOT CONFIRMED] — this branch has not been independently verified
-              // against a live wiki; the file-delinking feature is experimental.
-              let isFileDeletion = false;
-              let fileMain = null;
-              try {
-                const delTitleObj = new mw.Title(delTitle);
-                isFileDeletion = delTitleObj.getNamespaceId() === 6;
-                if (isFileDeletion) fileMain = delTitleObj.getMain();
-              } catch (e) {
-                // Leave isFileDeletion false if the title cannot be resolved.
-              }
-
-              addLog(
-                `[Unlink] Searching for ${isFileDeletion ? "references to file" : "links to"}: ${delTitle}...`,
-              );
-
-              // Escape the title for use in a regular expression.
-              // Spaces and underscores are treated as equivalent in wikilinks.
-              const escapedTitle = delTitle
-                .replace(/[.*+?^${}()|[\]\\]/g, "\\$&")
-                .replace(/[ _]/g, "[ _]");
-
-              // Match [[Title]], [[Title|text]], [[Title#section]], [[Title#section|text]].
-              // Capture group 1: display text after | (undefined if absent).
-              // When no display text is present, the replacement is the base page title.
-              const linkRe = new RegExp(
-                "\\[\\[" +
-                  escapedTitle +
-                  "(?:#[^|\\]]*)?(?:\\|([^\\]]*?))?\\]\\]",
-                "g",
-              );
-
-              // File-specific patterns, built only when the deleted item is a file.
-              // [NOT CONFIRMED] — the "File"/"Image" namespace aliases and gallery
-              // line syntax used below cover the common cases but may not match
-              // every valid form (e.g. localised namespace aliases on this wiki).
-              let fileEmbedRe = null;
-              let galleryLineRe = null;
-              if (isFileDeletion && fileMain) {
-                const escapedFileName = fileMain
-                  .replace(/[.*+?^${}()|[\]\\]/g, "\\$&")
-                  .replace(/[ _]/g, "[ _]");
-                // Matches [[File:Example.jpg]], [[File:Example.jpg|thumb|caption]],
-                // and the "Image:" alias. The entire embed is removed, since a
-                // bare file embed has no display-text fallback to replace it with.
-                fileEmbedRe = new RegExp(
-                  "\\[\\[\\s*(?:[Ff]ile|[Ii]mage)\\s*:\\s*" +
-                    escapedFileName +
-                    "(?:\\|[^\\]]*)?\\]\\]",
-                  "g",
-                );
-                // Matches a bare gallery entry on its own line, e.g.
-                // "File:Example.jpg|caption", as used inside <gallery> tags.
-                galleryLineRe = new RegExp(
-                  "^[ \\t]*(?:[Ff]ile|[Ii]mage)\\s*:\\s*" +
-                    escapedFileName +
-                    "[ \\t]*(?:\\|.*)?$\\n?",
-                  "gim",
-                );
-              }
-
-              let continueToken;
-              do {
-                if (isAborted) break;
-                try {
-                  let links;
-                  if (isFileDeletion) {
-                    // list=imageusage tracks file embeds/transclusions, unlike
-                    // list=backlinks which only tracks pagelinks-table wikilinks.
-                    const iuParams = {
-                      action: "query",
-                      list: "imageusage",
-                      iutitle: delTitle,
-                      iunamespace: 0, // Main namespace only
-                      iulimit: 50,
-                    };
-                    if (continueToken) iuParams.iucontinue = continueToken;
-                    const iuData = await apiGet(iuParams);
-                    continueToken =
-                      iuData.continue && iuData.continue.iucontinue;
-                    links = (iuData.query && iuData.query.imageusage) || [];
-                  } else {
-                    const blParams = {
-                      action: "query",
-                      list: "backlinks",
-                      bltitle: delTitle,
-                      blnamespace: 0, // Main namespace only
-                      bllimit: 50,
-                    };
-                    if (continueToken) blParams.blcontinue = continueToken;
-                    const blData = await apiGet(blParams);
-                    continueToken =
-                      blData.continue && blData.continue.blcontinue;
-                    links = (blData.query && blData.query.backlinks) || [];
-                  }
-
-                  for (const link of links) {
-                    if (isAborted) break;
-                    const linkTitle = link.title;
+                  if (talkForProtect) {
                     try {
-                      // Fetch the current wikitext of the linking article.
-                      const revData = await apiGet({
+                      // The talk page may have been deleted if 'Also delete the talk page'
+                      // was selected. Check existence first and use the appropriate
+                      // protection type: create= for a deleted page, edit=|move= for an
+                      // existing one.
+                      const talkExistCheck = await apiGet({
                         action: "query",
-                        prop: "revisions",
-                        titles: linkTitle,
-                        rvprop: "content",
-                        rvslots: "main",
+                        titles: talkForProtect,
                         formatversion: 2,
                       });
-                      const page =
-                        revData.query &&
-                        revData.query.pages &&
-                        revData.query.pages[0];
-                      if (!page || page.missing) continue;
-                      const slot =
-                        page.revisions &&
-                        page.revisions[0] &&
-                        page.revisions[0].slots &&
-                        page.revisions[0].slots.main;
-                      if (!slot) continue;
-                      const wikitext = slot.content;
-
-                      let newWikitext;
-                      if (isFileDeletion) {
-                        // Remove whole file embeds and gallery lines referencing
-                        // the deleted file. Neither form has a meaningful
-                        // display-text fallback, so the match is deleted outright.
-                        newWikitext = wikitext
-                          .replace(fileEmbedRe, "")
-                          .replace(galleryLineRe, "");
-                      } else {
-                        // Replace each matching wikilink with its display text,
-                        // or with the base page title if no display text is present.
-                        newWikitext = wikitext.replace(
-                          linkRe,
-                          function (match, displayText) {
-                            return displayText !== undefined
-                              ? displayText
-                              : delTitle;
-                          },
-                        );
+                      const talkExists =
+                        talkExistCheck.query &&
+                        talkExistCheck.query.pages &&
+                        !talkExistCheck.query.pages[0].missing;
+                      const talkProtections = talkExists
+                        ? `edit=${config.protectEdit}|move=${config.protectMove}`
+                        : `create=${config.protectEdit}`;
+                      const talkProtectParams = {
+                        action: "protect",
+                        title: talkForProtect,
+                        protections: talkProtections,
+                        reason: config.protectReason + toolTag,
+                      };
+                      // Expiry and cascade only apply when the page exists.
+                      if (talkExists) {
+                        talkProtectParams.expiry = `${config.protectExpiry}|${config.protectMoveExpiry}`;
+                        if (config.protectCascade)
+                          talkProtectParams.cascade = "";
                       }
-
-                      if (newWikitext === wikitext) continue; // No matching references found in content
-
-                      await apiPost({
-                        action: "edit",
-                        title: linkTitle,
-                        text: newWikitext,
-                        summary:
-                          (useIndonesian
-                            ? isFileDeletion
-                              ? "Menghapus referensi ke berkas yang sudah dihapus: "
-                              : "Menghapus pranala ke halaman yang sudah dihapus: "
-                            : isFileDeletion
-                              ? "Removing references to deleted file: "
-                              : "Removing links to deleted page: ") +
-                          delTitle +
-                          toolTag,
-                        bot: true,
-                      });
+                      await apiPost(talkProtectParams);
                       addLog(
-                        `[Unlink] Removed ${isFileDeletion ? "references to file" : "links to"} "${delTitle}" in: ${linkTitle}`,
+                        `[Protect] Protected talk page: ${talkForProtect}`,
                       );
-                      stats.unlink++;
+                      stats.protect++;
                       updateStatusDisplay();
                     } catch (e) {
                       addLog(
-                        `[Unlink] Failed to edit ${linkTitle}: ${formatApiError(e)}`,
+                        `[Protect] Failed to protect talk page ${talkForProtect}: ${formatApiError(e)}`,
                         true,
                       );
                     }
@@ -3564,18 +3368,326 @@ $(function () {
                       setTimeout(resolve, THROTTLE_MS),
                     );
                   }
-                } catch (e) {
-                  addLog(
-                    `[Unlink] Failed to fetch ${isFileDeletion ? "file usage" : "backlinks"} for "${delTitle}": ${formatApiError(e)}`,
-                    true,
-                  );
-                  break;
                 }
-              } while (continueToken && !isAborted);
-              rs.processedUnlinkTitles.add(delTitle);
+
+                // Queue for notification
+                try {
+                  const talkTitle = new mw.Title(title)
+                    .getTalkPage()
+                    .getPrefixedText();
+                  if (!notifyQueueDeferred.has(talkTitle))
+                    notifyQueueDeferred.set(talkTitle, []);
+                  notifyQueueDeferred.get(talkTitle).push(title);
+                } catch (e) {
+                  // Title has no talk page; skip.
+                }
+                await new Promise((resolve) =>
+                  setTimeout(resolve, THROTTLE_MS),
+                );
+              }
+
+              // Dispatch notifications for the deferred protect pass
+              if (notifyQueueDeferred.size > 0 && config.notifyProtect) {
+                const protectExpiryDisplay =
+                  config.protectExpiry === "never"
+                    ? "indefinitely"
+                    : `for ${config.protectExpiry}`;
+                const protectExpiryText =
+                  config.protectExpiry === "never"
+                    ? "This protection does not expire automatically and will remain in effect unless modified by an administrator."
+                    : "The protection is scheduled to remain in effect until it expires, unless modified by an administrator.";
+                for (const [talkTitle, titles] of notifyQueueDeferred) {
+                  if (isAborted) break;
+
+                  // Skip notification if the talk page no longer exists.
+                  // This can happen when 'Also delete the talk page' was selected,
+                  // in which case posting would recreate a deleted page.
+                  try {
+                    const talkExistCheck = await apiGet({
+                      action: "query",
+                      titles: talkTitle,
+                      formatversion: 2,
+                    });
+                    const talkExists =
+                      talkExistCheck.query &&
+                      talkExistCheck.query.pages &&
+                      !talkExistCheck.query.pages[0].missing;
+                    if (!talkExists) {
+                      addLog(
+                        `[Notify] Skipped protection notification for ${talkTitle}: talk page no longer exists`,
+                        "warn",
+                      );
+                      await new Promise((resolve) =>
+                        setTimeout(resolve, THROTTLE_MS),
+                      );
+                      continue;
+                    }
+                  } catch (e) {
+                    addLog(
+                      `[Notify] Could not check talk page existence for ${talkTitle}: ${formatApiError(e)}`,
+                      "warn",
+                    );
+                    await new Promise((resolve) =>
+                      setTimeout(resolve, THROTTLE_MS),
+                    );
+                    continue;
+                  }
+
+                  try {
+                    let notice;
+                    const isProtectIndefDeferred =
+                      config.protectExpiry === "never";
+                    const protectReasonNotice =
+                      config.protectReason && config.protectReason.trim()
+                        ? config.protectReason
+                        : useIndonesian
+                          ? "(tidak ada alasan diberikan)"
+                          : "(no reason given)";
+                    if (titles.length === 1) {
+                      notice = useIndonesian
+                        ? isProtectIndefDeferred
+                          ? `== Pemberitahuan perlindungan halaman ==\nHalaman "${titles[0]}" telah dilindungi secara tidak terbatas dengan alasan berikut: ${protectReasonNotice}.\n\nSelama masa perlindungan, sebagian atau seluruh tindakan penyuntingan mungkin dibatasi bergantung pada tingkat perlindungan yang diterapkan. Perlindungan ini tidak berakhir secara otomatis dan akan tetap berlaku kecuali diubah oleh pengurus.\n\nPemberitahuan ini dikirimkan secara otomatis. Silakan sampaikan pertanyaan atau keberatan ke halaman pembicaraan saya. ~~~~`
+                          : `== Pemberitahuan perlindungan halaman ==\nHalaman "${titles[0]}" telah dilindungi selama ${translateDurationId(config.protectExpiry)} dengan alasan berikut: ${protectReasonNotice}.\n\nSelama masa perlindungan, sebagian atau seluruh tindakan penyuntingan mungkin dibatasi bergantung pada tingkat perlindungan yang diterapkan. Perlindungan dijadwalkan berakhir pada waktunya, kecuali diubah oleh pengurus.\n\nPemberitahuan ini dikirimkan secara otomatis. Silakan sampaikan pertanyaan atau keberatan ke halaman pembicaraan saya. ~~~~`
+                        : `== Page protection notice ==\nThe page "${titles[0]}" has been protected ${protectExpiryDisplay} due to the following reason: ${protectReasonNotice}.\n\nDuring the protection period, some or all editing actions may be restricted depending on the level of protection applied. ${protectExpiryText}\n\nThis notification was posted automatically. Please direct any questions or concerns to my user talk page. ~~~~`;
+                    } else {
+                      const listed = titles.map((t) => `"${t}"`).join(" and ");
+                      const listedId = titles
+                        .map((t) => `"${t}"`)
+                        .join(" dan ");
+                      notice = useIndonesian
+                        ? isProtectIndefDeferred
+                          ? `== Pemberitahuan perlindungan halaman ==\nHalaman-halaman berikut telah dilindungi secara tidak terbatas dengan alasan berikut: ${protectReasonNotice}.\n\n${listedId}\n\nSelama masa perlindungan, sebagian atau seluruh tindakan penyuntingan pada halaman-halaman ini mungkin dibatasi bergantung pada tingkat perlindungan yang diterapkan. Perlindungan ini tidak berakhir secara otomatis dan akan tetap berlaku kecuali diubah oleh pengurus.\n\nPemberitahuan ini dikirimkan secara otomatis. Silakan sampaikan pertanyaan atau keberatan ke halaman pembicaraan saya. ~~~~`
+                          : `== Pemberitahuan perlindungan halaman ==\nHalaman-halaman berikut telah dilindungi selama ${translateDurationId(config.protectExpiry)} dengan alasan berikut: ${protectReasonNotice}.\n\n${listedId}\n\nSelama masa perlindungan, sebagian atau seluruh tindakan penyuntingan pada halaman-halaman ini mungkin dibatasi bergantung pada tingkat perlindungan yang diterapkan. Perlindungan dijadwalkan berakhir pada waktunya, kecuali diubah oleh pengurus.\n\nPemberitahuan ini dikirimkan secara otomatis. Silakan sampaikan pertanyaan atau keberatan ke halaman pembicaraan saya. ~~~~`
+                        : `== Page protection notice ==\nThe following pages have been protected ${protectExpiryDisplay} due to the following reason: ${protectReasonNotice}.\n\n${listed}\n\nDuring the protection period, some or all editing actions on these pages may be restricted depending on the level of protection applied. ${protectExpiryText}\n\nThis notification was posted automatically. Please direct any questions or concerns to my user talk page. ~~~~`;
+                    }
+                    await apiPost({
+                      action: "edit",
+                      title: talkTitle,
+                      appendtext: "\n\n" + notice,
+                      summary: notifySummaryProtect,
+                      bot: true,
+                    });
+                    addLog(`[Notify] Notification posted to: ${talkTitle}`);
+                  } catch (e) {
+                    addLog(
+                      `[Notify] Failed to post protection notification to ${talkTitle}: ${formatApiError(e)}`,
+                      "warn",
+                    );
+                  }
+                  await new Promise((resolve) =>
+                    setTimeout(resolve, THROTTLE_MS),
+                  );
+                }
+              }
+              if (!isAborted) rs.secondProtectDone = true;
             }
-            if (!isAborted) rs.unlinkLoopDone = true;
-          }
+
+            // Remove wikilinks to deleted pages from articles in the main namespace.
+            // Skips all namespaces other than NS0. Runs for each successfully deleted
+            // page. Each matching article is fetched, its wikilinks replaced with
+            // plain text, and saved with a labelled edit summary.
+            if (
+              config.massdelUnlink &&
+              deletedTitles.length > 0 &&
+              !rs.unlinkLoopDone
+            ) {
+              for (const delTitle of deletedTitles) {
+                if (isAborted) break;
+                if (rs.processedUnlinkTitles.has(delTitle)) continue;
+
+                // Detect whether the deleted item is a file. File embeds and
+                // gallery entries use different wikitext forms than plain page
+                // links, and MediaWiki tracks file usage via imageinfo/imageusage
+                // rather than the pagelinks table used by list=backlinks.
+                // [NOT CONFIRMED] — this branch has not been independently verified
+                // against a live wiki; the file-delinking feature is experimental.
+                let isFileDeletion = false;
+                let fileMain = null;
+                try {
+                  const delTitleObj = new mw.Title(delTitle);
+                  isFileDeletion = delTitleObj.getNamespaceId() === 6;
+                  if (isFileDeletion) fileMain = delTitleObj.getMain();
+                } catch (e) {
+                  // Leave isFileDeletion false if the title cannot be resolved.
+                }
+
+                addLog(
+                  `[Unlink] Searching for ${isFileDeletion ? "references to file" : "links to"}: ${delTitle}...`,
+                );
+
+                // Escape the title for use in a regular expression.
+                // Spaces and underscores are treated as equivalent in wikilinks.
+                const escapedTitle = delTitle
+                  .replace(/[.*+?^${}()|[\]\\]/g, "\\$&")
+                  .replace(/[ _]/g, "[ _]");
+
+                // Match [[Title]], [[Title|text]], [[Title#section]], [[Title#section|text]].
+                // Capture group 1: display text after | (undefined if absent).
+                // When no display text is present, the replacement is the base page title.
+                const linkRe = new RegExp(
+                  "\\[\\[" +
+                    escapedTitle +
+                    "(?:#[^|\\]]*)?(?:\\|([^\\]]*?))?\\]\\]",
+                  "g",
+                );
+
+                // File-specific patterns, built only when the deleted item is a file.
+                // [NOT CONFIRMED] — the "File"/"Image" namespace aliases and gallery
+                // line syntax used below cover the common cases but may not match
+                // every valid form (e.g. localised namespace aliases on this wiki).
+                let fileEmbedRe = null;
+                let galleryLineRe = null;
+                if (isFileDeletion && fileMain) {
+                  const escapedFileName = fileMain
+                    .replace(/[.*+?^${}()|[\]\\]/g, "\\$&")
+                    .replace(/[ _]/g, "[ _]");
+                  // Matches [[File:Example.jpg]], [[File:Example.jpg|thumb|caption]],
+                  // and the "Image:" alias. The entire embed is removed, since a
+                  // bare file embed has no display-text fallback to replace it with.
+                  fileEmbedRe = new RegExp(
+                    "\\[\\[\\s*(?:[Ff]ile|[Ii]mage)\\s*:\\s*" +
+                      escapedFileName +
+                      "(?:\\|[^\\]]*)?\\]\\]",
+                    "g",
+                  );
+                  // Matches a bare gallery entry on its own line, e.g.
+                  // "File:Example.jpg|caption", as used inside <gallery> tags.
+                  galleryLineRe = new RegExp(
+                    "^[ \\t]*(?:[Ff]ile|[Ii]mage)\\s*:\\s*" +
+                      escapedFileName +
+                      "[ \\t]*(?:\\|.*)?$\\n?",
+                    "gim",
+                  );
+                }
+
+                let continueToken;
+                do {
+                  if (isAborted) break;
+                  try {
+                    let links;
+                    if (isFileDeletion) {
+                      // list=imageusage tracks file embeds/transclusions, unlike
+                      // list=backlinks which only tracks pagelinks-table wikilinks.
+                      const iuParams = {
+                        action: "query",
+                        list: "imageusage",
+                        iutitle: delTitle,
+                        iunamespace: 0, // Main namespace only
+                        iulimit: 50,
+                      };
+                      if (continueToken) iuParams.iucontinue = continueToken;
+                      const iuData = await apiGet(iuParams);
+                      continueToken =
+                        iuData.continue && iuData.continue.iucontinue;
+                      links = (iuData.query && iuData.query.imageusage) || [];
+                    } else {
+                      const blParams = {
+                        action: "query",
+                        list: "backlinks",
+                        bltitle: delTitle,
+                        blnamespace: 0, // Main namespace only
+                        bllimit: 50,
+                      };
+                      if (continueToken) blParams.blcontinue = continueToken;
+                      const blData = await apiGet(blParams);
+                      continueToken =
+                        blData.continue && blData.continue.blcontinue;
+                      links = (blData.query && blData.query.backlinks) || [];
+                    }
+
+                    for (const link of links) {
+                      if (isAborted) break;
+                      const linkTitle = link.title;
+                      try {
+                        // Fetch the current wikitext of the linking article.
+                        const revData = await apiGet({
+                          action: "query",
+                          prop: "revisions",
+                          titles: linkTitle,
+                          rvprop: "content",
+                          rvslots: "main",
+                          formatversion: 2,
+                        });
+                        const page =
+                          revData.query &&
+                          revData.query.pages &&
+                          revData.query.pages[0];
+                        if (!page || page.missing) continue;
+                        const slot =
+                          page.revisions &&
+                          page.revisions[0] &&
+                          page.revisions[0].slots &&
+                          page.revisions[0].slots.main;
+                        if (!slot) continue;
+                        const wikitext = slot.content;
+
+                        let newWikitext;
+                        if (isFileDeletion) {
+                          // Remove whole file embeds and gallery lines referencing
+                          // the deleted file. Neither form has a meaningful
+                          // display-text fallback, so the match is deleted outright.
+                          newWikitext = wikitext
+                            .replace(fileEmbedRe, "")
+                            .replace(galleryLineRe, "");
+                        } else {
+                          // Replace each matching wikilink with its display text,
+                          // or with the base page title if no display text is present.
+                          newWikitext = wikitext.replace(
+                            linkRe,
+                            function (match, displayText) {
+                              return displayText !== undefined
+                                ? displayText
+                                : delTitle;
+                            },
+                          );
+                        }
+
+                        if (newWikitext === wikitext) continue; // No matching references found in content
+
+                        await apiPost({
+                          action: "edit",
+                          title: linkTitle,
+                          text: newWikitext,
+                          summary:
+                            (useIndonesian
+                              ? isFileDeletion
+                                ? "Menghapus referensi ke berkas yang sudah dihapus: "
+                                : "Menghapus pranala ke halaman yang sudah dihapus: "
+                              : isFileDeletion
+                                ? "Removing references to deleted file: "
+                                : "Removing links to deleted page: ") +
+                            delTitle +
+                            toolTag,
+                          bot: true,
+                        });
+                        addLog(
+                          `[Unlink] Removed ${isFileDeletion ? "references to file" : "links to"} "${delTitle}" in: ${linkTitle}`,
+                        );
+                        stats.unlink++;
+                        updateStatusDisplay();
+                      } catch (e) {
+                        addLog(
+                          `[Unlink] Failed to edit ${linkTitle}: ${formatApiError(e)}`,
+                          true,
+                        );
+                      }
+                      await new Promise((resolve) =>
+                        setTimeout(resolve, THROTTLE_MS),
+                      );
+                    }
+                  } catch (e) {
+                    addLog(
+                      `[Unlink] Failed to fetch ${isFileDeletion ? "file usage" : "backlinks"} for "${delTitle}": ${formatApiError(e)}`,
+                      true,
+                    );
+                    break;
+                  }
+                } while (continueToken && !isAborted);
+                rs.processedUnlinkTitles.add(delTitle);
+              }
+              if (!isAborted) rs.unlinkLoopDone = true;
+            }
+          } // end for (const targetVal of config.targets)
 
           // Termination and interface cleanup operations
           btnAbort.style.display = "none";
@@ -3589,16 +3701,19 @@ $(function () {
 
           if (isAborted) {
             addLog("⏹️ Operations aborted by user");
-            // Store the resume state so the next work() call picks up where this
-            // run stopped. Cleared automatically at the start of the resumed run.
-            resumeState = rs;
+            // Resume is only supported for single-target runs. Multi-target
+            // runs would require per-target phase tracking to resume correctly.
+            if (!isMultiTarget) {
+              resumeState = rs;
+            }
           } else {
             addLog("✅ All operations have been completed successfully");
           }
           btnClose.disabled = false;
 
           // Insert "Resume" button when the run was aborted part-way through.
-          if (isAborted) {
+          // Not offered for multi-target runs.
+          if (isAborted && !isMultiTarget) {
             const btnResume = makeBtn("Resume operations", "primary");
             btnResume.title =
               "Continue the task from where it was interrupted, skipping already-completed steps";
@@ -5815,6 +5930,57 @@ $(function () {
           });
 
           topSection.appendChild(rowTarget);
+
+          // Multi-target mode — hidden until the checkbox is ticked.
+          const { row: rowMultiTarget, field: fieldMultiTarget } =
+            makeRow("Multi-target");
+
+          const { wrap: wrapMultiTarget, chk: chkMultiTarget } = makeCheckbox(
+            "Process additional targets",
+            false,
+          );
+          wrapMultiTarget.title =
+            "When ticked, a text area appears where additional targets can be" +
+            " pasted one per line. The primary target above is always included." +
+            " Status checks and section status notes reflect the primary target" +
+            " only. GS/SRG report submissions apply to the primary target only." +
+            " Resume is not available for multi-target runs.";
+
+          const textareaMultiTarget = document.createElement("textarea");
+          textareaMultiTarget.className = "tng-input tng-hidden";
+          textareaMultiTarget.rows = 4;
+          textareaMultiTarget.placeholder =
+            "One target per line.\n" +
+            "User mode: account names without the User: prefix.\n" +
+            "Page mode: page titles with the namespace prefix where required.";
+          textareaMultiTarget.style.cssText =
+            "resize:vertical;font-family:monospace;font-size:0.88em;margin-top:4px;";
+
+          const helpMultiTarget = document.createElement("div");
+          helpMultiTarget.className = "tng-help tng-hidden";
+          helpMultiTarget.textContent =
+            "The primary target above is always processed first. Status checks," +
+            " section status notes, and GS/SRG report submissions reflect the" +
+            " primary target only. Resume is not available for multi-target runs.";
+
+          chkMultiTarget.addEventListener("change", function () {
+            textareaMultiTarget.classList.toggle(
+              "tng-hidden",
+              !chkMultiTarget.checked,
+            );
+            helpMultiTarget.classList.toggle(
+              "tng-hidden",
+              !chkMultiTarget.checked,
+            );
+          });
+
+          fieldMultiTarget.style.flexDirection = "column";
+          fieldMultiTarget.style.alignItems = "stretch";
+          fieldMultiTarget.appendChild(wrapMultiTarget);
+          fieldMultiTarget.appendChild(textareaMultiTarget);
+          fieldMultiTarget.appendChild(helpMultiTarget);
+          topSection.appendChild(rowMultiTarget);
+
           const { row: rowEdits, field: fieldEdits } = makeRow("Edits");
 
           const selEndtime = makeSelect([
@@ -9122,6 +9288,17 @@ $(function () {
               updatePickerSelectionSummary();
             }
 
+            // Clear additional targets when switching mode — target formats
+            // differ between user mode (account names) and page mode (page
+            // titles), so carrying targets across a mode switch would likely
+            // produce invalid inputs.
+            if (chkMultiTarget.checked) {
+              chkMultiTarget.checked = false;
+              textareaMultiTarget.value = "";
+              textareaMultiTarget.classList.add("tng-hidden");
+              helpMultiTarget.classList.add("tng-hidden");
+            }
+
             // Package row: available in both modes. The preset list is
             // mode-specific, so rebuild it and reset to Default whenever the
             // mode changes — a package chosen under the previous mode may
@@ -9762,9 +9939,26 @@ $(function () {
               return "";
             }
 
+            // Build the ordered target list. Additional targets from the
+            // textarea are appended after the primary target; duplicates
+            // (case-insensitive) are removed while preserving order.
+            const additionalTargets = chkMultiTarget.checked
+              ? textareaMultiTarget.value
+                  .split("\n")
+                  .map(function (s) {
+                    return s.trim();
+                  })
+                  .filter(Boolean)
+                  .filter(function (t) {
+                    return t.toLowerCase() !== targetVal.toLowerCase();
+                  })
+              : [];
+            const allTargets = [targetVal].concat(additionalTargets);
+
             config = {
               mode: tenguMode,
               target: targetVal,
+              targets: allTargets,
               suffix: suffix,
               isIP: isIP,
               endtime: endtime,
@@ -9948,10 +10142,25 @@ $(function () {
             warningMsg.innerHTML =
               "Tengu will execute the following operation" +
               (enabledFeatures.length === 1 ? "" : "s") +
-              " on <b>" +
-              mw.html.escape(config.target) +
-              "</b>. Please confirm before proceeding.";
+              " on " +
+              (config.targets.length > 1
+                ? "<b>" + config.targets.length + " targets</b>"
+                : "<b>" + mw.html.escape(config.target) + "</b>") +
+              ". Please confirm before proceeding.";
             confirmDlg.body.appendChild(warningMsg);
+            if (config.targets.length > 1) {
+              const confirmTargetList = document.createElement("div");
+              confirmTargetList.style.cssText =
+                "font-size:0.85em;background:#f8f9fa;border:1px solid #eaecf0;" +
+                "border-radius:4px;padding:6px 10px;margin:0 0 8px;" +
+                "max-height:120px;overflow-y:auto;font-family:monospace;";
+              config.targets.forEach(function (t, i) {
+                const line = document.createElement("div");
+                line.textContent = i + 1 + ". " + t;
+                confirmTargetList.appendChild(line);
+              });
+              confirmDlg.body.appendChild(confirmTargetList);
+            }
 
             const featureList = document.createElement("ul");
             featureList.style.margin = "0 0 4px 0";

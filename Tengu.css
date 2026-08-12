@@ -1085,3 +1085,15 @@
   color: #ffe082;
   border-color: #8a6900;
 }
+
+/* --- Multi-target progress log separator --- */
+.tng-log-sep {
+  border-top: 1px solid #a2a9b1;
+  margin: 6px 0 2px;
+  padding-top: 4px;
+  font-weight: 700;
+  font-size: 0.9em;
+}
+.tng-theme-dark .tng-log-sep {
+  border-top-color: #54595d;
+}

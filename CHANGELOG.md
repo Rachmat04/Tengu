@@ -1,3 +1,17 @@
+## 2.111.0
+
+### Added
+
+* Added **multi-target mode**, allowing a single task run to process multiple accounts or pages in sequence. A new "Process multiple targets" checkbox on the target row reveals a textarea where additional targets can be pasted one per line — account names without the `User:` prefix in user mode; full page titles including the namespace prefix in page mode. All enabled sections apply to each target in turn, and statistics accumulate across the entire batch.
+* When multiple targets are active, the progress log displays a numbered separator line before each target so the output remains easy to follow across a large batch run.
+
+### Notes
+
+* Status checks (block status, protection status, etc.) and section status notes reflect the primary target only; they are not re-evaluated per-target during execution.
+* GS/SRG report submissions apply to the primary target only, since the report line is pre-built from the primary target's details before execution begins. Submit separate reports for additional targets if required.
+* Resume is not available for multi-target runs. If a multi-target run is aborted, restart the run from the beginning.
+* Switching between user mode and page mode clears the additional-targets textarea, since target formats differ between the two modes.
+
 ## 2.110.0
 
 ### Added
