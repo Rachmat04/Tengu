@@ -1,3 +1,13 @@
+## 2.111.1
+
+### Fixed
+
+* Fixed the target list in the **Confirm selected operations** dialogue not adapting to the active dark/light theme. The element previously used hardcoded inline styles; it now uses a `.tng-confirm-target-list` CSS class with an explicit dark-mode override under `.tng-theme-dark`.
+
+### Changed
+
+* The additional-targets textarea and help text in **Process multiple targets** now animate smoothly when the checkbox is ticked or unticked, using a `max-height` + `opacity` transition consistent with the existing section expand/collapse animation. Both elements are wrapped in a `.tng-multitarget-panel` container; visibility is controlled by toggling the `.tng-multitarget-panel--open` modifier class rather than `tng-hidden`.
+
 ## 2.111.0
 
 ### Added

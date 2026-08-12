@@ -1097,3 +1097,42 @@
 .tng-theme-dark .tng-log-sep {
   border-top-color: #54595d;
 }
+
+/* --- Multi-target panel (animated reveal) --- */
+/* Uses max-height + opacity so the reveal animates smoothly
+   rather than appearing or disappearing instantly. */
+.tng-multitarget-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-top: 4px;
+  overflow: hidden;
+  max-height: 0;
+  opacity: 0;
+  transition:
+    max-height 0.25s ease,
+    opacity 0.2s ease;
+}
+.tng-multitarget-panel--open {
+  max-height: 200px;
+  opacity: 1;
+}
+
+/* --- Confirmation dialogue target list --- */
+.tng-confirm-target-list {
+  font-size: 0.85em;
+  background: #f8f9fa;
+  border: 1px solid #eaecf0;
+  border-radius: 4px;
+  padding: 6px 10px;
+  margin: 0 0 8px;
+  max-height: 120px;
+  overflow-y: auto;
+  font-family: monospace;
+  color: #202122;
+}
+.tng-theme-dark .tng-confirm-target-list {
+  background: #2a2a2a;
+  border-color: #54595d;
+  color: #eaecf0;
+}

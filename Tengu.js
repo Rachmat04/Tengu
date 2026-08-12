@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.111.0
+ * Version 2.111.1
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -5947,38 +5947,38 @@ $(function () {
             " Resume is not available for multi-target runs.";
 
           const textareaMultiTarget = document.createElement("textarea");
-          textareaMultiTarget.className = "tng-input tng-hidden";
+          textareaMultiTarget.className = "tng-input";
           textareaMultiTarget.rows = 4;
           textareaMultiTarget.placeholder =
             "One target per line.\n" +
             "User mode: account names without the User: prefix.\n" +
             "Page mode: page titles with the namespace prefix where required.";
           textareaMultiTarget.style.cssText =
-            "resize:vertical;font-family:monospace;font-size:0.88em;margin-top:4px;";
+            "resize:vertical;font-family:monospace;font-size:0.88em;";
 
           const helpMultiTarget = document.createElement("div");
-          helpMultiTarget.className = "tng-help tng-hidden";
+          helpMultiTarget.className = "tng-help";
           helpMultiTarget.textContent =
             "The primary target above is always processed first. Status checks," +
             " section status notes, and GS/SRG report submissions reflect the" +
             " primary target only. Resume is not available for multi-target runs.";
 
+          const divMultiTargetPanel = document.createElement("div");
+          divMultiTargetPanel.className = "tng-multitarget-panel";
+          divMultiTargetPanel.appendChild(textareaMultiTarget);
+          divMultiTargetPanel.appendChild(helpMultiTarget);
+
           chkMultiTarget.addEventListener("change", function () {
-            textareaMultiTarget.classList.toggle(
-              "tng-hidden",
-              !chkMultiTarget.checked,
-            );
-            helpMultiTarget.classList.toggle(
-              "tng-hidden",
-              !chkMultiTarget.checked,
+            divMultiTargetPanel.classList.toggle(
+              "tng-multitarget-panel--open",
+              chkMultiTarget.checked,
             );
           });
 
           fieldMultiTarget.style.flexDirection = "column";
           fieldMultiTarget.style.alignItems = "stretch";
           fieldMultiTarget.appendChild(wrapMultiTarget);
-          fieldMultiTarget.appendChild(textareaMultiTarget);
-          fieldMultiTarget.appendChild(helpMultiTarget);
+          fieldMultiTarget.appendChild(divMultiTargetPanel);
           topSection.appendChild(rowMultiTarget);
 
           const { row: rowEdits, field: fieldEdits } = makeRow("Edits");
@@ -9295,8 +9295,9 @@ $(function () {
             if (chkMultiTarget.checked) {
               chkMultiTarget.checked = false;
               textareaMultiTarget.value = "";
-              textareaMultiTarget.classList.add("tng-hidden");
-              helpMultiTarget.classList.add("tng-hidden");
+              divMultiTargetPanel.classList.remove(
+                "tng-multitarget-panel--open",
+              );
             }
 
             // Package row: available in both modes. The preset list is
@@ -10150,10 +10151,7 @@ $(function () {
             confirmDlg.body.appendChild(warningMsg);
             if (config.targets.length > 1) {
               const confirmTargetList = document.createElement("div");
-              confirmTargetList.style.cssText =
-                "font-size:0.85em;background:#f8f9fa;border:1px solid #eaecf0;" +
-                "border-radius:4px;padding:6px 10px;margin:0 0 8px;" +
-                "max-height:120px;overflow-y:auto;font-family:monospace;";
+              confirmTargetList.className = "tng-confirm-target-list";
               config.targets.forEach(function (t, i) {
                 const line = document.createElement("div");
                 line.textContent = i + 1 + ". " + t;
