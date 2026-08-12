@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.109.0
+ * Version 2.110.0
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -88,6 +88,9 @@ $(function () {
         let inited = false;
         let cssInited = false; // CSS injected once on first dialogue open
         let escListenerBound = false; // Escape key listener registered once on first overlay
+        // Stores progress state when the user aborts a run so work() can resume
+        // from where it stopped without repeating completed steps.
+        let resumeState = null;
 
         // Light/dark theme. Defaults to a saved preference if one exists,
         // otherwise falls back to the browser's prefers-color-scheme setting.
@@ -923,6 +926,54 @@ $(function () {
         // ============================================================================
         const work = async function () {
           let isAborted = false;
+
+          // Resume state — carries phase-completion flags, processed-item sets, and
+          // cached contribution data across abort/resume cycles. On a fresh run all
+          // flags are false and all collections are empty. On a resume run the values
+          // from the aborted run are reused so already-completed work is skipped.
+          const isResume = !!resumeState;
+          const rs = isResume
+            ? resumeState
+            : {
+                // Single-shot phase completion flags
+                warnDone: false,
+                blockDone: false,
+                unblockDone: false,
+                lockAccountDone: false,
+                reportGSDone: false,
+                reportSRGDone: false,
+                undeleteDone: false,
+                moveSandboxDone: false,
+                // Loop and notification-dispatch completion flags
+                rollbackLoopDone: false,
+                notifyRollbackDone: false,
+                mainProtectLoopDone: false,
+                notifyProtectDone: false,
+                deletionLoopDone: false,
+                notifyDeleteUserDone: false,
+                notifyDeletePageDone: false,
+                protectRecreationDone: false,
+                secondProtectDone: false,
+                unlinkLoopDone: false,
+                // Per-title sets for resumable loops
+                processedRollbackTitles: new Set(),
+                processedDeletionTitles: new Set(),
+                processedUnlinkTitles: new Set(),
+                // Contribution data cached after the first fetch; reused on resume
+                pageEditsCache: null,
+                creationCache: null,
+                pagesToProtectCache: null,
+                pagesToProtectAfterDelCache: null,
+                // Accumulated results carried across abort/resume cycles
+                deletedTitles: [],
+                rollbackNotifiedTitles: [],
+                creatorMap: new Map(),
+                notifyQueue: new Map(),
+              };
+          // Consume the global resumeState so it is not inadvertently reused.
+          // A new value is stored only if this run is aborted part-way through.
+          resumeState = null;
+
           const stats = {
             block: 0,
             unblock: 0,
@@ -1030,6 +1081,11 @@ $(function () {
           };
 
           // Add clear visibility notice that the automated process is currently ongoing
+          if (isResume) {
+            addLog(
+              "▶️ Resuming operations — skipping already-completed steps...",
+            );
+          }
           addLog("⏳ Processing operations... please wait...");
 
           const targetVal = config.target;
@@ -1060,7 +1116,12 @@ $(function () {
           // --- User warning ---
           // Only runs in user mode; config.warn is only set when the warn
           // section is enabled and a message template has been selected.
-          if (config.warn && config.mode === "user" && !isAborted) {
+          if (
+            !rs.warnDone &&
+            config.warn &&
+            config.mode === "user" &&
+            !isAborted
+          ) {
             const talkTitle = new mw.Title(targetVal, 3).getPrefixedText();
             const notice = config.warnNotice;
             try {
@@ -1079,10 +1140,16 @@ $(function () {
                 "warn",
               );
             }
+            rs.warnDone = true;
           }
 
           // --- Block ---
-          if (config.block && config.mode === "user" && !isAborted) {
+          if (
+            !rs.blockDone &&
+            config.block &&
+            config.mode === "user" &&
+            !isAborted
+          ) {
             let proceedWithBlock = true;
 
             // Show a confirmation dialogue only when the target account matches the current user.
@@ -1202,10 +1269,16 @@ $(function () {
                 }
               }
             } // end if (proceedWithBlock)
+            rs.blockDone = true;
           }
 
           // --- Unblock ---
-          if (config.unblock && config.mode === "user" && !isAborted) {
+          if (
+            !rs.unblockDone &&
+            config.unblock &&
+            config.mode === "user" &&
+            !isAborted
+          ) {
             try {
               await apiPost({
                 action: "unblock",
@@ -1247,6 +1320,7 @@ $(function () {
                 true,
               );
             }
+            rs.unblockDone = true;
           }
 
           // --- Lock account [EXPERIMENTAL] ---
@@ -1258,7 +1332,12 @@ $(function () {
           // have not been independently confirmed against a live wiki, since
           // testing this feature requires steward rights. Please verify
           // carefully before relying on it.
-          if (config.lockAccount && config.mode === "user" && !isAborted) {
+          if (
+            !rs.lockAccountDone &&
+            config.lockAccount &&
+            config.mode === "user" &&
+            !isAborted
+          ) {
             try {
               const foreignApi = await getMetaForeignApi();
               await new Promise((resolve, reject) => {
@@ -1314,12 +1393,13 @@ $(function () {
                 true,
               );
             }
+            rs.lockAccountDone = true;
           }
 
           // --- Report to global sysops ---
           // Available in both user mode (reporting an account) and page mode
           // (reporting a page for global sysops' attention).
-          if (config.reportGS && !isAborted) {
+          if (!rs.reportGSDone && config.reportGS && !isAborted) {
             try {
               const reportGSSummary =
                 (config.mode === "page"
@@ -1340,13 +1420,14 @@ $(function () {
                 true,
               );
             }
+            rs.reportGSDone = true;
           }
 
           // --- Report to Steward requests/Global ---
           // User mode only. Files a global block request when the target is
           // an IP address, or a global lock request when the target is a
           // registered account, on Meta-Wiki's Steward requests/Global page.
-          if (config.reportSRG && !isAborted) {
+          if (!rs.reportSRGDone && config.reportSRG && !isAborted) {
             try {
               const srgSummary =
                 "Reporting account for global " +
@@ -1369,10 +1450,16 @@ $(function () {
                 true,
               );
             }
+            rs.reportSRGDone = true;
           }
 
           // --- Page undeletion ---
-          if (config.undelete && config.mode === "page" && !isAborted) {
+          if (
+            !rs.undeleteDone &&
+            config.undelete &&
+            config.mode === "page" &&
+            !isAborted
+          ) {
             try {
               await apiPost({
                 action: "undelete",
@@ -1388,10 +1475,16 @@ $(function () {
                 true,
               );
             }
+            rs.undeleteDone = true;
           }
 
           // --- Move page / Move to user's sandbox ---
-          if (config.moveSandbox && config.mode === "page" && !isAborted) {
+          if (
+            !rs.moveSandboxDone &&
+            config.moveSandbox &&
+            config.mode === "page" &&
+            !isAborted
+          ) {
             if (config.moveSandboxMode === "movepage") {
               // General page move. movetalk and movesubpages are native API
               // parameters so the move, talk page move, and subpage moves are
@@ -1787,14 +1880,30 @@ $(function () {
                 }
               }
             } // end else (sandbox mode)
+            rs.moveSandboxDone = true;
           }
 
           // --- Fetch user contributions OR prepare target page ---
-          const pageEdits = {};
-          const creation = [];
-          const pagesToProtect = new Set();
+          // On a resume run, contribution data is loaded from the cache stored in rs,
+          // avoiding a repeat API call. On a fresh run data is fetched normally then cached.
+          let pageEdits = {};
+          let creation = [];
+          let pagesToProtect = new Set();
+          let pagesToProtectAfterDel;
+          const skipContribFetch = rs.pageEditsCache !== null;
+          if (skipContribFetch) {
+            pageEdits = rs.pageEditsCache;
+            creation = rs.creationCache;
+            pagesToProtect = rs.pagesToProtectCache;
+            pagesToProtectAfterDel = rs.pagesToProtectAfterDelCache;
+            addLog("▶️ Contribution data reloaded from the previous run.");
+          }
 
-          if (config.mode === "user" && config.customSelection) {
+          if (
+            !skipContribFetch &&
+            config.mode === "user" &&
+            config.customSelection
+          ) {
             // Custom-selection mode: use the items chosen in the picker rather
             // than fetching contributions from the API.
             for (const [title, info] of Object.entries(
@@ -1823,7 +1932,11 @@ $(function () {
             }
           }
 
-          if (config.mode === "user" && !config.customSelection) {
+          if (
+            !skipContribFetch &&
+            config.mode === "user" &&
+            !config.customSelection
+          ) {
             const contribParams = {
               action: "query",
               list: "usercontribs",
@@ -1902,7 +2015,7 @@ $(function () {
                 }
               }
             }
-          } else if (config.mode === "page") {
+          } else if (!skipContribFetch && config.mode === "page") {
             // Page mode: bypass fetching and apply operations directly to the target page
             if (config.protect) pagesToProtect.add(targetVal);
             if (config.massdel) creation.push(targetVal);
@@ -1912,24 +2025,33 @@ $(function () {
           // then protected against recreation. Protecting before deletion causes the
           // protection to be lost when the page is removed. Identify the overlap now
           // and defer those pages to a second protect pass that runs after deletion.
-          const creationSet = new Set(creation);
-          const pagesToProtectAfterDel = new Set(
-            [...pagesToProtect].filter(function (t) {
-              return creationSet.has(t);
-            }),
-          );
-          for (const t of pagesToProtectAfterDel) {
-            pagesToProtect.delete(t);
+          if (!skipContribFetch) {
+            const creationSet = new Set(creation);
+            pagesToProtectAfterDel = new Set(
+              [...pagesToProtect].filter(function (t) {
+                return creationSet.has(t);
+              }),
+            );
+            for (const t of pagesToProtectAfterDel) {
+              pagesToProtect.delete(t);
+            }
+            // Cache contribution data and computed page sets for a potential resume run.
+            rs.pageEditsCache = pageEdits;
+            rs.creationCache = creation;
+            rs.pagesToProtectCache = pagesToProtect;
+            rs.pagesToProtectAfterDelCache = pagesToProtectAfterDel;
           }
 
           // Titles successfully reverted via rollback/undo, collected so a single
           // consolidated notification can be sent to the target user's talk page
-          // (if enabled), instead of one notification per page.
-          const rollbackNotifiedTitles = [];
+          // (if enabled), instead of one notification per page. On resume, reuse the
+          // array from rs so all reverted titles across runs are included.
+          const rollbackNotifiedTitles = rs.rollbackNotifiedTitles;
 
           // Process rollbacks, undos and revision deletions sequentially with a throttling buffer delay
           for (const [title, info] of Object.entries(pageEdits)) {
             if (isAborted) break;
+            if (rs.processedRollbackTitles.has(title)) continue;
 
             const idlist = info.revids;
 
@@ -2246,13 +2368,16 @@ $(function () {
               }
             }
 
+            rs.processedRollbackTitles.add(title);
             await new Promise((resolve) => setTimeout(resolve, THROTTLE_MS)); // Throttling window
           }
+          if (!isAborted) rs.rollbackLoopDone = true;
 
           // --- Rollback/undo notification ---
           // Posted once per run to the target user's talk page, listing every
           // page successfully reverted (rather than one notification per page).
           if (
+            !rs.notifyRollbackDone &&
             config.notifyRollback &&
             config.mode === "user" &&
             rollbackNotifiedTitles.length > 0 &&
@@ -2293,9 +2418,11 @@ $(function () {
                 "warn",
               );
             }
+            rs.notifyRollbackDone = true;
           }
 
-          const notifyQueue = new Map();
+          // On resume, reuse the notification queue from the previous run.
+          const notifyQueue = rs.notifyQueue;
 
           // Builds the protections parameter for a page protection request, adding
           // upload= for File-namespace pages. Assumes upload-level
@@ -2334,7 +2461,11 @@ $(function () {
           }
 
           // Execute sequential page protections if enabled
-          if (config.protect && pagesToProtect.size > 0) {
+          if (
+            config.protect &&
+            pagesToProtect.size > 0 &&
+            !rs.mainProtectLoopDone
+          ) {
             for (const title of pagesToProtect) {
               if (isAborted) break;
               try {
@@ -2446,12 +2577,17 @@ $(function () {
               }
               await new Promise((resolve) => setTimeout(resolve, THROTTLE_MS));
             }
+            if (!isAborted) rs.mainProtectLoopDone = true;
           }
 
           // Dispatch protection notifications. If two or more protected pages resolve
           // to the same talk page, a single consolidated notice is posted instead of
           // one per page, whilst still listing every affected page by name.
-          if (notifyQueue.size > 0 && config.notifyProtect) {
+          if (
+            !rs.notifyProtectDone &&
+            notifyQueue.size > 0 &&
+            config.notifyProtect
+          ) {
             const protectExpiryDisplay =
               config.protectExpiry === "never"
                 ? "indefinitely"
@@ -2504,19 +2640,22 @@ $(function () {
               }
               await new Promise((resolve) => setTimeout(resolve, THROTTLE_MS));
             }
+            if (!isAborted) rs.notifyProtectDone = true;
           }
 
-          const deletedTitles = [];
+          // On resume, reuse accumulated deletion data from the previous run.
+          const deletedTitles = rs.deletedTitles;
           // Maps creator username → deleted page titles, for page mode notifications.
           // Populated during the deletion loop (after each successful delete) so only
           // confirmed deletions are included. Lookup must occur before deletion because
           // the standard query API cannot return revision data for deleted pages.
-          const creatorMap = new Map();
+          const creatorMap = rs.creatorMap;
 
           // Mass-delete pages sequentially
-          if (config.massdel) {
+          if (config.massdel && !rs.deletionLoopDone) {
             for (const title of creation) {
               if (isAborted) break;
+              if (rs.processedDeletionTitles.has(title)) continue;
 
               // In page mode, fetch the page creator before deleting.
               // The result is needed for the post-deletion notification.
@@ -2877,8 +3016,10 @@ $(function () {
                 }
               }
 
+              rs.processedDeletionTitles.add(title);
               await new Promise((resolve) => setTimeout(resolve, THROTTLE_MS)); // Throttling window
             }
+            if (!isAborted) rs.deletionLoopDone = true;
           }
 
           // Post deletion notification to the target user's talk page (user mode).
@@ -2889,6 +3030,7 @@ $(function () {
             targetVal.toLowerCase() ===
               (mw.config.get("wgUserName") || "").toLowerCase();
           if (
+            !rs.notifyDeleteUserDone &&
             config.massdel &&
             config.mode === "user" &&
             deletedTitles.length > 0 &&
@@ -2929,6 +3071,7 @@ $(function () {
                 "warn",
               );
             }
+            rs.notifyDeleteUserDone = true;
           }
 
           // Post deletion notifications in page mode, grouped by creator.
@@ -2936,6 +3079,7 @@ $(function () {
           // deleted during this session that they created. The creatorMap was populated
           // during the deletion loop; entries are only present for confirmed deletions.
           if (
+            !rs.notifyDeletePageDone &&
             config.massdel &&
             config.mode === "page" &&
             creatorMap.size > 0 &&
@@ -2981,6 +3125,7 @@ $(function () {
               }
               await new Promise((resolve) => setTimeout(resolve, THROTTLE_MS));
             }
+            if (!isAborted) rs.notifyDeletePageDone = true;
           }
 
           // --- Recreation protection (page mode, non-existent page) ---
@@ -2988,6 +3133,7 @@ $(function () {
           // preventing a deleted or never-created page from being recreated.
           // Unlike edit=/move= protection, this only applies to missing pages.
           if (
+            !rs.protectRecreationDone &&
             config.protectRecreation &&
             config.mode === "page" &&
             !isAborted
@@ -3014,11 +3160,16 @@ $(function () {
                 true,
               );
             }
+            rs.protectRecreationDone = true;
           }
 
           // Second protect pass: protect pages that were deferred until after deletion.
           // Only pages that were actually deleted are protected here.
-          if (config.protect && pagesToProtectAfterDel.size > 0) {
+          if (
+            config.protect &&
+            pagesToProtectAfterDel.size > 0 &&
+            !rs.secondProtectDone
+          ) {
             const notifyQueueDeferred = new Map();
             for (const title of pagesToProtectAfterDel) {
               if (isAborted) break;
@@ -3217,15 +3368,21 @@ $(function () {
                 );
               }
             }
+            if (!isAborted) rs.secondProtectDone = true;
           }
 
           // Remove wikilinks to deleted pages from articles in the main namespace.
           // Skips all namespaces other than NS0. Runs for each successfully deleted
           // page. Each matching article is fetched, its wikilinks replaced with
           // plain text, and saved with a labelled edit summary.
-          if (config.massdelUnlink && deletedTitles.length > 0) {
+          if (
+            config.massdelUnlink &&
+            deletedTitles.length > 0 &&
+            !rs.unlinkLoopDone
+          ) {
             for (const delTitle of deletedTitles) {
               if (isAborted) break;
+              if (rs.processedUnlinkTitles.has(delTitle)) continue;
 
               // Detect whether the deleted item is a file. File embeds and
               // gallery entries use different wikitext forms than plain page
@@ -3415,7 +3572,9 @@ $(function () {
                   break;
                 }
               } while (continueToken && !isAborted);
+              rs.processedUnlinkTitles.add(delTitle);
             }
+            if (!isAborted) rs.unlinkLoopDone = true;
           }
 
           // Termination and interface cleanup operations
@@ -3430,10 +3589,29 @@ $(function () {
 
           if (isAborted) {
             addLog("⏹️ Operations aborted by user");
+            // Store the resume state so the next work() call picks up where this
+            // run stopped. Cleared automatically at the start of the resumed run.
+            resumeState = rs;
           } else {
             addLog("✅ All operations have been completed successfully");
           }
           btnClose.disabled = false;
+
+          // Insert "Resume" button when the run was aborted part-way through.
+          if (isAborted) {
+            const btnResume = makeBtn("Resume operations", "primary");
+            btnResume.title =
+              "Continue the task from where it was interrupted, skipping already-completed steps";
+            btnResume.addEventListener("click", function () {
+              // Remove the progress overlay without triggering the onClose page-reload
+              // handler, so the new work() run can open its own fresh overlay.
+              overlay.remove();
+              const idx = overlayStack.indexOf(overlay);
+              if (idx > -1) overlayStack.splice(idx, 1);
+              work();
+            });
+            footer.insertBefore(btnResume, btnClose);
+          }
 
           // Insert "Copy this log" button once all operations are complete
           const btnCopyLog = makeBtn("Copy this log", "quiet");

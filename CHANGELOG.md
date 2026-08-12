@@ -1,3 +1,15 @@
+## 2.110.0
+
+### Added
+
+* Added a **Resume operations** button to the progress dialogue when a run is aborted part-way through. Clicking it continues the task from where it stopped, skipping phases that already completed and resuming loops at the next unprocessed item, without reloading the page or prompting a new confirmation dialogue.
+* Added per-run resume state tracking (`rs`) inside `work()`, covering:
+  * Phase-completion flags for all single-shot operations (block, unblock, user warning, lock account, report to Global sysops/Requests, report to Steward requests/Global, page undeletion, move page).
+  * Phase-completion flags for all loop phases and their associated notification dispatches (rollback loop, main protection loop, deletion loop, recreation protection, second protect pass, unlink loop, and each corresponding notification dispatch).
+  * Per-title `Set` objects tracking which pages have already been processed in the rollback, deletion, and unlink loops, so loops resume at the next unprocessed item rather than repeating work.
+  * A contribution-data cache (`pageEditsCache`, `creationCache`, `pagesToProtectCache`, `pagesToProtectAfterDelCache`) populated after the first fetch, reused on resume so the MediaWiki contribution API is not queried again.
+  * Shared references to accumulated collections (`deletedTitles`, `rollbackNotifiedTitles`, `creatorMap`, `notifyQueue`) so results from the aborted run are carried into the resumed run for correct notifications and deferred protection.
+  
 ## 2.109.0
 
 ### Changed
