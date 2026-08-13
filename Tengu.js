@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.111.1
+ * Version 2.112.0
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -1114,6 +1114,54 @@ $(function () {
               ? "Notifikasi: Pemberitahuan pembatalan suntingan"
               : "Notification: Edit reversion notice") + toolTag;
 
+          // Builds the wikitext line for a Global sysops/Requests report for
+          // a specific target. Called per-target inside the loop below so
+          // every account or page in a multi-target run receives its own
+          // individual entry on the report page.
+          function buildGSLineForTarget(target) {
+            const prefix = getInterwikiPrefix();
+            const _isTargetIP = mw.util.isIPAddress(target);
+            const _isTempAccount = /^~\d{4}-\d+-\d+$/.test(target);
+            const reasonText = config.reportGSReasonText;
+            if (config.mode === "page") {
+              const requestVerb =
+                config.reportGSPageType === "protect"
+                  ? "Please protect"
+                  : config.reportGSPageType === "revdel"
+                    ? "Please delete revisions from"
+                    : "Please delete";
+              const pageLink = prefix
+                ? "[[:" + prefix + target + "|" + target + "]]"
+                : "[[:" + target + "]]";
+              return (
+                "* " +
+                requestVerb +
+                " " +
+                pageLink +
+                ": " +
+                reasonText +
+                " ~~~~"
+              );
+            }
+            let userLink;
+            if (_isTargetIP || _isTempAccount) {
+              userLink = prefix
+                ? "[[:" +
+                  prefix +
+                  "Special:Contributions/" +
+                  target +
+                  "|" +
+                  target +
+                  "]]"
+                : "[[Special:Contributions/" + target + "|" + target + "]]";
+            } else {
+              userLink = prefix
+                ? "{{LockHide|1=" + target + "|2=" + prefix + "}}"
+                : "{{LockHide|1=" + target + "}}";
+            }
+            return "* Please block " + userLink + ": " + reasonText + " ~~~~";
+          }
+
           for (const targetVal of config.targets || [config.target]) {
             if (isAborted) break;
 
@@ -1463,27 +1511,20 @@ $(function () {
               rs.lockAccountDone = true;
             }
 
-            // --- Report to global sysops ---
+            // --- Report to Global sysops/Requests ---
             // Available in both user mode (reporting an account) and page mode
             // (reporting a page for global sysops' attention).
-            // In multi-target mode the report line is pre-built for the primary
-            // target, so GS reports are only submitted for that target.
-            if (
-              !rs.reportGSDone &&
-              config.reportGS &&
-              !isAborted &&
-              (!isMultiTarget || targetVal === config.target)
-            ) {
+            // In multi-target mode, a separate entry is appended for each
+            // target so every account or page gets its own individual report.
+            if (!rs.reportGSDone && config.reportGS && !isAborted) {
               try {
+                const _gsLine = buildGSLineForTarget(targetVal);
                 const reportGSSummary =
                   (config.mode === "page"
                     ? "Reporting page for global sysops' attention"
                     : "Reporting account for global sysops' attention") +
                   toolTag;
-                await submitGlobalSysopsReport(
-                  config.reportGSLine,
-                  reportGSSummary,
-                );
+                await submitGlobalSysopsReport(_gsLine, reportGSSummary);
                 addLog(
                   `[Report] Submitted report to Global sysops/Requests for ${targetVal}`,
                 );
@@ -9766,6 +9807,37 @@ $(function () {
               );
             }
 
+            // Extracts the reason text for a Global sysops/Requests report
+            // from the selected reason checkboxes and the additional details
+            // field. Stored in config so work() can rebuild the full report
+            // line per-target when multi-target mode is active.
+            function buildGSReasonText() {
+              const pickedReasons = activeGSReasonChecks()
+                .filter(function (c) {
+                  return c.chk.checked;
+                })
+                .map(function (c) {
+                  return c.label;
+                });
+              const details = inputGSDetails.value.trim();
+              const pickedReasonsText = pickedReasons.length
+                ? pickedReasons.join(". ")
+                : "";
+              let reasonText = "";
+              if (pickedReasonsText && details) {
+                reasonText =
+                  pickedReasonsText + ". Additional details: " + details;
+              } else if (pickedReasonsText) {
+                reasonText = pickedReasonsText;
+              } else if (details) {
+                reasonText = "Additional details: " + details;
+              }
+              if (reasonText && !/[.!?]$/.test(reasonText)) {
+                reasonText += ".";
+              }
+              return reasonText;
+            }
+
             // Assembles the wikitext line submitted to Meta-Wiki's Global
             // sysops/Requests page, following the report format standardised
             // in v2.81.0. User mode uses {{LockHide|1=Username|2=Prefix}} for
@@ -9993,7 +10065,8 @@ $(function () {
               unblockReason: buildUnblockReason() + suffix,
               notifyUnblock: chkNotifyUnblock.checked,
               reportGS: chkGS.checked && !chkGS.disabled,
-              reportGSLine: buildGSReportLine(),
+              reportGSReasonText: buildGSReasonText(),
+              reportGSPageType: selGSPageRequestType.value,
               reportSRG: chkSRG.checked && !chkSRG.disabled,
               reportSRGKind: isSRGBlockTarget() ? "block" : "lock",
               reportSRGSection: buildSRGReportLine(),

@@ -1,3 +1,15 @@
+## 2.112.0
+
+### Changed
+
+* The **Report to Global sysops/Requests** section now submits a separate report entry for each target when **Process multiple targets** is active. Previously, only the primary target was reported in a multi-target run. Each account (in user mode) or page (in page mode) now receives its own individual entry on the report page, following the existing report format.
+
+### Notes
+
+* Steward requests/Global report submissions still apply to the primary target only, since that section reads the live page and checks for duplicates before submitting; per-target SRG reports are not yet supported.
+* The reason text, additional details, and page request type (page mode) are captured from the UI at the time the **Start** button is pressed and applied identically to all targets in the run.
+* The previous `reportGSLine` config key has been replaced by `reportGSReasonText` and `reportGSPageType`; the old `buildGSReportLine()` function inside the `btnStart` handler is now dead code and can be removed in a future lint pass.
+
 ## 2.111.1
 
 ### Fixed
@@ -18,7 +30,7 @@
 ### Notes
 
 * Status checks (block status, protection status, etc.) and section status notes reflect the primary target only; they are not re-evaluated per-target during execution.
-* GS/SRG report submissions apply to the primary target only, since the report line is pre-built from the primary target's details before execution begins. Submit separate reports for additional targets if required.
+* Global sysops/Requests report submissions apply to the primary target only in this version. Steward requests/Global report submissions also apply to the primary target only. See v2.112.0 for the GS change.
 * Resume is not available for multi-target runs. If a multi-target run is aborted, restart the run from the beginning.
 * Switching between user mode and page mode clears the additional-targets textarea, since target formats differ between the two modes.
 
