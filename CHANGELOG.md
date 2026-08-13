@@ -1,3 +1,19 @@
+## 2.113.0
+
+### Changed
+
+* The **Report to Steward requests/Global** section now includes all selected targets when **Process multiple targets** is active in user mode. Previously, only the primary target was included in the report.
+* For global lock requests with multiple targets, the report now uses `{{MultiLock|1=…|2=…|…}}` (one numbered parameter per account) rather than `{{LockHide}}`. `{{MultiLock}}` does not require a leading bullet (`*`), matching the template's expected format on Meta-Wiki.
+* For global block requests with multiple targets, the report now lists a separate `* {{Luxotool|1=…}}` line for each target.
+* The section heading now reflects the number of accounts being reported when more than one target is selected — for example, "Global lock for ExampleUser and 3 other accounts" or "Global block for 1.2.3.4 and 1 other account".
+
+### Notes
+
+* The report is still submitted as a single edit on the primary target's loop iteration, since all account names are embedded directly in the `{{MultiLock}}` or multi-`{{Luxotool}}` wikitext block.
+* Duplicate-report detection in `submitSRGReport()` already matched `{{MultiLock}}` alongside `{{LockHide}}` and `{{Luxotool}}`; no change was needed there.
+* The "Also request the username be hidden (lock and hide)" option applies to the entire `{{MultiLock}}` template when ticked, as the template accepts a `hide=1` parameter.
+* When the target list is a mixture of IP addresses and registered accounts, the report type (block vs lock) is determined by the primary target only, matching the existing behaviour of the SRG form.
+
 ## 2.112.0
 
 ### Changed

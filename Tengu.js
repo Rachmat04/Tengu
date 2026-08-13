@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.112.0
+ * Version 2.113.0
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -1543,8 +1543,9 @@ $(function () {
             // User mode only. Files a global block request when the target is
             // an IP address, or a global lock request when the target is a
             // registered account, on Meta-Wiki's Steward requests/Global page.
-            // In multi-target mode the report section is pre-built for the primary
-            // target, so SRG reports are only submitted for that target.
+            // In multi-target mode the full section is pre-built to include all
+            // targets, so only one submission is made (on the primary target's
+            // iteration).
             if (
               !rs.reportSRGDone &&
               config.reportSRG &&
@@ -9954,7 +9955,39 @@ $(function () {
                 reasonText += ".";
               }
 
+              // When "Process multiple targets" is active, include every
+              // selected account in a single section: {{MultiLock}} for
+              // registered accounts, or one {{Luxotool}} line per target
+              // for IP/temporary account block requests.
+              // allTargets is defined in the enclosing btnStart handler
+              // before this function is called.
+              const isMultiSRG = allTargets.length > 1;
+
               if (isBlock) {
+                if (isMultiSRG) {
+                  const extraCount = allTargets.length - 1;
+                  const headerLabel =
+                    targetVal +
+                    " and " +
+                    extraCount +
+                    " other account" +
+                    (extraCount !== 1 ? "s" : "");
+                  const luxoLines = allTargets
+                    .map(function (t) {
+                      return "* {{Luxotool|1=" + t + "}}";
+                    })
+                    .join("\n");
+                  return (
+                    "=== Global block for " +
+                    headerLabel +
+                    " ===\n" +
+                    "{{Status}}\n" +
+                    luxoLines +
+                    "\n" +
+                    reasonText +
+                    " ~~~~"
+                  );
+                }
                 return (
                   "=== Global block for [[Special:Contributions/" +
                   targetVal +
@@ -9965,6 +9998,36 @@ $(function () {
                   "* {{Luxotool|1=" +
                   targetVal +
                   "}}\n" +
+                  reasonText +
+                  " ~~~~"
+                );
+              }
+
+              if (isMultiSRG) {
+                const extraCount = allTargets.length - 1;
+                const headerLabel =
+                  targetVal +
+                  " and " +
+                  extraCount +
+                  " other account" +
+                  (extraCount !== 1 ? "s" : "");
+                // {{MultiLock}} takes one numbered parameter per account and
+                // does not require a leading bullet, unlike {{LockHide}}.
+                const multiLockParams = allTargets
+                  .map(function (t, i) {
+                    return i + 1 + "=" + t;
+                  })
+                  .join("|");
+                const multiLockTemplate = chkSRGHideUsername.checked
+                  ? "{{MultiLock|" + multiLockParams + "|hide=1}}"
+                  : "{{MultiLock|" + multiLockParams + "}}";
+                return (
+                  "=== Global lock for " +
+                  headerLabel +
+                  " ===\n" +
+                  "{{Status}}\n" +
+                  multiLockTemplate +
+                  "\n" +
                   reasonText +
                   " ~~~~"
                 );
