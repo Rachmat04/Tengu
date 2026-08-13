@@ -1,3 +1,15 @@
+## 2.115.0
+
+### Fixed
+
+* Fixed page-mode deletion notifications being sent once per deleted page per creator when **Process multiple targets** is active. Creators who had multiple target pages deleted now receive a single consolidated notification listing all affected pages, matching the existing single-target behaviour.
+
+### Notes
+
+* A `multiTargetCreatorMap` accumulator (declared outside the targets loop) collects confirmed deletions across all target iterations. Notifications are dispatched once after the loop completes rather than per target.
+* Only page-mode multi-target runs are affected. Single-target runs and user-mode runs are unchanged.
+* The existing self-deletion guard (skipping notifications when the page creator and the deleting user are the same account) applies to the accumulated map in the same way it does in single-target runs.
+
 ## 2.114.0
 
 ### Added

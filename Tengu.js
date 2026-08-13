@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.114.0
+ * Version 2.115.0
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -936,6 +936,11 @@ $(function () {
             Array.isArray(config.targets) && config.targets.length > 1;
           // Resume is only supported for single-target runs.
           const isResume = !isMultiTarget && !!resumeState;
+          // Accumulates creator → deleted page titles across all targets when
+          // multi-target page mode is active, so a creator who had multiple
+          // target pages deleted receives one consolidated notification instead
+          // of one notification per page.
+          const multiTargetCreatorMap = new Map();
           const rs = isResume
             ? resumeState
             : {
@@ -2856,6 +2861,14 @@ $(function () {
                       if (!creatorMap.has(pageCreator))
                         creatorMap.set(pageCreator, []);
                       creatorMap.get(pageCreator).push(title);
+                      // Also accumulate across targets for the consolidated
+                      // multi-target notification dispatched after all targets
+                      // have been processed.
+                      if (isMultiTarget) {
+                        if (!multiTargetCreatorMap.has(pageCreator))
+                          multiTargetCreatorMap.set(pageCreator, []);
+                        multiTargetCreatorMap.get(pageCreator).push(title);
+                      }
                     } else {
                       addLog(
                         `[Notify] Skipped deletion notification for ${title}: page was created and deleted by the same user`,
@@ -3227,8 +3240,12 @@ $(function () {
             // Each unique creator receives one consolidated notice listing all pages
             // deleted during this session that they created. The creatorMap was populated
             // during the deletion loop; entries are only present for confirmed deletions.
+            // In multi-target runs, notifications are deferred to the post-loop block
+            // below so creators who had multiple target pages deleted receive a single
+            // consolidated notice rather than one per page.
             if (
               !rs.notifyDeletePageDone &&
+              !isMultiTarget &&
               config.massdel &&
               config.mode === "page" &&
               creatorMap.size > 0 &&
@@ -3874,6 +3891,59 @@ $(function () {
                 } while (blContinue && !isAborted);
               }
               if (!isAborted) rs.fixRedirectsDone = true;
+            }
+          }
+
+          // Dispatch consolidated page-mode deletion notifications in multi-target runs.
+          // Runs once after all targets have been processed so creators who had multiple
+          // target pages deleted receive one notification listing all affected pages.
+          if (
+            isMultiTarget &&
+            config.massdel &&
+            config.mode === "page" &&
+            multiTargetCreatorMap.size > 0 &&
+            config.notifyDelete &&
+            !isAborted
+          ) {
+            for (const [creator, titles] of multiTargetCreatorMap) {
+              if (isAborted) break;
+              const talkTitle = new mw.Title(creator, 3).getPrefixedText();
+              try {
+                const talkExists = await pageExists(talkTitle);
+                const massdelReasonNotice =
+                  config.massdelReason && config.massdelReason.trim()
+                    ? config.massdelReason
+                    : useIndonesian
+                      ? "(tidak ada alasan diberikan)"
+                      : "(no reason given)";
+                let notice;
+                if (titles.length === 1) {
+                  notice = useIndonesian
+                    ? `== Pemberitahuan penghapusan halaman ==\nHalo ${creator},\n\nHalaman "${titles[0]}" yang Anda buat telah dihapus dengan alasan berikut: ${massdelReasonNotice}.\n\nHalaman yang dihapus tidak lagi dapat diakses secara publik. Jika Anda yakin penghapusan ini keliru, silakan sampaikan di halaman pembicaraan saya atau ikuti prosedur pemulihan halaman wiki ini.\n\nPemberitahuan ini dikirimkan secara otomatis. Silakan sampaikan pertanyaan atau keberatan ke halaman pembicaraan saya. ~~~~`
+                    : `== Page deletion notice ==\nDear ${creator},\n\nThe page "${titles[0]}" you created has been deleted due to the following reason: ${massdelReasonNotice}.\n\nDeleted pages are no longer publicly accessible. If you believe this deletion was in error, please raise the matter on my user talk page or follow your wiki's undeletion process.\n\nThis notification was posted automatically. Please direct any questions or concerns to my user talk page. ~~~~`;
+                } else {
+                  const listed = titles.map((t) => `* "${t}"`).join("\n");
+                  notice = useIndonesian
+                    ? `== Pemberitahuan penghapusan halaman ==\nHalo ${creator},\n\nHalaman-halaman berikut yang Anda buat telah dihapus dengan alasan berikut: ${massdelReasonNotice}.\n\n${listed}\n\nHalaman yang dihapus tidak lagi dapat diakses secara publik. Jika Anda yakin ada penghapusan yang keliru, silakan sampaikan di halaman pembicaraan saya atau ikuti prosedur pemulihan halaman wiki ini.\n\nPemberitahuan ini dikirimkan secara otomatis. Silakan sampaikan pertanyaan atau keberatan ke halaman pembicaraan saya. ~~~~`
+                    : `== Page deletion notice ==\nDear ${creator},\n\nThe following pages you created have been deleted due to the following reason: ${massdelReasonNotice}.\n\n${listed}\n\nDeleted pages are no longer publicly accessible. If you believe any of these deletions were in error, please raise the matter on my user talk page or follow your wiki's undeletion process.\n\nThis notification was posted automatically. Please direct any questions or concerns to my user talk page. ~~~~`;
+                }
+                await apiPost({
+                  action: "edit",
+                  title: talkTitle,
+                  appendtext: (talkExists ? "\n\n" : "") + notice,
+                  summary: notifySummaryDelete,
+                  bot: true,
+                });
+                addLog(
+                  `[Notify] Deletion notification posted to: ${talkTitle}`,
+                );
+              } catch (e) {
+                addLog(
+                  `[Notify] Failed to post deletion notification to ${talkTitle}: ${formatApiError(e)}`,
+                  "warn",
+                );
+              }
+              await new Promise((resolve) => setTimeout(resolve, THROTTLE_MS));
             }
           }
 
