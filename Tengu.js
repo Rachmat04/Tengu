@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.113.0
+ * Version 2.114.0
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -72,6 +72,7 @@ $(function () {
           tenguReasonsObj.GLOBAL_SYSOPS_REPORT_REASONS;
         const SRG_REPORT_REASONS = tenguReasonsObj.SRG_REPORT_REASONS;
         const LOCK_ACCOUNT_REASONS = tenguReasonsObj.LOCK_ACCOUNT_REASONS;
+        const FIXREDIRECTS_REASONS = tenguReasonsObj.FIXREDIRECTS_REASONS;
 
         const tenguWarnObj = window.TenguWarn.get(useIndonesian);
         const WARN_MESSAGES = tenguWarnObj.WARN_MESSAGES;
@@ -958,10 +959,12 @@ $(function () {
                 protectRecreationDone: false,
                 secondProtectDone: false,
                 unlinkLoopDone: false,
+                fixRedirectsDone: false,
                 // Per-title sets for resumable loops
                 processedRollbackTitles: new Set(),
                 processedDeletionTitles: new Set(),
                 processedUnlinkTitles: new Set(),
+                processedFixRedirectsTitles: new Set(),
                 // Contribution data cached after the first fetch; reused on resume
                 pageEditsCache: null,
                 creationCache: null,
@@ -1201,9 +1204,11 @@ $(function () {
               rs.protectRecreationDone = false;
               rs.secondProtectDone = false;
               rs.unlinkLoopDone = false;
+              rs.fixRedirectsDone = false;
               rs.processedRollbackTitles = new Set();
               rs.processedDeletionTitles = new Set();
               rs.processedUnlinkTitles = new Set();
+              rs.processedFixRedirectsTitles = new Set();
               rs.pageEditsCache = null;
               rs.creationCache = null;
               rs.pagesToProtectCache = null;
@@ -3729,7 +3734,148 @@ $(function () {
               }
               if (!isAborted) rs.unlinkLoopDone = true;
             }
-          } // end for (const targetVal of config.targets)
+
+            // --- Fix redirects ---
+            // Fetches all pages that link to the target page (redirect A) via
+            // list=backlinks, then replaces those links with links pointing to
+            // the user-specified destination page B. Section anchors and display
+            // text are preserved in the replacement.
+            if (
+              config.fixRedirects &&
+              config.mode === "page" &&
+              !rs.fixRedirectsDone &&
+              !isAborted
+            ) {
+              const sourceTitle = targetVal;
+              const destTitle = config.fixRedirectsDest;
+
+              if (!destTitle) {
+                addLog(
+                  "[Fix redirects] No destination specified; skipping.",
+                  "warn",
+                );
+              } else {
+                const escapedSource = sourceTitle
+                  .replace(/[.*+?^${}()|[\]\\]/g, "\\$&")
+                  .replace(/[ _]/g, "[ _]");
+                // Group 1: section anchor (optional). Group 2: display text (optional).
+                const linkRe = new RegExp(
+                  "\\[\\[\\s*" +
+                    escapedSource +
+                    "\\s*(#[^|\\]]*)?(?:\\|([^\\]]*?))?\\]\\]",
+                  "gi",
+                );
+
+                addLog(
+                  `[Fix redirects] Searching for pages linking to: ${sourceTitle}...`,
+                );
+
+                let blContinue;
+                do {
+                  if (isAborted) break;
+                  const blParams = {
+                    action: "query",
+                    list: "backlinks",
+                    bltitle: sourceTitle,
+                    bllimit: 50,
+                    formatversion: 2,
+                  };
+                  if (blContinue) blParams.blcontinue = blContinue;
+                  try {
+                    const blData = await apiGet(blParams);
+                    blContinue = blData.continue && blData.continue.blcontinue;
+                    const links =
+                      (blData.query && blData.query.backlinks) || [];
+                    for (const link of links) {
+                      if (isAborted) break;
+                      const linkTitle = link.title;
+                      if (rs.processedFixRedirectsTitles.has(linkTitle))
+                        continue;
+                      try {
+                        const revData = await apiGet({
+                          action: "query",
+                          prop: "revisions",
+                          titles: linkTitle,
+                          rvprop: "content",
+                          rvslots: "main",
+                          formatversion: 2,
+                        });
+                        const page =
+                          revData.query &&
+                          revData.query.pages &&
+                          revData.query.pages[0];
+                        if (!page || page.missing) {
+                          rs.processedFixRedirectsTitles.add(linkTitle);
+                          continue;
+                        }
+                        const slot =
+                          page.revisions &&
+                          page.revisions[0] &&
+                          page.revisions[0].slots &&
+                          page.revisions[0].slots.main;
+                        if (!slot) {
+                          rs.processedFixRedirectsTitles.add(linkTitle);
+                          continue;
+                        }
+                        const wikitext = slot.content;
+                        // Replace [[A]], [[A|text]], [[A#section]], [[A#section|text]]
+                        // with the equivalent link pointing to destTitle.
+                        const newWikitext = wikitext.replace(
+                          linkRe,
+                          function (match, section, displayText) {
+                            const sec = section || "";
+                            if (displayText !== undefined) {
+                              return (
+                                "[[" +
+                                destTitle +
+                                sec +
+                                "|" +
+                                displayText +
+                                "]]"
+                              );
+                            }
+                            return "[[" + destTitle + sec + "]]";
+                          },
+                        );
+                        if (newWikitext === wikitext) {
+                          rs.processedFixRedirectsTitles.add(linkTitle);
+                          continue;
+                        }
+                        await apiPost({
+                          action: "edit",
+                          title: linkTitle,
+                          text: newWikitext,
+                          summary: config.fixRedirectsReason + toolTag,
+                          bot: true,
+                        });
+                        addLog(
+                          `[Fix redirects] Updated links in: ${linkTitle}`,
+                        );
+                        stats.redirfix++;
+                        updateStatusDisplay();
+                      } catch (e) {
+                        addLog(
+                          `[Fix redirects] Failed to update ${linkTitle}: ${formatApiError(e)}`,
+                          true,
+                        );
+                      }
+                      rs.processedFixRedirectsTitles.add(linkTitle);
+                      await new Promise((resolve) =>
+                        setTimeout(resolve, THROTTLE_MS),
+                      );
+                    }
+                  } catch (e) {
+                    addLog(
+                      `[Fix redirects] Failed to fetch backlinks for "${sourceTitle}": ${formatApiError(e)}`,
+                      true,
+                    );
+                    break;
+                  }
+                } while (blContinue && !isAborted);
+              }
+              if (!isAborted) rs.fixRedirectsDone = true;
+            }
+          }
 
           // Termination and interface cleanup operations
           btnAbort.style.display = "none";
@@ -9008,6 +9154,64 @@ $(function () {
 
           body.appendChild(secProtectRecreation);
 
+          // ============================================================================
+          // Fix redirects section — page mode only.
+          // Fetches all pages linking to the target page (redirect A) via
+          // list=backlinks, then replaces those links with links pointing to
+          // a user-specified destination page B. Section anchors and display
+          // text are preserved in the replacement.
+          // ============================================================================
+          const {
+            section: secFixRedirects,
+            sectionBody: bodyFixRedirects,
+            enableChk: chkFixRedirects,
+          } = makeSection("Fix redirects", "🔀", false);
+
+          const divFixRedirectsStatus = document.createElement("div");
+          divFixRedirectsStatus.className =
+            "tng-status-note tng-status-note-inactive";
+          divFixRedirectsStatus.textContent =
+            "Updates links on pages pointing to the target page, replacing them with links to the specified destination.";
+          bodyFixRedirects.appendChild(divFixRedirectsStatus);
+
+          const { row: rowFixRedirectsDest, field: fieldFixRedirectsDest } =
+            makeRow("Redirect to");
+          const inputFixRedirectsDest = makeInput("New destination page title");
+          fieldFixRedirectsDest.appendChild(inputFixRedirectsDest);
+          bodyFixRedirects.appendChild(rowFixRedirectsDest);
+
+          const { row: rowFixRedirectsReason, field: fieldFixRedirectsReason } =
+            makeRow("Reason");
+          const selFixRedirectsReason = makeSelect(FIXREDIRECTS_REASONS);
+          const {
+            wrap: filteredWrapFixRedirectsReason,
+            filter: filterFixRedirectsReason,
+          } = makeFilteredSelect(selFixRedirectsReason);
+          const inputFixRedirectsReason = makeInput("Full reason to submit");
+          const btnFixRedirectsAppend = makeBtn("Append", "quiet");
+          btnFixRedirectsAppend.className += " tng-btn-sm";
+          btnFixRedirectsAppend.addEventListener("click", function () {
+            const cur = inputFixRedirectsReason.value;
+            const add = selFixRedirectsReason.value;
+            if (!add) return;
+            inputFixRedirectsReason.value = cur ? cur + "; " + add : add;
+            selFixRedirectsReason.selectedIndex = 0;
+            filterFixRedirectsReason.value = "";
+            filterFixRedirectsReason.dispatchEvent(new Event("input"));
+          });
+          const reasonWrapFixRedirects = document.createElement("div");
+          reasonWrapFixRedirects.className = "tng-reason-wrap";
+          const reasonTopFixRedirects = document.createElement("div");
+          reasonTopFixRedirects.className = "tng-reason-top";
+          reasonTopFixRedirects.appendChild(filteredWrapFixRedirectsReason);
+          reasonTopFixRedirects.appendChild(btnFixRedirectsAppend);
+          reasonWrapFixRedirects.appendChild(reasonTopFixRedirects);
+          reasonWrapFixRedirects.appendChild(inputFixRedirectsReason);
+          fieldFixRedirectsReason.appendChild(reasonWrapFixRedirects);
+          bodyFixRedirects.appendChild(rowFixRedirectsReason);
+
+          body.appendChild(secFixRedirects);
+
           const {
             section: secRevdel,
             sectionBody: bodyRevdel,
@@ -9220,6 +9424,13 @@ $(function () {
                 true,
                 "special pages cannot be moved.",
               );
+              applyModeLock(
+                secFixRedirects,
+                bodyFixRedirects,
+                chkFixRedirects,
+                true,
+                "special pages have no links to fix.",
+              );
             } else {
               applyModeLock(secPagedel, bodyPagedel, chkPagedel, false);
               applyModeLock(secProtect, bodyProtect, chkProtect, false);
@@ -9235,6 +9446,12 @@ $(function () {
                 secMoveSandbox,
                 bodyMoveSandbox,
                 chkMoveSandbox,
+                false,
+              );
+              applyModeLock(
+                secFixRedirects,
+                bodyFixRedirects,
+                chkFixRedirects,
                 false,
               );
             }
@@ -9401,11 +9618,17 @@ $(function () {
                 true,
                 "Tengu is targeting a page, not a user.",
               );
-              // Move to sandbox is available in page mode; unlock it
+              // Move to sandbox and Fix redirects are available in page mode; unlock them.
               applyModeLock(
                 secMoveSandbox,
                 bodyMoveSandbox,
                 chkMoveSandbox,
+                false,
+              );
+              applyModeLock(
+                secFixRedirects,
+                bodyFixRedirects,
+                chkFixRedirects,
                 false,
               );
               // Reset the same-as-creator option when entering page mode so a
@@ -9441,13 +9664,20 @@ $(function () {
               // with no replacement, leaving the Move page section incorrectly accessible
               // in user mode.
               applySpecialPageLocks(false);
-              // Move to sandbox is page-mode only; lock it when switching to user mode
+              // Move to sandbox and Fix redirects are page-mode only; lock them when switching to user mode.
               applyModeLock(
                 secMoveSandbox,
                 bodyMoveSandbox,
                 chkMoveSandbox,
                 true,
                 "Move page is only available in page mode.",
+              );
+              applyModeLock(
+                secFixRedirects,
+                bodyFixRedirects,
+                chkFixRedirects,
+                true,
+                "Fix redirects is only available in page mode.",
               );
 
               // Re-evaluate and apply strict rights-based permanent locks if permissions are missing
@@ -9491,8 +9721,7 @@ $(function () {
             updateSectionStatus();
           }
 
-          // Lock the move-to-sandbox section when starting in user mode
-          // (it is only applicable in page mode)
+          // Lock page-mode-only sections when starting in user mode.
           if (tenguMode === "user") {
             applyModeLock(
               secMoveSandbox,
@@ -9500,6 +9729,13 @@ $(function () {
               chkMoveSandbox,
               true,
               "Move page is only available in page mode.",
+            );
+            applyModeLock(
+              secFixRedirects,
+              bodyFixRedirects,
+              chkFixRedirects,
+              true,
+              "Fix redirects is only available in page mode.",
             );
           }
 
@@ -9583,7 +9819,8 @@ $(function () {
               chkWarn.checked ||
               chkGS.checked ||
               chkSRG.checked ||
-              chkLockAccount.checked
+              chkLockAccount.checked ||
+              chkFixRedirects.checked
             );
           }
 
@@ -9601,6 +9838,7 @@ $(function () {
           chkSRG.addEventListener("change", updateStartBtn);
           chkLockAccount.addEventListener("change", updateStartBtn);
           chkMoveSandbox.addEventListener("change", updateStartBtn);
+          chkFixRedirects.addEventListener("change", updateStartBtn);
 
           btnStart.addEventListener("click", function () {
             const targetVal = inputTarget.value.trim();
@@ -9653,6 +9891,17 @@ $(function () {
                   "Global locks only apply to registered accounts, not IP addresses.",
                 );
                 inputTarget.focus();
+                return;
+              }
+            }
+
+            if (chkFixRedirects.checked && !chkFixRedirects.disabled) {
+              if (!inputFixRedirectsDest.value.trim()) {
+                showNotification(
+                  fieldFixRedirectsDest,
+                  "Please enter a destination page title.",
+                );
+                inputFixRedirectsDest.focus();
                 return;
               }
             }
@@ -10154,6 +10403,12 @@ $(function () {
               massdelReason: buildPagedelReason() + suffix,
               undelete: chkUndelete.checked && !chkUndelete.disabled,
               undeleteReason: buildUndeleteReason() + suffix,
+              fixRedirects:
+                chkFixRedirects.checked && !chkFixRedirects.disabled,
+              fixRedirectsDest: inputFixRedirectsDest.value.trim(),
+              fixRedirectsReason:
+                (inputFixRedirectsReason.value.trim() ||
+                  selFixRedirectsReason.value) + suffix,
               moveSandbox: chkMoveSandbox.checked && !chkMoveSandbox.disabled,
               moveSandboxMode: selMoveMode.value,
               movePageDest: buildMovePageDestTitle(),
@@ -10247,6 +10502,7 @@ $(function () {
               if (config.protect) features.push("🛡️ Page protection");
               if (config.protectRecreation)
                 features.push("🔏 Protect against recreation");
+              if (config.fixRedirects) features.push("🔀 Fix redirects");
               if (config.rd) features.push("👁️ Revision deletion");
               return features;
             }
@@ -11478,8 +11734,8 @@ $(function () {
                     rowProtectRecreationExpiry.style.opacity = "0.5";
                   }
 
-                  // Page deletion, Move page, and Page protection all act on an
-                  // existing target page, so lock them when the page does not
+                  // Page deletion, Move page, Page protection, and Fix redirects all
+                  // require an existing target page; lock them when the page does not
                   // exist — the inverse of the recreation-protection gating above.
                   if (pageIsMissing) {
                     applyModeLock(
@@ -11503,6 +11759,13 @@ $(function () {
                       true,
                       "the target page does not exist.",
                     );
+                    applyModeLock(
+                      secFixRedirects,
+                      bodyFixRedirects,
+                      chkFixRedirects,
+                      true,
+                      "the target page does not exist.",
+                    );
                   } else {
                     applyModeLock(secPagedel, bodyPagedel, chkPagedel, false);
                     applyModeLock(
@@ -11512,6 +11775,12 @@ $(function () {
                       false,
                     );
                     applyModeLock(secProtect, bodyProtect, chkProtect, false);
+                    applyModeLock(
+                      secFixRedirects,
+                      bodyFixRedirects,
+                      chkFixRedirects,
+                      false,
+                    );
                   }
 
                   if (active.length) {

@@ -1,3 +1,18 @@
+## 2.114.0
+
+### Added
+
+* Added a **Fix redirects** (🔀) section (page mode only). With the target page set to a redirect or any source page A, Tengu fetches all pages linking to A via `list=backlinks`, then replaces those links with links pointing to a user-specified destination page B. Section anchors (`[[A#section]]`) and display text (`[[A|text]]`) are preserved. Backlink results are paginated; the phase supports resume.
+* Added `FIXREDIRECTS_REASONS` to `Tengu-reasons.js`, providing five preset edit reasons in English and Indonesian: redirect target changed, bypassing unnecessary redirect, redirect being deleted, incorrect redirect, and pointing directly to target.
+* Added `fixRedirectsDone` and `processedFixRedirectsTitles` to the resume state (`rs`), making the fix-redirects phase resumable in the same way as the existing rollback, deletion, and unlink loop phases.
+
+### Notes
+
+* The section is locked in user mode, when the target is a special page, and when the target page does not exist — consistent with the locking behaviour already applied to Page deletion, Move page, and Page protection.
+* Links are matched case-insensitively; spaces and underscores are treated as equivalent in the source title. The replacement uses the destination title exactly as entered.
+* `stats.redirfix` (the "redirects fixed" counter already used by the Move page double-redirect feature) is reused for this section; both operations contribute to the same summary counter.
+* Multi-target runs reset `fixRedirectsDone` and `processedFixRedirectsTitles` between targets, consistent with all other loop-based phases.
+
 ## 2.113.0
 
 ### Changed

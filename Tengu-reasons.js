@@ -1565,6 +1565,48 @@ window.TenguReasons = {
           { id: "username", label: "Inappropriate username" },
         ],
       },
+
+      FIXREDIRECTS_REASONS: [
+        {
+          value: "",
+          label: "Other:",
+        },
+        {
+          value: v(
+            "Updating links following a page move or redirect change",
+            "Memperbarui pranala setelah pemindahan halaman atau perubahan pengalihan",
+          ),
+          label: "Redirect target changed",
+        },
+        {
+          value: v(
+            "Updating links to bypass an unnecessary redirect",
+            "Memperbarui pranala untuk melewati pengalihan yang tidak diperlukan",
+          ),
+          label: "Bypassing unnecessary redirect",
+        },
+        {
+          value: v(
+            "Updating links before deletion of the redirect page",
+            "Memperbarui pranala sebelum penghapusan halaman pengalihan",
+          ),
+          label: "Redirect being deleted",
+        },
+        {
+          value: v(
+            "Correcting links that point to an incorrect redirect",
+            "Memperbaiki pranala yang mengarah ke pengalihan yang salah",
+          ),
+          label: "Incorrect redirect",
+        },
+        {
+          value: v(
+            "Updating links to point directly to the target article",
+            "Memperbarui pranala agar langsung mengarah ke artikel target",
+          ),
+          label: "Pointing directly to target",
+        },
+      ],
     };
   },
 };
