@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.116.1
+ * Version 2.116.2
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -1594,10 +1594,19 @@ $(function () {
               (!isMultiTarget || targetVal === config.target)
             ) {
               try {
+                const _srgTargetCount = config.targets
+                  ? config.targets.length
+                  : 1;
                 const srgSummary =
-                  "Reporting account for global " +
-                  (config.reportSRGKind === "block" ? "block" : "lock") +
-                  toolTag;
+                  _srgTargetCount > 1
+                    ? "Reporting " +
+                      _srgTargetCount +
+                      " accounts for global " +
+                      (config.reportSRGKind === "block" ? "block" : "lock") +
+                      toolTag
+                    : "Reporting account for global " +
+                      (config.reportSRGKind === "block" ? "block" : "lock") +
+                      toolTag;
                 await submitSRGReport(
                   config.reportSRGKind,
                   targetVal,

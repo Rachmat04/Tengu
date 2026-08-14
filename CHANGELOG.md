@@ -1,3 +1,13 @@
+## 2.116.2
+
+### Fixed
+
+* Fixed the edit summary used when submitting a multi-target report to Steward requests/Global always reading "Reporting account for global lock/block" regardless of how many accounts were included. The summary now reads "Reporting N accounts for global lock/block" when more than one target is selected, and retains the existing single-account wording otherwise.
+
+### Notes
+
+* This affects only the edit summary text submitted to Meta-Wiki. The report wikitext itself ({{MultiLock}}, multiple {{Luxotool}} lines, etc.) is unchanged.
+
 ## 2.116.1
 
 ### Fixed
