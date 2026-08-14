@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.115.0
+ * Version 2.116.0
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -1060,6 +1060,9 @@ $(function () {
           // Helper function to append log entries.
           // isErr: true = error (red), "warn" = warning (amber), omit/false = success (green).
           let logCount = 0;
+          // In multi-target runs, holds the current target name so every log
+          // entry is prefixed with it, replacing the old separator elements.
+          let currentTargetLabel = "";
           const addLog = (msg, isErr) => {
             const d = document.createElement("div");
             logCount++;
@@ -1077,7 +1080,10 @@ $(function () {
               ":" +
               String(_n.getUTCSeconds()).padStart(2, "0") +
               " UTC";
-            d.textContent = logCount + ". [" + _ts + "] " + msg;
+            const _prefix = currentTargetLabel
+              ? "[" + currentTargetLabel + "] "
+              : "";
+            d.textContent = logCount + ". [" + _ts + "] " + _prefix + msg;
             if (isErr === "warn") {
               d.className = "tng-log-warn";
             } else if (isErr) {
@@ -1174,20 +1180,9 @@ $(function () {
             if (isAborted) break;
 
             if (isMultiTarget) {
-              // Insert a numbered separator into the progress log so runs
-              // involving many targets remain easy to follow.
-              const _targetIdx = (config.targets || []).indexOf(targetVal);
-              const _sepEl = document.createElement("div");
-              _sepEl.className = "tng-log-sep";
-              _sepEl.textContent =
-                "Target " +
-                (_targetIdx + 1) +
-                " of " +
-                config.targets.length +
-                ": " +
-                targetVal;
-              logBox.appendChild(_sepEl);
-              logBox.scrollTop = logBox.scrollHeight;
+              // Prefix every log entry in this iteration with the target name
+              // so per-target actions are identifiable without a separator element.
+              currentTargetLabel = targetVal;
 
               // Reset all per-target phase flags and tracking collections so
               // each target is processed as an independent unit within this run.
@@ -3894,6 +3889,9 @@ $(function () {
             }
           }
 
+          // Clear the per-target log prefix now that the target loop has finished.
+          if (isMultiTarget) currentTargetLabel = "";
+
           // Dispatch consolidated page-mode deletion notifications in multi-target runs.
           // Runs once after all targets have been processed so creators who had multiple
           // target pages deleted receive one notification listing all affected pages.
@@ -6212,7 +6210,7 @@ $(function () {
             "User mode: account names without the User: prefix.\n" +
             "Page mode: page titles with the namespace prefix where required.";
           textareaMultiTarget.style.cssText =
-            "resize:vertical;font-family:monospace;font-size:0.88em;";
+            "resize:vertical;font-family:monospace;font-size:1em;";
 
           const helpMultiTarget = document.createElement("div");
           helpMultiTarget.className = "tng-help";

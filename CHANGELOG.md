@@ -1,3 +1,16 @@
+## 2.116.0
+
+### Changed
+
+* Increased the font size of the additional-targets list in the **Confirm selected operations** dialogue from `0.85em` to `1em`, matching the font size used in the progress log.
+* Increased the font size of the additional-targets textarea from `0.88em` to `1em`, consistent with the above.
+* Removed the visual separator elements between target entries in the multi-target progress log. Each log entry now includes the current target name as a prefix — for example, `[ExampleUser] [Block] Successfully blocked user ExampleUser` — so per-target actions remain identifiable without a separate separator row.
+
+### Notes
+
+* `currentTargetLabel` is set to the current target at the start of each loop iteration and reset to `""` after the loop completes. The prefix does not appear in single-target runs, in the initial log entries before the loop (such as "Processing..." and resume notices), or in the post-loop consolidated page-mode deletion notification.
+* The `.tng-log-sep` CSS class and its dark-mode variant have been removed, as they are no longer referenced anywhere in the codebase.
+
 ## 2.115.0
 
 ### Fixed
