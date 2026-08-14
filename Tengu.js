@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.116.2
+ * Version 2.117.0
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -10522,18 +10522,35 @@ $(function () {
               },
             });
 
-            const warningMsg = document.createElement("p");
-            warningMsg.style.margin = "0 0 8px 0";
-            warningMsg.innerHTML =
-              "Tengu will execute the following operation" +
-              (enabledFeatures.length === 1 ? "" : "s") +
+            // Build a natural-language list of enabled operations,
+            // e.g. "A", "A and B", or "A, B, and C".
+            const joinFeatures = function (features) {
+              if (features.length === 1) return features[0];
+              if (features.length === 2)
+                return features[0] + " and " + features[1];
+              return (
+                features.slice(0, -1).join(", ") +
+                ", and " +
+                features[features.length - 1]
+              );
+            };
+
+            const isMultiConfirm = config.targets.length > 1;
+            const targetLabel = isMultiConfirm
+              ? "<b>" + config.targets.length + " targets</b>"
+              : "<b>" + mw.html.escape(config.target) + "</b>";
+
+            const confirmMsg = document.createElement("p");
+            confirmMsg.style.margin = "0 0 8px 0";
+            confirmMsg.innerHTML =
+              "Tengu will execute " +
+              mw.html.escape(joinFeatures(enabledFeatures)) +
               " on " +
-              (config.targets.length > 1
-                ? "<b>" + config.targets.length + " targets</b>"
-                : "<b>" + mw.html.escape(config.target) + "</b>") +
+              targetLabel +
               ". Please confirm before proceeding.";
-            confirmDlg.body.appendChild(warningMsg);
-            if (config.targets.length > 1) {
+            confirmDlg.body.appendChild(confirmMsg);
+
+            if (isMultiConfirm) {
               const confirmTargetList = document.createElement("div");
               confirmTargetList.className = "tng-confirm-target-list";
               config.targets.forEach(function (t, i) {
@@ -10543,16 +10560,6 @@ $(function () {
               });
               confirmDlg.body.appendChild(confirmTargetList);
             }
-
-            const featureList = document.createElement("ul");
-            featureList.style.margin = "0 0 4px 0";
-            featureList.style.paddingLeft = "20px";
-            for (const feature of enabledFeatures) {
-              const li = document.createElement("li");
-              li.textContent = feature;
-              featureList.appendChild(li);
-            }
-            confirmDlg.body.appendChild(featureList);
 
             const btnCancelConfirm = makeBtn("Cancel", "quiet");
             btnCancelConfirm.addEventListener("click", function () {

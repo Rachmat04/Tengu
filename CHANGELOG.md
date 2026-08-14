@@ -1,3 +1,9 @@
+## 2.117.0
+
+### Changed
+
+* The **Confirm selected operations** dialogue now uses a single-line summary instead of a bulleted list. The message reads "Tengu will execute [operations] on [target]. Please confirm before proceeding." Operations are joined naturally — "A", "A and B", or "A, B, and C" — using an Oxford comma for three or more. For multi-target runs, the target count is shown inline and the scrollable target list remains visible below the summary.
+
 ## 2.116.2
 
 ### Fixed
