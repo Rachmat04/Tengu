@@ -1,3 +1,14 @@
+## 2.116.1
+
+### Fixed
+
+* Moved `buildPageProtections()` and `buildPageProtectionExpiries()` to the root of `work()` to resolve `no-inner-declarations` ESLint warnings. Both functions were previously declared inside the per-target `for` loop body.
+* Removed the unused `buildGSReportLine()` function from the `btnStart` click handler. The function became dead code in v2.112.0 when per-target GS report lines were moved to `buildGSLineForTarget()` in `work()`; its removal was already noted in that version's changelog.
+
+### Notes
+
+* No user-facing behaviour has changed.
+
 ## 2.116.0
 
 ### Changed

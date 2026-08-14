@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.116.0
+ * Version 2.116.1
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -1174,6 +1174,42 @@ $(function () {
                 : "{{LockHide|1=" + target + "}}";
             }
             return "* Please block " + userLink + ": " + reasonText + " ~~~~";
+          }
+
+          // Builds the protections parameter for a page protection request, adding
+          // upload= for File-namespace pages. Assumes upload-level
+          // protection is submitted through the same action=protect call as edit/move;
+          // this has not been independently confirmed against the MediaWiki API.
+          function buildPageProtections(title) {
+            let protections = `edit=${config.protectEdit}|move=${config.protectMove}`;
+            try {
+              if (new mw.Title(title).getNamespaceId() === 6) {
+                protections += `|upload=${config.protectUpload}`;
+              }
+            } catch (e) {
+              // Skip if the title cannot be resolved
+            }
+            return protections;
+          }
+
+          // Builds the expiry parameter matching the pipe-separated order of
+          // buildPageProtections(): edit expiry, then move expiry, then (for
+          // file pages) upload expiry. The MediaWiki protect API accepts a
+          // pipe-separated expiry list that is matched positionally against
+          // the pipe-separated protections list, so edit and move restrictions
+          // can expire independently in a single action=protect call. Upload
+          // restriction has no dedicated expiry control and reuses the edit
+          // protection expiry.
+          function buildPageProtectionExpiries(title) {
+            let expiries = `${config.protectExpiry}|${config.protectMoveExpiry}`;
+            try {
+              if (new mw.Title(title).getNamespaceId() === 6) {
+                expiries += `|${config.protectExpiry}`;
+              }
+            } catch (e) {
+              // Skip if the title cannot be resolved
+            }
+            return expiries;
           }
 
           for (const targetVal of config.targets || [config.target]) {
@@ -2557,42 +2593,6 @@ $(function () {
 
             // On resume, reuse the notification queue from the previous run.
             const notifyQueue = rs.notifyQueue;
-
-            // Builds the protections parameter for a page protection request, adding
-            // upload= for File-namespace pages. Assumes upload-level
-            // protection is submitted through the same action=protect call as edit/move;
-            // this has not been independently confirmed against the MediaWiki API.
-            function buildPageProtections(title) {
-              let protections = `edit=${config.protectEdit}|move=${config.protectMove}`;
-              try {
-                if (new mw.Title(title).getNamespaceId() === 6) {
-                  protections += `|upload=${config.protectUpload}`;
-                }
-              } catch (e) {
-                // Skip if the title cannot be resolved
-              }
-              return protections;
-            }
-
-            // Builds the expiry parameter matching the pipe-separated order of
-            // buildPageProtections(): edit expiry, then move expiry, then (for
-            // file pages) upload expiry. The MediaWiki protect API accepts a
-            // pipe-separated expiry list that is matched positionally against
-            // the pipe-separated protections list, so edit and move restrictions
-            // can expire independently in a single action=protect call. Upload
-            // restriction has no dedicated expiry control and reuses the edit
-            // protection expiry.
-            function buildPageProtectionExpiries(title) {
-              let expiries = `${config.protectExpiry}|${config.protectMoveExpiry}`;
-              try {
-                if (new mw.Title(title).getNamespaceId() === 6) {
-                  expiries += `|${config.protectExpiry}`;
-                }
-              } catch (e) {
-                // Skip if the title cannot be resolved
-              }
-              return expiries;
-            }
 
             // Execute sequential page protections if enabled
             if (
@@ -10156,91 +10156,6 @@ $(function () {
               return reasonText;
             }
 
-            // Assembles the wikitext line submitted to Meta-Wiki's Global
-            // sysops/Requests page, following the report format standardised
-            // in v2.81.0. User mode uses {{LockHide|1=Username|2=Prefix}} for
-            // registered and temporary accounts, where Prefix is the
-            // reporting wiki's interwiki project/language prefix (e.g.
-            // "wikt:ja:"), and an interwiki-linked contributions page for IP
-            // addresses, since IPs cannot be locked. Page mode links directly
-            // to the target page using the same interwiki prefix, e.g.
-            // [[:w:id:Category:Example|Category:Example]].
-            function buildGSReportLine() {
-              const prefix = getInterwikiPrefix();
-              const pickedReasons = activeGSReasonChecks()
-                .filter(function (c) {
-                  return c.chk.checked;
-                })
-                .map(function (c) {
-                  return c.label;
-                });
-              const details = inputGSDetails.value.trim();
-              const pickedReasonsText = pickedReasons.length
-                ? pickedReasons.join(". ")
-                : "";
-              let reasonText = "";
-              if (pickedReasonsText && details) {
-                reasonText =
-                  pickedReasonsText + ". Additional details: " + details;
-              } else if (pickedReasonsText) {
-                reasonText = pickedReasonsText;
-              } else if (details) {
-                reasonText = "Additional details: " + details;
-              }
-              if (reasonText && !/[.!?]$/.test(reasonText)) {
-                reasonText += ".";
-              }
-
-              if (tenguMode === "page") {
-                const gsPageType = selGSPageRequestType.value;
-                const requestVerb =
-                  gsPageType === "protect"
-                    ? "Please protect"
-                    : gsPageType === "revdel"
-                      ? "Please delete revisions from"
-                      : "Please delete";
-                const pageLink = prefix
-                  ? "[[:" + prefix + targetVal + "|" + targetVal + "]]"
-                  : "[[:" + targetVal + "]]";
-                return (
-                  "* " +
-                  requestVerb +
-                  " " +
-                  pageLink +
-                  ": " +
-                  reasonText +
-                  " ~~~~"
-                );
-              }
-
-              // Temporary accounts, like IP addresses, cannot be locked via
-              // {{LockHide}} and are reported using an interwiki-linked
-              // contributions page instead, mirroring the equivalent fix
-              // applied to the Report to Steward requests/Global section
-              // in v2.68.0.
-              const isTempAccountTarget = /^~\d{4}-\d+-\d+$/.test(targetVal);
-              let userLink;
-              if (isIP || isTempAccountTarget) {
-                userLink = prefix
-                  ? "[[:" +
-                    prefix +
-                    "Special:Contributions/" +
-                    targetVal +
-                    "|" +
-                    targetVal +
-                    "]]"
-                  : "[[Special:Contributions/" +
-                    targetVal +
-                    "|" +
-                    targetVal +
-                    "]]";
-              } else {
-                userLink = prefix
-                  ? "{{LockHide|1=" + targetVal + "|2=" + prefix + "}}"
-                  : "{{LockHide|1=" + targetVal + "}}";
-              }
-              return "* Please block " + userLink + ": " + reasonText + " ~~~~";
-            }
             // Assembles the wikitext section submitted to Meta-Wiki's
             // Steward requests/Global page. IP targets are filed as global
             // block requests using {{Luxotool}}; registered accounts are
