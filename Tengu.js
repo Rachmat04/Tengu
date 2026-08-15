@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.117.0
+ * Version 2.117.1
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -9930,6 +9930,14 @@ $(function () {
                   : "Please enter a target page title.",
               );
               inputTarget.focus();
+              return;
+            }
+
+            if (chkWarn.checked && !selWarnMsg.value) {
+              showNotification(
+                fieldWarnMsg,
+                "Please select a warning message.",
+              );
               return;
             }
 

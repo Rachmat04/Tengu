@@ -1,3 +1,9 @@
+## 2.117.1
+
+### Fixed
+
+* Fixed the **Start** button allowing execution when the **User warning** section is enabled but no message template has been selected in the dropdown. A validation notice is now shown on the message field instead, matching the existing validation pattern used by the GS/SRG report, Fix redirects, and Move page sections.
+
 ## 2.117.0
 
 ### Changed
