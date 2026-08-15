@@ -1,3 +1,13 @@
+## 2.117.2
+
+### Fixed
+
+* Removed the dead `cssInited` variable and its associated initialisation block from `init()`. The variable was originally used to defer CSS injection until the dialogue first opened, but CSS has been loaded at script load time via `mw.loader.load()` since v2.0.0. The variable and its block were not removed during the v2.87.0 lint cleanup.
+
+### Notes
+
+* No user-facing behaviour has changed.
+
 ## 2.117.1
 
 ### Fixed

@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.117.1
+ * Version 2.117.2
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -87,7 +87,6 @@ $(function () {
         // ============================================================================
         let config = {};
         let inited = false;
-        let cssInited = false; // CSS injected once on first dialogue open
         let escListenerBound = false; // Escape key listener registered once on first overlay
         // Stores progress state when the user aborts a run so work() can resume
         // from where it stopped without repeating completed steps.
@@ -5745,12 +5744,6 @@ $(function () {
         const init = function () {
           if (inited) return;
           inited = true;
-
-          // Inject the stylesheet once on first dialogue open; defers CSSOM mutation
-          // from script load time so pages that never open Tengu pay no style cost.
-          if (!cssInited) {
-            cssInited = true;
-          }
 
           // Determine operating context mode: User mode or page mode
           const isUserMode = !!mw.config.get("wgRelevantUserName");
