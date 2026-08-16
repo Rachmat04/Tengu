@@ -1,3 +1,9 @@
+## 2.117.3
+
+### Fixed
+
+* Fixed the **Start** button validation for the **User warning** section not moving focus to the message dropdown when no template is selected. The message dropdown now receives focus after the validation notice is shown, matching the behaviour of all other **Start**-button field validations.
+
 ## 2.117.2
 
 ### Fixed

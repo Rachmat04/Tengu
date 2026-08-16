@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.117.2
+ * Version 2.117.3
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -9931,6 +9931,7 @@ $(function () {
                 fieldWarnMsg,
                 "Please select a warning message.",
               );
+              selWarnMsg.focus();
               return;
             }
 
