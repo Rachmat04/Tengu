@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.117.3
+ * Version 2.117.4
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -1268,7 +1268,27 @@ $(function () {
               !isAborted
             ) {
               const talkTitle = new mw.Title(targetVal, 3).getPrefixedText();
-              const notice = config.warnNotice;
+              // In multi-target runs, rebuild the notice with the current
+              // target's name so each recipient is addressed correctly,
+              // rather than reusing the pre-built text that contains the
+              // primary target's name.
+              let notice = config.warnNotice;
+              if (isMultiTarget && config.warnTemplateValue) {
+                for (const group of WARN_MESSAGES) {
+                  if (!group.items) continue;
+                  const found = group.items.find(function (item) {
+                    return item.value === config.warnTemplateValue;
+                  });
+                  if (found) {
+                    notice = found.buildNotice(
+                      targetVal,
+                      config.warnExtra,
+                      config.warnFinal,
+                    );
+                    break;
+                  }
+                }
+              }
               try {
                 const talkExists = await pageExists(talkTitle);
                 await apiPost({
@@ -10464,6 +10484,9 @@ $(function () {
               notifyProtect: chkNotifyProtect.checked,
               warn: chkWarn.checked && !!selWarnMsg.value,
               warnNotice: buildWarnNotice(),
+              warnTemplateValue: chkWarn.checked ? selWarnMsg.value : "",
+              warnExtra: chkWarn.checked ? inputWarnExtra.value.trim() : "",
+              warnFinal: chkWarn.checked ? chkWarnFinal.checked : false,
               rd: chkRevdel.checked,
               rdHides: rdHides,
               rdReason: buildRevdelReason() + suffix,

@@ -1,3 +1,14 @@
+## 2.117.4
+
+### Fixed
+
+* Fixed the **User warning** section addressing all targets by the primary target's name in multi-target runs. `config.warnNotice` was built once from the primary target's name and reused unchanged for every subsequent target, so secondary targets received notices beginning "Hello PrimaryUser," instead of their own name. The notice is now rebuilt per-target inside the execution loop using the stored template value, additional-information text, and final-warning flag, matching the per-target personalisation already applied by block, unblock, and rollback notifications.
+
+### Notes
+
+* Three new config keys (`warnTemplateValue`, `warnExtra`, `warnFinal`) carry the raw inputs needed to rebuild the notice. `WARN_MESSAGES` is in scope for `work()` (both are defined in the same `.then()` callback), so no additional module loading is required.
+* Single-target runs are unaffected: `config.warnNotice` is still built and used as the default; the rebuild path is only entered when `isMultiTarget` is true and a template has been selected.
+
 ## 2.117.3
 
 ### Fixed
