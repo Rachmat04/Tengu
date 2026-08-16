@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.117.4
+ * Version 2.117.5
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -398,7 +398,8 @@ $(function () {
             }
           });
           // Header click (outside the checkbox label) toggles section open/closed.
-          // Locked sections (checkbox disabled) cannot be expanded.
+          // Locked sections can still be expanded to view their disabled controls;
+          // only the enable checkbox itself is non-interactive when locked.
           hdr.addEventListener("click", function (e) {
             if (chkWrap.contains(e.target)) return;
             const isHidden = sectionBody.classList.toggle("tng-hidden");

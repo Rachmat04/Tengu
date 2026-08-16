@@ -1,3 +1,9 @@
+## 2.117.5
+
+### Fixed
+
+* Corrected a misleading comment in `makeSection` that stated "Locked sections (checkbox disabled) cannot be expanded." This has been incorrect since v2.104.0, which made locked sections expandable by clicking the header so users can view disabled controls. The comment now accurately reflects the current behaviour.
+
 ## 2.117.4
 
 ### Fixed
