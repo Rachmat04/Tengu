@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.117.5
+ * Version 2.117.6
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -10566,6 +10566,8 @@ $(function () {
               ? "<b>" + config.targets.length + " targets</b>"
               : "<b>" + mw.html.escape(config.target) + "</b>";
 
+            const modeLabel =
+              config.mode === "user" ? "user mode" : "page mode";
             const confirmMsg = document.createElement("p");
             confirmMsg.style.margin = "0 0 8px 0";
             confirmMsg.innerHTML =
@@ -10573,7 +10575,9 @@ $(function () {
               mw.html.escape(joinFeatures(enabledFeatures)) +
               " on " +
               targetLabel +
-              ". Please confirm before proceeding.";
+              " in <b>" +
+              modeLabel +
+              "</b>. Please confirm before proceeding.";
             confirmDlg.body.appendChild(confirmMsg);
 
             if (isMultiConfirm) {
@@ -10585,6 +10589,48 @@ $(function () {
                 confirmTargetList.appendChild(line);
               });
               confirmDlg.body.appendChild(confirmTargetList);
+            }
+
+            // Scope clarification for mode-sensitive operations.
+            // In user mode, rollback, page deletion, and page protection all
+            // operate across the target user's full contribution history —
+            // not on a single page. This note makes that explicit so users
+            // who are in the wrong mode can catch it before confirming.
+            if (config.mode === "user") {
+              const scopeLines = [];
+              if (config.rollback) {
+                scopeLines.push(
+                  "🔙 <b>Rollback</b> — will revert all edits by this user within the selected time window.",
+                );
+              }
+              if (config.massdel) {
+                scopeLines.push(
+                  "🗑️ <b>Page deletion</b> — will delete <b>all pages created</b> by this user within the selected time window, not a single page.",
+                );
+              }
+              if (config.protect) {
+                scopeLines.push(
+                  "🛡️ <b>Page protection</b> — will protect <b>all pages edited or created</b> by this user within the selected time window, not a single page.",
+                );
+              }
+              if (scopeLines.length) {
+                const scopeNote = document.createElement("div");
+                scopeNote.className = "tng-status-note tng-status-note-active";
+                scopeNote.style.margin = "0 0 8px 0";
+                const scopeTitle = document.createElement("b");
+                scopeTitle.textContent = "Scope in user mode:";
+                scopeNote.appendChild(scopeTitle);
+                const scopeList = document.createElement("ul");
+                scopeList.style.cssText = "margin: 4px 0 0 16px; padding: 0;";
+                scopeLines.forEach(function (line) {
+                  const li = document.createElement("li");
+                  li.style.marginBottom = "2px";
+                  li.innerHTML = line;
+                  scopeList.appendChild(li);
+                });
+                scopeNote.appendChild(scopeList);
+                confirmDlg.body.appendChild(scopeNote);
+              }
             }
 
             const btnCancelConfirm = makeBtn("Cancel", "quiet");

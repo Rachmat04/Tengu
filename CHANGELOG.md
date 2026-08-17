@@ -1,3 +1,10 @@
+## 2.117.6
+
+### Changed
+
+* The **Confirm selected operations** dialogue now states the active mode (**user mode** or **page mode**) inline in the summary sentence, so it is visible before confirming any action.
+* Added a scope clarification note to the confirmation dialogue when operating in user mode and rollback, page deletion, or page protection is selected. The note explicitly states that these operations apply across the target user's full contribution history — not to a single page — which makes it easier to catch accidental mass actions caused by being in the wrong mode. The note uses the existing amber status style to stand out visually.
+
 ## 2.117.5
 
 ### Fixed
