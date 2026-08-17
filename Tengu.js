@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.117.6
+ * Version 2.117.7
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -5597,9 +5597,9 @@ $(function () {
 
           function fmtRelative(ts) {
             if (!ts) return "";
-            const diffSec = Math.floor(
-              (Date.now() - new Date(ts).getTime()) / 1000,
-            );
+            const d = new Date(ts);
+            if (isNaN(d.getTime())) return "";
+            const diffSec = Math.floor((Date.now() - d.getTime()) / 1000);
             if (diffSec < 60) return "just now";
             const diffMin = Math.floor(diffSec / 60);
             if (diffMin < 60)

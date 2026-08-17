@@ -1,3 +1,9 @@
+## 2.117.7
+
+### Fixed
+
+* Fixed `fmtRelative()` in `getActiveAdmins` returning `"NaN hours ago"` when passed an invalid timestamp. The function now creates a `Date` object first and guards against invalid values via `isNaN(d.getTime())`, consistent with the equivalent function in `getUserInfo` and `getPageInfo`.
+
 ## 2.117.6
 
 ### Changed
