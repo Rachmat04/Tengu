@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.117.8
+ * Version 2.117.9
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -9732,7 +9732,6 @@ $(function () {
               // Re-evaluate talk page availability for the new target.
               updateMoveSandboxTalkAvailability();
               updateMovePageTalkAvailability();
-              updatePagedelTalkAvailability();
             } else {
               // Remove mode locks first to enable features
               applyModeLock(secRollback, bodyRollback, chkRollback, false);

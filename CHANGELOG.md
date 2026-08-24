@@ -1,3 +1,13 @@
+## 2.117.9
+
+### Fixed
+
+* Fixed `updatePagedelTalkAvailability()` being called twice when switching to page mode via the mode toggle — once inside the page-mode branch of `applyModeRestrictions()`, and again in the unconditional call added at the end of that function in v2.117.8. The redundant inner call triggered an unnecessary extra API request on every switch to page mode. The unconditional call at the end already covers both mode directions, so the inner call has been removed.
+
+### Notes
+
+* No behavioural change: the checkbox's enabled/disabled state is still correctly re-evaluated in both directions, exactly as it was immediately after v2.117.8.
+
 ## 2.117.8
 
 ### Fixed
