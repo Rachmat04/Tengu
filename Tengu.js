@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.117.7
+ * Version 2.117.8
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -9808,6 +9808,7 @@ $(function () {
             if (!isUserModeNow) applySpecialPageLocks(targetIsSpecial);
 
             updateUploadAvailability();
+            updatePagedelTalkAvailability();
             updateStartBtn();
             updateSectionStatus();
           }

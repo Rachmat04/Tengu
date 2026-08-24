@@ -1,3 +1,14 @@
+## 2.117.8
+
+### Fixed
+
+* Fixed the **Also delete the talk page** checkbox in the Page deletion section remaining disabled when switching from page mode back to user mode. If the page mode target had no associated talk page, the checkbox was correctly disabled in page mode, but was never re-enabled on mode switch because `applyModeRestrictions()` sets `inputTarget.value` directly without dispatching a `change` event. `updatePagedelTalkAvailability()` is now called alongside `updateUploadAvailability()` at the end of `applyModeRestrictions()`, so the checkbox state is always evaluated after a mode switch.
+
+### Notes
+
+* In user mode, `updatePagedelTalkAvailability()` returns immediately after restoring the enabled state (no API call), so calling it without `await` is safe.
+* The equivalent functions for the Move page and Move to user's sandbox talk page options (`updateMovePageTalkAvailability`, `updateMoveSandboxTalkAvailability`) are unaffected: both return early when `tenguMode !== "page"` without modifying any state, and the controls they govern are inaccessible in user mode because their parent section is mode-locked.
+
 ## 2.117.7
 
 ### Fixed
