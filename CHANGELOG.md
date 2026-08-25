@@ -1,3 +1,13 @@
+## 2.117.10
+
+### Fixed
+
+* Removed the `tng-mode-switch-label-user` and `tng-mode-switch-label-page` classes applied to the mode-switch labels in `init()`. Neither class has a corresponding rule in `Tengu.css` — only `.tng-mode-switch-label-active-user` and `.tng-mode-switch-label-active-page` are defined and applied via `setModeSwitchActive()` — so both were inert on every dialogue open.
+
+### Notes
+
+* No visual or behavioural change: the active-state classes that actually drive the mode-switch label colouring were unaffected.
+
 ## 2.117.9
 
 ### Fixed

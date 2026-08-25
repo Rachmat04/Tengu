@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.117.9
+ * Version 2.117.10
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -6025,8 +6025,7 @@ $(function () {
           modeToggle.className = "tng-mode-switch-wrap";
 
           const btnModeUser = document.createElement("span");
-          btnModeUser.className =
-            "tng-mode-switch-label tng-mode-switch-label-user";
+          btnModeUser.className = "tng-mode-switch-label";
           btnModeUser.textContent = "👤 User mode";
 
           const modeSwitchLabel = document.createElement("label");
@@ -6040,8 +6039,7 @@ $(function () {
           modeSwitchLabel.appendChild(modeSwitchSlider);
 
           const btnModePage = document.createElement("span");
-          btnModePage.className =
-            "tng-mode-switch-label tng-mode-switch-label-page";
+          btnModePage.className = "tng-mode-switch-label";
           btnModePage.textContent = "📄 Page mode";
 
           // Syncs the switch position and the active-label highlight with the
