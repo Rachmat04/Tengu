@@ -1,3 +1,13 @@
+## 2.117.11
+
+### Fixed
+
+* Fixed `btnExportEdits.disabled` in `applyModeRestrictions()` being evaluated against the target field's stale, previous-mode value instead of the newly pre-filled target. `btnGetInfo.disabled` was already correctly evaluated after the pre-fill; the Export edits button's disabled state now follows the same order so it reflects the target actually being switched to.
+
+### Notes
+
+* This affects only the Export edits button's enabled/disabled state immediately after a mode switch. In the common case (switching to page mode, or switching to user mode with a non-empty username) the stale value happened to produce the same result, so the bug was not readily visible.
+
 ## 2.117.10
 
 ### Fixed

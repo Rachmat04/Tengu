@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.117.10
+ * Version 2.117.11
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -9590,8 +9590,6 @@ $(function () {
               ? "View access rights, block log, rights changes, and abuse filter log for this user"
               : "View abuse filter, protection, deletion, and move logs for this page";
             btnExportEdits.style.display = isUserModeNow ? "" : "none";
-            btnExportEdits.disabled =
-              !inputTarget.value.trim() || !isUserModeNow;
 
             // Pre-fill target with the appropriate default for the selected mode
             inputTarget.value = isUserModeNow
@@ -9599,6 +9597,8 @@ $(function () {
               : mw.config.get("wgPageName").replace(/_/g, " ");
             clearInputError(inputTarget);
             btnGetInfo.disabled = !inputTarget.value.trim();
+            btnExportEdits.disabled =
+              !inputTarget.value.trim() || !isUserModeNow;
             // When returning to user mode, re-evaluate target-specific UI that
             // the change listener would normally update, but that is not triggered
             // here because applyModeRestrictions() sets inputTarget.value directly
