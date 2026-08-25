@@ -1,3 +1,15 @@
+## 2.118.0
+
+### Changed
+
+* The progress dialogue no longer shows a running, real-time summary line (e.g. "0 reverted | 0 deleted | ...") while a run is in progress. The status line now shows only the current state ("Processing..." / "Aborted.") during execution.
+* A concise, natural-language summary is now shown once the run finishes, listing only the actions that were actually performed — for example, "Completed: 3 pages deleted, 2 pages protected, and 1 report filed." Actions with a zero count are omitted entirely.
+
+### Notes
+
+* This is a display-only change. The underlying `stats` counters and their use elsewhere (e.g. multi-target per-target logging) are unaffected.
+* When no operations were performed, the summary reads "Completed: no operations performed." (or "Aborted: no operations completed." if the run was aborted before anything succeeded).
+
 ## 2.117.11
 
 ### Fixed

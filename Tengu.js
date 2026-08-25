@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.117.11
+ * Version 2.118.0
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -1007,6 +1007,52 @@ $(function () {
           // can be adjusted in one place.
           const THROTTLE_MS = 50;
 
+          // Builds a concise, natural-language summary of completed actions,
+          // including only the operations that actually occurred (non-zero
+          // counts). Used once at the end of a run, replacing the previous
+          // running summary line shown throughout processing.
+          const buildCompletionSummary = function (
+            statsObj,
+            aborted,
+            revertMethodTxt,
+          ) {
+            const parts = [];
+            const add = function (count, singular, plural) {
+              if (count > 0)
+                parts.push(count + " " + (count === 1 ? singular : plural));
+            };
+            add(
+              statsObj.rollback,
+              "edit " + revertMethodTxt,
+              "edits " + revertMethodTxt,
+            );
+            add(statsObj.delete, "page deleted", "pages deleted");
+            add(statsObj.undelete, "page undeleted", "pages undeleted");
+            add(statsObj.move, "page moved", "pages moved");
+            add(statsObj.unlink, "link removed", "links removed");
+            add(statsObj.redirfix, "redirect fixed", "redirects fixed");
+            add(statsObj.protect, "page protected", "pages protected");
+            add(statsObj.revdel, "revision hidden", "revisions hidden");
+            add(statsObj.report, "report filed", "reports filed");
+            add(statsObj.lockAccount, "account locked", "accounts locked");
+            add(statsObj.error, "error", "errors");
+
+            if (!parts.length) {
+              return aborted
+                ? "Aborted: no operations completed."
+                : "Completed: no operations performed.";
+            }
+            const joined =
+              parts.length === 1
+                ? parts[0]
+                : parts.length === 2
+                  ? parts[0] + " and " + parts[1]
+                  : parts.slice(0, -1).join(", ") +
+                    ", and " +
+                    parts[parts.length - 1];
+            return (aborted ? "Aborted: " : "Completed: ") + joined + ".";
+          };
+
           // Build progress UI
           const { overlay, body, footer } = createDialog({
             title: "Processing Tengu tasks",
@@ -1019,16 +1065,16 @@ $(function () {
             },
           });
 
-          // Helper function to update status dynamically
+          // Helper function to update status dynamically. Only shows the current
+          // status word while processing; a natural-language summary of completed
+          // actions is built once at the end of the run (see buildCompletionSummary()).
           const updateStatusDisplay = () => {
             const statusText = isAborted ? "Aborted." : "Processing...";
-            const summaryLine = `<b>Status:</b> ${statusText}<br/>Summary: <b>${stats.rollback}</b> reverted | <b>${stats.delete}</b> deleted | <b>${stats.undelete}</b> undeleted | <b>${stats.move}</b> moved | <b>${stats.unlink}</b> unlinked | <b>${stats.redirfix}</b> redirects fixed | <b>${stats.protect}</b> protected | <b>${stats.revdel}</b> hidden | <b>${stats.report}</b> reported | <b>${stats.lockAccount}</b> locked | <b>${stats.error}</b> errors.`;
-            statusLbl.innerHTML = summaryLine;
+            statusLbl.innerHTML = `<b>Status:</b> ${statusText}`;
           };
 
           const statusLbl = document.createElement("div");
-          statusLbl.innerHTML =
-            "<b>Status:</b> Processing...<br/>Summary: <b>0</b> reverted | <b>0</b> deleted | <b>0</b> undeleted | <b>0</b> moved | <b>0</b> unlinked | <b>0</b> redirects fixed | <b>0</b> protected | <b>0</b> hidden | <b>0</b> reported | <b>0</b> locked | <b>0</b> errors.";
+          statusLbl.innerHTML = "<b>Status:</b> Processing...";
           statusLbl.style.marginBottom = "8px";
 
           const logBox = document.createElement("div");
@@ -3981,7 +4027,8 @@ $(function () {
             config.rollbackMethod === "undo" ? "undone" : "reverted";
           const statusWord = isAborted ? "Aborted." : "Completed.";
           const statusPrefix = `<b>Status: ${statusWord}</b><br/>`;
-          const finalStatus = `${statusPrefix}Summary: <b>${stats.rollback}</b> ${methodTxt} | <b>${stats.delete}</b> deleted | <b>${stats.undelete}</b> undeleted | <b>${stats.move}</b> moved | <b>${stats.unlink}</b> unlinked | <b>${stats.redirfix}</b> redirects fixed | <b>${stats.protect}</b> protected | <b>${stats.revdel}</b> hidden | <b>${stats.report}</b> reported | <b>${stats.lockAccount}</b> locked | <b>${stats.error}</b> errors.`;
+          const finalStatus =
+            statusPrefix + buildCompletionSummary(stats, isAborted, methodTxt);
           statusLbl.innerHTML = finalStatus;
 
           if (isAborted) {
