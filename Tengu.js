@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.120.0
+ * Version 2.121.0
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -1439,9 +1439,13 @@ $(function () {
                 // so a notification failure does not misreport the block as having failed).
                 // Skipped for IP ranges: mw.Title would treat the slash in CIDR notation
                 // (e.g. "1.2.3.0/24") as a subpage separator, producing an incorrect title.
+                // Skipped for any range target (IPv4 or IPv6 CIDR): mw.Title
+                // would misparse the "/" in the range as a subpage separator,
+                // and an IPv6 address's ":" characters risk being misread as
+                // a namespace prefix, producing an incorrect title either way.
                 if (config.isRange && config.notifyBlock && stats.block > 0) {
                   addLog(
-                    "[Notify] Skipped block notification: talk pages are not applicable to IP range targets.",
+                    "[Notify] Skipped block notification: talk pages are not applicable to IP range targets (IPv4 or IPv6).",
                     "warn",
                   );
                 }
@@ -9517,8 +9521,9 @@ $(function () {
           }
 
           // Returns true when the current target resolves to an IP range
-          // (CIDR notation) rather than a single IP address or account.
-          // Only the Block and Unblock sections support range targets.
+          // (CIDR notation, IPv4 or IPv6) rather than a single IP address or
+          // account. mw.util.isIPAddress(str, true) natively recognises both
+          // IPv4 and IPv6 CIDR ranges. Only the Block and Unblock sections support range targets.
           function isTargetIPRange() {
             const title = inputTarget.value.trim();
             if (!title) return false;

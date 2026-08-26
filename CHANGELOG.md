@@ -1,3 +1,15 @@
+## 2.121.0
+
+### Changed
+
+* Clarified that IP range support (Block and Unblock sections) covers both IPv4 and IPv6 CIDR ranges, since range detection relies on `mw.util.isIPAddress(target, true)`, which recognises both forms natively. No functional change to detection or block logic was required.
+* Updated the skipped-notification warning message to explicitly mention "(IPv4 or IPv6)" for clarity.
+
+### Notes
+
+* IPv6 CIDR range handling has not been independently tested against a live wiki. The existing range-target locks (Rollback, User warning, Revision deletion, Lock account, Report to Global sysops/Requests, Report to Steward requests/Global) and the block/unblock execution path already applied uniformly to any range target, IPv4 or IPv6, since none of that logic branches on address family.
+* The talk-page notification skip for range targets (added in v2.119.0 for the IPv4 CIDR slash issue) also protects against IPv6 addresses' colons being misread by `mw.Title` as a namespace prefix, though this has not been confirmed against a live wiki either.
+
 ## 2.120.0
 
 ### Changed
