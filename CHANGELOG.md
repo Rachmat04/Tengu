@@ -1,3 +1,16 @@
+## 2.121.1
+
+### Fixed
+
+* Fixed the unlink loop's file-embed removal (Page deletion section, "Remove links to deleted page or file") incorrectly truncating `[[File:...]]`/`[[Image:...]]` embeds at the first `]]` found inside the caption, rather than the `]]` that actually closes the embed. This left the remainder of the caption behind as stray wikitext whenever the caption itself contained nested wikilinks or templates — for example `[[File:Example.png|thumb|[[Some link|Some link]] and more text.]]` previously removed only up to `[[Some link|Some link]]`, leaving `and more text.]]` behind.
+* File-embed removal now tracks bracket depth (via a new `removeBalancedFileEmbeds()` helper) instead of relying on a regular expression, so nested wikilinks, piped links, and templates within the caption no longer confuse the match.
+* Any whitespace immediately before or after a removed file embed is now trimmed, so the edit does not leave behind stray spaces where the embed used to be.
+
+### Notes
+
+* This affects only the file-delinking branch of the existing "Remove links to deleted page or file" option in the Page deletion section, which remains an experimental feature. Ordinary page-link removal (non-file deletions) and the gallery-line removal pattern are unchanged.
+* [Unverified] The fix has been reviewed but not independently confirmed against a live wiki edit.
+
 ## 2.121.0
 
 ### Changed

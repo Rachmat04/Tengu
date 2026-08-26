@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.121.0
+ * Version 2.121.1
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -1258,6 +1258,73 @@ $(function () {
               // Skip if the title cannot be resolved
             }
             return expiries;
+          }
+
+          // Removes an entire [[File:...]] or [[Image:...]] construct for the given
+          // file name, including any nested wikilinks or templates within its
+          // caption, by tracking bracket depth rather than matching with a regex.
+          // A regex such as /\[\[File:Name(?:\|[^\]]*)?\]\]/ stops at the first
+          // "]]" it finds, which incorrectly truncates captions that themselves
+          // contain wikilinks or templates (e.g. "[[Bart Simpson|Bart]]" or
+          // "{{small|(anjing)}}" inside the caption), leaving the remainder of the
+          // caption behind as stray wikitext. This function instead walks forward
+          // from the opening "[[", counting nested "[[" / "]]" pairs, so it finds
+          // the "]]" that actually closes the file embed. Any horizontal
+          // whitespace immediately before or after the removed construct is also
+          // trimmed, so the removal does not leave behind stray spaces.
+          function removeBalancedFileEmbeds(text, fileNameForMatch) {
+            const escapedFileName = fileNameForMatch
+              .replace(/[.*+?^${}()|[\]\\]/g, "\\$&")
+              .replace(/[ _]/g, "[ _]");
+            const startRe = new RegExp(
+              "\\[\\[\\s*(?:[Ff]ile|[Ii]mage)\\s*:\\s*" +
+                escapedFileName +
+                "\\s*(?:\\||\\]\\])",
+            );
+            let result = text;
+            let searchFrom = 0;
+            while (searchFrom < result.length) {
+              const remaining = result.slice(searchFrom);
+              const m = startRe.exec(remaining);
+              if (!m) break;
+              const startIdx = searchFrom + m.index;
+
+              // Walk forward from the opening "[[", tracking bracket depth, to
+              // find the matching closing "]]" for this specific file embed,
+              // rather than the first "]]" encountered.
+              let depth = 0;
+              let i = startIdx;
+              let endIdx = -1;
+              while (i < result.length - 1) {
+                const two = result.substr(i, 2);
+                if (two === "[[") {
+                  depth++;
+                  i += 2;
+                  continue;
+                }
+                if (two === "]]") {
+                  depth--;
+                  i += 2;
+                  if (depth === 0) {
+                    endIdx = i;
+                    break;
+                  }
+                  continue;
+                }
+                i++;
+              }
+
+              if (endIdx === -1) {
+                // Unbalanced brackets; stop rather than risk corrupting content.
+                break;
+              }
+
+              const before = result.slice(0, startIdx).replace(/[ \t]+$/, "");
+              const after = result.slice(endIdx).replace(/^[ \t]+/, "");
+              result = before + after;
+              searchFrom = before.length;
+            }
+            return result;
           }
 
           for (const targetVal of config.targets || [config.target]) {
@@ -3685,26 +3752,19 @@ $(function () {
                 );
 
                 // File-specific patterns, built only when the deleted item is a file.
-                // [NOT CONFIRMED] — the "File"/"Image" namespace aliases and gallery
-                // line syntax used below cover the common cases but may not match
-                // every valid form (e.g. localised namespace aliases on this wiki).
-                let fileEmbedRe = null;
+                // The "File"/"Image" namespace aliases and gallery line syntax
+                // used below cover the common cases but may not match every valid form
+                // (e.g. localised namespace aliases on this wiki).
                 let galleryLineRe = null;
                 if (isFileDeletion && fileMain) {
                   const escapedFileName = fileMain
                     .replace(/[.*+?^${}()|[\]\\]/g, "\\$&")
                     .replace(/[ _]/g, "[ _]");
-                  // Matches [[File:Example.jpg]], [[File:Example.jpg|thumb|caption]],
-                  // and the "Image:" alias. The entire embed is removed, since a
-                  // bare file embed has no display-text fallback to replace it with.
-                  fileEmbedRe = new RegExp(
-                    "\\[\\[\\s*(?:[Ff]ile|[Ii]mage)\\s*:\\s*" +
-                      escapedFileName +
-                      "(?:\\|[^\\]]*)?\\]\\]",
-                    "g",
-                  );
                   // Matches a bare gallery entry on its own line, e.g.
                   // "File:Example.jpg|caption", as used inside <gallery> tags.
+                  // Whole [[File:...]]/[[Image:...]] embeds are now handled
+                  // separately by removeBalancedFileEmbeds(), which correctly
+                  // handles nested wikilinks and templates within the caption.
                   galleryLineRe = new RegExp(
                     "^[ \\t]*(?:[Ff]ile|[Ii]mage)\\s*:\\s*" +
                       escapedFileName +
@@ -3776,12 +3836,18 @@ $(function () {
 
                         let newWikitext;
                         if (isFileDeletion) {
-                          // Remove whole file embeds and gallery lines referencing
-                          // the deleted file. Neither form has a meaningful
-                          // display-text fallback, so the match is deleted outright.
-                          newWikitext = wikitext
-                            .replace(fileEmbedRe, "")
-                            .replace(galleryLineRe, "");
+                          // Remove whole file embeds (including any nested
+                          // wikilinks or templates within the caption) and gallery
+                          // lines referencing the deleted file. Neither form has a
+                          // meaningful display-text fallback, so the match is
+                          // deleted outright. removeBalancedFileEmbeds() tracks
+                          // bracket depth instead of using a regex, since a regex
+                          // stops at the first "]]" and would otherwise truncate
+                          // the embed at a nested link inside the caption.
+                          newWikitext = removeBalancedFileEmbeds(
+                            wikitext,
+                            fileMain,
+                          ).replace(galleryLineRe, "");
                         } else {
                           // Replace each matching wikilink with its display text,
                           // or with the base page title if no display text is present.
