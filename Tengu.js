@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.119.0
+ * Version 2.120.0
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -1035,6 +1035,8 @@ $(function () {
             add(statsObj.revdel, "revision hidden", "revisions hidden");
             add(statsObj.report, "report filed", "reports filed");
             add(statsObj.lockAccount, "account locked", "accounts locked");
+            add(statsObj.block, "account blocked", "accounts blocked");
+            add(statsObj.unblock, "account unblocked", "accounts unblocked");
             add(statsObj.error, "error", "errors");
 
             if (!parts.length) {
@@ -4038,11 +4040,12 @@ $(function () {
 
           const methodTxt =
             config.rollbackMethod === "undo" ? "undone" : "reverted";
-          const statusWord = isAborted ? "Aborted." : "Completed.";
-          const statusPrefix = `<b>Status: ${statusWord}</b><br/>`;
-          const finalStatus =
-            statusPrefix + buildCompletionSummary(stats, isAborted, methodTxt);
-          statusLbl.innerHTML = finalStatus;
+          const completionSummary = buildCompletionSummary(
+            stats,
+            isAborted,
+            methodTxt,
+          );
+          statusLbl.innerHTML = `<b>Status:</b> ${completionSummary}`;
 
           if (isAborted) {
             addLog("⏹️ Operations aborted by user");

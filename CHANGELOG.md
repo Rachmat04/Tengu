@@ -1,3 +1,14 @@
+## 2.120.0
+
+### Changed
+
+* The end-of-run status line in the progress dialogue now shows the completion summary on the same line as "Status:" instead of on a separate line below it (e.g. "Status: Completed: 3 pages deleted, 2 pages protected, and 1 account blocked.").
+* The completion summary now includes blocked and unblocked account counts, which were previously omitted. As with all other counters, an action is only listed when its count is greater than zero.
+
+### Notes
+
+* This is a display-only change to `buildCompletionSummary()` and the final status line in `work()`; no changes were made to blocking, unblocking, or any other operational logic.
+
 ## 2.119.0
 
 ### Added
