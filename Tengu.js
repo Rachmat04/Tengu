@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.118.0
+ * Version 2.119.0
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -1302,8 +1302,12 @@ $(function () {
             }
 
             // Resolve IP status per-target so block parameters (anononly vs
-            // autoblock) are correct when the target list mixes IPs and accounts.
-            const isTargetIP = mw.util.isIPAddress(targetVal);
+            // autoblock) are correct when the target list mixes IPs, IP
+            // ranges, and accounts. isIPAddress(targetVal, true) accepts both
+            // single IPs and CIDR ranges; rangeblocks do not support
+            // autoblock, so treating ranges the same as plain IPs here
+            // correctly skips it.
+            const isTargetIP = mw.util.isIPAddress(targetVal, true);
 
             // --- User warning ---
             // Only runs in user mode; config.warn is only set when the warn
@@ -1430,8 +1434,16 @@ $(function () {
                 }
 
                 // Post notification to user talk page (separate from block action above,
-                // so a notification failure does not misreport the block as having failed)
-                if (stats.block > 0 && config.notifyBlock) {
+                // so a notification failure does not misreport the block as having failed).
+                // Skipped for IP ranges: mw.Title would treat the slash in CIDR notation
+                // (e.g. "1.2.3.0/24") as a subpage separator, producing an incorrect title.
+                if (config.isRange && config.notifyBlock && stats.block > 0) {
+                  addLog(
+                    "[Notify] Skipped block notification: talk pages are not applicable to IP range targets.",
+                    "warn",
+                  );
+                }
+                if (stats.block > 0 && config.notifyBlock && !config.isRange) {
                   const talkTitle = new mw.Title(
                     targetVal,
                     3,
@@ -2175,7 +2187,8 @@ $(function () {
             if (
               !skipContribFetch &&
               config.mode === "user" &&
-              !config.customSelection
+              !config.customSelection &&
+              !config.isRange
             ) {
               const contribParams = {
                 action: "query",
@@ -5838,9 +5851,10 @@ $(function () {
           // Special pages (NS -1) cannot be deleted or protected; used to gate those sections in page mode
           const isSpecialPage = currentNamespace === -1;
 
-          // Default to page mode when the target is an IP range; user mode is not
-          // applicable as ranges are not addressable as individual user targets.
-          let tenguMode = isUserMode && !isIPRange ? "user" : "page";
+          // IP ranges are now supported as user-mode targets for the Block and
+          // Unblock sections (see applyRangeTargetLocks()), so they no longer
+          // force page mode by default.
+          let tenguMode = isUserMode ? "user" : "page";
           // Set when the rights Promise settles; used by applyModeRestrictions() to
           // re-apply rights-based locks when switching from page mode back to user mode.
           let resolvedRights = null;
@@ -6113,14 +6127,15 @@ $(function () {
             modeSwitchInput.disabled = true;
             btnModeUser.title =
               "User mode is only available when Tengu is launched from a user profile or contribution space";
-          } else if (isIPRange) {
-            // IP ranges (e.g. 192.168.0.0/16 or 2001:db8::/32) cannot be used as
-            // individual user targets. User mode is disabled for range pages.
-            btnModeUser.classList.add("tng-mode-switch-label-disabled");
-            modeSwitchInput.disabled = true;
-            btnModeUser.title =
-              "User mode is not available for IP ranges. IP ranges cannot be targeted as individual users. Use the block section in page mode, or navigate to a single IP address instead.";
           } else {
+            // IP ranges (e.g. 192.168.0.0/16 or 2001:db8::/32) can be
+            // targeted in user mode, but only the Block and Unblock sections
+            // support range targets — rollback, revision deletion, warnings,
+            // and reporting all require a specific account or single IP.
+            if (isIPRange) {
+              btnModeUser.title =
+                "Only the Block and Unblock sections support IP range targets.";
+            }
             btnModeUser.addEventListener("click", function () {
               if (tenguMode === "user") return;
               setModeSwitchActive(true);
@@ -6205,9 +6220,7 @@ $(function () {
             tenguMode === "user" ? "Target user" : "Target page",
           );
           const inputTarget = makeInput(
-            tenguMode === "user"
-              ? "Username or IP (not a range)"
-              : "Page title",
+            tenguMode === "user" ? "Username, IP, or IP range" : "Page title",
           );
           fieldTarget.appendChild(inputTarget);
 
@@ -9500,6 +9513,17 @@ $(function () {
             }
           }
 
+          // Returns true when the current target resolves to an IP range
+          // (CIDR notation) rather than a single IP address or account.
+          // Only the Block and Unblock sections support range targets.
+          function isTargetIPRange() {
+            const title = inputTarget.value.trim();
+            if (!title) return false;
+            return (
+              mw.util.isIPAddress(title, true) && !mw.util.isIPAddress(title)
+            );
+          }
+
           // Enables the upload restriction control only when the target resolves to a
           // file page; disables it (without hiding it) otherwise.
           function updateUploadAvailability() {
@@ -9593,6 +9617,71 @@ $(function () {
             }
           }
 
+          // Applies or removes reversible mode locks on sections that require a
+          // specific account or single IP rather than an IP range, when the
+          // user-mode target is an IP range. [Inference] Range support is
+          // limited to Block and Unblock: MediaWiki's contribution, warning,
+          // and report-related APIs used by the other sections have not been
+          // confirmed to accept CIDR ranges.
+          function applyRangeTargetLocks(lock) {
+            if (lock) {
+              applyModeLock(
+                secRollback,
+                bodyRollback,
+                chkRollback,
+                true,
+                "rollback is not available for IP range targets.",
+              );
+              applyModeLock(
+                secWarn,
+                bodyWarn,
+                chkWarn,
+                true,
+                "user warnings are not available for IP range targets.",
+              );
+              applyModeLock(
+                secRevdel,
+                bodyRevdel,
+                chkRevdel,
+                true,
+                "revision deletion is not available for IP range targets.",
+              );
+              applyModeLock(
+                secLockAccount,
+                bodyLockAccount,
+                chkLockAccount,
+                true,
+                "global locks do not apply to IP ranges.",
+              );
+              applyModeLock(
+                secGS,
+                bodyGS,
+                chkGS,
+                true,
+                "reporting is not available for IP range targets.",
+              );
+              applyModeLock(
+                secSRG,
+                bodySRG,
+                chkSRG,
+                true,
+                "reporting is not available for IP range targets.",
+              );
+            } else {
+              applyModeLock(secRollback, bodyRollback, chkRollback, false);
+              applyModeLock(secWarn, bodyWarn, chkWarn, false);
+              applyModeLock(secRevdel, bodyRevdel, chkRevdel, false);
+              applyModeLock(
+                secLockAccount,
+                bodyLockAccount,
+                chkLockAccount,
+                false,
+              );
+              applyModeLock(secGS, bodyGS, chkGS, false);
+              applyModeLock(secSRG, bodySRG, chkSRG, false);
+            }
+          }
+
           // Updates all mode-sensitive UI when the user switches modes via the toggle.
           function applyModeRestrictions(isUserModeNow) {
             tenguMode = isUserModeNow ? "user" : "page";
@@ -9631,7 +9720,7 @@ $(function () {
               ? "Target user"
               : "Target page";
             inputTarget.placeholder = isUserModeNow
-              ? "Username or IP (not a range)"
+              ? "Username, IP, or IP range"
               : "Page title";
             btnGetInfo.title = isUserModeNow
               ? "View access rights, block log, rights changes, and abuse filter log for this user"
@@ -9652,7 +9741,7 @@ $(function () {
             // without dispatching a change event.
             if (isUserModeNow) {
               const _resetTarget = inputTarget.value.trim();
-              const _resetIsIP = mw.util.isIPAddress(_resetTarget);
+              const _resetIsIP = mw.util.isIPAddress(_resetTarget, true);
               wrapHardblock.style.display = _resetIsIP ? "" : "none";
               wrapAutoblock.style.display = _resetIsIP ? "none" : "";
               updateSRGFormForTarget();
@@ -9850,6 +9939,9 @@ $(function () {
 
             // Apply or remove special page locks when switching to page mode
             if (!isUserModeNow) applySpecialPageLocks(targetIsSpecial);
+            // Apply or remove range-target locks (Rollback, Warn, Revdel,
+            // Lock account, GS/SRG reporting) when switching to user mode
+            if (isUserModeNow) applyRangeTargetLocks(isTargetIPRange());
 
             updateUploadAvailability();
             updatePagedelTalkAvailability();
@@ -10082,7 +10174,7 @@ $(function () {
             }
 
             const suffix = selSuffix.value;
-            const isIP = mw.util.isIPAddress(targetVal);
+            const isIP = mw.util.isIPAddress(targetVal, true);
             let endtime = selEndtime.value;
             let betweenMode = false;
             let betweenFrom = null;
@@ -10406,6 +10498,7 @@ $(function () {
               targets: allTargets,
               suffix: suffix,
               isIP: isIP,
+              isRange: isIP && !mw.util.isIPAddress(targetVal),
               endtime: endtime,
               betweenMode: betweenMode,
               betweenFrom: betweenFrom,
@@ -11969,11 +12062,14 @@ $(function () {
           inputTarget.addEventListener("change", function () {
             applyPackage(selPackage.value);
             const targetVal = inputTarget.value.trim();
-            const isIP = mw.util.isIPAddress(targetVal);
+            const isIP = mw.util.isIPAddress(targetVal, true);
             const isTempAccount = /^~\d{4}-\d+-\d+$/.test(targetVal);
             wrapHardblock.style.display = isIP ? "" : "none";
             wrapAutoblock.style.display = isIP ? "none" : "";
             updateSRGFormForTarget();
+            if (tenguMode === "user") {
+              applyRangeTargetLocks(isTargetIPRange());
+            }
             if (isTempAccount) {
               selBlockDur.value = "3 months";
               inputBlockDur.classList.add("tng-hidden");

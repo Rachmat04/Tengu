@@ -1,3 +1,26 @@
+## 2.119.0
+
+### Added
+
+* Added support for IP range (CIDR) targets in user mode. Previously, entering an IP range disabled user mode entirely with no way to block it — the old tooltip even suggested using the block section in page mode, but Block is always locked in page mode, so ranges could not be blocked at all. Ranges can now be entered directly as the target and user mode enabled for them.
+* Added `isTargetIPRange()` and `applyRangeTargetLocks()`, which lock the Rollback, User warning, Revision deletion, Lock account, Report to Global sysops/Requests, and Report to Steward requests/Global sections whenever the user-mode target is an IP range, since these features require a specific account or single IP rather than a range. Only Block and Unblock remain available for range targets.
+* The hardblock/autoblock display logic in the Block section now correctly treats IP ranges the same as single IP addresses.
+
+### Changed
+
+* The target field placeholder in user mode now reads "Username, IP, or IP range" instead of "Username or IP (not a range)".
+
+### Fixed
+
+* Fixed the contribution-history fetch in `work()` running (and failing) for IP range targets in user mode, even though only Block and Unblock apply to ranges. The fetch is now skipped entirely when the target is a range.
+* Fixed block notifications being posted to a malformed talk page title for IP range targets. `mw.Title` treats the slash in CIDR notation (e.g. "1.2.3.0/24") as a subpage separator, which would have produced an incorrect title; block notifications are now skipped for range targets, with a warning logged instead.
+
+### Notes
+
+* Range support is limited to Block and Unblock because MediaWiki's contribution, warning, and report-related APIs used by the other sections have not been confirmed to accept CIDR ranges.
+* Rangeblocks do not support the `autoblock` parameter. The block execution logic already omits `autoblock` for any target where `mw.util.isIPAddress(target, true)` is true (now covering both single IPs and ranges), so no separate handling was needed beyond widening this check throughout the target-detection code.
+* No changes were made to page mode; IP ranges can still be reached via page mode as before, though page mode has no block feature of its own.
+
 ## 2.118.0
 
 ### Changed

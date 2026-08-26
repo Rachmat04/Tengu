@@ -18,12 +18,12 @@ It is intended for experienced users with the appropriate rights on a wiki.
 Tengu operates in two modes, switchable via a toggle in the dialogue.
 
 ### User mode
-Targets a specific user or IP address. Rollback, block, unblock, user warnings, revision deletion, and reports are only available in this mode.
+Targets a specific user, IP address, or IP range. Rollback, block, unblock, user warnings, revision deletion, and reports are only available in this mode; for IP range targets, only block and unblock apply.
 
 ### Page mode
 Targets a specific page. Page deletion, page undeletion, page protection, protect against recreation, and page moves are available in this mode. Deletion and protection can also operate on pages created or edited by a target user when Tengu is used in user mode.
 
-Tengu automatically selects the most appropriate mode based on the page you open it from. On user contribution pages it defaults to user mode; elsewhere it defaults to page mode. IP ranges are not supported in user mode.
+Tengu automatically selects the most appropriate mode based on the page you open it from. On user contribution pages it defaults to user mode; elsewhere it defaults to page mode. IP ranges are supported in user mode for blocking and unblocking only.
 
 ---
 
@@ -37,7 +37,8 @@ Tengu automatically selects the most appropriate mode based on the page you open
 - Optional notification to the target user's talk page listing every reverted page and the reason given, sent once per run rather than once per page. Disabled by default.
 
 ### Block
-- Blocks users or IP addresses with configurable expiry, reason, and flags (autoblock, account-creation block, talk-page block, email block, hard block, username hiding).
+- Blocks users, IP addresses, or IP ranges (CIDR notation) with configurable expiry, reason, and flags (autoblock, account-creation block, talk-page block, email block, hard block, username hiding). Autoblock is not applicable to IP ranges and is omitted automatically.
+- When the target is an IP range, only the Block and Unblock sections are available in user mode; rollback, revision deletion, user warnings, account locking, and cross-wiki reporting all require a specific account or single IP. [Inference: range handling has not been independently confirmed against a live wiki.]
 - Pre-fills the block form with settings from any active block on the target.
 - Detects temporary accounts and sets a default 3-month expiry automatically.
 - Optionally clears the target's talk page before posting a block notification (indefinite blocks only).
