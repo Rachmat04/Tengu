@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.121.1
+ * Version 2.121.2
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -10595,7 +10595,7 @@ $(function () {
                   : selBlockDur.value,
               blockReason: buildBlockReason() + suffix,
               blockAnon: chkHardblock.checked,
-              blockAuto: !isIP && chkAutoblock.checked,
+              blockAuto: chkAutoblock.checked,
               blockCreate: chkCreate.checked,
               blockTalk: chkTalk.checked,
               blockMail: chkMail.checked,

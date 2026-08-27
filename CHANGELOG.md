@@ -1,3 +1,13 @@
+## 2.121.2
+
+### Fixed
+
+* Fixed `config.blockAuto` being pre-filtered by the primary target's IP status (`!isIP && chkAutoblock.checked`) at the time the Start button is pressed, instead of relying solely on the existing per-target `isTargetIP` check already performed inside `work()`. In a multi-target run mixing an IP address with one or more registered accounts, if the primary target happened to be an IP, this incorrectly suppressed autoblock for every account target in the batch, even with "Auto block" ticked.
+
+### Notes
+
+* `work()` already branches correctly on each individual target's own IP status before applying `autoblock`, so this fix simply removes the redundant (and incorrect) primary-target-only pre-filter from the config object. Single-target runs where the target is an account are unaffected, since `isTargetIP` for that target was already `false` in both the old and new logic.
+
 ## 2.121.1
 
 ### Fixed
