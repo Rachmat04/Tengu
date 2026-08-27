@@ -1,3 +1,9 @@
+## 2.121.4
+
+### Fixed
+
+* Moved `buildGSLineForTarget()` from inside the `for...of` targets loop body to the root of `work()`, resolving a `no-inner-declarations` ESLint warning. Function declarations in block statements such as `for` loops are flagged by this rule. The function's behaviour is unchanged; it continues to be called per-target inside the loop with `targetVal` as its argument. The wording of the associated comment was updated from "inside the loop below" to "inside the targets loop" to reflect its new position.
+
 ## 2.121.3
 
 ### Fixed

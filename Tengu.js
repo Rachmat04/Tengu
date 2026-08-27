@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.121.3
+ * Version 2.121.4
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -1176,8 +1176,44 @@ $(function () {
               ? "Notifikasi: Pemberitahuan pembatalan suntingan"
               : "Notification: Edit reversion notice") + toolTag;
 
+          // Builds the protections parameter for a page protection request, adding
+          // upload= for File-namespace pages. Assumes upload-level
+          // protection is submitted through the same action=protect call as edit/move;
+          // this has not been independently confirmed against the MediaWiki API.
+          function buildPageProtections(title) {
+            let protections = `edit=${config.protectEdit}|move=${config.protectMove}`;
+            try {
+              if (new mw.Title(title).getNamespaceId() === 6) {
+                protections += `|upload=${config.protectUpload}`;
+              }
+            } catch (e) {
+              // Skip if the title cannot be resolved
+            }
+            return protections;
+          }
+
+          // Builds the expiry parameter matching the pipe-separated order of
+          // buildPageProtections(): edit expiry, then move expiry, then (for
+          // file pages) upload expiry. The MediaWiki protect API accepts a
+          // pipe-separated expiry list that is matched positionally against
+          // the pipe-separated protections list, so edit and move restrictions
+          // can expire independently in a single action=protect call. Upload
+          // restriction has no dedicated expiry control and reuses the edit
+          // protection expiry.
+          function buildPageProtectionExpiries(title) {
+            let expiries = `${config.protectExpiry}|${config.protectMoveExpiry}`;
+            try {
+              if (new mw.Title(title).getNamespaceId() === 6) {
+                expiries += `|${config.protectExpiry}`;
+              }
+            } catch (e) {
+              // Skip if the title cannot be resolved
+            }
+            return expiries;
+          }
+
           // Builds the wikitext line for a Global sysops/Requests report for
-          // a specific target. Called per-target inside the loop below so
+          // a specific target. Called per-target inside the targets loop so
           // every account or page in a multi-target run receives its own
           // individual entry on the report page.
           function buildGSLineForTarget(target) {
@@ -1222,42 +1258,6 @@ $(function () {
                 : "{{LockHide|1=" + target + "}}";
             }
             return "* Please block " + userLink + ": " + reasonText + " ~~~~";
-          }
-
-          // Builds the protections parameter for a page protection request, adding
-          // upload= for File-namespace pages. Assumes upload-level
-          // protection is submitted through the same action=protect call as edit/move;
-          // this has not been independently confirmed against the MediaWiki API.
-          function buildPageProtections(title) {
-            let protections = `edit=${config.protectEdit}|move=${config.protectMove}`;
-            try {
-              if (new mw.Title(title).getNamespaceId() === 6) {
-                protections += `|upload=${config.protectUpload}`;
-              }
-            } catch (e) {
-              // Skip if the title cannot be resolved
-            }
-            return protections;
-          }
-
-          // Builds the expiry parameter matching the pipe-separated order of
-          // buildPageProtections(): edit expiry, then move expiry, then (for
-          // file pages) upload expiry. The MediaWiki protect API accepts a
-          // pipe-separated expiry list that is matched positionally against
-          // the pipe-separated protections list, so edit and move restrictions
-          // can expire independently in a single action=protect call. Upload
-          // restriction has no dedicated expiry control and reuses the edit
-          // protection expiry.
-          function buildPageProtectionExpiries(title) {
-            let expiries = `${config.protectExpiry}|${config.protectMoveExpiry}`;
-            try {
-              if (new mw.Title(title).getNamespaceId() === 6) {
-                expiries += `|${config.protectExpiry}`;
-              }
-            } catch (e) {
-              // Skip if the title cannot be resolved
-            }
-            return expiries;
           }
 
           // Removes an entire [[File:...]] or [[Image:...]] construct for the given
