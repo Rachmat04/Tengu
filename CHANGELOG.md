@@ -1,3 +1,13 @@
+## 2.121.3
+
+### Fixed
+
+* Fixed the **Unblock** section not being re-locked for users without the block right when switching from page mode back to user mode, in cases where the user rights promise resolved while Tengu was operating in page mode. The Unblock section is now locked alongside the Block section in the `applyModeRestrictions()` rights re-evaluation block, matching the pattern already used by the `rightsPromise.then()` callback.
+
+### Notes
+
+* Any actual unblock API call would still fail server-side for users without the block right regardless of UI state. The scenario requires that the rights promise resolves while Tengu is in page mode and the user subsequently switches to user mode — unlikely in practice on a fast connection, but possible.
+
 ## 2.121.2
 
 ### Fixed

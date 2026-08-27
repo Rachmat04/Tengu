@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.121.2
+ * Version 2.121.3
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -9985,6 +9985,12 @@ $(function () {
                     secBlock,
                     bodyBlock,
                     chkBlock,
+                    "you do not have the block right on this wiki.",
+                  );
+                  lockSection(
+                    secUnblock,
+                    bodyUnblock,
+                    chkUnblock,
                     "you do not have the block right on this wiki.",
                   );
                 }
