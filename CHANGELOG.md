@@ -1,3 +1,14 @@
+## 2.128.0
+
+### Added
+
+* Added a "[⛩️ restore this revision]" inline action to diff pages (`insertDiffRestoreLink()`, Section 09b), shown for the older revision being compared, so it can be restored without opening the page history and locating the matching row. The link is withheld when that revision is already the page's current revision. It reuses the existing `runQuickRevert()`/`buildInlineRevisionLink()` undo mechanism, confirmation dialogue, logging, edit summary, and error handling already used on history and contributions pages, so behaviour is identical to the existing "[⛩️ restore this revision]" links there. `wgDiffOldId` is used to identify the older revision and the link is placed inside `#mw-diff-otitle1`, an approach adapted from Twinkle's `twinklefluff.js` (`addLinks.diff()`), not copied directly.
+
+### Notes
+
+* The username shown in the confirmation dialogue/edit summary is read from `#mw-diff-otitle2 .mw-userlink`; if the revision's author is hidden (revision-deleted), this selector will not match and the link falls back to a null username, which `runQuickRevert()`/`buildQuickRevertSummaryText()` already handle.
+* Only tested against the standard MediaWiki diff table structure (`#mw-diff-otitle1`/`#mw-diff-otitle2`).
+
 ## 2.127.0
 
 ### Fixed

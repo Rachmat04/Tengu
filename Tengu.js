@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.127.0
+ * Version 2.128.0
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -12371,15 +12371,17 @@ $(function () {
         };
 
         // ============================================================================
-        // [Section 09b] Inline revision actions (history & contributions pages)
+        // [Section 09b] Inline revision actions (history, contributions &
+        // diff pages)
         // Injects "⛩️ rollback" and "⛩️ restore this revision" links at the end
         // of each revision row on page history (action=history) and user
         // contributions (Special:Contributions / Special:IPContributions,
-        // including IP and temporary account contribution pages). Reuses the
-        // same apiRollback()/apiPost() calls, edit-summary wording
-        // (buildQuickRevertSummaryText()), and a confirmation dialogue
-        // matching the style already used elsewhere in Tengu (e.g. the
-        // self-block confirmation).
+        // including IP and temporary account contribution pages), and a
+        // single "⛩️ restore this revision" link on diff pages (comparing
+        // two revisions). Reuses the same apiRollback()/apiPost() calls,
+        // edit-summary wording (buildQuickRevertSummaryText()), and a
+        // confirmation dialogue matching the style already used elsewhere
+        // in Tengu (e.g. the self-block confirmation).
         // On contributions pages, "restore this revision" is never shown,
         // and "rollback" is shown only where the row's revision is still
         // its page's current one. Rather than reading the page title out
@@ -12391,6 +12393,15 @@ $(function () {
         // top revision. Rows are then matched against that revid -> title
         // map directly, so the page title used to build the link also
         // comes from the API rather than from DOM parsing.
+        // On diff pages, only the older ("from") revision being compared
+        // gets a link, since that is the revision that can be restored;
+        // the newer ("to") revision is left untouched. The link is
+        // withheld when the older revision is already the page's current
+        // revision, since there would be nothing to restore. wgDiffOldId
+        // is used to identify the older revision, mirroring how Twinkle's
+        // twinklefluff.js module (addLinks.diff()) detects and places its
+        // own "[restore this revision]" link, adapted here to reuse
+        // Tengu's existing undo/restore mechanism rather than Twinkle's.
         // ============================================================================
         async function runQuickRevert(pageTitle, targetUser, revId, method) {
           const actionLabel =
@@ -12703,12 +12714,54 @@ $(function () {
           return link;
         }
 
+        // Adds "[⛩️ restore this revision]" to a diff page for the older
+        // ("from") revision being compared, i.e. mirroring Twinkle's
+        // addLinks.diff() handling of wgDiffOldId. Left untouched — no
+        // link — when that revision is already the page's current
+        // revision, since there would be nothing to restore.
+        function insertDiffRestoreLink(oldRevIdRaw) {
+          const revId = parseInt(oldRevIdRaw, 10);
+          if (!revId) return;
+          const curRevId = parseInt(mw.config.get("wgCurRevisionId"), 10);
+          if (curRevId && revId === curRevId) return;
+
+          const oldTitleBox = document.querySelector("#mw-diff-otitle1");
+          if (!oldTitleBox) return;
+
+          const pageTitle = mw.config.get("wgPageName").replace(/_/g, " ");
+          // Best-effort recovery of the older revision's author, purely
+          // for the confirmation dialogue/edit summary; a null/hidden
+          // username is already handled gracefully by runQuickRevert()
+          // and buildQuickRevertSummaryText().
+          let targetUser = null;
+          const oldUserLink = document.querySelector(
+            "#mw-diff-otitle2 .mw-userlink",
+          );
+          if (oldUserLink) targetUser = oldUserLink.textContent.trim();
+
+          const actionWrap = document.createElement("span");
+          actionWrap.className = "tng-inline-actions";
+          actionWrap.appendChild(
+            buildInlineRevisionLink("restore", pageTitle, targetUser, revId),
+          );
+          oldTitleBox.appendChild(document.createTextNode(" "));
+          oldTitleBox.appendChild(actionWrap);
+        }
+
         async function insertInlineRevisionActions() {
           const isHistoryPage = mw.config.get("wgAction") === "history";
           const specialPage = mw.config.get("wgCanonicalSpecialPageName");
           const isContribsPage =
             specialPage === "Contributions" ||
             specialPage === "IPContributions";
+          const diffOldRevId = mw.config.get("wgDiffOldId");
+          const isDiffPage =
+            !isHistoryPage && !isContribsPage && !!diffOldRevId;
+
+          if (isDiffPage) {
+            insertDiffRestoreLink(diffOldRevId);
+            return;
+          }
           if (!isHistoryPage && !isContribsPage) return;
 
           // On history pages, list items reliably carry data-mw-revid. On
