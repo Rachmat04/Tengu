@@ -1,3 +1,21 @@
+## 2.124.1
+
+### Fixed
+
+* Fixed "[⛩️ rollback]" and "[⛩️ restore this revision]" performing no action when Confirm was clicked. The confirmation dialogue's Cancel and Confirm buttons both closed the dialogue via `overlay.closeHandler()`, which always triggers `onClose()` too (see `createDialog()`); `onClose()` called `resolve(false)`. Because `closeHandler()` ran before the Confirm button's own `resolve(true)`, the promise always settled to `false` first — a promise only settles once — so `runQuickRevert()` always exited at `if (!confirmed) return;` before calling `apiRollback()`/`apiPost()`, regardless of which button was pressed. Confirm and Cancel now call `resolve()` before `overlay.closeHandler()`.
+* Strengthened current-revision detection on user contribution pages. "[⛩️ rollback]" previously appeared on a user's most recent listed contribution to a page based only on its position in the contributions list, not on whether it was still that page's actual latest revision. If a different user had since edited the page, the link still appeared. `insertInlineRevisionActions()` now batch-queries each candidate page's current top revision before attaching the link, and only attaches it where the listed revision still matches.
+
+### Changed
+
+* The inline rollback/restore confirmation dialogue now supports Enter to confirm and Escape to cancel, matching the keyboard behaviour of the main "Confirm selected operations" dialogue (Section 09).
+* Inline action click handlers now call `stopPropagation()` in addition to `preventDefault()`. `runQuickRevert()` failures occurring outside its own try/catch (e.g. while building the confirmation dialogue) are now caught and surfaced via `console.error` and an alert, instead of failing silently as an unhandled promise rejection.
+* Extracted link creation and click-handling into a shared `buildInlineRevisionLink()` helper, used by both the history-page and contributions-page paths.
+
+### Notes
+
+* Matching a candidate's page title against the API's normalised title assumes both are in the same normalised form. If they differ, the candidate is left without a rollback link rather than risking one being shown incorrectly — this fails closed.
+* The same `closeHandler()`-before-`resolve()` ordering issue also exists in the self-block confirmation dialogue (around line 1477), using the identical pattern. Not changed here since it wasn't reported and is a separate code path — worth checking next.
+
 ## 2.124.0
 
 ### Fixed

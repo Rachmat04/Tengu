@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.124.0
+ * Version 2.124.1
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -12360,6 +12360,12 @@ $(function () {
             method === "rollback"
               ? "roll back the latest edit(s) to"
               : "restore this revision of";
+          // Holds the keydown handler bound below, so it can be removed
+          // regardless of which path closes the dialogue (Cancel, Confirm,
+          // the close button, clicking outside, or Escape) — matching the
+          // pattern used by the main "Confirm selected operations" dialogue
+          // (Section 09).
+          let handleConfirmKeydown;
           const confirmed = await new Promise(function (resolve) {
             const { overlay, body, footer } = createDialog({
               title:
@@ -12367,6 +12373,11 @@ $(function () {
               icon: "⛩️",
               child: true,
               onClose: function () {
+                document.removeEventListener(
+                  "keydown",
+                  handleConfirmKeydown,
+                  true,
+                );
                 resolve(false);
               },
             });
@@ -12382,16 +12393,36 @@ $(function () {
             body.appendChild(p);
             const btnCancel = makeBtn("Cancel", "quiet");
             btnCancel.addEventListener("click", function () {
-              overlay.closeHandler();
+              // Resolve before closing. closeHandler() always triggers
+              // onClose() too (see createDialog()), which also calls
+              // resolve(false) — calling it here first is what makes the
+              // deliberate outcome win, since a promise only settles once.
               resolve(false);
+              overlay.closeHandler();
             });
             const btnConfirm = makeBtn("Confirm", "destructive");
             btnConfirm.addEventListener("click", function () {
-              overlay.closeHandler();
               resolve(true);
+              overlay.closeHandler();
             });
             footer.appendChild(btnCancel);
             footer.appendChild(btnConfirm);
+
+            // Enter confirms, Escape cancels, while this dialogue is open —
+            // consistent with the main "Confirm selected operations"
+            // dialogue's keyboard behaviour.
+            handleConfirmKeydown = function (e) {
+              if (e.key === "Enter") {
+                e.preventDefault();
+                e.stopPropagation();
+                btnConfirm.click();
+              } else if (e.key === "Escape") {
+                e.preventDefault();
+                e.stopPropagation();
+                btnCancel.click();
+              }
+            };
+            document.addEventListener("keydown", handleConfirmKeydown, true);
           });
           if (!confirmed) return;
 
@@ -12485,7 +12516,45 @@ $(function () {
           footer.appendChild(btnClose);
         }
 
-        function insertInlineRevisionActions() {
+        // Builds a single inline "[⛩️ rollback]" / "[⛩️ restore this
+        // revision]" link and wires up its click handler. Shared by the
+        // history-page and contributions-page branches below so the click
+        // handling only has to be written once.
+        function buildInlineRevisionLink(kind, pageTitle, targetUser, revId) {
+          const isRollback = kind === "rollback";
+          const link = document.createElement("a");
+          link.href = "#";
+          link.className =
+            "tng-inline-action tng-inline-action-" +
+            (isRollback ? "rollback" : "restore");
+          link.textContent = isRollback
+            ? "[⛩️ rollback]"
+            : "[⛩️ restore this revision]";
+          link.title = isRollback
+            ? "Roll back this edit using Tengu (native rollback)"
+            : "Undo edits after this revision using Tengu (undo)";
+          link.addEventListener("click", function (e) {
+            e.preventDefault();
+            e.stopPropagation();
+            runQuickRevert(
+              pageTitle,
+              targetUser,
+              revId,
+              isRollback ? "rollback" : "undo",
+            ).catch(function (err) {
+              // Surfaces any error occurring outside runQuickRevert()'s own
+              // try/catch (e.g. while building the confirmation dialogue),
+              // instead of it failing silently as an unhandled rejection.
+              console.error("[Tengu] Inline revision action failed:", err);
+              window.alert(
+                "Tengu: the inline action could not be completed. See the browser console for details.",
+              );
+            });
+          });
+          return link;
+        }
+
+        async function insertInlineRevisionActions() {
           const isHistoryPage = mw.config.get("wgAction") === "history";
           const specialPage = mw.config.get("wgCanonicalSpecialPageName");
           const isContribsPage =
@@ -12503,13 +12572,15 @@ $(function () {
             : document.querySelectorAll(".mw-contributions-list li");
           if (!rows.length) return;
 
-          // Tracks, for contributions pages, which page titles have already
-          // had a rollback link attached, so [⛩️ rollback] is shown only once
-          // per page — on that page's most recent contribution — even when
-          // the same user has edited it multiple times. Contribution rows
-          // are assumed to be sorted newest-first, matching the MediaWiki
-          // default.
           const seenContribTitles = new Set();
+          // Contributions-page rows are held back here rather than getting
+          // a rollback link immediately: each candidate's revision must
+          // first be confirmed against the page's actual current revision
+          // (below), so a contribution that is no longer the page's latest
+          // edit — because someone else has since edited that page — does
+          // not get a rollback link. Contribution rows are assumed to be
+          // sorted newest-first, matching the MediaWiki default.
+          const contribCandidates = [];
 
           rows.forEach(function (li, index) {
             let revId = parseInt(li.dataset.mwRevid, 10);
@@ -12524,117 +12595,133 @@ $(function () {
                 ".mw-userlink, .history-user a",
               );
               if (userLink) targetUser = userLink.textContent.trim();
-            } else {
-              targetUser = mw.config.get("wgRelevantUserName") || "";
-              const titleLink =
-                li.querySelector(".mw-contributions-title") ||
-                Array.from(li.querySelectorAll("a")).find(function (a) {
-                  const t = (a.textContent || "").trim().toLowerCase();
-                  const href = a.getAttribute("href") || "";
-                  return (
-                    !["cur", "prev", "hist", "diff", "talk"].includes(t) &&
-                    href &&
-                    !/Special:/.test(href)
-                  );
-                });
-              if (!titleLink) return;
-              const href = titleLink.getAttribute("href") || "";
-              pageTitle =
-                mw.util.getParamValue("title", href) ||
-                decodeURIComponent(
-                  (href.split("/wiki/")[1] || "").split("?")[0],
-                ).replace(/_/g, " ");
-              if (!pageTitle) return;
 
-              // Only the latest contribution to a given page gets a rollback
-              // link; skip immediately once a title has already been handled.
-              if (seenContribTitles.has(pageTitle)) return;
-
-              if (!revId) {
-                const histLink = Array.from(li.querySelectorAll("a")).find(
-                  function (a) {
-                    return (
-                      (a.textContent || "").trim().toLowerCase() === "hist"
-                    );
-                  },
-                );
-                const diffLink = Array.from(li.querySelectorAll("a")).find(
-                  function (a) {
-                    return (
-                      (a.textContent || "").trim().toLowerCase() === "diff"
-                    );
-                  },
-                );
-                const revSourceHref =
-                  (histLink && histLink.getAttribute("href")) ||
-                  (diffLink && diffLink.getAttribute("href")) ||
-                  "";
-                const oldidVal =
-                  mw.util.getParamValue("oldid", revSourceHref) ||
-                  mw.util.getParamValue("diff", revSourceHref);
-                revId = parseInt(oldidVal, 10);
-              }
-              if (!revId) return;
-
-              seenContribTitles.add(pageTitle);
+              const actionWrap = document.createElement("span");
+              actionWrap.className = "tng-inline-actions";
+              // Top row is the current revision: only rollback applies
+              // there. Every other row gets "restore this revision" only.
+              const isLatest = index === 0;
+              actionWrap.appendChild(
+                buildInlineRevisionLink(
+                  isLatest ? "rollback" : "restore",
+                  pageTitle,
+                  targetUser,
+                  revId,
+                ),
+              );
+              li.appendChild(document.createTextNode(" "));
+              li.appendChild(actionWrap);
+              return;
             }
 
+            targetUser = mw.config.get("wgRelevantUserName") || "";
+            const titleLink =
+              li.querySelector(".mw-contributions-title") ||
+              Array.from(li.querySelectorAll("a")).find(function (a) {
+                const t = (a.textContent || "").trim().toLowerCase();
+                const href = a.getAttribute("href") || "";
+                return (
+                  !["cur", "prev", "hist", "diff", "talk"].includes(t) &&
+                  href &&
+                  !/Special:/.test(href)
+                );
+              });
+            if (!titleLink) return;
+            const href = titleLink.getAttribute("href") || "";
+            pageTitle =
+              mw.util.getParamValue("title", href) ||
+              decodeURIComponent(
+                (href.split("/wiki/")[1] || "").split("?")[0],
+              ).replace(/_/g, " ");
+            if (!pageTitle) return;
+
+            // Only the latest contribution to a given page is considered as
+            // a rollback candidate; skip immediately once a title has
+            // already been handled.
+            if (seenContribTitles.has(pageTitle)) return;
+
+            if (!revId) {
+              const histLink = Array.from(li.querySelectorAll("a")).find(
+                function (a) {
+                  return (a.textContent || "").trim().toLowerCase() === "hist";
+                },
+              );
+              const diffLink = Array.from(li.querySelectorAll("a")).find(
+                function (a) {
+                  return (a.textContent || "").trim().toLowerCase() === "diff";
+                },
+              );
+              const revSourceHref =
+                (histLink && histLink.getAttribute("href")) ||
+                (diffLink && diffLink.getAttribute("href")) ||
+                "";
+              const oldidVal =
+                mw.util.getParamValue("oldid", revSourceHref) ||
+                mw.util.getParamValue("diff", revSourceHref);
+              revId = parseInt(oldidVal, 10);
+            }
+            if (!revId) return;
+
+            seenContribTitles.add(pageTitle);
+            contribCandidates.push({ li, pageTitle, targetUser, revId });
+          });
+
+          if (!isContribsPage || !contribCandidates.length) return;
+
+          // Confirm each candidate's revision is still the page's current
+          // one before showing [⛩️ rollback]. Queried in batches of 50
+          // titles per request.
+          const titles = Array.from(
+            new Set(contribCandidates.map((c) => c.pageTitle)),
+          );
+          const currentRevByTitle = {};
+          for (let i = 0; i < titles.length; i += 50) {
+            const chunk = titles.slice(i, i + 50);
+            try {
+              const data = await apiGet({
+                action: "query",
+                prop: "revisions",
+                titles: chunk.join("|"),
+                rvprop: "ids",
+                rvlimit: 1,
+                formatversion: 2,
+              });
+              const pages = (data.query && data.query.pages) || [];
+              pages.forEach(function (p) {
+                if (p.revisions && p.revisions[0]) {
+                  currentRevByTitle[p.title] = p.revisions[0].revid;
+                }
+              });
+            } catch (e) {
+              // If a chunk's lookup fails, its candidates are simply left
+              // without a rollback link below, rather than risking one
+              // being shown on a revision that may no longer be current.
+            }
+          }
+
+          contribCandidates.forEach(function (c) {
+            if (currentRevByTitle[c.pageTitle] !== c.revId) return;
             const actionWrap = document.createElement("span");
             actionWrap.className = "tng-inline-actions";
-
-            if (isHistoryPage) {
-              // Top row is the current revision: only rollback applies there.
-              // Every other row gets "restore this revision" only.
-              const isLatest = index === 0;
-              if (isLatest) {
-                const btnRollback = document.createElement("a");
-                btnRollback.href = "#";
-                btnRollback.className =
-                  "tng-inline-action tng-inline-action-rollback";
-                btnRollback.textContent = "[⛩️ rollback]";
-                btnRollback.title =
-                  "Roll back this edit using Tengu (native rollback)";
-                btnRollback.addEventListener("click", function (e) {
-                  e.preventDefault();
-                  runQuickRevert(pageTitle, targetUser, revId, "rollback");
-                });
-                actionWrap.appendChild(btnRollback);
-              } else {
-                const btnRestore = document.createElement("a");
-                btnRestore.href = "#";
-                btnRestore.className =
-                  "tng-inline-action tng-inline-action-restore";
-                btnRestore.textContent = "[⛩️ restore this revision]";
-                btnRestore.title =
-                  "Undo edits after this revision using Tengu (undo)";
-                btnRestore.addEventListener("click", function (e) {
-                  e.preventDefault();
-                  runQuickRevert(pageTitle, targetUser, revId, "undo");
-                });
-                actionWrap.appendChild(btnRestore);
-              }
-            } else {
-              // Contributions page: rollback only, no "restore this revision".
-              const btnRollback = document.createElement("a");
-              btnRollback.href = "#";
-              btnRollback.className =
-                "tng-inline-action tng-inline-action-rollback";
-              btnRollback.textContent = "[⛩️ rollback]";
-              btnRollback.title =
-                "Roll back this edit using Tengu (native rollback)";
-              btnRollback.addEventListener("click", function (e) {
-                e.preventDefault();
-                runQuickRevert(pageTitle, targetUser, revId, "rollback");
-              });
-              actionWrap.appendChild(btnRollback);
-            }
-
-            li.appendChild(document.createTextNode(" "));
-            li.appendChild(actionWrap);
+            actionWrap.appendChild(
+              buildInlineRevisionLink(
+                "rollback",
+                c.pageTitle,
+                c.targetUser,
+                c.revId,
+              ),
+            );
+            c.li.appendChild(document.createTextNode(" "));
+            c.li.appendChild(actionWrap);
           });
         }
 
-        insertInlineRevisionActions();
+        insertInlineRevisionActions().catch(function (err) {
+          console.error(
+            "[Tengu] Failed to initialise inline revision actions:",
+            err,
+          );
+        });
 
         // ============================================================================
         // [Section 10] Portlet link
