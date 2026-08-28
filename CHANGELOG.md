@@ -1,3 +1,9 @@
+## 2.130.2
+
+### Fixed
+
+* Fixed additional targets in multi-target mode not being deduplicated against each other. The target-list builder (Section 09, Start button config assembly) only excluded entries matching the primary target, despite its comment stating duplicates were removed; a target repeated within the textarea was processed once per repetition (e.g. duplicate rollback/block/warn attempts on the same account or page). It now tracks a case-insensitive set of targets already seen, deduplicating against both the primary target and prior entries in the textarea, while preserving order.
+
 ## 2.130.1
 
 ### Fixed

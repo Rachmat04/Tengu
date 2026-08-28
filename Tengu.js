@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.130.1
+ * Version 2.130.2
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -10764,17 +10764,24 @@ $(function () {
 
             // Build the ordered target list. Additional targets from the
             // textarea are appended after the primary target; duplicates
-            // (case-insensitive) are removed while preserving order.
+            // (case-insensitive, both against the primary target and against
+            // each other) are removed while preserving order.
             const additionalTargets = chkMultiTarget.checked
-              ? textareaMultiTarget.value
-                  .split("\n")
-                  .map(function (s) {
-                    return s.trim();
-                  })
-                  .filter(Boolean)
-                  .filter(function (t) {
-                    return t.toLowerCase() !== targetVal.toLowerCase();
-                  })
+              ? (function () {
+                  const seen = new Set([targetVal.toLowerCase()]);
+                  return textareaMultiTarget.value
+                    .split("\n")
+                    .map(function (s) {
+                      return s.trim();
+                    })
+                    .filter(Boolean)
+                    .filter(function (t) {
+                      const key = t.toLowerCase();
+                      if (seen.has(key)) return false;
+                      seen.add(key);
+                      return true;
+                    });
+                })()
               : [];
             const allTargets = [targetVal].concat(additionalTargets);
 
