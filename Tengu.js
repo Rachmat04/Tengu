@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.126.0
+ * Version 2.127.0
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -12380,13 +12380,17 @@ $(function () {
         // (buildQuickRevertSummaryText()), and a confirmation dialogue
         // matching the style already used elsewhere in Tengu (e.g. the
         // self-block confirmation).
-        // [Unverified] The DOM selectors used to find revision rows, revision
-        // IDs, page titles, and usernames follow standard MediaWiki core
-        // markup (data-mw-revid attributes, .mw-userlink, .mw-contributions-title)
-        // but have not been independently confirmed against a live wiki,
-        // every skin, or every MediaWiki version. "restore this revision" is
-        // omitted for the first (newest) row on the assumption that both
-        // lists are sorted newest-first, which is the MediaWiki default.
+        // On contributions pages, "restore this revision" is never shown,
+        // and "rollback" is shown only where the row's revision is still
+        // its page's current one. Rather than reading the page title out
+        // of the DOM and re-querying it separately (the previous approach,
+        // which was prone to title-normalisation mismatches — see the
+        // v2.126.0 changelog entry), current status is resolved up front
+        // via a single list=usercontribs API call with ucshow=top, which
+        // returns exactly the contributions that are still each page's
+        // top revision. Rows are then matched against that revid -> title
+        // map directly, so the page title used to build the link also
+        // comes from the API rather than from DOM parsing.
         // ============================================================================
         async function runQuickRevert(pageTitle, targetUser, revId, method) {
           const actionLabel =
@@ -12717,15 +12721,57 @@ $(function () {
             : document.querySelectorAll(".mw-contributions-list li");
           if (!rows.length) return;
 
-          const seenContribTitles = new Set();
-          // Contributions-page rows are held back here rather than getting
-          // a rollback link immediately: each candidate's revision must
-          // first be confirmed against the page's actual current revision
-          // (below), so a contribution that is no longer the page's latest
-          // edit — because someone else has since edited that page — does
-          // not get a rollback link. Contribution rows are assumed to be
-          // sorted newest-first, matching the MediaWiki default.
-          const contribCandidates = [];
+          // On contributions pages, the target's currently-top revisions
+          // are resolved once up front via list=usercontribs&ucshow=top,
+          // rather than reading a page title out of each row's DOM link
+          // and re-querying it separately. This gives an authoritative
+          // revid -> title map: a row's revision is still current if, and
+          // only if, its revid appears here. Paginated via the API's
+          // continue token, capped at 20 requests as a safety limit.
+          let topRevisionTitles = null;
+          if (isContribsPage) {
+            const contribsUser = mw.config.get("wgRelevantUserName") || "";
+            topRevisionTitles = {};
+            if (contribsUser) {
+              try {
+                let continueToken = {};
+                let fetching = true;
+                let iterations = 0;
+                while (fetching && iterations < 20) {
+                  iterations++;
+                  const data = await apiGet(
+                    Object.assign(
+                      {
+                        action: "query",
+                        list: "usercontribs",
+                        ucuser: contribsUser,
+                        ucprop: "ids|title",
+                        ucshow: "top",
+                        uclimit: "max",
+                      },
+                      continueToken,
+                    ),
+                  );
+                  if (data.query && data.query.usercontribs) {
+                    data.query.usercontribs.forEach(function (c) {
+                      topRevisionTitles[c.revid] = c.title;
+                    });
+                  }
+                  if (data.continue) {
+                    continueToken = data.continue;
+                  } else {
+                    fetching = false;
+                  }
+                }
+              } catch (e) {
+                // Leaves topRevisionTitles as whatever was collected before
+                // the failure; rows whose revision cannot be confirmed
+                // simply get no rollback link below, rather than risking
+                // one being shown on a revision that may no longer be
+                // current.
+              }
+            }
+          }
 
           rows.forEach(function (li, index) {
             let revId = parseInt(li.dataset.mwRevid, 10);
@@ -12759,38 +12805,12 @@ $(function () {
               return;
             }
 
-            targetUser = mw.config.get("wgRelevantUserName") || "";
-            const titleLink =
-              li.querySelector(".mw-contributions-title") ||
-              Array.from(li.querySelectorAll("a")).find(function (a) {
-                const t = (a.textContent || "").trim().toLowerCase();
-                const href = a.getAttribute("href") || "";
-                return (
-                  !["cur", "prev", "hist", "diff", "talk"].includes(t) &&
-                  href &&
-                  !/Special:/.test(href)
-                );
-              });
-            if (!titleLink) return;
-            const href = titleLink.getAttribute("href") || "";
-            pageTitle =
-              mw.util.getParamValue("title", href) ||
-              decodeURIComponent(
-                (href.split("/wiki/")[1] || "").split("?")[0],
-              ).replace(/_/g, " ");
-            if (!pageTitle) return;
-            // Normalised to the same canonical form the API returns in
-            // query.pages[].title (see currentRevByTitle below), so the
-            // later match no longer fails closed on case/underscore
-            // differences between the DOM-derived title and the API's title.
-            const canonicalTitle = mw.Title.newFromText(pageTitle);
-            if (canonicalTitle) pageTitle = canonicalTitle.getPrefixedText();
-
-            // Only the latest contribution to a given page is considered as
-            // a rollback candidate; skip immediately once a title has
-            // already been handled.
-            if (seenContribTitles.has(pageTitle)) return;
-
+            // Contributions page: recover the revision ID from the row
+            // (data-mw-revid when present, otherwise the "hist"/"diff"
+            // link's oldid/diff parameter), then look it up directly
+            // against the top-revisions map built above. Only a match
+            // gets a link, and only "rollback" — "restore this revision"
+            // is never shown here.
             if (!revId) {
               const histLink = Array.from(li.querySelectorAll("a")).find(
                 function (a) {
@@ -12811,64 +12831,19 @@ $(function () {
                 mw.util.getParamValue("diff", revSourceHref);
               revId = parseInt(oldidVal, 10);
             }
-            if (!revId) return;
+            if (!revId || !topRevisionTitles || !(revId in topRevisionTitles))
+              return;
 
-            seenContribTitles.add(pageTitle);
-            contribCandidates.push({ li, pageTitle, targetUser, revId });
-          });
+            targetUser = mw.config.get("wgRelevantUserName") || "";
+            pageTitle = topRevisionTitles[revId];
 
-          if (!isContribsPage || !contribCandidates.length) return;
-
-          // Confirm each candidate's revision is still the page's current
-          // one before showing [⛩️ rollback]. Queried in batches of 50
-          // titles per request.
-          const titles = Array.from(
-            new Set(contribCandidates.map((c) => c.pageTitle)),
-          );
-          const currentRevByTitle = {};
-          for (let i = 0; i < titles.length; i += 50) {
-            const chunk = titles.slice(i, i + 50);
-            try {
-              const data = await apiGet({
-                action: "query",
-                prop: "revisions",
-                titles: chunk.join("|"),
-                rvprop: "ids",
-                rvlimit: 1,
-                formatversion: 2,
-              });
-              const pages = (data.query && data.query.pages) || [];
-              pages.forEach(function (p) {
-                if (p.revisions && p.revisions[0]) {
-                  // p.title is already the API's canonical prefixed form;
-                  // passed through the same normaliser as pageTitle above
-                  // so both sides of the lookup are guaranteed to match.
-                  const t = mw.Title.newFromText(p.title);
-                  currentRevByTitle[t ? t.getPrefixedText() : p.title] =
-                    p.revisions[0].revid;
-                }
-              });
-            } catch (e) {
-              // If a chunk's lookup fails, its candidates are simply left
-              // without a rollback link below, rather than risking one
-              // being shown on a revision that may no longer be current.
-            }
-          }
-
-          contribCandidates.forEach(function (c) {
-            if (currentRevByTitle[c.pageTitle] !== c.revId) return;
             const actionWrap = document.createElement("span");
             actionWrap.className = "tng-inline-actions";
             actionWrap.appendChild(
-              buildInlineRevisionLink(
-                "rollback",
-                c.pageTitle,
-                c.targetUser,
-                c.revId,
-              ),
+              buildInlineRevisionLink("rollback", pageTitle, targetUser, revId),
             );
-            c.li.appendChild(document.createTextNode(" "));
-            c.li.appendChild(actionWrap);
+            li.appendChild(document.createTextNode(" "));
+            li.appendChild(actionWrap);
           });
         }
 

@@ -1,3 +1,13 @@
+## 2.127.0
+
+### Fixed
+
+* Fixed "[⛩️ rollback]" still not appearing on user contribution pages after the v2.126.0 title-normalisation fix. `insertInlineRevisionActions()` previously read a page title out of the DOM link for each contribution row and re-queried that title separately to check whether it was still current — an approach still prone to mismatches. It now resolves the target's currently-top revisions once up front via a single `list=usercontribs` API call with `ucshow=top`, and matches each row's revision ID directly against that result. A row gets "[⛩️ rollback]" only when its revision ID appears in that top-revisions map; "[⛩️ restore this revision]" continues to never appear on contribution pages. This applies equally to registered accounts, temporary accounts, and IP addresses, since all are addressed via `wgRelevantUserName`.
+
+### Notes
+
+* The `list=usercontribs` request uses `uclimit=max` and follows the API's continue token for up to 20 requests. In the unlikely case a target has more currently-top contributions than this covers, rows for the uncovered pages simply show no rollback link, rather than risking an incorrect one.
+
 ## 2.126.0
 
 ### Fixed
