@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.124.1
+ * Version 2.125.0
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -565,6 +565,39 @@ $(function () {
                 ),
               );
           });
+
+        // Compares two revisions' content via their SHA-1 hashes, used by
+        // runQuickRevert() (Section 09b) to confirm whether a rollback/undo
+        // actually restored the target revision's exact content. Returns
+        // true/false when both hashes are available, or null when this
+        // cannot be determined (e.g. revision-deleted content).
+        // SHA-1 equality is treated as equivalent to identical
+        // page content; this has not been independently verified against a
+        // live wiki for every content model.
+        async function revisionsContentIdentical(revIdA, revIdB) {
+          if (!revIdA || !revIdB) return null;
+          if (revIdA === revIdB) return true;
+          try {
+            const data = await apiGet({
+              action: "query",
+              prop: "revisions",
+              revids: revIdA + "|" + revIdB,
+              rvprop: "ids|sha1",
+              formatversion: 2,
+            });
+            const pages = (data.query && data.query.pages) || [];
+            const shaById = {};
+            pages.forEach(function (p) {
+              (p.revisions || []).forEach(function (r) {
+                shaById[r.revid] = r.sha1;
+              });
+            });
+            if (!shaById[revIdA] || !shaById[revIdB]) return null;
+            return shaById[revIdA] === shaById[revIdB];
+          } catch (e) {
+            return null;
+          }
+        }
 
         // Builds the shared "Reverted [[Special:Diff/X|edit]] by ..." edit
         // summary. Used by both the main Rollback section in work() and the
@@ -12457,8 +12490,43 @@ $(function () {
                   true,
                   null,
                 ) + toolTag;
-              await apiRollback(pageTitle, targetUser, { summary: summary });
-              quickLog("[Rollback] Successfully reverted: " + pageTitle);
+              const rollbackResult = await apiRollback(pageTitle, targetUser, {
+                summary: summary,
+              });
+              // Field names (old_revid = revision being rolled
+              // back, last_revid = revision being restored to, revid = new
+              // revision created) follow documented action=rollback
+              // response shape.
+              const rb = rollbackResult && rollbackResult.rollback;
+              const rolledBackRevId = rb && rb.old_revid;
+              const targetRevId = rb && rb.last_revid;
+              const newRevId = rb && rb.revid;
+              quickLog(
+                "[Rollback] Successfully reverted: " +
+                  pageTitle +
+                  (rolledBackRevId && targetRevId
+                    ? " (revision " +
+                      rolledBackRevId +
+                      " rolled back to revision " +
+                      targetRevId +
+                      ")"
+                    : ""),
+              );
+              const sameContent = await revisionsContentIdentical(
+                newRevId,
+                targetRevId,
+              );
+              if (sameContent === true) {
+                quickLog(
+                  "Rollback completed: revision " +
+                    rolledBackRevId +
+                    " was rolled back to revision " +
+                    targetRevId +
+                    ". The resulting page content is identical to revision " +
+                    targetRevId +
+                    ".",
+                );
+              }
             } else {
               const latestData = await apiGet({
                 action: "query",
@@ -12489,16 +12557,39 @@ $(function () {
                   true,
                   null,
                 ) + toolTag;
-              await apiPost({
+              const editResult = await apiPost({
                 action: "edit",
                 title: pageTitle,
                 undo: latestRevId,
                 undoafter: revId,
                 summary: summary,
               });
+              const newRevId =
+                editResult && editResult.edit && editResult.edit.newrevid;
               quickLog(
-                "[Undo] Successfully restored revision at: " + pageTitle,
+                "[Undo] Successfully restored revision at: " +
+                  pageTitle +
+                  " (revision " +
+                  latestRevId +
+                  " undone to revision " +
+                  revId +
+                  ")",
               );
+              const sameContent = await revisionsContentIdentical(
+                newRevId,
+                revId,
+              );
+              if (sameContent === true) {
+                quickLog(
+                  "Undo completed: revision " +
+                    latestRevId +
+                    " was undone to revision " +
+                    revId +
+                    ". The resulting page content is identical to revision " +
+                    revId +
+                    ".",
+                );
+              }
             }
           } catch (e) {
             quickLog(

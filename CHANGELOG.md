@@ -1,3 +1,15 @@
+## 2.125.0
+
+### Added
+
+* Inline "⛩️ rollback" / "⛩️ restore this revision" quick actions (`runQuickRevert()`, Section 09b) now log the source and target revision IDs for each operation: the revision being rolled back/undone, and the revision the page is reverted to.
+* After a rollback or undo, Tengu compares the resulting revision's content against the target revision's content (via SHA-1) and, if they match, adds an explicit confirmation line to the log, e.g. `Rollback completed: revision 123456 was rolled back to revision 123450. The resulting page content is identical to revision 123450.` The same applies to undo, with `Undo completed: ...`.
+
+### Notes
+
+* The `action=rollback` response field names used to obtain the rolled-back and target revision IDs (`old_revid`, `last_revid`, `revid`) follow documented MediaWiki API behaviour but have not been independently confirmed on a live wiki.
+* SHA-1 hash equality is used as a proxy for identical page content. This is not verified against every content model (e.g. structured data), and the identical-content line is only shown when both hashes could be retrieved — if they can't (e.g. revision-deleted content), no claim is made either way.
+
 ## 2.124.1
 
 ### Fixed
