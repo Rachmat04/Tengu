@@ -1,3 +1,20 @@
+## 2.126.0
+
+### Fixed
+
+* Fixed "[⛩️ rollback]" and "[⛩️ restore this revision]" no longer appearing on user contribution pages. The candidate page title recovered from the DOM (via `href`) was compared directly against the API's `query.pages[].title`, which is already in MediaWiki's canonical form; case and underscore/space differences between the two meant the match in `insertInlineRevisionActions()` almost always failed, so the link was silently withheld for nearly every candidate — the "fails closed" behaviour noted in v2.124.1. Both the candidate title and the API's returned title are now passed through `mw.Title.newFromText(...).getPrefixedText()` before comparison.
+* Added detection of no-op rollbacks/undos: `runQuickRevert()` now compares the revision being rolled back (rollback) or the current revision (undo) against the revision being restored to, before/alongside the API call. If they already have identical content — meaning the operation could not have produced any real change — the log now reports the operation as failed instead of successful, using the existing failure/error styling.
+
+### Changed
+
+* Every line in the inline rollback/undo progress log (Section 09b, `runQuickRevert()`) is now sequentially numbered.
+* The log now opens with "⏳ Processing operations... please wait..." and, if no failure was logged, closes with "✅ All operations have been completed successfully". If any operation failed, the existing failure/error log line is shown instead of the completion line.
+
+### Notes
+
+* The root cause of the missing contribution-page links is inferred from the code and the existing v2.124.1 changelog note describing the fail-closed matching behaviour; this has not been independently confirmed on a live wiki.
+* Treating identical current/target revision content as a hard "failed" outcome assumes the person always wants to be told when a rollback/undo made no real change, rather than treating a no-op as a (trivial) success. Worth confirming this matches actual usage before relying on it in automated/batch runs.
+
 ## 2.125.0
 
 ### Added

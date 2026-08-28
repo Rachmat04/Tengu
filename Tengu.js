@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.125.0
+ * Version 2.126.0
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -12471,12 +12471,20 @@ $(function () {
           logBox.className = "tng-log-box";
           logBox.style.height = "100px";
           body.appendChild(logBox);
+          // Every log entry is sequentially numbered, and hadFailure tracks
+          // whether the closing status line should report success or defer
+          // to whatever failure/error line(s) were already logged.
+          let logCounter = 0;
+          let hadFailure = false;
           function quickLog(msg, isErr) {
+            logCounter += 1;
             const d = document.createElement("div");
-            d.textContent = msg;
+            d.textContent = logCounter + ". " + msg;
             d.className = isErr ? "tng-log-err" : "tng-log-succ";
             logBox.appendChild(d);
+            if (isErr) hadFailure = true;
           }
+          quickLog("⏳ Processing operations... please wait...");
           const toolTag = " · [[w:id:Pengguna:Rachmat04/Tengu.js|⛩️]]";
           const diffLinkTarget = String(revId);
 
@@ -12501,31 +12509,52 @@ $(function () {
               const rolledBackRevId = rb && rb.old_revid;
               const targetRevId = rb && rb.last_revid;
               const newRevId = rb && rb.revid;
-              quickLog(
-                "[Rollback] Successfully reverted: " +
-                  pageTitle +
-                  (rolledBackRevId && targetRevId
-                    ? " (revision " +
-                      rolledBackRevId +
-                      " rolled back to revision " +
-                      targetRevId +
-                      ")"
-                    : ""),
-              );
-              const sameContent = await revisionsContentIdentical(
-                newRevId,
+              // Guards against a no-op rollback: if the revision being
+              // rolled back already had the same content as the revision
+              // being restored to, the API may still report a "successful"
+              // rollback despite nothing actually changing on the page.
+              const alreadyIdentical = await revisionsContentIdentical(
+                rolledBackRevId,
                 targetRevId,
               );
-              if (sameContent === true) {
+              if (alreadyIdentical === true) {
                 quickLog(
-                  "Rollback completed: revision " +
+                  "[Rollback] Failed: revision " +
                     rolledBackRevId +
-                    " was rolled back to revision " +
+                    " already has identical content to revision " +
                     targetRevId +
-                    ". The resulting page content is identical to revision " +
-                    targetRevId +
+                    " — no change was made to " +
+                    pageTitle +
                     ".",
+                  true,
                 );
+              } else {
+                quickLog(
+                  "[Rollback] Successfully reverted: " +
+                    pageTitle +
+                    (rolledBackRevId && targetRevId
+                      ? " (revision " +
+                        rolledBackRevId +
+                        " rolled back to revision " +
+                        targetRevId +
+                        ")"
+                      : ""),
+                );
+                const sameContent = await revisionsContentIdentical(
+                  newRevId,
+                  targetRevId,
+                );
+                if (sameContent === true) {
+                  quickLog(
+                    "Rollback completed: revision " +
+                      rolledBackRevId +
+                      " was rolled back to revision " +
+                      targetRevId +
+                      ". The resulting page content is identical to revision " +
+                      targetRevId +
+                      ".",
+                  );
+                }
               }
             } else {
               const latestData = await apiGet({
@@ -12549,46 +12578,67 @@ $(function () {
                   "could not determine the page's latest revision",
                 );
               }
-              const summary =
-                buildQuickRevertSummaryText(
-                  targetUser || "",
-                  diffLinkTarget,
-                  "",
-                  true,
-                  null,
-                ) + toolTag;
-              const editResult = await apiPost({
-                action: "edit",
-                title: pageTitle,
-                undo: latestRevId,
-                undoafter: revId,
-                summary: summary,
-              });
-              const newRevId =
-                editResult && editResult.edit && editResult.edit.newrevid;
-              quickLog(
-                "[Undo] Successfully restored revision at: " +
-                  pageTitle +
-                  " (revision " +
-                  latestRevId +
-                  " undone to revision " +
-                  revId +
-                  ")",
-              );
-              const sameContent = await revisionsContentIdentical(
-                newRevId,
+              // Guards against a no-op undo: if the current revision already
+              // has the same content as the revision being restored to,
+              // an edit here would either fail as a null edit or, worse,
+              // silently succeed while changing nothing.
+              const alreadyIdentical = await revisionsContentIdentical(
+                latestRevId,
                 revId,
               );
-              if (sameContent === true) {
+              if (alreadyIdentical === true) {
                 quickLog(
-                  "Undo completed: revision " +
+                  "[Undo] Failed: the current revision " +
                     latestRevId +
-                    " was undone to revision " +
+                    " already has identical content to revision " +
                     revId +
-                    ". The resulting page content is identical to revision " +
-                    revId +
+                    " — no change was made to " +
+                    pageTitle +
                     ".",
+                  true,
                 );
+              } else {
+                const summary =
+                  buildQuickRevertSummaryText(
+                    targetUser || "",
+                    diffLinkTarget,
+                    "",
+                    true,
+                    null,
+                  ) + toolTag;
+                const editResult = await apiPost({
+                  action: "edit",
+                  title: pageTitle,
+                  undo: latestRevId,
+                  undoafter: revId,
+                  summary: summary,
+                });
+                const newRevId =
+                  editResult && editResult.edit && editResult.edit.newrevid;
+                quickLog(
+                  "[Undo] Successfully restored revision at: " +
+                    pageTitle +
+                    " (revision " +
+                    latestRevId +
+                    " undone to revision " +
+                    revId +
+                    ")",
+                );
+                const sameContent = await revisionsContentIdentical(
+                  newRevId,
+                  revId,
+                );
+                if (sameContent === true) {
+                  quickLog(
+                    "Undo completed: revision " +
+                      latestRevId +
+                      " was undone to revision " +
+                      revId +
+                      ". The resulting page content is identical to revision " +
+                      revId +
+                      ".",
+                  );
+                }
               }
             }
           } catch (e) {
@@ -12598,6 +12648,10 @@ $(function () {
                 formatApiError(e),
               true,
             );
+          }
+
+          if (!hadFailure) {
+            quickLog("✅ All operations have been completed successfully");
           }
 
           const btnClose = makeBtn("Close and reload", "primary");
@@ -12725,6 +12779,12 @@ $(function () {
                 (href.split("/wiki/")[1] || "").split("?")[0],
               ).replace(/_/g, " ");
             if (!pageTitle) return;
+            // Normalised to the same canonical form the API returns in
+            // query.pages[].title (see currentRevByTitle below), so the
+            // later match no longer fails closed on case/underscore
+            // differences between the DOM-derived title and the API's title.
+            const canonicalTitle = mw.Title.newFromText(pageTitle);
+            if (canonicalTitle) pageTitle = canonicalTitle.getPrefixedText();
 
             // Only the latest contribution to a given page is considered as
             // a rollback candidate; skip immediately once a title has
@@ -12780,7 +12840,12 @@ $(function () {
               const pages = (data.query && data.query.pages) || [];
               pages.forEach(function (p) {
                 if (p.revisions && p.revisions[0]) {
-                  currentRevByTitle[p.title] = p.revisions[0].revid;
+                  // p.title is already the API's canonical prefixed form;
+                  // passed through the same normaliser as pageTitle above
+                  // so both sides of the lookup are guaranteed to match.
+                  const t = mw.Title.newFromText(p.title);
+                  currentRevByTitle[t ? t.getPrefixedText() : p.title] =
+                    p.revisions[0].revid;
                 }
               });
             } catch (e) {
