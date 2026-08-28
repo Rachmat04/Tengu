@@ -1,3 +1,20 @@
+## 2.122.0
+
+### Added
+
+* Expanded the **Recently active administrators** feature (👮) to also include users with other advanced rights: bureaucrats, CheckUsers, and interface administrators (local groups), plus global sysops and stewards (fetched from Meta-Wiki). The dialogue is now titled "Recently active admins & rights holders".
+* Each listed user now shows a coloured badge for every applicable right next to their username (e.g. a user who is both a sysop and a CheckUser shows both badges), using new `.tng-userright-*` CSS classes with a distinct colour per right, following the same sizing and styling conventions as the existing `[EXPERIMENTAL]` badge.
+
+### Changed
+
+* Local rights groups (sysop, bureaucrat, checkuser, interface-admin) are fetched via `list=allusers`; global groups (global-sysop, steward) are fetched via `list=globalallusers` against Meta-Wiki using the existing `foreignApiGet()` helper.
+* `considerActivity()` now checks membership against the combined set of local and global rights holders (`userRightsMap`) instead of sysops only.
+
+### Notes
+
+* `list=globalallusers` with the `agugroup` parameter has not been independently confirmed against a live wiki.
+* A failed group-membership fetch for any single group is treated as an empty list rather than aborting the whole feature, so partial results are still shown if one group query fails.
+
 ## 2.121.4
 
 ### Fixed

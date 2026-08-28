@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.121.4
+ * Version 2.122.0
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -5707,14 +5707,15 @@ $(function () {
         // ============================================================================
         const getActiveAdmins = async function () {
           const { overlay, body, footer } = createDialog({
-            title: "Recently active administrators",
+            title: "Recently active admins & rights holders",
             icon: "👮",
             child: true,
           });
 
           const loadingEl = document.createElement("div");
           loadingEl.className = "tng-info-loading";
-          loadingEl.textContent = "Loading recently active administrators...";
+          loadingEl.textContent =
+            "Loading recently active administrators and rights holders...";
           body.appendChild(loadingEl);
 
           const btnClose = makeBtn("Close", "quiet");
@@ -5746,49 +5747,145 @@ $(function () {
               Date.now() - 24 * 60 * 60 * 1000,
             ).toISOString();
 
-            const [sysopsData, rcData, leData] = await Promise.all([
-              apiGet({
+            // Local wiki groups considered "advanced rights" for this list.
+            // Sysop is kept for backward compatibility with the original
+            // "active administrators" feature.
+            const LOCAL_RIGHT_BADGES = [
+              {
+                group: "sysop",
+                label: "Sysop",
+                cssClass: "tng-userright-sysop",
+              },
+              {
+                group: "bureaucrat",
+                label: "Bureaucrat",
+                cssClass: "tng-userright-bureaucrat",
+              },
+              {
+                group: "checkuser",
+                label: "CheckUser",
+                cssClass: "tng-userright-checkuser",
+              },
+              {
+                group: "interface-admin",
+                label: "Interface admin",
+                cssClass: "tng-userright-interface-admin",
+              },
+            ];
+            // Global (CentralAuth) groups, fetched from Meta-Wiki.
+            const GLOBAL_RIGHT_BADGES = [
+              {
+                group: "global-sysop",
+                label: "Global sysop",
+                cssClass: "tng-userright-global-sysop",
+              },
+              {
+                group: "steward",
+                label: "Steward",
+                cssClass: "tng-userright-steward",
+              },
+            ];
+
+            // A failed group-membership fetch is treated as an empty list
+            // (via .catch()) rather than aborting the whole feature, so
+            // partial results are still shown if one group query fails.
+            const localGroupPromises = LOCAL_RIGHT_BADGES.map(function (cfg) {
+              return apiGet({
                 action: "query",
                 list: "allusers",
-                augroup: "sysop",
+                augroup: cfg.group,
                 aulimit: "max",
                 formatversion: 2,
-              }),
-              apiGet({
+              })
+                .then(function (data) {
+                  return {
+                    cfg,
+                    users: (data.query && data.query.allusers) || [],
+                  };
+                })
+                .catch(function () {
+                  return { cfg, users: [] };
+                });
+            });
+            // list=globalallusers with agugroup has not been
+            // independently confirmed against a live wiki
+            const globalGroupPromises = GLOBAL_RIGHT_BADGES.map(function (cfg) {
+              return foreignApiGet({
                 action: "query",
-                list: "recentchanges",
-                rctype: "edit",
-                rcprop: "user|timestamp",
-                rcdir: "older",
-                rcend: cutoff,
-                rclimit: 500,
+                list: "globalallusers",
+                agugroup: cfg.group,
+                agulimit: "max",
                 formatversion: 2,
-              }),
-              apiGet({
-                action: "query",
-                list: "logevents",
-                leprop: "user|timestamp",
-                ledir: "older",
-                leend: cutoff,
-                lelimit: 500,
-                formatversion: 2,
-              }),
-            ]);
+              })
+                .then(function (data) {
+                  return {
+                    cfg,
+                    users: (data.query && data.query.globalallusers) || [],
+                  };
+                })
+                .catch(function () {
+                  return { cfg, users: [] };
+                });
+            });
 
-            const sysops = new Set(
-              ((sysopsData.query && sysopsData.query.allusers) || []).map(
-                function (u) {
-                  return u.name;
-                },
-              ),
-            );
+            const [localGroupResults, globalGroupResults, rcData, leData] =
+              await Promise.all([
+                Promise.all(localGroupPromises),
+                Promise.all(globalGroupPromises),
+                apiGet({
+                  action: "query",
+                  list: "recentchanges",
+                  rctype: "edit",
+                  rcprop: "user|timestamp",
+                  rcdir: "older",
+                  rcend: cutoff,
+                  rclimit: 500,
+                  formatversion: 2,
+                }),
+                apiGet({
+                  action: "query",
+                  list: "logevents",
+                  leprop: "user|timestamp",
+                  ledir: "older",
+                  leend: cutoff,
+                  lelimit: 500,
+                  formatversion: 2,
+                }),
+              ]);
+
+            // Maps username -> array of { label, cssClass } badge descriptors,
+            // one per matching right, so a user with multiple advanced rights
+            // shows all applicable badges rather than only the first found.
+            const userRightsMap = new Map();
+            const addRightsToMap = function (results) {
+              results.forEach(function (result) {
+                result.users.forEach(function (u) {
+                  const name = u.name;
+                  if (!name) return;
+                  if (!userRightsMap.has(name)) userRightsMap.set(name, []);
+                  const list = userRightsMap.get(name);
+                  if (
+                    !list.some(function (r) {
+                      return r.label === result.cfg.label;
+                    })
+                  ) {
+                    list.push({
+                      label: result.cfg.label,
+                      cssClass: result.cfg.cssClass,
+                    });
+                  }
+                });
+              });
+            };
+            addRightsToMap(localGroupResults);
+            addRightsToMap(globalGroupResults);
 
             // Maps username -> latest ISO timestamp seen for that user, across
             // both the recent-changes and log-events queries.
             const latest = new Map();
 
             const considerActivity = function (user, timestamp) {
-              if (!user || !timestamp || !sysops.has(user)) return;
+              if (!user || !timestamp || !userRightsMap.has(user)) return;
               const existing = latest.get(user);
               if (!existing || timestamp > existing) {
                 latest.set(user, timestamp);
@@ -5816,7 +5913,7 @@ $(function () {
               const emptyEl = document.createElement("div");
               emptyEl.className = "tng-info-empty";
               emptyEl.textContent =
-                "No administrators appear to have been active within the last 24 hours.";
+                "No administrators or advanced rights holders appear to have been active within the last 24 hours.";
               body.appendChild(emptyEl);
               return;
             }
@@ -5830,13 +5927,27 @@ $(function () {
               entry.style.gap = "8px";
 
               const infoWrap = document.createElement("div");
+              const nameRow = document.createElement("div");
+              nameRow.style.cssText =
+                "display:flex;align-items:center;flex-wrap:wrap;gap:2px;";
               const link = document.createElement("a");
               link.href = mw.util.getUrl("User:" + admin.user);
               link.target = "_blank";
               link.rel = "noopener noreferrer";
               link.textContent = admin.user;
               link.style.fontWeight = "700";
-              infoWrap.appendChild(link);
+              nameRow.appendChild(link);
+              // Renders every applicable right as its own badge, so a user
+              // holding multiple advanced rights (e.g. sysop and CheckUser)
+              // shows all of them rather than only the first match.
+              const rightsForUser = userRightsMap.get(admin.user) || [];
+              rightsForUser.forEach(function (r) {
+                const badge = document.createElement("span");
+                badge.className = "tng-userright-badge " + r.cssClass;
+                badge.textContent = r.label;
+                nameRow.appendChild(badge);
+              });
+              infoWrap.appendChild(nameRow);
               const tsLine = document.createElement("div");
               tsLine.className = "tng-help";
               tsLine.style.margin = "0";
@@ -5884,7 +5995,8 @@ $(function () {
             errEl.className = "tng-log-err";
             errEl.style.padding = "6px 0";
             errEl.textContent =
-              "️️⚠️️️ Failed to load active administrators: " + formatApiError(e);
+              "️️⚠️️️ Failed to load recently active administrators and rights holders: " +
+              formatApiError(e);
             body.appendChild(errEl);
           }
         };
@@ -6240,7 +6352,7 @@ $(function () {
           const btnActiveAdmins = makeBtn("👮", "quiet");
           btnActiveAdmins.className += " tng-btn-sm";
           btnActiveAdmins.title =
-            "Show administrators active within the last 24 hours";
+            "Show administrators and other advanced rights holders active within the last 24 hours";
           btnActiveAdmins.style.marginLeft = "auto";
           btnActiveAdmins.addEventListener("click", function () {
             getActiveAdmins();
