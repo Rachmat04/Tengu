@@ -1,3 +1,10 @@
+## 2.129.0
+
+### Changed
+
+* Diff pages now show "[⛩️ rollback]" as well as "[⛩️ restore this revision]", replacing the previous behaviour where only the older ("from") revision could ever get a link. `insertDiffRestoreLink()` (Section 09b) is replaced by `insertDiffRevisionActions()`, which checks both compared revisions (`wgDiffOldId` and `wgDiffNewId`) against the page's actual current revision instead of only ever considering the older side. Whichever side holds the current revision gets "rollback"; the other side gets "restore this revision". When neither compared revision is current (a diff between two older revisions), both sides now get "restore this revision" and neither gets "rollback".
+* Which revision is "current" is now resolved via a new `fetchCurrentRevisionId()` helper, a live `action=query&prop=revisions&rvlimit=1` API call, rather than trusting `wgCurRevisionId` alone or the left/right position of the two revisions being compared. `wgCurRevisionId` is kept only as a fallback if the API call fails.
+
 ## 2.128.0
 
 ### Added

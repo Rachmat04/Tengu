@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.128.0
+ * Version 2.129.0
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -12377,11 +12377,12 @@ $(function () {
         // of each revision row on page history (action=history) and user
         // contributions (Special:Contributions / Special:IPContributions,
         // including IP and temporary account contribution pages), and a
-        // single "⛩️ restore this revision" link on diff pages (comparing
-        // two revisions). Reuses the same apiRollback()/apiPost() calls,
-        // edit-summary wording (buildQuickRevertSummaryText()), and a
-        // confirmation dialogue matching the style already used elsewhere
-        // in Tengu (e.g. the self-block confirmation).
+        // "⛩️ rollback" and/or "⛩️ restore this revision" links on diff
+        // pages (comparing two revisions). Reuses the same
+        // apiRollback()/apiPost() calls, edit-summary wording
+        // (buildQuickRevertSummaryText()), and a confirmation dialogue
+        // matching the style already used elsewhere in Tengu (e.g. the
+        // self-block confirmation).
         // On contributions pages, "restore this revision" is never shown,
         // and "rollback" is shown only where the row's revision is still
         // its page's current one. Rather than reading the page title out
@@ -12393,15 +12394,17 @@ $(function () {
         // top revision. Rows are then matched against that revid -> title
         // map directly, so the page title used to build the link also
         // comes from the API rather than from DOM parsing.
-        // On diff pages, only the older ("from") revision being compared
-        // gets a link, since that is the revision that can be restored;
-        // the newer ("to") revision is left untouched. The link is
-        // withheld when the older revision is already the page's current
-        // revision, since there would be nothing to restore. wgDiffOldId
-        // is used to identify the older revision, mirroring how Twinkle's
-        // twinklefluff.js module (addLinks.diff()) detects and places its
-        // own "[restore this revision]" link, adapted here to reuse
-        // Tengu's existing undo/restore mechanism rather than Twinkle's.
+        // On diff pages, both compared revisions (wgDiffOldId and
+        // wgDiffNewId) are checked against the page's actual current
+        // revision, fetched live via fetchCurrentRevisionId() rather than
+        // assumed from left/right position or trusted from a possibly
+        // stale wgCurRevisionId. Whichever side (if either) holds the
+        // current revision gets "rollback"; the other side gets "restore
+        // this revision". When neither side is current — a diff between
+        // two older revisions — both sides get "restore this revision"
+        // and neither gets "rollback". This mirrors, but is not limited
+        // to, how Twinkle's twinklefluff.js module (addLinks.diff())
+        // detects and places its own "[restore this revision]" link.
         // ============================================================================
         async function runQuickRevert(pageTitle, targetUser, revId, method) {
           const actionLabel =
@@ -12714,38 +12717,93 @@ $(function () {
           return link;
         }
 
-        // Adds "[⛩️ restore this revision]" to a diff page for the older
-        // ("from") revision being compared, i.e. mirroring Twinkle's
-        // addLinks.diff() handling of wgDiffOldId. Left untouched — no
-        // link — when that revision is already the page's current
-        // revision, since there would be nothing to restore.
-        function insertDiffRestoreLink(oldRevIdRaw) {
-          const revId = parseInt(oldRevIdRaw, 10);
-          if (!revId) return;
-          const curRevId = parseInt(mw.config.get("wgCurRevisionId"), 10);
-          if (curRevId && revId === curRevId) return;
+        // Determines the page's actual current revision ID via a live
+        // API call, used as the authoritative basis for deciding which
+        // side of a diff page gets "rollback" versus "restore this
+        // revision" below. A live call is used rather than trusting
+        // wgCurRevisionId directly, since that value can be stale on a
+        // cached diff page. Falls back to wgCurRevisionId if the API
+        // call fails, so a request failure does not suppress the actions
+        // entirely. [Inference] wgCurRevisionId may be cached; this has
+        // not been independently confirmed on a live wiki.
+        async function fetchCurrentRevisionId(pageTitle) {
+          try {
+            const data = await apiGet({
+              action: "query",
+              prop: "revisions",
+              titles: pageTitle,
+              rvlimit: 1,
+              rvprop: "ids",
+              formatversion: 2,
+            });
+            const page = data.query && data.query.pages && data.query.pages[0];
+            const revId =
+              page && page.revisions && page.revisions[0]
+                ? page.revisions[0].revid
+                : null;
+            if (revId) return revId;
+          } catch (e) {
+            // Falls through to the wgCurRevisionId fallback below.
+          }
+          const fallback = parseInt(mw.config.get("wgCurRevisionId"), 10);
+          return fallback || null;
+        }
 
-          const oldTitleBox = document.querySelector("#mw-diff-otitle1");
-          if (!oldTitleBox) return;
+        // Adds "[⛩️ rollback]" or "[⛩️ restore this revision]" to each
+        // side of a diff page. Which link a side gets is decided by
+        // comparing that side's revision ID against the page's actual
+        // current revision, resolved via fetchCurrentRevisionId() —
+        // never assumed from the revision's left/right position in the
+        // diff. The side holding the current revision (if either does)
+        // gets "rollback"; a side that is not current gets "restore this
+        // revision". When neither side is current, both get "restore
+        // this revision" and neither gets "rollback".
+        async function insertDiffRevisionActions(oldRevIdRaw, newRevIdRaw) {
+          const oldRevId = parseInt(oldRevIdRaw, 10);
+          const newRevId = parseInt(newRevIdRaw, 10);
+          if (!oldRevId && !newRevId) return;
 
           const pageTitle = mw.config.get("wgPageName").replace(/_/g, " ");
-          // Best-effort recovery of the older revision's author, purely
-          // for the confirmation dialogue/edit summary; a null/hidden
+          const currentRevId = await fetchCurrentRevisionId(pageTitle);
+
+          // Best-effort recovery of a side's revision author, purely for
+          // the confirmation dialogue/edit summary; a null/hidden
           // username is already handled gracefully by runQuickRevert()
           // and buildQuickRevertSummaryText().
-          let targetUser = null;
-          const oldUserLink = document.querySelector(
+          function addAction(revId, titleBoxSelector, userLinkSelector) {
+            if (!revId) return;
+            const titleBox = document.querySelector(titleBoxSelector);
+            if (!titleBox) return;
+
+            let targetUser = null;
+            const userLink = document.querySelector(userLinkSelector);
+            if (userLink) targetUser = userLink.textContent.trim();
+
+            const isCurrent = !!currentRevId && revId === currentRevId;
+            const actionWrap = document.createElement("span");
+            actionWrap.className = "tng-inline-actions";
+            actionWrap.appendChild(
+              buildInlineRevisionLink(
+                isCurrent ? "rollback" : "restore",
+                pageTitle,
+                targetUser,
+                revId,
+              ),
+            );
+            titleBox.appendChild(document.createTextNode(" "));
+            titleBox.appendChild(actionWrap);
+          }
+
+          addAction(
+            oldRevId,
+            "#mw-diff-otitle1",
             "#mw-diff-otitle2 .mw-userlink",
           );
-          if (oldUserLink) targetUser = oldUserLink.textContent.trim();
-
-          const actionWrap = document.createElement("span");
-          actionWrap.className = "tng-inline-actions";
-          actionWrap.appendChild(
-            buildInlineRevisionLink("restore", pageTitle, targetUser, revId),
+          addAction(
+            newRevId,
+            "#mw-diff-ntitle1",
+            "#mw-diff-ntitle2 .mw-userlink",
           );
-          oldTitleBox.appendChild(document.createTextNode(" "));
-          oldTitleBox.appendChild(actionWrap);
         }
 
         async function insertInlineRevisionActions() {
@@ -12759,7 +12817,10 @@ $(function () {
             !isHistoryPage && !isContribsPage && !!diffOldRevId;
 
           if (isDiffPage) {
-            insertDiffRestoreLink(diffOldRevId);
+            await insertDiffRevisionActions(
+              diffOldRevId,
+              mw.config.get("wgDiffNewId"),
+            );
             return;
           }
           if (!isHistoryPage && !isContribsPage) return;
