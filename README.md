@@ -256,6 +256,7 @@ This script is designed for MediaWiki user scripts and can be installed locally 
 
 - Based on: `User:WhitePhosphorus/all-in-one`
 - Original script: https://meta.wikimedia.org/wiki/User:WhitePhosphorus/all-in-one
+- Some adaptations from https://github.com/xiplus-mediawiki-programs/twinkle-global
 
 ---
 

@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.130.0
+ * Version 2.130.1
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -9721,7 +9721,17 @@ $(function () {
           const modeLocked = new Set();
           function applyModeLock(sec, secBody, chk, lock, reason) {
             if (lock) {
-              if (chk.disabled) return; // Already rights-locked; leave it alone
+              if (chk.disabled && !modeLocked.has(chk)) return; // Already rights-locked; leave it alone
+              if (modeLocked.has(chk)) {
+                // Already mode-locked for a different reason (e.g. range lock
+                // followed by a mode switch): refresh the tooltip text only,
+                // rather than leaving the previous reason displayed.
+                const hdr = sec.querySelector(".tng-section-header");
+                hdr.title = "Unavailable: " + reason;
+                const badge = hdr.querySelector(".tng-mode-lock-badge");
+                if (badge) badge.title = "Unavailable: " + reason;
+                return;
+              }
               modeLocked.add(chk);
               chk.checked = false;
               chk.disabled = true;

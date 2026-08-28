@@ -1,3 +1,9 @@
+## 2.130.1
+
+### Fixed
+
+* Fixed the padlock tooltip on a mode-locked section (Rollback, Warn, Revdel, Lock account, GS, SRG) showing a stale reason after the lock cause changed — for example, locking for "not available for IP range targets" in user mode, then switching to page mode, which should show "Tengu is targeting a page, not a user." instead. `applyModeLock()` (Section covering mode-lock helpers) returned early whenever the checkbox was already disabled, without distinguishing an existing mode-lock (reason should refresh) from a permanent rights-lock (must not be touched). It now refreshes the tooltip text when the checkbox is already mode-locked, and continues to leave rights-locked checkboxes alone.
+
 ## 2.130.0
 
 ### Changed
