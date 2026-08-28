@@ -1,3 +1,10 @@
+## 2.131.0
+
+### Added
+
+* Added a reason row to the confirmation dialogue shown by the inline "[⛩️ rollback]" and "[⛩️ restore this revision]" actions (`runQuickRevert()`, Section 09b). The row reuses the same preset dropdown (`ROLLBACK_REASONS`), filter box, and custom-reason text field already used by the main batch Rollback section's reason row, and joins a selected preset with custom text as "preset: custom" when both are given (`buildQuickRevertReason()`, mirroring `buildRollbackReason()`).
+* `buildQuickActionSummaryText()` (Section 09b) now accepts an optional `reason` parameter, appended to the generated summary as a ": reason" suffix. When no reason is selected or entered, the summary is unchanged from its previous wording.
+
 ## 2.130.4
 
 ### Fixed

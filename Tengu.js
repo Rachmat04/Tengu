@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.130.4
+ * Version 2.131.0
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -642,23 +642,41 @@ $(function () {
         // are not the same operation, so they get distinct wording.
         // targetUser may be null/empty (e.g. a hidden revision-deleted
         // username), in which case the "by ..." clause is omitted.
-        function buildQuickActionSummaryText(method, targetUser, revId) {
+        // reason is optional: when provided (from the reason-selection
+        // dialogue added to runQuickRevert(), Section 09b), it is appended
+        // as a ": reason" suffix, consistent with buildRollbackReason()'s
+        // "selected: custom" joining and buildQuickRevertSummaryText()'s
+        // own reason suffix. When omitted, the summary is unchanged from
+        // its previous wording.
+        function buildQuickActionSummaryText(
+          method,
+          targetUser,
+          revId,
+          reason,
+        ) {
+          const reasonSuffix = reason ? ": " + reason : "";
           if (method === "rollback") {
-            return targetUser
-              ? useIndonesian
-                ? `Membatalkan suntingan oleh ${targetUser} (lihat [[Special:Diff/${revId}]])`
-                : `Rolled back edit by ${targetUser} (see [[Special:Diff/${revId}]])`
-              : useIndonesian
-                ? `Membatalkan suntingan (lihat [[Special:Diff/${revId}]])`
-                : `Rolled back edit (see [[Special:Diff/${revId}]])`;
+            return (
+              (targetUser
+                ? useIndonesian
+                  ? `Membatalkan suntingan oleh ${targetUser} (lihat [[Special:Diff/${revId}]])`
+                  : `Rolled back edit by ${targetUser} (see [[Special:Diff/${revId}]])`
+                : useIndonesian
+                  ? `Membatalkan suntingan (lihat [[Special:Diff/${revId}]])`
+                  : `Rolled back edit (see [[Special:Diff/${revId}]])`) +
+              reasonSuffix
+            );
           }
-          return targetUser
-            ? useIndonesian
-              ? `Memulihkan revisi oleh ${targetUser} (lihat [[Special:Diff/${revId}]]), membatalkan suntingan setelahnya`
-              : `Restored revision by ${targetUser} (see [[Special:Diff/${revId}]]), undoing subsequent edits`
-            : useIndonesian
-              ? `Memulihkan revisi (lihat [[Special:Diff/${revId}]]), membatalkan suntingan setelahnya`
-              : `Restored revision (see [[Special:Diff/${revId}]]), undoing subsequent edits`;
+          return (
+            (targetUser
+              ? useIndonesian
+                ? `Memulihkan revisi oleh ${targetUser} (lihat [[Special:Diff/${revId}]]), membatalkan suntingan setelahnya`
+                : `Restored revision by ${targetUser} (see [[Special:Diff/${revId}]]), undoing subsequent edits`
+              : useIndonesian
+                ? `Memulihkan revisi (lihat [[Special:Diff/${revId}]]), membatalkan suntingan setelahnya`
+                : `Restored revision (see [[Special:Diff/${revId}]]), undoing subsequent edits`) +
+            reasonSuffix
+          );
         }
 
         // Checks whether a page currently exists. Used before posting a
@@ -12475,6 +12493,11 @@ $(function () {
           // pattern used by the main "Confirm selected operations" dialogue
           // (Section 09).
           let handleConfirmKeydown;
+          // Populated from the reason row below when the user confirms;
+          // stays empty if neither a preset reason nor a custom reason was
+          // provided, in which case the existing summary wording (Section
+          // 09b, buildQuickActionSummaryText()) is used unchanged.
+          let selectedReason = "";
           const confirmed = await new Promise(function (resolve) {
             const { overlay, body, footer } = createDialog({
               title:
@@ -12500,6 +12523,38 @@ $(function () {
               (targetUser ? " (by " + mw.html.escape(targetUser) + ")" : "") +
               ". Please confirm before proceeding.";
             body.appendChild(p);
+
+            // Reason row — same select + filter + custom-input pattern as
+            // the main batch Rollback section's reason row (Section 09).
+            // Optional: left on "Other:" with no custom text, the existing
+            // summary wording is kept as-is (see buildQuickRevertReason()
+            // below and its use at the two apiRollback()/apiPost() call
+            // sites further down this function).
+            const { row: rowQrReason, field: fieldQrReason } =
+              makeRow("Reason");
+            const selQrReason = makeSelect(ROLLBACK_REASONS);
+            const inputQrReason = makeInput(
+              "Additional details / customised reason",
+            );
+            const { wrap: filteredWrapQrReason } =
+              makeFilteredSelect(selQrReason);
+            const reasonWrapQr = document.createElement("div");
+            reasonWrapQr.className = "tng-reason-wrap";
+            reasonWrapQr.appendChild(filteredWrapQrReason);
+            reasonWrapQr.appendChild(inputQrReason);
+            fieldQrReason.appendChild(reasonWrapQr);
+            body.appendChild(rowQrReason);
+
+            // Mirrors buildRollbackReason() (Section 09): joins a selected
+            // preset with custom text as "preset: custom" when both are
+            // given, otherwise uses whichever one was provided.
+            function buildQuickRevertReason() {
+              const sel = selQrReason.value;
+              const inp = inputQrReason.value.trim();
+              if (sel && inp) return sel + ": " + inp;
+              return sel || inp;
+            }
+
             const btnCancel = makeBtn("Cancel", "quiet");
             btnCancel.addEventListener("click", function () {
               // Resolve before closing. closeHandler() always triggers
@@ -12511,6 +12566,7 @@ $(function () {
             });
             const btnConfirm = makeBtn("Confirm", "destructive");
             btnConfirm.addEventListener("click", function () {
+              selectedReason = buildQuickRevertReason();
               resolve(true);
               overlay.closeHandler();
             });
@@ -12577,6 +12633,7 @@ $(function () {
                   "rollback",
                   targetUser || "",
                   diffLinkTarget,
+                  selectedReason,
                 ) + toolTag;
               const rollbackResult = await apiRollback(pageTitle, targetUser, {
                 summary: summary,
@@ -12683,6 +12740,7 @@ $(function () {
                     "undo",
                     targetUser || "",
                     diffLinkTarget,
+                    selectedReason,
                   ) + toolTag;
                 const editResult = await apiPost({
                   action: "edit",
