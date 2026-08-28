@@ -1200,3 +1200,19 @@
   border-color: #54595d;
   color: #eaecf0;
 }
+
+/* --- Inline revision actions (history & contributions pages) --- */
+.tng-inline-actions {
+  white-space: nowrap;
+}
+.tng-inline-action {
+  font-size: 0.85em;
+  font-weight: 600;
+  color: #3366cc;
+  text-decoration: none;
+  margin-left: 4px;
+  cursor: pointer;
+}
+.tng-inline-action:hover {
+  text-decoration: underline;
+}

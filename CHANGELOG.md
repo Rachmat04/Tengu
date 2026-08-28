@@ -1,3 +1,21 @@
+## 2.123.0
+
+### Added
+
+* Added inline "[⛩️ rollback]" and "[⛩️ restore this revision]" links to the end of each revision row on page history (`action=history`) and user contributions pages (`Special:Contributions` / `Special:IPContributions`, including IP addresses and temporary accounts). "⛩️ restore this revision" is omitted on the newest row, since it is already current.
+* Added `runQuickRevert()` and `insertInlineRevisionActions()` (new Section 09b), and `buildQuickRevertSummaryText()`, a shared top-level summary builder used by both these new inline actions and the existing Rollback section in `work()`, so edit summaries are identical between the two entry points.
+* Added `.tng-inline-actions` / `.tng-inline-action` styles to `Tengu.css`.
+
+### Changed
+
+* `work()`'s internal `buildRevertSummaryText()` now delegates to the new shared `buildQuickRevertSummaryText()` instead of duplicating the summary logic inline. No wording change.
+
+### Notes
+
+* The DOM selectors used to locate revision rows, revision IDs, page titles, and usernames on history and contributions pages (`data-mw-revid`, `.mw-userlink`, `.mw-contributions-title`, etc.) follow standard MediaWiki core markup but have not been independently confirmed against a live wiki, every skin, or every MediaWiki version.
+* The inline actions use a lightweight confirmation dialogue and progress panel (built with the existing `createDialog()`/`makeBtn()` helpers) rather than the full Tengu configuration dialogue, but call the same `apiRollback()`/`apiPost()` functions used by the main Rollback section.
+* "Restore this revision" undoes all edits between the selected revision and the page's current latest revision in a single `action=edit&undo=&undoafter=` call, restoring the page to that revision's state.
+
 ## 2.122.0
 
 ### Added

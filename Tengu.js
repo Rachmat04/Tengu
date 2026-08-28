@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.122.0
+ * Version 2.123.0
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -565,6 +565,38 @@ $(function () {
                 ),
               );
           });
+
+        // Builds the shared "Reverted [[Special:Diff/X|edit]] by ..." edit
+        // summary. Used by both the main Rollback section in work() and the
+        // inline "⛩️ rollback" / "⛩️ restore this revision" actions added to
+        // history and contributions pages (Section 09b), so both call sites
+        // produce identical wording.
+        function buildQuickRevertSummaryText(
+          targetUser,
+          diffLinkTarget,
+          reason,
+          showUsername,
+          previousEditorUser,
+        ) {
+          if (reason) {
+            return useIndonesian
+              ? `Membalikkan [[Special:Diff/${diffLinkTarget}|suntingan]] oleh ${targetUser}: ${reason}`
+              : `Reverted [[Special:Diff/${diffLinkTarget}|edit]] by ${targetUser}: ${reason}`;
+          }
+          if (!showUsername) {
+            return useIndonesian
+              ? `Membalikkan [[Special:Diff/${diffLinkTarget}|suntingan]]`
+              : `Reverted [[Special:Diff/${diffLinkTarget}|edit]]`;
+          }
+          if (previousEditorUser) {
+            return useIndonesian
+              ? `Membalikkan [[Special:Diff/${diffLinkTarget}|suntingan]] oleh ${targetUser} ke revisi sebelumnya oleh ${previousEditorUser}`
+              : `Reverted [[Special:Diff/${diffLinkTarget}|edit]] by ${targetUser} to the previous revision by ${previousEditorUser}`;
+          }
+          return useIndonesian
+            ? `Membalikkan [[Special:Diff/${diffLinkTarget}|suntingan]] oleh ${targetUser}`
+            : `Reverted [[Special:Diff/${diffLinkTarget}|edit]] by ${targetUser}`;
+        }
 
         // Checks whether a page currently exists. Used before posting a
         // notification to a talk page: an existing page may already contain
@@ -2524,24 +2556,13 @@ $(function () {
                 ? `${info.oldestParent}/${revertedRevId}`
                 : `${revertedRevId}`;
               const buildRevertSummaryText = function () {
-                if (config.rollbackReason) {
-                  return useIndonesian
-                    ? `Membalikkan [[Special:Diff/${diffLinkTarget}|suntingan]] oleh ${targetVal}: ${config.rollbackReason}`
-                    : `Reverted [[Special:Diff/${diffLinkTarget}|edit]] by ${targetVal}: ${config.rollbackReason}`;
-                }
-                if (!config.rollbackShow) {
-                  return useIndonesian
-                    ? `Membalikkan [[Special:Diff/${diffLinkTarget}|suntingan]]`
-                    : `Reverted [[Special:Diff/${diffLinkTarget}|edit]]`;
-                }
-                if (previousEditorUser) {
-                  return useIndonesian
-                    ? `Membalikkan [[Special:Diff/${diffLinkTarget}|suntingan]] oleh ${targetVal} ke revisi sebelumnya oleh ${previousEditorUser}`
-                    : `Reverted [[Special:Diff/${diffLinkTarget}|edit]] by ${targetVal} to the previous revision by ${previousEditorUser}`;
-                }
-                return useIndonesian
-                  ? `Membalikkan [[Special:Diff/${diffLinkTarget}|suntingan]] oleh ${targetVal}`
-                  : `Reverted [[Special:Diff/${diffLinkTarget}|edit]] by ${targetVal}`;
+                return buildQuickRevertSummaryText(
+                  targetVal,
+                  diffLinkTarget,
+                  config.rollbackReason,
+                  config.rollbackShow,
+                  previousEditorUser,
+                );
               };
 
               const undoSummaryStr = buildRevertSummaryText() + toolTag;
@@ -12315,6 +12336,243 @@ $(function () {
           updateStartBtn();
           inputTarget.focus();
         };
+
+        // ============================================================================
+        // [Section 09b] Inline revision actions (history & contributions pages)
+        // Injects "⛩️ rollback" and "⛩️ restore this revision" links at the end
+        // of each revision row on page history (action=history) and user
+        // contributions (Special:Contributions / Special:IPContributions,
+        // including IP and temporary account contribution pages). Reuses the
+        // same apiRollback()/apiPost() calls, edit-summary wording
+        // (buildQuickRevertSummaryText()), and a confirmation dialogue
+        // matching the style already used elsewhere in Tengu (e.g. the
+        // self-block confirmation).
+        // [Unverified] The DOM selectors used to find revision rows, revision
+        // IDs, page titles, and usernames follow standard MediaWiki core
+        // markup (data-mw-revid attributes, .mw-userlink, .mw-contributions-title)
+        // but have not been independently confirmed against a live wiki,
+        // every skin, or every MediaWiki version. "restore this revision" is
+        // omitted for the first (newest) row on the assumption that both
+        // lists are sorted newest-first, which is the MediaWiki default.
+        // ============================================================================
+        async function runQuickRevert(pageTitle, targetUser, revId, method) {
+          const actionLabel =
+            method === "rollback"
+              ? "roll back the latest edit(s) to"
+              : "restore this revision of";
+          const confirmed = await new Promise(function (resolve) {
+            const { overlay, body, footer } = createDialog({
+              title:
+                "Confirm " + (method === "rollback" ? "rollback" : "restore"),
+              icon: "⛩️",
+              child: true,
+              onClose: function () {
+                resolve(false);
+              },
+            });
+            const p = document.createElement("p");
+            p.innerHTML =
+              "Tengu will " +
+              mw.html.escape(actionLabel) +
+              " <b>" +
+              mw.html.escape(pageTitle) +
+              "</b>" +
+              (targetUser ? " (by " + mw.html.escape(targetUser) + ")" : "") +
+              ". Please confirm before proceeding.";
+            body.appendChild(p);
+            const btnCancel = makeBtn("Cancel", "quiet");
+            btnCancel.addEventListener("click", function () {
+              overlay.closeHandler();
+              resolve(false);
+            });
+            const btnConfirm = makeBtn("Confirm", "destructive");
+            btnConfirm.addEventListener("click", function () {
+              overlay.closeHandler();
+              resolve(true);
+            });
+            footer.appendChild(btnCancel);
+            footer.appendChild(btnConfirm);
+          });
+          if (!confirmed) return;
+
+          const { overlay, body, footer } = createDialog({
+            title: "Processing Tengu quick action",
+            icon: "⛩️",
+            child: true,
+            onClose: function () {
+              window.location.reload();
+            },
+          });
+          const logBox = document.createElement("div");
+          logBox.className = "tng-log-box";
+          logBox.style.height = "100px";
+          body.appendChild(logBox);
+          function quickLog(msg, isErr) {
+            const d = document.createElement("div");
+            d.textContent = msg;
+            d.className = isErr ? "tng-log-err" : "tng-log-succ";
+            logBox.appendChild(d);
+          }
+          const toolTag = " · [[w:id:Pengguna:Rachmat04/Tengu.js|⛩️]]";
+          const diffLinkTarget = String(revId);
+
+          try {
+            if (method === "rollback") {
+              const summary =
+                buildQuickRevertSummaryText(
+                  targetUser || "",
+                  diffLinkTarget,
+                  "",
+                  true,
+                  null,
+                ) + toolTag;
+              await apiRollback(pageTitle, targetUser, { summary: summary });
+              quickLog("[Rollback] Successfully reverted: " + pageTitle);
+            } else {
+              const latestData = await apiGet({
+                action: "query",
+                prop: "revisions",
+                titles: pageTitle,
+                rvlimit: 1,
+                rvprop: "ids",
+                formatversion: 2,
+              });
+              const page =
+                latestData.query &&
+                latestData.query.pages &&
+                latestData.query.pages[0];
+              const latestRevId =
+                page && page.revisions && page.revisions[0]
+                  ? page.revisions[0].revid
+                  : null;
+              if (!latestRevId) {
+                throw new Error(
+                  "could not determine the page's latest revision",
+                );
+              }
+              const summary =
+                buildQuickRevertSummaryText(
+                  targetUser || "",
+                  diffLinkTarget,
+                  "",
+                  true,
+                  null,
+                ) + toolTag;
+              await apiPost({
+                action: "edit",
+                title: pageTitle,
+                undo: latestRevId,
+                undoafter: revId,
+                summary: summary,
+              });
+              quickLog(
+                "[Undo] Successfully restored revision at: " + pageTitle,
+              );
+            }
+          } catch (e) {
+            quickLog(
+              (method === "rollback" ? "[Rollback] " : "[Undo] ") +
+                "Failed: " +
+                formatApiError(e),
+              true,
+            );
+          }
+
+          const btnClose = makeBtn("Close and reload", "primary");
+          btnClose.addEventListener("click", function () {
+            overlay.closeHandler();
+          });
+          footer.appendChild(btnClose);
+        }
+
+        function insertInlineRevisionActions() {
+          const isHistoryPage = mw.config.get("wgAction") === "history";
+          const specialPage = mw.config.get("wgCanonicalSpecialPageName");
+          const isContribsPage =
+            specialPage === "Contributions" ||
+            specialPage === "IPContributions";
+          if (!isHistoryPage && !isContribsPage) return;
+
+          const rows = isHistoryPage
+            ? document.querySelectorAll("#pagehistory li[data-mw-revid]")
+            : document.querySelectorAll(
+                ".mw-contributions-list li[data-mw-revid]",
+              );
+          if (!rows.length) return;
+
+          rows.forEach(function (li, index) {
+            const isLatest = index === 0;
+            const revId = parseInt(li.dataset.mwRevid, 10);
+            if (!revId) return;
+
+            let pageTitle;
+            let targetUser;
+            if (isHistoryPage) {
+              pageTitle = mw.config.get("wgPageName").replace(/_/g, " ");
+              targetUser = mw.config.get("wgRelevantUserName") || null;
+              const userLink = li.querySelector(
+                ".mw-userlink, .history-user a",
+              );
+              if (userLink) targetUser = userLink.textContent.trim();
+            } else {
+              targetUser = mw.config.get("wgRelevantUserName") || "";
+              const titleLink =
+                li.querySelector(".mw-contributions-title") ||
+                Array.from(li.querySelectorAll("a")).find(function (a) {
+                  const t = (a.textContent || "").trim().toLowerCase();
+                  const href = a.getAttribute("href") || "";
+                  return (
+                    !["cur", "prev", "hist", "diff", "talk"].includes(t) &&
+                    href &&
+                    !/Special:/.test(href)
+                  );
+                });
+              if (!titleLink) return;
+              const href = titleLink.getAttribute("href") || "";
+              pageTitle =
+                mw.util.getParamValue("title", href) ||
+                decodeURIComponent(
+                  (href.split("/wiki/")[1] || "").split("?")[0],
+                ).replace(/_/g, " ");
+              if (!pageTitle) return;
+            }
+
+            const actionWrap = document.createElement("span");
+            actionWrap.className = "tng-inline-actions";
+
+            const btnRollback = document.createElement("a");
+            btnRollback.href = "#";
+            btnRollback.className = "tng-inline-action";
+            btnRollback.textContent = "[⛩️ rollback]";
+            btnRollback.title =
+              "Roll back this edit using Tengu (native rollback)";
+            btnRollback.addEventListener("click", function (e) {
+              e.preventDefault();
+              runQuickRevert(pageTitle, targetUser, revId, "rollback");
+            });
+            actionWrap.appendChild(btnRollback);
+
+            if (!isLatest) {
+              actionWrap.appendChild(document.createTextNode(" "));
+              const btnRestore = document.createElement("a");
+              btnRestore.href = "#";
+              btnRestore.className = "tng-inline-action";
+              btnRestore.textContent = "[⛩️ restore this revision]";
+              btnRestore.title =
+                "Undo edits after this revision using Tengu (undo)";
+              btnRestore.addEventListener("click", function (e) {
+                e.preventDefault();
+                runQuickRevert(pageTitle, targetUser, revId, "undo");
+              });
+              actionWrap.appendChild(btnRestore);
+            }
+
+            li.appendChild(document.createTextNode(" "));
+            li.appendChild(actionWrap);
+          });
+        }
+
+        insertInlineRevisionActions();
 
         // ============================================================================
         // [Section 10] Portlet link
