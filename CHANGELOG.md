@@ -1,3 +1,9 @@
+## 2.130.3
+
+### Fixed
+
+* Fixed the duplicate-report safeguard in `submitSRGReport()` only checking the primary target when submitting a multi-target Steward requests/Global report. A single multi-target submission covers every selected account (via `{{MultiLock}}` or multiple `{{Luxotool}}` lines), but the existing-report check only tested the primary target's name against the page content, so an already-open report for a secondary target was not detected and a duplicate could still be filed for it. `submitSRGReport()` now accepts the full target list and checks each one; its one call site (the "Report to Steward requests/Global" step in the main work loop) now passes `config.targets` instead of only the primary target.
+
 ## 2.130.2
 
 ### Fixed

@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.130.2
+ * Version 2.130.3
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -856,7 +856,7 @@ $(function () {
         // duplicate filings.
         async function submitSRGReport(
           kind,
-          target,
+          targets,
           sectionWikitext,
           summaryText,
         ) {
@@ -878,17 +878,28 @@ $(function () {
               page.revisions[0].slots.main.content) ||
             "";
 
-          const escapedTarget = target.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-          const dupRe = new RegExp(
-            "\\{\\{(?:Status|LockHide|MultiLock|Luxotool)[^}]*\\b" +
-              escapedTarget +
-              "\\b",
-            "i",
-          );
-          if (dupRe.test(content)) {
-            throw new Error(
-              "a report for this target already appears to be open on Steward requests/Global",
+          // Check every target in a multi-target report, not just the
+          // primary one, so a secondary target with an already-open report
+          // is also caught rather than being silently re-filed.
+          const targetList = Array.isArray(targets) ? targets : [targets];
+          for (const target of targetList) {
+            const escapedTarget = target.replace(
+              /[.*+?^${}()|[\]\\]/g,
+              "\\$&",
             );
+            const dupRe = new RegExp(
+              "\\{\\{(?:Status|LockHide|MultiLock|Luxotool)[^}]*\\b" +
+                escapedTarget +
+                "\\b",
+              "i",
+            );
+            if (dupRe.test(content)) {
+              throw new Error(
+                "a report for " +
+                  target +
+                  " already appears to be open on Steward requests/Global",
+              );
+            }
           }
 
           const anchor = SRG_INSERT_BEFORE[kind];
@@ -1853,12 +1864,12 @@ $(function () {
                     : "Reporting account for global " +
                       (config.reportSRGKind === "block" ? "block" : "lock") +
                       toolTag;
-                await submitSRGReport(
-                  config.reportSRGKind,
-                  targetVal,
-                  config.reportSRGSection,
-                  srgSummary,
-                );
+                      await submitSRGReport(
+                        config.reportSRGKind,
+                        config.targets || [targetVal],
+                        config.reportSRGSection,
+                        srgSummary,
+                      );
                 addLog(
                   `[Report] Submitted ${config.reportSRGKind === "block" ? "global block" : "global lock"} report to Steward requests/Global for ${targetVal}`,
                 );
