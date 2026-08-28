@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.123.0
+ * Version 2.124.0
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -12493,21 +12493,31 @@ $(function () {
             specialPage === "IPContributions";
           if (!isHistoryPage && !isContribsPage) return;
 
+          // On history pages, list items reliably carry data-mw-revid. On
+          // contributions pages this attribute is not present on the <li>
+          // itself [Unverified against every skin/MediaWiki version], so the
+          // rows are selected more broadly here and the revision ID is
+          // recovered per-row from the "hist"/"diff" link instead.
           const rows = isHistoryPage
             ? document.querySelectorAll("#pagehistory li[data-mw-revid]")
-            : document.querySelectorAll(
-                ".mw-contributions-list li[data-mw-revid]",
-              );
+            : document.querySelectorAll(".mw-contributions-list li");
           if (!rows.length) return;
 
-          rows.forEach(function (li, index) {
-            const isLatest = index === 0;
-            const revId = parseInt(li.dataset.mwRevid, 10);
-            if (!revId) return;
+          // Tracks, for contributions pages, which page titles have already
+          // had a rollback link attached, so [⛩️ rollback] is shown only once
+          // per page — on that page's most recent contribution — even when
+          // the same user has edited it multiple times. Contribution rows
+          // are assumed to be sorted newest-first, matching the MediaWiki
+          // default.
+          const seenContribTitles = new Set();
 
+          rows.forEach(function (li, index) {
+            let revId = parseInt(li.dataset.mwRevid, 10);
             let pageTitle;
             let targetUser;
+
             if (isHistoryPage) {
+              if (!revId) return;
               pageTitle = mw.config.get("wgPageName").replace(/_/g, " ");
               targetUser = mw.config.get("wgRelevantUserName") || null;
               const userLink = li.querySelector(
@@ -12535,36 +12545,88 @@ $(function () {
                   (href.split("/wiki/")[1] || "").split("?")[0],
                 ).replace(/_/g, " ");
               if (!pageTitle) return;
+
+              // Only the latest contribution to a given page gets a rollback
+              // link; skip immediately once a title has already been handled.
+              if (seenContribTitles.has(pageTitle)) return;
+
+              if (!revId) {
+                const histLink = Array.from(li.querySelectorAll("a")).find(
+                  function (a) {
+                    return (
+                      (a.textContent || "").trim().toLowerCase() === "hist"
+                    );
+                  },
+                );
+                const diffLink = Array.from(li.querySelectorAll("a")).find(
+                  function (a) {
+                    return (
+                      (a.textContent || "").trim().toLowerCase() === "diff"
+                    );
+                  },
+                );
+                const revSourceHref =
+                  (histLink && histLink.getAttribute("href")) ||
+                  (diffLink && diffLink.getAttribute("href")) ||
+                  "";
+                const oldidVal =
+                  mw.util.getParamValue("oldid", revSourceHref) ||
+                  mw.util.getParamValue("diff", revSourceHref);
+                revId = parseInt(oldidVal, 10);
+              }
+              if (!revId) return;
+
+              seenContribTitles.add(pageTitle);
             }
 
             const actionWrap = document.createElement("span");
             actionWrap.className = "tng-inline-actions";
 
-            const btnRollback = document.createElement("a");
-            btnRollback.href = "#";
-            btnRollback.className = "tng-inline-action";
-            btnRollback.textContent = "[⛩️ rollback]";
-            btnRollback.title =
-              "Roll back this edit using Tengu (native rollback)";
-            btnRollback.addEventListener("click", function (e) {
-              e.preventDefault();
-              runQuickRevert(pageTitle, targetUser, revId, "rollback");
-            });
-            actionWrap.appendChild(btnRollback);
-
-            if (!isLatest) {
-              actionWrap.appendChild(document.createTextNode(" "));
-              const btnRestore = document.createElement("a");
-              btnRestore.href = "#";
-              btnRestore.className = "tng-inline-action";
-              btnRestore.textContent = "[⛩️ restore this revision]";
-              btnRestore.title =
-                "Undo edits after this revision using Tengu (undo)";
-              btnRestore.addEventListener("click", function (e) {
+            if (isHistoryPage) {
+              // Top row is the current revision: only rollback applies there.
+              // Every other row gets "restore this revision" only.
+              const isLatest = index === 0;
+              if (isLatest) {
+                const btnRollback = document.createElement("a");
+                btnRollback.href = "#";
+                btnRollback.className =
+                  "tng-inline-action tng-inline-action-rollback";
+                btnRollback.textContent = "[⛩️ rollback]";
+                btnRollback.title =
+                  "Roll back this edit using Tengu (native rollback)";
+                btnRollback.addEventListener("click", function (e) {
+                  e.preventDefault();
+                  runQuickRevert(pageTitle, targetUser, revId, "rollback");
+                });
+                actionWrap.appendChild(btnRollback);
+              } else {
+                const btnRestore = document.createElement("a");
+                btnRestore.href = "#";
+                btnRestore.className =
+                  "tng-inline-action tng-inline-action-restore";
+                btnRestore.textContent = "[⛩️ restore this revision]";
+                btnRestore.title =
+                  "Undo edits after this revision using Tengu (undo)";
+                btnRestore.addEventListener("click", function (e) {
+                  e.preventDefault();
+                  runQuickRevert(pageTitle, targetUser, revId, "undo");
+                });
+                actionWrap.appendChild(btnRestore);
+              }
+            } else {
+              // Contributions page: rollback only, no "restore this revision".
+              const btnRollback = document.createElement("a");
+              btnRollback.href = "#";
+              btnRollback.className =
+                "tng-inline-action tng-inline-action-rollback";
+              btnRollback.textContent = "[⛩️ rollback]";
+              btnRollback.title =
+                "Roll back this edit using Tengu (native rollback)";
+              btnRollback.addEventListener("click", function (e) {
                 e.preventDefault();
-                runQuickRevert(pageTitle, targetUser, revId, "undo");
+                runQuickRevert(pageTitle, targetUser, revId, "rollback");
               });
-              actionWrap.appendChild(btnRestore);
+              actionWrap.appendChild(btnRollback);
             }
 
             li.appendChild(document.createTextNode(" "));

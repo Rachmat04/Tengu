@@ -1,3 +1,20 @@
+## 2.124.0
+
+### Fixed
+
+* Fixed the "[⛩️ rollback]" and "[⛩️ restore this revision]" inline links (added in v2.123.0) not performing any action when clicked. On contribution pages, the revision ID needed to build the request was not being resolved and the click handler had nothing valid to act on. The revision ID is now recovered from the corresponding "hist" or "diff" link's `oldid`/`diff` parameter when the row itself carries no revision data.
+
+### Changed
+
+* On user contribution pages, "[⛩️ restore this revision]" is no longer shown at all; only "[⛩️ rollback]" appears, and only once per page — on that page's most recent contribution, even if the same user edited it multiple times further down the list.
+* On page history (`action=history`), "[⛩️ rollback]" is now shown only on the top row (the current revision); every other row shows "[⛩️ restore this revision]" instead, never both.
+* Increased `.tng-inline-action` font size from `0.85em` to `1em`, matching the surrounding text.
+* Split the shared blue link colour into `.tng-inline-action-rollback` (red, matching the existing destructive-action palette) and `.tng-inline-action-restore` (blue), with matching dark-mode variants.
+
+### Notes
+
+* The DOM selectors used to recover revision IDs and page titles on contribution pages follow standard MediaWiki core markup but have not been independently confirmed against a live wiki, every skin, or every MediaWiki version.
+
 ## 2.123.0
 
 ### Added

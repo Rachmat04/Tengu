@@ -1206,13 +1206,24 @@
   white-space: nowrap;
 }
 .tng-inline-action {
-  font-size: 0.85em;
+  font-size: 1em;
   font-weight: 600;
-  color: #3366cc;
   text-decoration: none;
   margin-left: 4px;
   cursor: pointer;
 }
 .tng-inline-action:hover {
   text-decoration: underline;
+}
+.tng-inline-action-rollback {
+  color: #b00020;
+}
+.tng-inline-action-restore {
+  color: #3366cc;
+}
+.tng-theme-dark .tng-inline-action-rollback {
+  color: #ff6b6b;
+}
+.tng-theme-dark .tng-inline-action-restore {
+  color: #6699ff;
 }
