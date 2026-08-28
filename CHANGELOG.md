@@ -1,3 +1,13 @@
+## 2.130.0
+
+### Changed
+
+* The inline "[⛩️ rollback]" and "[⛩️ restore this revision]" actions (Section 09b, `runQuickRevert()`) now navigate to the page's own current URL on close, via `mw.util.getUrl(pageTitle)`, instead of reloading whatever page the action was triggered from. Previously, `window.location.reload()` reloaded the diff, history, or contributions page in place, which could leave the user looking at a now-stale diff/history view of the revision just rolled back or restored.
+* Edit summaries produced by these two inline actions now describe each action accurately instead of sharing generic "reverted an edit" wording with the main batch Rollback section. A new `buildQuickActionSummaryText()` (Section 09b) is used in place of `buildQuickRevertSummaryText()` for these two call sites only; `buildQuickRevertSummaryText()` itself is unchanged and continues to be used by the main batch Rollback section.
+  * Rollback: `Rolled back edit by [user] (see [[Special:Diff/X]])` / Indonesian: `Membatalkan suntingan oleh [user] (lihat [[Special:Diff/X]])`.
+  * Restore this revision: `Restored revision by [user] (see [[Special:Diff/X]]), undoing subsequent edits` / Indonesian: `Memulihkan revisi oleh [user] (lihat [[Special:Diff/X]]), membatalkan suntingan setelahnya`.
+  * If the revision's author cannot be determined (e.g. a hidden/revision-deleted username), the "by [user]" clause is omitted from both languages.
+
 ## 2.129.0
 
 ### Changed

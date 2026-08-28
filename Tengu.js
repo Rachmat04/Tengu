@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.129.0
+ * Version 2.130.0
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -629,6 +629,36 @@ $(function () {
           return useIndonesian
             ? `Membalikkan [[Special:Diff/${diffLinkTarget}|suntingan]] oleh ${targetUser}`
             : `Reverted [[Special:Diff/${diffLinkTarget}|edit]] by ${targetUser}`;
+        }
+
+        // Builds the edit summary used specifically by the inline "⛩️
+        // rollback" / "⛩️ restore this revision" actions (Section 09b),
+        // as distinct from buildQuickRevertSummaryText() above (which is
+        // shared with the main batch Rollback section and describes the
+        // action generically as "reverted an edit"). This function
+        // describes each of the two inline actions accurately: rollback
+        // reverts the given revision, whereas restore undoes everything
+        // after the given revision to bring the page back to it — these
+        // are not the same operation, so they get distinct wording.
+        // targetUser may be null/empty (e.g. a hidden revision-deleted
+        // username), in which case the "by ..." clause is omitted.
+        function buildQuickActionSummaryText(method, targetUser, revId) {
+          if (method === "rollback") {
+            return targetUser
+              ? useIndonesian
+                ? `Membatalkan suntingan oleh ${targetUser} (lihat [[Special:Diff/${revId}]])`
+                : `Rolled back edit by ${targetUser} (see [[Special:Diff/${revId}]])`
+              : useIndonesian
+                ? `Membatalkan suntingan (lihat [[Special:Diff/${revId}]])`
+                : `Rolled back edit (see [[Special:Diff/${revId}]])`;
+          }
+          return targetUser
+            ? useIndonesian
+              ? `Memulihkan revisi oleh ${targetUser} (lihat [[Special:Diff/${revId}]]), membatalkan suntingan setelahnya`
+              : `Restored revision by ${targetUser} (see [[Special:Diff/${revId}]]), undoing subsequent edits`
+            : useIndonesian
+              ? `Memulihkan revisi (lihat [[Special:Diff/${revId}]]), membatalkan suntingan setelahnya`
+              : `Restored revision (see [[Special:Diff/${revId}]]), undoing subsequent edits`;
         }
 
         // Checks whether a page currently exists. Used before posting a
@@ -12482,7 +12512,13 @@ $(function () {
             icon: "⛩️",
             child: true,
             onClose: function () {
-              window.location.reload();
+              // Navigates to the page's own current URL rather than
+              // reloading the page the action was triggered from (a
+              // diff, history, or contributions page), so the user
+              // lands on the up-to-date article rather than a stale
+              // diff/history view of the revision that was just
+              // rolled back or restored.
+              window.location.href = mw.util.getUrl(pageTitle);
             },
           });
           const logBox = document.createElement("div");
@@ -12509,12 +12545,10 @@ $(function () {
           try {
             if (method === "rollback") {
               const summary =
-                buildQuickRevertSummaryText(
+                buildQuickActionSummaryText(
+                  "rollback",
                   targetUser || "",
                   diffLinkTarget,
-                  "",
-                  true,
-                  null,
                 ) + toolTag;
               const rollbackResult = await apiRollback(pageTitle, targetUser, {
                 summary: summary,
@@ -12617,12 +12651,10 @@ $(function () {
                 );
               } else {
                 const summary =
-                  buildQuickRevertSummaryText(
+                  buildQuickActionSummaryText(
+                    "undo",
                     targetUser || "",
                     diffLinkTarget,
-                    "",
-                    true,
-                    null,
                   ) + toolTag;
                 const editResult = await apiPost({
                   action: "edit",
