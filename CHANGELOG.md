@@ -1,3 +1,9 @@
+## 2.130.4
+
+### Fixed
+
+* Fixed the contributions-fetch and block-notification steps in the main work loop using `config.isRange` — a flag computed once from only the primary target — for every target in a multi-target run. When a multi-target list mixed IP ranges with accounts or single IPs, this could skip the contributions fetch incorrectly, cause a `list=usercontribs` call with an invalid range parameter, skip a block notification that should have been sent, or attempt to build a talk page title from a CIDR range (producing an incorrect title, as already noted in a nearby comment). A per-target `targetIsRange` value is now derived from the per-target `isTargetIP` check already used for block parameter selection, and used at both call sites instead of the static `config.isRange`.
+
 ## 2.130.3
 
 ### Fixed

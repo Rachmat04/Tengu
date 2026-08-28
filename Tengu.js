@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.130.3
+ * Version 2.130.4
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -883,10 +883,7 @@ $(function () {
           // is also caught rather than being silently re-filed.
           const targetList = Array.isArray(targets) ? targets : [targets];
           for (const target of targetList) {
-            const escapedTarget = target.replace(
-              /[.*+?^${}()|[\]\\]/g,
-              "\\$&",
-            );
+            const escapedTarget = target.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
             const dupRe = new RegExp(
               "\\{\\{(?:Status|LockHide|MultiLock|Luxotool)[^}]*\\b" +
                 escapedTarget +
@@ -1483,6 +1480,10 @@ $(function () {
             // autoblock, so treating ranges the same as plain IPs here
             // correctly skips it.
             const isTargetIP = mw.util.isIPAddress(targetVal, true);
+            // Per-target range status. config.isRange only reflects the
+            // primary target and is unsafe to reuse here, since a
+            // multi-target run can mix accounts, single IPs, and IP ranges.
+            const targetIsRange = isTargetIP && !mw.util.isIPAddress(targetVal);
 
             // --- User warning ---
             // Only runs in user mode; config.warn is only set when the warn
@@ -1616,13 +1617,13 @@ $(function () {
                 // would misparse the "/" in the range as a subpage separator,
                 // and an IPv6 address's ":" characters risk being misread as
                 // a namespace prefix, producing an incorrect title either way.
-                if (config.isRange && config.notifyBlock && stats.block > 0) {
+                if (targetIsRange && config.notifyBlock && stats.block > 0) {
                   addLog(
                     "[Notify] Skipped block notification: talk pages are not applicable to IP range targets (IPv4 or IPv6).",
                     "warn",
                   );
                 }
-                if (stats.block > 0 && config.notifyBlock && !config.isRange) {
+                if (stats.block > 0 && config.notifyBlock && !targetIsRange) {
                   const talkTitle = new mw.Title(
                     targetVal,
                     3,
@@ -1737,11 +1738,10 @@ $(function () {
             // This calls CentralAuth's global account status API
             // via a foreign API request to Meta-Wiki, following the same
             // pattern already used by the Report to global sysops and Report
-            // to Steward requests/Global features above. The exact API module
-            // and parameter names used here (action=setglobalaccountstatus)
-            // have not been independently confirmed against a live wiki, since
-            // testing this feature requires steward rights. Please verify
-            // carefully before relying on it.
+            // to Steward requests/Global features above. The module name and
+            // parameters (action=setglobalaccountstatus; locked=lock/unlock;
+            // hidden=lists/suppressed) have been confirmed against the
+            // Extension:CentralAuth/API documentation on mediawiki.org.
             if (
               !rs.lockAccountDone &&
               config.lockAccount &&
@@ -1864,12 +1864,12 @@ $(function () {
                     : "Reporting account for global " +
                       (config.reportSRGKind === "block" ? "block" : "lock") +
                       toolTag;
-                      await submitSRGReport(
-                        config.reportSRGKind,
-                        config.targets || [targetVal],
-                        config.reportSRGSection,
-                        srgSummary,
-                      );
+                await submitSRGReport(
+                  config.reportSRGKind,
+                  config.targets || [targetVal],
+                  config.reportSRGSection,
+                  srgSummary,
+                );
                 addLog(
                   `[Report] Submitted ${config.reportSRGKind === "block" ? "global block" : "global lock"} report to Steward requests/Global for ${targetVal}`,
                 );
@@ -2367,7 +2367,7 @@ $(function () {
               !skipContribFetch &&
               config.mode === "user" &&
               !config.customSelection &&
-              !config.isRange
+              !targetIsRange
             ) {
               const contribParams = {
                 action: "query",
