@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.132.0
+ * Version 2.133.0
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -12605,19 +12605,42 @@ $(function () {
               window.location.href = mw.util.getUrl(pageTitle);
             },
           });
+          // Status label and timestamped, numbered log entries, matching the
+          // main window's progress dialogue (Section 07) so quick actions
+          // give the same status feedback as a batch run.
+          const statusLbl = document.createElement("div");
+          statusLbl.innerHTML = "<b>Status:</b> Processing...";
+          statusLbl.style.marginBottom = "8px";
+          body.appendChild(statusLbl);
+
           const logBox = document.createElement("div");
           logBox.className = "tng-log-box";
           logBox.style.height = "100px";
           body.appendChild(logBox);
-          // Every log entry is sequentially numbered, and hadFailure tracks
-          // whether the closing status line should report success or defer
-          // to whatever failure/error line(s) were already logged.
+          // Every log entry is sequentially numbered and timestamped, and
+          // hadFailure tracks whether the closing status line should report
+          // success or defer to whatever failure/error line(s) were already
+          // logged — mirroring addLog() in the main window's work() function.
           let logCounter = 0;
           let hadFailure = false;
           function quickLog(msg, isErr) {
             logCounter += 1;
             const d = document.createElement("div");
-            d.textContent = logCounter + ". " + msg;
+            const _n = new Date();
+            const _ts =
+              _n.getUTCFullYear() +
+              "-" +
+              String(_n.getUTCMonth() + 1).padStart(2, "0") +
+              "-" +
+              String(_n.getUTCDate()).padStart(2, "0") +
+              " " +
+              String(_n.getUTCHours()).padStart(2, "0") +
+              ":" +
+              String(_n.getUTCMinutes()).padStart(2, "0") +
+              ":" +
+              String(_n.getUTCSeconds()).padStart(2, "0") +
+              " UTC";
+            d.textContent = logCounter + ". [" + _ts + "] " + msg;
             d.className = isErr ? "tng-log-err" : "tng-log-succ";
             logBox.appendChild(d);
             if (isErr) hadFailure = true;
@@ -12628,12 +12651,18 @@ $(function () {
 
           try {
             if (method === "rollback") {
+              // Uses buildQuickRevertSummaryText() — the same helper, and
+              // therefore the same wording, used by the main window's batch
+              // Rollback section (see buildRevertSummaryText() in work()) —
+              // instead of the inline-only buildQuickActionSummaryText(),
+              // so the edit summary is identical between the two entry points.
               const summary =
-                buildQuickActionSummaryText(
-                  "rollback",
+                buildQuickRevertSummaryText(
                   targetUser || "",
                   diffLinkTarget,
                   selectedReason,
+                  true,
+                  null,
                 ) + toolTag;
               const rollbackResult = await apiRollback(pageTitle, targetUser, {
                 summary: summary,
@@ -12735,12 +12764,15 @@ $(function () {
                   true,
                 );
               } else {
+                // Same shared summary helper as the rollback branch above,
+                // matching the wording used by the main window's Undo path.
                 const summary =
-                  buildQuickActionSummaryText(
-                    "undo",
+                  buildQuickRevertSummaryText(
                     targetUser || "",
                     diffLinkTarget,
                     selectedReason,
+                    true,
+                    null,
                   ) + toolTag;
                 const editResult = await apiPost({
                   action: "edit",
@@ -12786,8 +12818,16 @@ $(function () {
             );
           }
 
+          // Completion summary, matching the wording pattern used by
+          // buildCompletionSummary() in the main window's work() function.
           if (!hadFailure) {
+            statusLbl.innerHTML =
+              "<b>Status:</b> Completed: 1 edit " +
+              (method === "rollback" ? "reverted" : "undone") +
+              ".";
             quickLog("✅ All operations have been completed successfully");
+          } else {
+            statusLbl.innerHTML = "<b>Status:</b> Completed: 1 error.";
           }
 
           const btnClose = makeBtn("Close and reload", "primary");

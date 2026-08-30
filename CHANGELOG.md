@@ -1,3 +1,18 @@
+## 2.133.0
+
+### Changed
+
+* The "[⛩️ rollback]" and "[⛩️ restore this revision]" inline actions (`runQuickRevert()`, Section 09b) now build their edit summary with `buildQuickRevertSummaryText()` — the same helper used by the main window's batch Rollback section — instead of the inline-only `buildQuickActionSummaryText()`. The edit summary produced by these links is now identical in wording to the summary produced when the same rollback or undo is run from the main Tengu window.
+* The confirmation dialogue and reason-selection row for these inline actions are unchanged.
+
+### Added
+
+* Added a status label ("Status: Processing..." / "Status: Completed: ...") and timestamped, numbered log entries to the inline rollback/restore progress dialogue, matching the status display and logging style already used in the main window's progress dialogue.
+
+### Notes
+
+* `buildQuickActionSummaryText()` is no longer called by `runQuickRevert()` but has not been removed, since it is still referenced in earlier changelog entries; it can be removed in a future lint pass if confirmed unused elsewhere.
+
 ## 2.132.0
 
 ### Changed
