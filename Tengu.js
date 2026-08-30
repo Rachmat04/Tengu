@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.133.0
+ * Version 2.134.0
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -610,7 +610,32 @@ $(function () {
           reason,
           showUsername,
           previousEditorUser,
+          isRestore,
         ) {
+          // "Restore this revision" wording is distinct from rollback/undo
+          // wording: it restores the page *to* a revision by targetUser,
+          // rather than reverting an edit *by* targetUser. Using the same
+          // "Reverted ... by [user]" phrasing here would incorrectly imply
+          // that targetUser's revision was the one being undone, when it is
+          // in fact the revision being restored to. Only used by the
+          // inline "[⛩️ restore this revision]" action (runQuickRevert(),
+          // Section 09b); the main batch Rollback/Undo sections and the
+          // inline rollback action are unaffected.
+          if (isRestore) {
+            if (reason) {
+              return useIndonesian
+                ? `Dikembalikan ke [[Special:Diff/${diffLinkTarget}|revisi]] oleh ${targetUser}: ${reason}`
+                : `Restored to [[Special:Diff/${diffLinkTarget}|revision]] by ${targetUser}: ${reason}`;
+            }
+            if (!showUsername || !targetUser) {
+              return useIndonesian
+                ? `Dikembalikan ke [[Special:Diff/${diffLinkTarget}|revisi]]`
+                : `Restored to [[Special:Diff/${diffLinkTarget}|revision]]`;
+            }
+            return useIndonesian
+              ? `Dikembalikan ke [[Special:Diff/${diffLinkTarget}|revisi]] oleh ${targetUser}`
+              : `Restored to [[Special:Diff/${diffLinkTarget}|revision]] by ${targetUser}`;
+          }
           if (reason) {
             return useIndonesian
               ? `Membalikkan [[Special:Diff/${diffLinkTarget}|suntingan]] oleh ${targetUser}: ${reason}`
@@ -12764,8 +12789,11 @@ $(function () {
                   true,
                 );
               } else {
-                // Same shared summary helper as the rollback branch above,
-                // matching the wording used by the main window's Undo path.
+                // Uses isRestore wording ("Restored to revision by [user]")
+                // rather than the shared rollback/undo wording, since this
+                // call site is specifically the "[⛩️ restore this revision]"
+                // inline action: targetUser here is the author of the
+                // revision being restored *to*, not an edit being reverted.
                 const summary =
                   buildQuickRevertSummaryText(
                     targetUser || "",
@@ -12773,6 +12801,7 @@ $(function () {
                     selectedReason,
                     true,
                     null,
+                    true,
                   ) + toolTag;
                 const editResult = await apiPost({
                   action: "edit",

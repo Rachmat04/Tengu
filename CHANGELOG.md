@@ -1,3 +1,13 @@
+## 2.134.0
+
+### Fixed
+
+* Fixed the edit summary produced by the "[⛩️ restore this revision]" inline action reading "Reverted edit by [user]", which incorrectly implied that [user]'s edit was the one being undone. In fact, the page is being restored *to* the revision created by [user]. The summary now reads "Restored to revision by [user]" (English) or "Dikembalikan ke revisi oleh [user]" (Indonesian), with an optional ": reason" suffix when a reason is selected. The diff link and dynamic username are unchanged.
+
+### Notes
+
+* This change is scoped to `buildQuickRevertSummaryText()`'s new `isRestore` parameter, set only at the "restore this revision" call site in `runQuickRevert()` (Section 09b). The "[⛩️ rollback]" inline action and the main batch Rollback/Undo sections in `work()` continue to use the existing wording unchanged.
+
 ## 2.133.0
 
 ### Changed
