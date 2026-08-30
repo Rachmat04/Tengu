@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.131.0
+ * Version 2.132.0
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -12898,8 +12898,12 @@ $(function () {
             if (userLink) targetUser = userLink.textContent.trim();
 
             const isCurrent = !!currentRevId && revId === currentRevId;
-            const actionWrap = document.createElement("span");
-            actionWrap.className = "tng-inline-actions";
+            // Rendered as a separate line at the top of the title box,
+            // rather than appended inline to existing diff-page text
+            // (username, edit summary, etc.), so the link's position stays
+            // consistent and easy to identify across diffs.
+            const actionWrap = document.createElement("div");
+            actionWrap.className = "tng-inline-actions-diffline";
             actionWrap.appendChild(
               buildInlineRevisionLink(
                 isCurrent ? "rollback" : "restore",
@@ -12908,8 +12912,7 @@ $(function () {
                 revId,
               ),
             );
-            titleBox.appendChild(document.createTextNode(" "));
-            titleBox.appendChild(actionWrap);
+            titleBox.insertBefore(actionWrap, titleBox.firstChild);
           }
 
           addAction(

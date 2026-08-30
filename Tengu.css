@@ -1205,6 +1205,15 @@
 .tng-inline-actions {
   white-space: nowrap;
 }
+/* Diff-page variant: rendered as its own line above the revision title box,
+   rather than appended inline to existing diff-page text, so the link's
+   position is consistent and easy to identify regardless of what else is
+   in that box (username, edit summary, etc.). */
+.tng-inline-actions-diffline {
+  display: block;
+  white-space: nowrap;
+  margin-bottom: 3px;
+}
 .tng-inline-action {
   font-size: 1em;
   font-weight: 600;

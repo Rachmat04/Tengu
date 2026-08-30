@@ -1,3 +1,13 @@
+## 2.132.0
+
+### Changed
+
+* The "[⛩️ rollback]" and "[⛩️ restore this revision]" inline actions on diff pages (`insertDiffRevisionActions()`, Section 09b) are now placed on their own line at the top of the relevant revision title box, instead of being appended inline after the existing text (username, edit summary, etc.) in that box. A new `.tng-inline-actions-diffline` block-level CSS class replaces the inline `.tng-inline-actions` class for this placement. Both actions are affected consistently; their functionality, wording, and styling are otherwise unchanged.
+
+### Notes
+
+* This change applies only to diff pages. The equivalent links on page history and user contributions pages continue to render inline at the end of each revision row, unaffected.
+
 ## 2.131.0
 
 ### Added
