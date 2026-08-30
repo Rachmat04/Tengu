@@ -1,3 +1,13 @@
+## 2.135.0
+
+### Changed
+
+* The "Report to Global sysops/Requests" and "Report to Steward requests/Global" sections no longer prepend "Additional details:" to the text entered in the Additional details field when submitting a report. The entered text is now submitted directly, joined to any selected preset reasons with the existing ". " separator. Reports built solely from preset reason checkboxes, with no additional details entered, are unaffected.
+
+### Notes
+
+* This affects only the wording of `buildGSReasonText()` and `buildSRGReportLine()` in `Tengu.js`. No changes were made to reason-checkbox selection, report submission logic, or duplicate-report detection.
+
 ## 2.134.0
 
 ### Fixed
