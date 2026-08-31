@@ -1,3 +1,16 @@
+## 2.137.0
+
+### Added
+
+* Added a CSS-based progress loader to every Tengu log window (the main progress dialogue in `work()`, and the inline quick-action dialogue used by `[⛩️ undo]`, `[⛩️ rollback]`, and `[⛩️ restore this revision]`). The loader sits immediately after "Status:" and fills as operations complete, using a new `.tng-progress-loader` CSS class with a dark-mode variant.
+* In the main progress dialogue, the loader's fill is driven by `completedOps` against an `estimatedTotalOps` approximation (the number of enabled action types multiplied by the number of targets), incremented once per successfully logged operation. In the single-operation quick-action dialogue, the loader simply fills fully once the operation finishes, whether it succeeded or failed.
+* The completed-task summary line (e.g. "Completed: 3 pages deleted...") and other summary information now render on their own line below the status/loader row, instead of sharing the status line.
+
+### Notes
+
+* `estimatedTotalOps` is an approximation only: the exact number of underlying API steps (e.g. how many contributions will need reverting) is not known until the run is under way, so the loader's fill rate is not exact — it fills fully on genuine completion regardless. This has not been independently verified against a live wiki for visual smoothness across a wide range of run sizes.
+* An aborted run keeps the loader at whatever partial progress was actually reached, rather than forcing it to a full fill, since the run did not complete.
+
 ## 2.136.0
 
 ### Added

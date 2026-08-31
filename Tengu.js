@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.136.0
+ * Version 2.137.0
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -1215,21 +1215,67 @@ $(function () {
 
           // Helper function to update status dynamically. Only shows the current
           // status word while processing; a natural-language summary of completed
-          // actions is built once at the end of the run (see buildCompletionSummary()).
+          // actions is built once at the end of the run (see buildCompletionSummary())
+          // and shown on the separate summary line below the status/loader row.
           const updateStatusDisplay = () => {
             const statusText = isAborted ? "Aborted." : "Processing...";
-            statusLbl.innerHTML = `<b>Status:</b> ${statusText}`;
+            statusTextSpan.innerHTML = `<b>Status:</b> ${statusText}`;
           };
 
           const statusLbl = document.createElement("div");
-          statusLbl.innerHTML = "<b>Status:</b> Processing...";
-          statusLbl.style.marginBottom = "8px";
+          statusLbl.style.cssText =
+            "margin-bottom:4px;display:flex;align-items:center;gap:8px;";
+          const statusTextSpan = document.createElement("span");
+          statusTextSpan.innerHTML = "<b>Status:</b> Processing...";
+          const progressLoader = document.createElement("div");
+          progressLoader.className = "tng-progress-loader";
+          statusLbl.appendChild(statusTextSpan);
+          statusLbl.appendChild(progressLoader);
+
+          // Completion summary and other summary information now render on
+          // their own line below the status/loader row, instead of sharing
+          // the status line.
+          const summaryLbl = document.createElement("div");
+          summaryLbl.className = "tng-help";
+          summaryLbl.style.marginBottom = "8px";
 
           const logBox = document.createElement("div");
           logBox.className = "tng-log-box";
 
           body.appendChild(statusLbl);
+          body.appendChild(summaryLbl);
           body.appendChild(logBox);
+
+          // Progress loader tracking. estimatedTotalOps is an approximation
+          // based on the number of enabled action types per target, since the
+          // exact number of API steps (e.g. contributions to revert) is not
+          // known until the run is under way. completedOps increments once
+          // per successfully logged operation.
+          let completedOps = 0;
+          const enabledOpsPerTarget = [
+            config.rollback,
+            config.block,
+            config.unblock,
+            config.lockAccount,
+            config.reportGS,
+            config.reportSRG,
+            config.undelete,
+            config.moveSandbox,
+            config.protect,
+            config.massdel,
+            config.protectRecreation,
+            config.rd,
+            config.warn,
+            config.fixRedirects,
+          ].filter(Boolean).length;
+          const estimatedTotalOps = Math.max(
+            1,
+            enabledOpsPerTarget * (config.targets ? config.targets.length : 1),
+          );
+          function updateProgressLoader() {
+            const pct = Math.min(100, (completedOps / estimatedTotalOps) * 100);
+            progressLoader.style.backgroundSize = pct + "% 100%";
+          }
 
           const btnAbort = document.createElement("button");
           btnAbort.className = "tng-btn tng-btn-destructive";
@@ -1286,6 +1332,8 @@ $(function () {
               updateStatusDisplay();
             } else {
               d.className = "tng-log-succ";
+              completedOps++;
+              updateProgressLoader();
             }
             logBox.appendChild(d);
             logBox.scrollTop = logBox.scrollHeight;
@@ -4253,7 +4301,12 @@ $(function () {
             isAborted,
             methodTxt,
           );
-          statusLbl.innerHTML = `<b>Status:</b> ${completionSummary}`;
+          statusTextSpan.innerHTML =
+            "<b>Status:</b> " + (isAborted ? "Aborted." : "Completed.");
+          summaryLbl.textContent = completionSummary;
+          // Only force the loader to a full fill on genuine completion; an
+          // aborted run keeps whatever partial progress was actually reached.
+          if (!isAborted) progressLoader.style.backgroundSize = "100% 100%";
 
           if (isAborted) {
             addLog("⏹️ Operations aborted by user");
@@ -12635,13 +12688,27 @@ $(function () {
               window.location.href = mw.util.getUrl(pageTitle);
             },
           });
-          // Status label and timestamped, numbered log entries, matching the
-          // main window's progress dialogue (Section 07) so quick actions
-          // give the same status feedback as a batch run.
+          // Status label, progress loader, and timestamped, numbered log
+          // entries, matching the main window's progress dialogue (Section 07)
+          // so quick actions give the same status feedback as a batch run.
           const statusLbl = document.createElement("div");
-          statusLbl.innerHTML = "<b>Status:</b> Processing...";
-          statusLbl.style.marginBottom = "8px";
+          statusLbl.style.cssText =
+            "margin-bottom:4px;display:flex;align-items:center;gap:8px;";
+          const statusTextSpan = document.createElement("span");
+          statusTextSpan.innerHTML = "<b>Status:</b> Processing...";
+          const progressLoader = document.createElement("div");
+          progressLoader.className = "tng-progress-loader";
+          statusLbl.appendChild(statusTextSpan);
+          statusLbl.appendChild(progressLoader);
           body.appendChild(statusLbl);
+
+          // A quick action is a single operation, so the completion summary
+          // is short; it still renders on its own line below the status/loader
+          // row, consistent with the main progress dialogue.
+          const summaryLbl = document.createElement("div");
+          summaryLbl.className = "tng-help";
+          summaryLbl.style.marginBottom = "8px";
+          body.appendChild(summaryLbl);
 
           const logBox = document.createElement("div");
           logBox.className = "tng-log-box";
@@ -12897,14 +12964,20 @@ $(function () {
 
           // Completion summary, matching the wording pattern used by
           // buildCompletionSummary() in the main window's work() function.
+          // Quick actions are a single operation, so the loader always
+          // finishes fully filled once processing ends, whether it succeeded
+          // or failed — there is nothing left "in progress" either way.
+          progressLoader.style.backgroundSize = "100% 100%";
           if (!hadFailure) {
-            statusLbl.innerHTML =
-              "<b>Status:</b> Completed: 1 edit " +
+            statusTextSpan.innerHTML = "<b>Status:</b> Completed.";
+            summaryLbl.textContent =
+              "Completed: 1 edit " +
               (method === "rollback" ? "reverted" : "undone") +
               ".";
             quickLog("✅ All operations have been completed successfully");
           } else {
-            statusLbl.innerHTML = "<b>Status:</b> Completed: 1 error.";
+            statusTextSpan.innerHTML = "<b>Status:</b> Completed.";
+            summaryLbl.textContent = "Completed: 1 error.";
           }
 
           const btnClose = makeBtn("Close and reload", "primary");

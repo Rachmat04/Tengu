@@ -479,6 +479,24 @@
   color: #14866d;
 }
 
+/* --- Progress loader (status line) --- */
+/* Segmented radial-mask loader showing real task progress via background-size,
+   set by JS as operations complete. Not a CSS keyframe animation: the fill
+   reflects actual completed-vs-estimated operation count. */
+.tng-progress-loader {
+  display: inline-block;
+  width: 80px;
+  height: 10px;
+  vertical-align: middle;
+  -webkit-mask: radial-gradient(circle closest-side, #000 94%, #0000) left /
+    16.66% 100%;
+  mask: radial-gradient(circle closest-side, #000 94%, #0000) left / 16.66%
+    100%;
+  background: linear-gradient(#3366cc 0 0) left/0% 100% no-repeat #ddd;
+  border-radius: 2px;
+  transition: background-size 0.3s ease;
+}
+
 /* --- User rights panel (footer, bottom-left) --- */
 .tng-rights-panel {
   display: flex;
@@ -932,6 +950,11 @@
 }
 .tng-theme-dark .tng-log-succ {
   color: #00af89;
+}
+
+/* Dark mode for progress loader */
+.tng-theme-dark .tng-progress-loader {
+  background: linear-gradient(#6699ff 0 0) left/0% 100% no-repeat #3a3a3a;
 }
 
 /* Dark mode for inline field error */
