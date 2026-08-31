@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.139.0
+ * Version 2.140.0
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -4509,6 +4509,96 @@ $(function () {
             mw.config.get("wgSiteName") ||
             "this wiki";
 
+          // --- Account info card ---
+          // Displayed above the Access rights card. Shows local and global
+          // edit counts, registration date, and (for registered accounts
+          // only) any previous usernames found in the local rename log.
+          const accountInfoCard = document.createElement("div");
+          accountInfoCard.className = "tng-user-rights-card";
+
+          const accountInfoCardHdr = document.createElement("div");
+          accountInfoCardHdr.className = "tng-user-rights-header";
+          const accountInfoCardHdrTitle = document.createElement("span");
+          accountInfoCardHdrTitle.textContent = "🛂 Account info";
+          accountInfoCardHdr.appendChild(accountInfoCardHdrTitle);
+          const accountInfoCardArrow = document.createElement("span");
+          accountInfoCardArrow.className = "tng-section-arrow tng-arrow-up";
+          accountInfoCardHdr.appendChild(accountInfoCardArrow);
+          accountInfoCardHdr.addEventListener("click", function () {
+            const isHidden = accountInfoCardBody.classList.toggle("tng-hidden");
+            accountInfoCardArrow.classList.toggle("tng-arrow-up", !isHidden);
+          });
+          accountInfoCard.appendChild(accountInfoCardHdr);
+
+          const accountInfoCardBody = document.createElement("div");
+          accountInfoCardBody.className = "tng-user-rights-body";
+          accountInfoCard.appendChild(accountInfoCardBody);
+
+          // Local edits row
+          const localEditsRow = document.createElement("div");
+          localEditsRow.className = "tng-user-rights-row";
+          const localEditsScope = document.createElement("div");
+          localEditsScope.className = "tng-user-rights-scope";
+          localEditsScope.textContent = "Local edits — " + localWikiId;
+          localEditsRow.appendChild(localEditsScope);
+          const localEditsBody = document.createElement("div");
+          localEditsBody.className = "tng-info-loading";
+          localEditsBody.textContent = "Loading...";
+          localEditsRow.appendChild(localEditsBody);
+          accountInfoCardBody.appendChild(localEditsRow);
+
+          // Global edits row (skipped for IP addresses, which have no
+          // CentralAuth account)
+          const globalEditsRow = document.createElement("div");
+          globalEditsRow.className = "tng-user-rights-row";
+          const globalEditsScope = document.createElement("div");
+          globalEditsScope.className = "tng-user-rights-scope";
+          globalEditsScope.textContent = "Global edits";
+          globalEditsRow.appendChild(globalEditsScope);
+          const globalEditsBody = document.createElement("div");
+          globalEditsBody.className = isTargetIP
+            ? "tng-info-empty"
+            : "tng-info-loading";
+          globalEditsBody.textContent = isTargetIP
+            ? "Not applicable for IP addresses."
+            : "Loading...";
+          globalEditsRow.appendChild(globalEditsBody);
+          accountInfoCardBody.appendChild(globalEditsRow);
+
+          // Registration date row
+          const registrationRow = document.createElement("div");
+          registrationRow.className = "tng-user-rights-row";
+          const registrationScope = document.createElement("div");
+          registrationScope.className = "tng-user-rights-scope";
+          registrationScope.textContent = "Registration date";
+          registrationRow.appendChild(registrationScope);
+          const registrationBody = document.createElement("div");
+          registrationBody.className = "tng-info-loading";
+          registrationBody.textContent = "Loading...";
+          registrationRow.appendChild(registrationBody);
+          accountInfoCardBody.appendChild(registrationRow);
+
+          // Previous usernames row — registered accounts only. Not shown
+          // for IP addresses or temporary accounts, since neither can hold
+          // a rename history.
+          const isTargetTempAccount = /^~\d{4}-\d+-\d+$/.test(username);
+          let previousNamesBody = null;
+          if (!isTargetIP && !isTargetTempAccount) {
+            const previousNamesRow = document.createElement("div");
+            previousNamesRow.className = "tng-user-rights-row";
+            const previousNamesScope = document.createElement("div");
+            previousNamesScope.className = "tng-user-rights-scope";
+            previousNamesScope.textContent = "Previous usernames";
+            previousNamesRow.appendChild(previousNamesScope);
+            previousNamesBody = document.createElement("div");
+            previousNamesBody.className = "tng-info-loading";
+            previousNamesBody.textContent = "Loading...";
+            previousNamesRow.appendChild(previousNamesBody);
+            accountInfoCardBody.appendChild(previousNamesRow);
+          }
+
+          body.appendChild(accountInfoCard);
+
           const rightsCard = document.createElement("div");
           rightsCard.className = "tng-user-rights-card";
 
@@ -4548,19 +4638,6 @@ $(function () {
           localRightsListEl.className = "tng-user-rights-list tng-hidden";
           localRow.appendChild(localRightsListEl);
           rightsCardBody.appendChild(localRow);
-
-          // Account info row (edit count and registration date) — local wiki only.
-          const accountInfoRow = document.createElement("div");
-          accountInfoRow.className = "tng-user-rights-row";
-          const accountInfoScope = document.createElement("div");
-          accountInfoScope.className = "tng-user-rights-scope";
-          accountInfoScope.textContent = "Account info";
-          accountInfoRow.appendChild(accountInfoScope);
-          const accountInfoBody = document.createElement("div");
-          accountInfoBody.className = "tng-info-loading";
-          accountInfoBody.textContent = "Loading...";
-          accountInfoRow.appendChild(accountInfoBody);
-          rightsCardBody.appendChild(accountInfoRow);
 
           // Divider between local and global rows
           const rightsHr = document.createElement("hr");
@@ -4665,8 +4742,11 @@ $(function () {
                 msg.className = "tng-info-empty";
                 msg.textContent = "Account not found on this wiki.";
                 localBadgesEl.appendChild(msg);
-                accountInfoBody.className = "tng-info-empty";
-                accountInfoBody.textContent = "Account not found on this wiki.";
+                localEditsBody.className = "tng-info-empty";
+                localEditsBody.textContent = "Account not found on this wiki.";
+                registrationBody.className = "tng-info-empty";
+                registrationBody.textContent =
+                  "Account not found on this wiki.";
               } else {
                 // Filter out implicit groups every account belongs to (*) and (user)
                 const groups = (userEntry.groups || []).filter(function (g) {
@@ -4681,41 +4761,31 @@ $(function () {
                   "local",
                 );
 
-                const editCount =
+                localEditsBody.className = "tng-user-rights-list";
+                localEditsBody.textContent =
                   userEntry.editcount !== undefined
                     ? userEntry.editcount.toLocaleString()
                     : "—";
+
                 // Accounts registered before registration logging
                 // was introduced on a given wiki may not have this field set.
-                const regDate = userEntry.registration
+                registrationBody.className = "tng-user-rights-list";
+                registrationBody.textContent = userEntry.registration
                   ? fmtTimestamp(userEntry.registration) +
                     (fmtRelative(userEntry.registration)
                       ? " (" + fmtRelative(userEntry.registration) + ")"
                       : "")
                   : "Unknown (may predate registration logging)";
-
-                accountInfoBody.className = "tng-user-rights-list";
-                accountInfoBody.innerHTML = "";
-                const editCountLine = document.createElement("div");
-                const bEc = document.createElement("b");
-                bEc.textContent = "Edit count: ";
-                editCountLine.appendChild(bEc);
-                editCountLine.appendChild(document.createTextNode(editCount));
-                accountInfoBody.appendChild(editCountLine);
-                const regDateLine = document.createElement("div");
-                const bRd = document.createElement("b");
-                bRd.textContent = "Registration date: ";
-                regDateLine.appendChild(bRd);
-                regDateLine.appendChild(document.createTextNode(regDate));
-                accountInfoBody.appendChild(regDateLine);
               }
             } catch (err) {
               setError(
                 localBadgesEl,
                 "Failed to load local rights: " + formatApiError(err),
               );
-              accountInfoBody.className = "tng-info-empty";
-              accountInfoBody.textContent = "Failed to load account info.";
+              localEditsBody.className = "tng-info-empty";
+              localEditsBody.textContent = "Failed to load.";
+              registrationBody.className = "tng-info-empty";
+              registrationBody.textContent = "Failed to load.";
             }
           })();
 
@@ -4727,7 +4797,7 @@ $(function () {
                   action: "query",
                   meta: "globaluserinfo",
                   guiuser: username,
-                  guiprop: "groups|rights",
+                  guiprop: "groups|rights|editcount",
                 });
                 const gui = data.query && data.query.globaluserinfo;
                 if (!gui || gui.missing !== undefined) {
@@ -4736,6 +4806,8 @@ $(function () {
                   msg.className = "tng-info-empty";
                   msg.textContent = "No global account found.";
                   globalBadgesEl.appendChild(msg);
+                  globalEditsBody.className = "tng-info-empty";
+                  globalEditsBody.textContent = "No global account found.";
                 } else {
                   const groups = gui.groups || [];
                   const rights = gui.rights || [];
@@ -4746,12 +4818,59 @@ $(function () {
                     rights,
                     "global",
                   );
+                  globalEditsBody.className = "tng-user-rights-list";
+                  globalEditsBody.textContent =
+                    gui.editcount !== undefined
+                      ? gui.editcount.toLocaleString()
+                      : "—";
                 }
               } catch (err) {
                 setError(
                   globalBadgesEl,
                   "Failed to load global rights: " + formatApiError(err),
                 );
+                globalEditsBody.className = "tng-info-empty";
+                globalEditsBody.textContent = "Failed to load.";
+              }
+            })();
+          }
+
+          // --- Previous usernames ---
+          // Queries the local rename log for entries where this account's
+          // current username is the resulting (new) name, and collects the
+          // old username(s) from each entry's parameters.
+          // Assumes the renameuser log records its target title
+          // as the new username, with olduser/newuser parameters — standard
+          // MediaWiki behaviour.
+          if (previousNamesBody) {
+            (async function () {
+              try {
+                const data = await apiGet({
+                  action: "query",
+                  list: "logevents",
+                  letype: "renameuser",
+                  letitle: "User:" + username,
+                  lelimit: 50,
+                  leprop: "details|timestamp",
+                });
+                const entries = (data.query && data.query.logevents) || [];
+                const oldNames = [];
+                for (const e of entries) {
+                  const old = e.params && e.params.olduser;
+                  if (old && !oldNames.includes(old)) oldNames.push(old);
+                }
+                if (oldNames.length) {
+                  previousNamesBody.className = "tng-user-rights-list";
+                  previousNamesBody.textContent = oldNames.join(", ");
+                } else {
+                  previousNamesBody.className = "tng-info-empty";
+                  previousNamesBody.textContent =
+                    "No previous usernames found.";
+                }
+              } catch (err) {
+                previousNamesBody.className = "tng-info-empty";
+                previousNamesBody.textContent =
+                  "Could not load previous usernames.";
               }
             })();
           }
@@ -13174,8 +13293,7 @@ $(function () {
 
           // On history pages, list items reliably carry data-mw-revid. On
           // contributions pages this attribute is not present on the <li>
-          // itself [Unverified against every skin/MediaWiki version], so the
-          // rows are selected more broadly here and the revision ID is
+          // itself, so the rows are selected more broadly here and the revision ID is
           // recovered per-row from the "hist"/"diff" link instead.
           const rows = isHistoryPage
             ? document.querySelectorAll("#pagehistory li[data-mw-revid]")

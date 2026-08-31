@@ -1,3 +1,22 @@
+## 2.140.0
+
+### Added
+
+* Added a standalone **Account info** section (🛂) to the user info dialogue, shown above the **Access rights** card. Displays:
+  * **Local edits** — the account's edit count on the current wiki.
+  * **Global edits** — the account's total edit count across all Wikimedia wikis, sourced from `meta=globaluserinfo`.
+  * **Registration date** — unchanged from the previous behaviour, showing the absolute UTC timestamp and a relative time in parentheses.
+  * **Previous usernames** — any prior usernames found in the local rename log, shown only for registered accounts (not IP addresses or temporary accounts).
+
+### Changed
+
+* Moved edit count and registration date out of the **Access rights** card's "Account info" row (removed) and into the new dedicated **Account info** section.
+
+### Notes
+
+* Previous usernames are derived from the local `renameuser` log, assuming the log entry's target title is the new username and that `olduser`/`newuser` parameters are present.
+* Global edit count is read from the existing `meta=globaluserinfo` request already used for global rights, with `editcount` added to `guiprop`; no additional API call was introduced for that value.
+
 ## 2.139.0
 
 ### Changed
