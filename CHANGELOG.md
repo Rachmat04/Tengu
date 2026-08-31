@@ -1,3 +1,15 @@
+## 2.138.0
+
+### Changed
+
+* The progress loader's empty segments are now white (`#fff`) and its filled segments use `#3366cc`, in both light and dark mode, so progress is clearly visible against either theme.
+* The "Status:" line no longer shows "Processing..." or "Completed." text; the progress loader itself now conveys whether a run is in progress or has finished. "Aborted." is still shown when a run is stopped early, since the loader alone does not distinguish an aborted run from a completed one.
+* The summary line below the status/loader row now uses the same font size as the "Status:" line, instead of the smaller default help-text size.
+
+### Notes
+
+* This affects both the main progress dialogue (`work()`) and the inline quick-action dialogue used by `[⛩️ undo]`, `[⛩️ rollback]`, and `[⛩️ restore this revision]`.
+
 ## 2.137.0
 
 ### Added

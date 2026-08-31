@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.137.0
+ * Version 2.138.0
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -1218,15 +1218,16 @@ $(function () {
           // actions is built once at the end of the run (see buildCompletionSummary())
           // and shown on the separate summary line below the status/loader row.
           const updateStatusDisplay = () => {
-            const statusText = isAborted ? "Aborted." : "Processing...";
-            statusTextSpan.innerHTML = `<b>Status:</b> ${statusText}`;
+            statusTextSpan.innerHTML = isAborted
+              ? "<b>Status:</b> Aborted."
+              : "<b>Status:</b>";
           };
 
           const statusLbl = document.createElement("div");
           statusLbl.style.cssText =
             "margin-bottom:4px;display:flex;align-items:center;gap:8px;";
           const statusTextSpan = document.createElement("span");
-          statusTextSpan.innerHTML = "<b>Status:</b> Processing...";
+          statusTextSpan.innerHTML = "<b>Status:</b>";
           const progressLoader = document.createElement("div");
           progressLoader.className = "tng-progress-loader";
           statusLbl.appendChild(statusTextSpan);
@@ -1234,10 +1235,12 @@ $(function () {
 
           // Completion summary and other summary information now render on
           // their own line below the status/loader row, instead of sharing
-          // the status line.
+          // the status line. Uses the same font size as the status line
+          // rather than the smaller .tng-help default.
           const summaryLbl = document.createElement("div");
           summaryLbl.className = "tng-help";
           summaryLbl.style.marginBottom = "8px";
+          summaryLbl.style.fontSize = "1em";
 
           const logBox = document.createElement("div");
           logBox.className = "tng-log-box";
@@ -4301,8 +4304,9 @@ $(function () {
             isAborted,
             methodTxt,
           );
-          statusTextSpan.innerHTML =
-            "<b>Status:</b> " + (isAborted ? "Aborted." : "Completed.");
+          statusTextSpan.innerHTML = isAborted
+            ? "<b>Status:</b> Aborted."
+            : "<b>Status:</b>";
           summaryLbl.textContent = completionSummary;
           // Only force the loader to a full fill on genuine completion; an
           // aborted run keeps whatever partial progress was actually reached.
@@ -12695,7 +12699,7 @@ $(function () {
           statusLbl.style.cssText =
             "margin-bottom:4px;display:flex;align-items:center;gap:8px;";
           const statusTextSpan = document.createElement("span");
-          statusTextSpan.innerHTML = "<b>Status:</b> Processing...";
+          statusTextSpan.innerHTML = "<b>Status:</b>";
           const progressLoader = document.createElement("div");
           progressLoader.className = "tng-progress-loader";
           statusLbl.appendChild(statusTextSpan);
@@ -12704,10 +12708,12 @@ $(function () {
 
           // A quick action is a single operation, so the completion summary
           // is short; it still renders on its own line below the status/loader
-          // row, consistent with the main progress dialogue.
+          // row, consistent with the main progress dialogue. Uses the same
+          // font size as the status line rather than the smaller .tng-help default.
           const summaryLbl = document.createElement("div");
           summaryLbl.className = "tng-help";
           summaryLbl.style.marginBottom = "8px";
+          summaryLbl.style.fontSize = "1em";
           body.appendChild(summaryLbl);
 
           const logBox = document.createElement("div");
@@ -12968,15 +12974,14 @@ $(function () {
           // finishes fully filled once processing ends, whether it succeeded
           // or failed — there is nothing left "in progress" either way.
           progressLoader.style.backgroundSize = "100% 100%";
+          statusTextSpan.innerHTML = "<b>Status:</b>";
           if (!hadFailure) {
-            statusTextSpan.innerHTML = "<b>Status:</b> Completed.";
             summaryLbl.textContent =
               "Completed: 1 edit " +
               (method === "rollback" ? "reverted" : "undone") +
               ".";
             quickLog("✅ All operations have been completed successfully");
           } else {
-            statusTextSpan.innerHTML = "<b>Status:</b> Completed.";
             summaryLbl.textContent = "Completed: 1 error.";
           }
 

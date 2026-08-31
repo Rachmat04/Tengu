@@ -490,9 +490,8 @@
   vertical-align: middle;
   -webkit-mask: radial-gradient(circle closest-side, #000 94%, #0000) left /
     16.66% 100%;
-  mask: radial-gradient(circle closest-side, #000 94%, #0000) left / 16.66%
-    100%;
-  background: linear-gradient(#3366cc 0 0) left/0% 100% no-repeat #ddd;
+  mask: radial-gradient(circle closest-side, #000 94%, #0000) left / 16.66% 100%;
+  background: linear-gradient(#3366cc 0 0) left/0% 100% no-repeat #fff;
   border-radius: 2px;
   transition: background-size 0.3s ease;
 }
@@ -954,7 +953,7 @@
 
 /* Dark mode for progress loader */
 .tng-theme-dark .tng-progress-loader {
-  background: linear-gradient(#6699ff 0 0) left/0% 100% no-repeat #3a3a3a;
+  background: linear-gradient(#3366cc 0 0) left/0% 100% no-repeat #fff;
 }
 
 /* Dark mode for inline field error */
