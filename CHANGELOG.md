@@ -1,3 +1,9 @@
+## 2.139.0
+
+### Changed
+
+* Reduced the vertical spacing between the "Status:" line and the summary line in both Tengu log windows (the main progress dialogue in `work()` and the inline quick-action dialogue used by `[⛩️ undo]`, `[⛩️ rollback]`, and `[⛩️ restore this revision]`), so the two lines sit closer together while the larger gap above the log box is unchanged.
+
 ## 2.138.0
 
 ### Changed
