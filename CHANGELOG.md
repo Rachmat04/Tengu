@@ -1,3 +1,19 @@
+## 2.141.0
+
+### Changed
+
+* Replaced the segmented radial-mask progress loader in every Tengu log window (the main progress dialogue in `work()`, and the inline quick-action dialogue used by `[⛩️ undo]`, `[⛩️ rollback]`, and `[⛩️ restore this revision]`) with a three-dot bounce loader. The loader no longer represents a fill amount; it simply animates while operations are being processed and stops once a run completes, is aborted, or (in the main window) a résumé point is reached.
+* The "Status:" line now shows only the label and the loader; the "Aborted." text previously appended to it has been removed. Abort status is still conveyed by the loader stopping and by the summary line below.
+* The loader now uses `currentColor` for its dots, with a light-mode value of `#3366cc` and a dark-mode override of `#6699ff`, so it adapts to the active theme.
+
+### Removed
+
+* Removed `completedOps`, `enabledOpsPerTarget`, `estimatedTotalOps`, and `updateProgressLoader()` from `work()`, since the loader no longer tracks or displays task progress.
+
+### Notes
+
+* This affects both the main progress dialogue and the inline quick-action dialogue equally.
+
 ## 2.140.0
 
 ### Added

@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.140.0
+ * Version 2.141.0
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -1213,14 +1213,15 @@ $(function () {
             },
           });
 
-          // Helper function to update status dynamically. Only shows the current
-          // status word while processing; a natural-language summary of completed
-          // actions is built once at the end of the run (see buildCompletionSummary())
-          // and shown on the separate summary line below the status/loader row.
+          // The status line shows only the "Status:" label and the dot
+          // loader — no accompanying text. The loader's tng-loader-active
+          // class (added/removed below) is what communicates whether a run
+          // is in progress; a natural-language summary of completed actions
+          // is built once at the end of the run (see buildCompletionSummary())
+          // and shown on the separate summary line below.
           const updateStatusDisplay = () => {
-            statusTextSpan.innerHTML = isAborted
-              ? "<b>Status:</b> Aborted."
-              : "<b>Status:</b>";
+            statusTextSpan.innerHTML = "<b>Status:</b>";
+            progressLoader.classList.toggle("tng-loader-active", !isAborted);
           };
 
           const statusLbl = document.createElement("div");
@@ -1229,7 +1230,7 @@ $(function () {
           const statusTextSpan = document.createElement("span");
           statusTextSpan.innerHTML = "<b>Status:</b>";
           const progressLoader = document.createElement("div");
-          progressLoader.className = "tng-progress-loader";
+          progressLoader.className = "tng-progress-loader tng-loader-active";
           statusLbl.appendChild(statusTextSpan);
           statusLbl.appendChild(progressLoader);
 
@@ -1252,37 +1253,6 @@ $(function () {
           body.appendChild(summaryLbl);
           body.appendChild(logBox);
 
-          // Progress loader tracking. estimatedTotalOps is an approximation
-          // based on the number of enabled action types per target, since the
-          // exact number of API steps (e.g. contributions to revert) is not
-          // known until the run is under way. completedOps increments once
-          // per successfully logged operation.
-          let completedOps = 0;
-          const enabledOpsPerTarget = [
-            config.rollback,
-            config.block,
-            config.unblock,
-            config.lockAccount,
-            config.reportGS,
-            config.reportSRG,
-            config.undelete,
-            config.moveSandbox,
-            config.protect,
-            config.massdel,
-            config.protectRecreation,
-            config.rd,
-            config.warn,
-            config.fixRedirects,
-          ].filter(Boolean).length;
-          const estimatedTotalOps = Math.max(
-            1,
-            enabledOpsPerTarget * (config.targets ? config.targets.length : 1),
-          );
-          function updateProgressLoader() {
-            const pct = Math.min(100, (completedOps / estimatedTotalOps) * 100);
-            progressLoader.style.backgroundSize = pct + "% 100%";
-          }
-
           const btnAbort = document.createElement("button");
           btnAbort.className = "tng-btn tng-btn-destructive";
           btnAbort.textContent = "Abort operations";
@@ -1291,6 +1261,7 @@ $(function () {
               isAborted = true;
               btnAbort.disabled = true;
               btnAbort.textContent = "Aborting...";
+              progressLoader.classList.remove("tng-loader-active");
               addLog("️️⚠️️️ Operations are being aborted...");
             }
           });
@@ -1338,8 +1309,6 @@ $(function () {
               updateStatusDisplay();
             } else {
               d.className = "tng-log-succ";
-              completedOps++;
-              updateProgressLoader();
             }
             logBox.appendChild(d);
             logBox.scrollTop = logBox.scrollHeight;
@@ -4307,13 +4276,11 @@ $(function () {
             isAborted,
             methodTxt,
           );
-          statusTextSpan.innerHTML = isAborted
-            ? "<b>Status:</b> Aborted."
-            : "<b>Status:</b>";
+          statusTextSpan.innerHTML = "<b>Status:</b>";
           summaryLbl.textContent = completionSummary;
-          // Only force the loader to a full fill on genuine completion; an
-          // aborted run keeps whatever partial progress was actually reached.
-          if (!isAborted) progressLoader.style.backgroundSize = "100% 100%";
+          // Stop the loader animation now the run has finished, whether it
+          // completed normally or was aborted.
+          progressLoader.classList.remove("tng-loader-active");
 
           if (isAborted) {
             addLog("⏹️ Operations aborted by user");
@@ -12823,7 +12790,7 @@ $(function () {
           const statusTextSpan = document.createElement("span");
           statusTextSpan.innerHTML = "<b>Status:</b>";
           const progressLoader = document.createElement("div");
-          progressLoader.className = "tng-progress-loader";
+          progressLoader.className = "tng-progress-loader tng-loader-active";
           statusLbl.appendChild(statusTextSpan);
           statusLbl.appendChild(progressLoader);
           body.appendChild(statusLbl);
@@ -13094,10 +13061,9 @@ $(function () {
 
           // Completion summary, matching the wording pattern used by
           // buildCompletionSummary() in the main window's work() function.
-          // Quick actions are a single operation, so the loader always
-          // finishes fully filled once processing ends, whether it succeeded
-          // or failed — there is nothing left "in progress" either way.
-          progressLoader.style.backgroundSize = "100% 100%";
+          // Quick actions are a single operation, so the loader simply stops
+          // once processing ends, whether it succeeded or failed.
+          progressLoader.classList.remove("tng-loader-active");
           statusTextSpan.innerHTML = "<b>Status:</b>";
           if (!hadFailure) {
             summaryLbl.textContent =
