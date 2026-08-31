@@ -1,3 +1,13 @@
+## 2.143.0
+
+### Changed
+
+* The "Status:" line and the completed-task summary line now share a single line in both Tengu log windows (the main progress dialogue in `work()` and the inline quick-action dialogue used by `[⛩️ undo]`, `[⛩️ rollback]`, and `[⛩️ restore this revision]`) — for example, "Status: Completed: 1 edit undone." instead of "Status: Completed." followed by a separate "Completed: 1 edit undone." line below it. The same applies to the aborted-run wording (e.g. "Status: Aborted: 2 pages deleted."). The separate summary line element has been removed; existing summary wording and logic (`buildCompletionSummary()` and the inline dialogue's own summary text) are unchanged.
+
+### Notes
+
+* This affects both the main progress dialogue and the inline quick-action dialogue equally. Logging behaviour is unchanged.
+
 ## 2.142.0
 
 ### Removed
