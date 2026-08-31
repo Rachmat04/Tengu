@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.141.0
+ * Version 2.142.0
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -1220,19 +1220,16 @@ $(function () {
           // is built once at the end of the run (see buildCompletionSummary())
           // and shown on the separate summary line below.
           const updateStatusDisplay = () => {
-            statusTextSpan.innerHTML = "<b>Status:</b>";
-            progressLoader.classList.toggle("tng-loader-active", !isAborted);
+            statusTextSpan.innerHTML =
+              "<b>Status:</b> " + (isAborted ? "Aborted." : "Processing...");
           };
 
           const statusLbl = document.createElement("div");
           statusLbl.style.cssText =
             "margin-bottom:2px;display:flex;align-items:center;gap:8px;";
           const statusTextSpan = document.createElement("span");
-          statusTextSpan.innerHTML = "<b>Status:</b>";
-          const progressLoader = document.createElement("div");
-          progressLoader.className = "tng-progress-loader tng-loader-active";
+          statusTextSpan.innerHTML = "<b>Status:</b> Processing...";
           statusLbl.appendChild(statusTextSpan);
-          statusLbl.appendChild(progressLoader);
 
           // Completion summary and other summary information now render on
           // their own line below the status/loader row, instead of sharing
@@ -1261,7 +1258,7 @@ $(function () {
               isAborted = true;
               btnAbort.disabled = true;
               btnAbort.textContent = "Aborting...";
-              progressLoader.classList.remove("tng-loader-active");
+              updateStatusDisplay();
               addLog("️️⚠️️️ Operations are being aborted...");
             }
           });
@@ -4276,11 +4273,9 @@ $(function () {
             isAborted,
             methodTxt,
           );
-          statusTextSpan.innerHTML = "<b>Status:</b>";
+          statusTextSpan.innerHTML =
+            "<b>Status:</b> " + (isAborted ? "Aborted." : "Completed.");
           summaryLbl.textContent = completionSummary;
-          // Stop the loader animation now the run has finished, whether it
-          // completed normally or was aborted.
-          progressLoader.classList.remove("tng-loader-active");
 
           if (isAborted) {
             addLog("⏹️ Operations aborted by user");
@@ -12788,11 +12783,8 @@ $(function () {
           statusLbl.style.cssText =
             "margin-bottom:2px;display:flex;align-items:center;gap:8px;";
           const statusTextSpan = document.createElement("span");
-          statusTextSpan.innerHTML = "<b>Status:</b>";
-          const progressLoader = document.createElement("div");
-          progressLoader.className = "tng-progress-loader tng-loader-active";
+          statusTextSpan.innerHTML = "<b>Status:</b> Processing...";
           statusLbl.appendChild(statusTextSpan);
-          statusLbl.appendChild(progressLoader);
           body.appendChild(statusLbl);
 
           // A quick action is a single operation, so the completion summary
@@ -13061,10 +13053,7 @@ $(function () {
 
           // Completion summary, matching the wording pattern used by
           // buildCompletionSummary() in the main window's work() function.
-          // Quick actions are a single operation, so the loader simply stops
-          // once processing ends, whether it succeeded or failed.
-          progressLoader.classList.remove("tng-loader-active");
-          statusTextSpan.innerHTML = "<b>Status:</b>";
+          statusTextSpan.innerHTML = "<b>Status:</b> Completed.";
           if (!hadFailure) {
             summaryLbl.textContent =
               "Completed: 1 edit " +

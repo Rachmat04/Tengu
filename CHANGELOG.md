@@ -1,3 +1,17 @@
+## 2.142.0
+
+### Removed
+
+* Removed the CSS-based progress loader from every Tengu log window (the main progress dialogue in `work()` and the inline quick-action dialogue used by `[⛩️ undo]`, `[⛩️ rollback]`, and `[⛩️ restore this revision]`), along with its associated CSS (`.tng-progress-loader`, its keyframe animations, and its dark-mode override) and the JavaScript that toggled it.
+
+### Changed
+
+* The "Status:" line now shows the task status ("Processing...", "Aborted.", or "Completed.") directly after "Status:", rather than relying on the now-removed loader to convey run state. The summary line below it is unchanged.
+
+### Notes
+
+* This affects both the main progress dialogue and the inline quick-action dialogue equally. Logging behaviour and the completion summary text are unchanged.
+
 ## 2.141.0
 
 ### Changed
