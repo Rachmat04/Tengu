@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.135.0
+ * Version 2.136.0
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -12509,7 +12509,9 @@ $(function () {
           const actionLabel =
             method === "rollback"
               ? "roll back the latest edit(s) to"
-              : "restore this revision of";
+              : method === "singleundo"
+                ? "undo this edit to"
+                : "restore this revision of";
           // Holds the keydown handler bound below, so it can be removed
           // regardless of which path closes the dialogue (Cancel, Confirm,
           // the close button, clicking outside, or Escape) — matching the
@@ -12524,7 +12526,12 @@ $(function () {
           const confirmed = await new Promise(function (resolve) {
             const { overlay, body, footer } = createDialog({
               title:
-                "Confirm " + (method === "rollback" ? "rollback" : "restore"),
+                "Confirm " +
+                (method === "rollback"
+                  ? "rollback"
+                  : method === "singleundo"
+                    ? "undo"
+                    : "restore"),
               icon: "⛩️",
               child: true,
               onClose: function () {
@@ -12673,7 +12680,50 @@ $(function () {
           const diffLinkTarget = String(revId);
 
           try {
-            if (method === "rollback") {
+            if (method === "singleundo") {
+              // Undoes only the given revision itself (mirroring the main
+              // window's batch Undo section), as distinct from the
+              // "restore this revision" action below, which undoes every
+              // edit after the given revision to restore the page to that
+              // state. Uses action=edit, so — unlike rollback — this does
+              // not require the rollback right; only the edit right is
+              // needed.
+              const summary =
+                buildQuickRevertSummaryText(
+                  targetUser || "",
+                  diffLinkTarget,
+                  selectedReason,
+                  true,
+                  null,
+                ) + toolTag;
+              const undoResult = await apiPost({
+                action: "edit",
+                title: pageTitle,
+                undo: revId,
+                summary: summary,
+              });
+              const editResult = undoResult && undoResult.edit;
+              const noChangeMade = !!(
+                editResult &&
+                Object.prototype.hasOwnProperty.call(editResult, "nochange")
+              );
+              if (noChangeMade) {
+                quickLog(
+                  "[Undo] Skipped: " +
+                    pageTitle +
+                    " — the edit appears to have already been undone; no changes were made",
+                  true,
+                );
+              } else {
+                quickLog(
+                  "[Undo] Successfully undone edit at: " +
+                    pageTitle +
+                    " (revision " +
+                    revId +
+                    ")",
+                );
+              }
+            } else if (method === "rollback") {
               // Uses buildQuickRevertSummaryText() — the same helper, and
               // therefore the same wording, used by the main window's batch
               // Rollback section (see buildRevertSummaryText() in work()) —
@@ -12870,17 +12920,22 @@ $(function () {
         // handling only has to be written once.
         function buildInlineRevisionLink(kind, pageTitle, targetUser, revId) {
           const isRollback = kind === "rollback";
+          const isSingleUndo = kind === "singleundo";
           const link = document.createElement("a");
           link.href = "#";
           link.className =
             "tng-inline-action tng-inline-action-" +
-            (isRollback ? "rollback" : "restore");
+            (isRollback ? "rollback" : isSingleUndo ? "undo" : "restore");
           link.textContent = isRollback
             ? "[⛩️ rollback]"
-            : "[⛩️ restore this revision]";
+            : isSingleUndo
+              ? "[⛩️ undo]"
+              : "[⛩️ restore this revision]";
           link.title = isRollback
             ? "Roll back this edit using Tengu (native rollback)"
-            : "Undo edits after this revision using Tengu (undo)";
+            : isSingleUndo
+              ? "Undo this edit using Tengu (undo). Does not require rollback rights."
+              : "Undo edits after this revision using Tengu (undo)";
           link.addEventListener("click", function (e) {
             e.preventDefault();
             e.stopPropagation();
@@ -12888,7 +12943,7 @@ $(function () {
               pageTitle,
               targetUser,
               revId,
-              isRollback ? "rollback" : "undo",
+              isRollback ? "rollback" : isSingleUndo ? "singleundo" : "undo",
             ).catch(function (err) {
               // Surfaces any error occurring outside runQuickRevert()'s own
               // try/catch (e.g. while building the confirmation dialogue),
@@ -12955,7 +13010,12 @@ $(function () {
           // the confirmation dialogue/edit summary; a null/hidden
           // username is already handled gracefully by runQuickRevert()
           // and buildQuickRevertSummaryText().
-          function addAction(revId, titleBoxSelector, userLinkSelector) {
+          function addAction(
+            revId,
+            titleBoxSelector,
+            userLinkSelector,
+            includeUndo,
+          ) {
             if (!revId) return;
             const titleBox = document.querySelector(titleBoxSelector);
             if (!titleBox) return;
@@ -12979,6 +13039,20 @@ $(function () {
                 revId,
               ),
             );
+            // "[⛩️ undo]" is only offered on the right-hand (current
+            // revision) side of the diff, alongside whichever of
+            // rollback/restore already appears on that line.
+            if (includeUndo) {
+              actionWrap.appendChild(document.createTextNode(" "));
+              actionWrap.appendChild(
+                buildInlineRevisionLink(
+                  "singleundo",
+                  pageTitle,
+                  targetUser,
+                  revId,
+                ),
+              );
+            }
             titleBox.insertBefore(actionWrap, titleBox.firstChild);
           }
 
@@ -12986,11 +13060,13 @@ $(function () {
             oldRevId,
             "#mw-diff-otitle1",
             "#mw-diff-otitle2 .mw-userlink",
+            false,
           );
           addAction(
             newRevId,
             "#mw-diff-ntitle1",
             "#mw-diff-ntitle2 .mw-userlink",
+            true,
           );
         }
 
@@ -13093,10 +13169,22 @@ $(function () {
               actionWrap.className = "tng-inline-actions";
               // Top row is the current revision: only rollback applies
               // there. Every other row gets "restore this revision" only.
+              // "[⛩️ undo]" is shown on every row regardless, since it
+              // undoes only that specific revision rather than depending
+              // on the row's position relative to the current revision.
               const isLatest = index === 0;
               actionWrap.appendChild(
                 buildInlineRevisionLink(
                   isLatest ? "rollback" : "restore",
+                  pageTitle,
+                  targetUser,
+                  revId,
+                ),
+              );
+              actionWrap.appendChild(document.createTextNode(" "));
+              actionWrap.appendChild(
+                buildInlineRevisionLink(
+                  "singleundo",
                   pageTitle,
                   targetUser,
                   revId,

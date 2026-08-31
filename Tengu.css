@@ -1230,9 +1230,15 @@
 .tng-inline-action-restore {
   color: #3366cc;
 }
+.tng-inline-action-undo {
+  color: #7d3c98;
+}
 .tng-theme-dark .tng-inline-action-rollback {
   color: #ff6b6b;
 }
 .tng-theme-dark .tng-inline-action-restore {
   color: #6699ff;
+}
+.tng-theme-dark .tng-inline-action-undo {
+  color: #c894e8;
 }

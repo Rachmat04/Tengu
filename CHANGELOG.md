@@ -1,3 +1,19 @@
+## 2.136.0
+
+### Added
+
+* Added a `[⛩️ undo]` inline action, complementing the existing `[⛩️ rollback]` and `[⛩️ restore this revision]` actions. Unlike rollback, undo uses `action=edit` rather than `action=rollback`, so it does not require the rollback right — only the edit right is needed.
+  * **Page history** — shown on every revision row, alongside whichever of rollback/restore already appears there.
+  * **User contributions pages** — not shown, matching the existing restriction that neither action type is added there beyond the existing rollback link.
+  * **Diff pages** — shown only on the right-hand (current-revision) side, on the same line as rollback or restore.
+* `[⛩️ undo]` opens the same reason-selection confirmation dialogue as `[⛩️ rollback]` and `[⛩️ restore this revision]` (preset dropdown, filter box, custom-reason field), and shares the same edit summary wording (`buildQuickRevertSummaryText()`), logging, status display, and error handling as the other two inline actions.
+* Added a new `.tng-inline-action-undo` CSS class (purple, with a dark-mode variant) so `[⛩️ undo]` is visually distinct from the existing red (`rollback`) and blue (`restore`) inline actions.
+
+### Notes
+
+* `[⛩️ undo]` calls `action=edit&undo=<revid>` (no `undoafter`), undoing only that specific revision — distinct from `[⛩️ restore this revision]`, which undoes every edit after the given revision via `undo=<latest>&undoafter=<revid>`.
+* A `nochange` API result (the edit had already been undone by someone else) is logged as a failure, matching the no-op detection already used for the main window's batch Undo section.
+
 ## 2.135.0
 
 ### Changed
