@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.143.0
+ * Version 2.145.0
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -11645,6 +11645,35 @@ $(function () {
               inputPagedelReason.value = pdr;
             }
             chkPagedelUnlink.checked = !!pd.unlink;
+            // Talk-page deletion, redirect deletion, and subpage deletion are
+            // not currently configurable via packages, so reset them to their
+            // original construction defaults on every package switch, matching
+            // the reset already applied to chkPagedelUnlink above. Previously
+            // these three checkboxes retained whatever state was left over
+            // from a prior package selection or manual toggle.
+            chkPagedelTalk.checked = false;
+            chkPagedelRedirects.checked = true;
+            chkPagedelSubpages.checked = true;
+            // "Protect from recreation after deletion" is not currently
+            // configurable via packages either, so reset it and its
+            // sub-controls to their construction defaults on every package
+            // switch, so a previous manual configuration does not silently
+            // carry over.
+            chkPagedelProtectRecreation.checked = false;
+            selPagedelProtectRecreationLevel.value = "sysop";
+            selPagedelProtectRecreationLevel.disabled = true;
+            selPagedelProtectRecreationExpiry.value = "1 day";
+            selPagedelProtectRecreationExpiry.disabled = true;
+            inputPagedelProtectRecreationExpiry.value = "";
+            inputPagedelProtectRecreationExpiry.classList.add("tng-hidden");
+            inputPagedelProtectRecreationExpiry.disabled = true;
+            selPagedelProtectRecreationReason.selectedIndex = 0;
+            selPagedelProtectRecreationReason.disabled = true;
+            inputPagedelProtectRecreationReason.value = "";
+            inputPagedelProtectRecreationReason.disabled = true;
+            rowRecreationLevel.style.opacity = "0.5";
+            rowRecreationExpiry.style.opacity = "0.5";
+            rowRecreationReason.style.opacity = "0.5";
 
             // Apply fallback resets to page protection state variables
             const pt = pkg.pageprotection || {};
@@ -11691,6 +11720,17 @@ $(function () {
               inputProtectReason.value = ptr;
             }
             chkProtectTalk.checked = !!pt.protectTalk;
+            // Pending changes protection is not currently configurable via
+            // packages, so reset it and its sub-controls to their
+            // construction defaults on every package switch, matching the
+            // reset now applied to recreation protection above. Availability
+            // (chkProtectPC.disabled) remains governed by flaggedRevsPromise
+            // and is not touched here.
+            chkProtectPC.checked = false;
+            selProtectPCLevel.value = "autoconfirmed";
+            selProtectPCLevel.disabled = true;
+            rowProtectPCLevel.style.opacity = "0.5";
+            rowProtectPCExpiry.style.opacity = "0.5";
 
             const rd = pkg.revisiondelete || {};
             if (!chkRevdel.disabled) {

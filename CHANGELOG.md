@@ -1,3 +1,19 @@
+## 2.145.0
+
+### Fixed
+
+* Fixed "Protect from recreation after deletion" (Page deletion section) and "Also enable pending changes protection" (Page protection section), along with their level/expiry/reason sub-controls, not being reset when the Package dropdown was changed. Neither option is currently configurable via packages, but both previously retained whatever state was left over from a prior manual configuration instead of resetting to their construction defaults, unlike every other package-driven control in these two sections.
+
+### Notes
+
+* Pending changes availability (whether the checkbox itself can be ticked at all) continues to be governed solely by `flaggedRevsPromise`/`chkProtectPC.disabled` and is unaffected by this fix.
+
+## 2.144.0
+
+### Fixed
+
+* Fixed "Also delete the talk page", "Delete redirects to deleted page", and "Delete subpages of deleted page" in the Page deletion section not being reset when the Package dropdown was changed. Every other package-driven page-deletion option (reason, unlink) was already reset on switch; these three checkboxes previously kept whatever state was left over from a prior package selection or manual toggle. They now reset to their original defaults (talk-page deletion off; redirect and subpage deletion on) on every package switch, since no package currently configures them.
+
 ## 2.143.0
 
 ### Changed
