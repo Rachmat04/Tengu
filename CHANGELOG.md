@@ -1,3 +1,9 @@
+## 2.146.1
+
+### Fixed
+
+* Fixed Shift+click range selection in the **Select specific edits/pages** picker selecting the wrong entries when the list was sorted by "Oldest first" or "Newest first". Range selection previously used the checkboxes' original A–Z build order to determine which items fell "between" the two shift-clicked rows, which no longer matched the list's displayed order once a non-alphabetical sort was applied via `sortPickerListEl()`. The range is now resolved from the list's live DOM order each time a checkbox is clicked, so it always matches what is currently on screen, including after the sort order is changed between the two ends of a shift-click range.
+
 ## 2.146.0
 
 ### Added

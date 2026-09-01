@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.146.0
+ * Version 2.146.1
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -7145,26 +7145,43 @@ $(function () {
               // desktop and web file pickers. Only currently visible items
               // (i.e. not hidden by the namespace filter) are considered, so
               // the range does not silently include hidden rows.
-              let lastClickedIndex = null;
+              //
+              // The visible range is resolved from listEl's live DOM order
+              // rather than the static `checkboxes` array (which always
+              // reflects the picker's original A–Z build order). Sorting via
+              // the Oldest first / Newest first buttons reorders the DOM
+              // (sortPickerListEl()) but never touches `checkboxes`, so a
+              // range computed from that array no longer matched what was
+              // actually displayed once a non-alphabetical sort was active.
+              // The previously-clicked checkbox itself (rather than a cached
+              // index) is tracked, so the range is also recomputed correctly
+              // if the sort order changes between the two shift-click ends.
+              let lastClickedChk = null;
+              function visibleBoxesInDomOrder() {
+                return Array.from(listEl.children)
+                  .filter(function (wrap) {
+                    return !wrap.classList.contains("tng-hidden");
+                  })
+                  .map(function (wrap) {
+                    return wrap.querySelector('input[type="checkbox"]');
+                  });
+              }
               checkboxes.forEach(function (chk) {
                 chk.addEventListener("click", function (e) {
-                  const visibleBoxes = checkboxes.filter(function (c) {
-                    return !c.parentElement.classList.contains("tng-hidden");
-                  });
+                  const visibleBoxes = visibleBoxesInDomOrder();
                   const currentIndex = visibleBoxes.indexOf(chk);
-                  if (
-                    e.shiftKey &&
-                    lastClickedIndex !== null &&
-                    currentIndex !== -1
-                  ) {
-                    const start = Math.min(lastClickedIndex, currentIndex);
-                    const end = Math.max(lastClickedIndex, currentIndex);
+                  const lastIndex = lastClickedChk
+                    ? visibleBoxes.indexOf(lastClickedChk)
+                    : -1;
+                  if (e.shiftKey && lastIndex !== -1 && currentIndex !== -1) {
+                    const start = Math.min(lastIndex, currentIndex);
+                    const end = Math.max(lastIndex, currentIndex);
                     const checkedState = chk.checked;
                     for (let i = start; i <= end; i++) {
                       visibleBoxes[i].checked = checkedState;
                     }
                   }
-                  if (currentIndex !== -1) lastClickedIndex = currentIndex;
+                  if (currentIndex !== -1) lastClickedChk = chk;
                 });
               });
 
