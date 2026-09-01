@@ -101,6 +101,13 @@ window.TenguReasons = {
           ),
           label: "Block evasion or use of sockpuppet accounts",
         },
+        {
+          value: v(
+            "Removal of content without an edit summary or other explanation for why it was removed",
+            "Penghapusan konten tanpa ringkasan suntingan atau penjelasan lain mengenai alasan penghapusannya",
+          ),
+          label: "Removing content without providing a reason",
+        },
       ],
 
       BLOCK_REASONS: [

@@ -1,3 +1,9 @@
+## 2.146.0
+
+### Added
+
+* Added a new preset reason to `ROLLBACK_REASONS`: "Removing content without providing a reason", for use when a rollback/undo reverts a content removal that had no edit summary or other explanation.
+
 ## 2.145.2
 
 ### Fixed
