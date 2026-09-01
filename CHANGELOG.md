@@ -1,3 +1,9 @@
+## 2.145.2
+
+### Fixed
+
+* Fixed the page deletion and revision deletion reason dropdowns not resetting to "Other:" in `applyPackage()` when a package's reason value had no matching dropdown option. The free-text reason was correctly placed in the adjacent input field, but the dropdown kept showing whichever preset had been selected previously, so the two controls no longer agreed on the reason that would actually be submitted. The rollback, block, and page protection reason blocks already reset their dropdowns in this case; the page deletion and revision deletion blocks now do the same.
+
 ## 2.145.1
 
 ### Fixed
