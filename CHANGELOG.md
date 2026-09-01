@@ -1,3 +1,13 @@
+## 2.145.1
+
+### Fixed
+
+* Fixed the pending changes level and expiry controls (Page protection section) remaining enabled after a package switch unchecked "Also enable pending changes protection". `applyPackage()` already reset the expiry dropdown's value but not its `disabled` state, so the dropdown stayed interactive even though the checkbox controlling it was now unticked.
+
+### Notes
+
+* This is a follow-up to the v2.145.0 fix, correcting an oversight in that same change rather than introducing new reset behaviour.
+
 ## 2.145.0
 
 ### Fixed

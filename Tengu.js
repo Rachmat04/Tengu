@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.145.0
+ * Version 2.145.1
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -11729,6 +11729,8 @@ $(function () {
             chkProtectPC.checked = false;
             selProtectPCLevel.value = "autoconfirmed";
             selProtectPCLevel.disabled = true;
+            selProtectPCExpiry.disabled = true;
+            inputProtectPCExpiry.disabled = true;
             rowProtectPCLevel.style.opacity = "0.5";
             rowProtectPCExpiry.style.opacity = "0.5";
 
