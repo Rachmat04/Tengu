@@ -1,3 +1,13 @@
+## 2.146.2
+
+### Removed
+
+* Removed the unused `buildQuickActionSummaryText()` function from Section 05. It became dead code in v2.133.0, when `runQuickRevert()` switched to the shared `buildQuickRevertSummaryText()`; its removal was already flagged as pending in that version's changelog.
+
+### Fixed
+
+* Simplified the rollback/undo loop in `work()` to call `buildRevertSummaryText()` once per revert instead of twice. `undoSummaryStr` and `rbSummaryStr` were separately assigned from identical calls to the same function, and the mediainfo revert step then chose between them with a ternary that could never actually differ. Both are replaced by a single `revertSummaryStr` constant, with no change in behaviour.
+
 ## 2.146.1
 
 ### Fixed

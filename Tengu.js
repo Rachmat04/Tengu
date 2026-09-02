@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.146.1
+ * Version 2.146.2
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -654,54 +654,6 @@ $(function () {
           return useIndonesian
             ? `Membalikkan [[Special:Diff/${diffLinkTarget}|suntingan]] oleh ${targetUser}`
             : `Reverted [[Special:Diff/${diffLinkTarget}|edit]] by ${targetUser}`;
-        }
-
-        // Builds the edit summary used specifically by the inline "⛩️
-        // rollback" / "⛩️ restore this revision" actions (Section 09b),
-        // as distinct from buildQuickRevertSummaryText() above (which is
-        // shared with the main batch Rollback section and describes the
-        // action generically as "reverted an edit"). This function
-        // describes each of the two inline actions accurately: rollback
-        // reverts the given revision, whereas restore undoes everything
-        // after the given revision to bring the page back to it — these
-        // are not the same operation, so they get distinct wording.
-        // targetUser may be null/empty (e.g. a hidden revision-deleted
-        // username), in which case the "by ..." clause is omitted.
-        // reason is optional: when provided (from the reason-selection
-        // dialogue added to runQuickRevert(), Section 09b), it is appended
-        // as a ": reason" suffix, consistent with buildRollbackReason()'s
-        // "selected: custom" joining and buildQuickRevertSummaryText()'s
-        // own reason suffix. When omitted, the summary is unchanged from
-        // its previous wording.
-        function buildQuickActionSummaryText(
-          method,
-          targetUser,
-          revId,
-          reason,
-        ) {
-          const reasonSuffix = reason ? ": " + reason : "";
-          if (method === "rollback") {
-            return (
-              (targetUser
-                ? useIndonesian
-                  ? `Membatalkan suntingan oleh ${targetUser} (lihat [[Special:Diff/${revId}]])`
-                  : `Rolled back edit by ${targetUser} (see [[Special:Diff/${revId}]])`
-                : useIndonesian
-                  ? `Membatalkan suntingan (lihat [[Special:Diff/${revId}]])`
-                  : `Rolled back edit (see [[Special:Diff/${revId}]])`) +
-              reasonSuffix
-            );
-          }
-          return (
-            (targetUser
-              ? useIndonesian
-                ? `Memulihkan revisi oleh ${targetUser} (lihat [[Special:Diff/${revId}]]), membatalkan suntingan setelahnya`
-                : `Restored revision by ${targetUser} (see [[Special:Diff/${revId}]]), undoing subsequent edits`
-              : useIndonesian
-                ? `Memulihkan revisi (lihat [[Special:Diff/${revId}]]), membatalkan suntingan setelahnya`
-                : `Restored revision (see [[Special:Diff/${revId}]]), undoing subsequent edits`) +
-            reasonSuffix
-          );
         }
 
         // Checks whether a page currently exists. Used before posting a
@@ -2692,8 +2644,7 @@ $(function () {
                 );
               };
 
-              const undoSummaryStr = buildRevertSummaryText() + toolTag;
-              const rbSummaryStr = buildRevertSummaryText() + toolTag;
+              const revertSummaryStr = buildRevertSummaryText() + toolTag;
 
               // Execute standard rollback or undo operation sequentially based on settings
               if (config.rollbackMethod === "undo" && !isZObject) {
@@ -2701,7 +2652,7 @@ $(function () {
                   action: "edit",
                   title: title,
                   undo: info.latest,
-                  summary: undoSummaryStr,
+                  summary: revertSummaryStr,
                 };
                 if (info.oldestParent) undoData.undoafter = info.oldestParent;
                 if (config.rollbackBot) undoData.bot = 1;
@@ -2751,7 +2702,7 @@ $(function () {
               } else {
                 // Native rollback
                 const rbData = config.rollbackBot ? { markbot: 1 } : {};
-                rbData.summary = rbSummaryStr;
+                rbData.summary = revertSummaryStr;
 
                 try {
                   await apiRollback(title, targetVal, rbData);
@@ -2797,10 +2748,7 @@ $(function () {
                     id: "M" + pageId,
                     clear: true,
                     data: JSON.stringify(restoredData),
-                    summary:
-                      config.rollbackMethod === "undo"
-                        ? undoSummaryStr
-                        : rbSummaryStr || undoSummaryStr,
+                    summary: revertSummaryStr,
                     bot: config.rollbackBot ? 1 : 0,
                   });
                   addLog(
