@@ -1,3 +1,15 @@
+## 2.147.1
+
+### Fixed
+
+* Fixed the **Previous usernames** row in the **Get info** panel (user mode) not detecting renames for accounts renamed via CentralAuth's global rename (Special:GlobalRenameUser). The row previously queried only the local wiki's `renameuser` log, but most Wikimedia accounts are renamed globally, which is recorded on Meta-Wiki's `gblrename` log rather than in the local log — so a globally renamed account showed no previous usernames at all.
+* Previous usernames are now collected from both the local `renameuser` log and Meta-Wiki's `gblrename` log, merged and deduplicated. A failure in one source no longer blanks the row; only a failure in both sources shows "Could not load previous usernames."
+
+### Notes
+
+* The `gblrename` log is assumed to record `olduser`/`newuser` parameters and to be searchable by the account's current username via `letitle`, following the same convention as the local `renameuser` log.
+* This affects only the **Previous usernames** row. Temporary accounts and IP addresses continue to skip this row entirely, unchanged.
+
 ## 2.147.0
 
 ### Changed

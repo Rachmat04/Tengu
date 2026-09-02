@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.147.0
+ * Version 2.147.1
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -4736,16 +4736,34 @@ $(function () {
           }
 
           // --- Previous usernames ---
-          // Queries the local rename log for entries where this account's
-          // current username is the resulting (new) name, and collects the
-          // old username(s) from each entry's parameters.
-          // Assumes the renameuser log records its target title
-          // as the new username, with olduser/newuser parameters — standard
-          // MediaWiki behaviour.
+          // Queries both the local wiki's renameuser log and Meta-Wiki's
+          // global rename log (via CentralAuth), and merges the old
+          // username(s) found in either. Most Wikimedia accounts are
+          // renamed globally through Special:GlobalRenameUser, which is
+          // recorded on Meta-Wiki as a gblrename log entry rather than in
+          // the local wiki's renameuser log; querying the local log alone
+          // therefore missed previous usernames for globally renamed
+          // accounts. Both log types are assumed to record
+          // olduser/newuser parameters and to be searchable by the
+          // account's current username via letitle, following the same
+          // convention as the local renameuser log.
           if (previousNamesBody) {
             (async function () {
+              const oldNames = [];
+              const collectOldNames = function (data) {
+                const entries =
+                  (data && data.query && data.query.logevents) || [];
+                for (const e of entries) {
+                  const old = e.params && e.params.olduser;
+                  if (old && !oldNames.includes(old)) oldNames.push(old);
+                }
+              };
+
+              let localFailed = false;
+              let globalFailed = false;
+
               try {
-                const data = await apiGet({
+                const localData = await apiGet({
                   action: "query",
                   list: "logevents",
                   letype: "renameuser",
@@ -4753,24 +4771,35 @@ $(function () {
                   lelimit: 50,
                   leprop: "details|timestamp",
                 });
-                const entries = (data.query && data.query.logevents) || [];
-                const oldNames = [];
-                for (const e of entries) {
-                  const old = e.params && e.params.olduser;
-                  if (old && !oldNames.includes(old)) oldNames.push(old);
-                }
-                if (oldNames.length) {
-                  previousNamesBody.className = "tng-user-rights-list";
-                  previousNamesBody.textContent = oldNames.join(", ");
-                } else {
-                  previousNamesBody.className = "tng-info-empty";
-                  previousNamesBody.textContent =
-                    "No previous usernames found.";
-                }
+                collectOldNames(localData);
               } catch (err) {
+                localFailed = true;
+              }
+
+              try {
+                const globalData = await foreignApiGet({
+                  action: "query",
+                  list: "logevents",
+                  letype: "gblrename",
+                  letitle: "User:" + username,
+                  lelimit: 50,
+                  leprop: "details|timestamp",
+                });
+                collectOldNames(globalData);
+              } catch (err) {
+                globalFailed = true;
+              }
+
+              if (oldNames.length) {
+                previousNamesBody.className = "tng-user-rights-list";
+                previousNamesBody.textContent = oldNames.join(", ");
+              } else if (localFailed && globalFailed) {
                 previousNamesBody.className = "tng-info-empty";
                 previousNamesBody.textContent =
                   "Could not load previous usernames.";
+              } else {
+                previousNamesBody.className = "tng-info-empty";
+                previousNamesBody.textContent = "No previous usernames found.";
               }
             })();
           }
