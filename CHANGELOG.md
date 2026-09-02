@@ -1,3 +1,9 @@
+## 2.147.3
+
+### Changed
+
+* Updated the CentralAuth log query to use `Special:CentralAuth` for more reliable username lookups.
+
 ## 2.147.2
 
 ### Changed

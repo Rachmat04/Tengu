@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.147.2
+ * Version 2.147.3
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -4777,7 +4777,7 @@ $(function () {
                     action: "query",
                     list: "logevents",
                     letype: "gblrename",
-                    letitle: "User:" + currentName,
+                    letitle: "Special:CentralAuth/" + currentName,
                     lelimit: 50,
                     leprop: "details|timestamp",
                   });
