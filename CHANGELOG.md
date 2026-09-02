@@ -1,3 +1,18 @@
+## 2.147.0
+
+### Changed
+
+* Standardised the edit summaries used by rollback, undo, and restore-this-revision across every entry point (the main window's batch Rollback section, `[⛩️ rollback]`, `[⛩️ undo]`, and `[⛩️ restore this revision]`), so each action type now consistently uses its own verb:
+  * Rollback: "Reverted [[Special:Diff/X|edit]] by [user]" (Indonesian: "Membalikkan").
+  * Undo: "Undid [[Special:Diff/X|edit]] by [user]" (Indonesian: "Membatalkan").
+  * Restore this revision: "Restored to the [[Special:Diff/X|revision]] by [user]" (Indonesian: "Dikembalikan ke revisi oleh [user]").
+* Previously, rollback and undo shared identical wording ("Reverted..." / "Membalikkan...") regardless of which method was actually used, giving no indication in the edit summary of which action had been performed.
+* User-supplied reasons and the "to the previous revision by [user]" clause continue to be appended exactly as before; only the leading verb changed.
+
+### Notes
+
+* `buildQuickRevertSummaryText()`'s `isRestore` boolean parameter has been replaced with a `variant` string ("rollback", "undo", or "restore"), used at all four call sites (`work()`'s batch Rollback section, and the three inline quick-action call sites in `runQuickRevert()`).
+
 ## 2.146.2
 
 ### Removed

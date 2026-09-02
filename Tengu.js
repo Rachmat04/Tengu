@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.146.2
+ * Version 2.147.0
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -599,61 +599,62 @@ $(function () {
           }
         }
 
-        // Builds the shared "Reverted [[Special:Diff/X|edit]] by ..." edit
-        // summary. Used by both the main Rollback section in work() and the
-        // inline "⛩️ rollback" / "⛩️ restore this revision" actions added to
-        // history and contributions pages (Section 09b), so both call sites
-        // produce identical wording.
+        // Builds the shared rollback/undo/restore edit summary. Used by the main
+        // Rollback section in work() and by the inline "⛩️ rollback", "⛩️ undo",
+        // and "⛩️ restore this revision" actions (Section 09b), so all entry points
+        // produce identical wording for a given action type.
+        //
+        // variant distinguishes the three action types, since each uses a
+        // different verb:
+        //   "rollback" (default) — "Reverted [[Special:Diff/X|edit]] by [user]"
+        //   "undo"               — "Undid [[Special:Diff/X|edit]] by [user]"
+        //   "restore"            — "Restored to the [[Special:Diff/X|revision]] by [user]"
         function buildQuickRevertSummaryText(
           targetUser,
           diffLinkTarget,
           reason,
           showUsername,
           previousEditorUser,
-          isRestore,
+          variant,
         ) {
-          // "Restore this revision" wording is distinct from rollback/undo
-          // wording: it restores the page *to* a revision by targetUser,
-          // rather than reverting an edit *by* targetUser. Using the same
-          // "Reverted ... by [user]" phrasing here would incorrectly imply
-          // that targetUser's revision was the one being undone, when it is
-          // in fact the revision being restored to. Only used by the
-          // inline "[⛩️ restore this revision]" action (runQuickRevert(),
-          // Section 09b); the main batch Rollback/Undo sections and the
-          // inline rollback action are unaffected.
-          if (isRestore) {
+          if (variant === "restore") {
             if (reason) {
               return useIndonesian
                 ? `Dikembalikan ke [[Special:Diff/${diffLinkTarget}|revisi]] oleh ${targetUser}: ${reason}`
-                : `Restored to [[Special:Diff/${diffLinkTarget}|revision]] by ${targetUser}: ${reason}`;
+                : `Restored to the [[Special:Diff/${diffLinkTarget}|revision]] by ${targetUser}: ${reason}`;
             }
             if (!showUsername || !targetUser) {
               return useIndonesian
                 ? `Dikembalikan ke [[Special:Diff/${diffLinkTarget}|revisi]]`
-                : `Restored to [[Special:Diff/${diffLinkTarget}|revision]]`;
+                : `Restored to the [[Special:Diff/${diffLinkTarget}|revision]]`;
             }
             return useIndonesian
               ? `Dikembalikan ke [[Special:Diff/${diffLinkTarget}|revisi]] oleh ${targetUser}`
-              : `Restored to [[Special:Diff/${diffLinkTarget}|revision]] by ${targetUser}`;
+              : `Restored to the [[Special:Diff/${diffLinkTarget}|revision]] by ${targetUser}`;
           }
+
+          const isUndo = variant === "undo";
+          const verbEn = isUndo ? "Undid" : "Reverted";
+          const verbId = isUndo ? "Membatalkan" : "Membalikkan";
+
           if (reason) {
             return useIndonesian
-              ? `Membalikkan [[Special:Diff/${diffLinkTarget}|suntingan]] oleh ${targetUser}: ${reason}`
-              : `Reverted [[Special:Diff/${diffLinkTarget}|edit]] by ${targetUser}: ${reason}`;
+              ? `${verbId} [[Special:Diff/${diffLinkTarget}|suntingan]] oleh ${targetUser}: ${reason}`
+              : `${verbEn} [[Special:Diff/${diffLinkTarget}|edit]] by ${targetUser}: ${reason}`;
           }
           if (!showUsername) {
             return useIndonesian
-              ? `Membalikkan [[Special:Diff/${diffLinkTarget}|suntingan]]`
-              : `Reverted [[Special:Diff/${diffLinkTarget}|edit]]`;
+              ? `${verbId} [[Special:Diff/${diffLinkTarget}|suntingan]]`
+              : `${verbEn} [[Special:Diff/${diffLinkTarget}|edit]]`;
           }
           if (previousEditorUser) {
             return useIndonesian
-              ? `Membalikkan [[Special:Diff/${diffLinkTarget}|suntingan]] oleh ${targetUser} ke revisi sebelumnya oleh ${previousEditorUser}`
-              : `Reverted [[Special:Diff/${diffLinkTarget}|edit]] by ${targetUser} to the previous revision by ${previousEditorUser}`;
+              ? `${verbId} [[Special:Diff/${diffLinkTarget}|suntingan]] oleh ${targetUser} ke revisi sebelumnya oleh ${previousEditorUser}`
+              : `${verbEn} [[Special:Diff/${diffLinkTarget}|edit]] by ${targetUser} to the previous revision by ${previousEditorUser}`;
           }
           return useIndonesian
-            ? `Membalikkan [[Special:Diff/${diffLinkTarget}|suntingan]] oleh ${targetUser}`
-            : `Reverted [[Special:Diff/${diffLinkTarget}|edit]] by ${targetUser}`;
+            ? `${verbId} [[Special:Diff/${diffLinkTarget}|suntingan]] oleh ${targetUser}`
+            : `${verbEn} [[Special:Diff/${diffLinkTarget}|edit]] by ${targetUser}`;
         }
 
         // Checks whether a page currently exists. Used before posting a
@@ -2641,6 +2642,7 @@ $(function () {
                   config.rollbackReason,
                   config.rollbackShow,
                   previousEditorUser,
+                  config.rollbackMethod === "undo" ? "undo" : "rollback",
                 );
               };
 
@@ -12838,6 +12840,7 @@ $(function () {
                   selectedReason,
                   true,
                   null,
+                  "undo",
                 ) + toolTag;
               const undoResult = await apiPost({
                 action: "edit",
@@ -12879,6 +12882,7 @@ $(function () {
                   selectedReason,
                   true,
                   null,
+                  "rollback",
                 ) + toolTag;
               const rollbackResult = await apiRollback(pageTitle, targetUser, {
                 summary: summary,
@@ -12992,7 +12996,7 @@ $(function () {
                     selectedReason,
                     true,
                     null,
-                    true,
+                    "restore",
                   ) + toolTag;
                 const editResult = await apiPost({
                   action: "edit",
