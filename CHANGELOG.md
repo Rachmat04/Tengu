@@ -1,3 +1,20 @@
+## 2.147.2
+
+### Changed
+
+* Reworked the **Previous usernames** row in the **Get info** panel (user mode) to recursively walk the CentralAuth global rename chain, instead of a single combined query against the local and global rename logs. Starting from the current username, Tengu now looks up each discovered previous username in turn — mirroring the rename history shown on `Special:CentralAuth/<username>` — until no earlier rename is found, and displays the full chain in chronological order (e.g. `OldestName → MiddleName → CurrentName`'s predecessor).
+* The local `renameuser` log is no longer queried for this row; only Meta-Wiki's `gblrename` log is used, via a recursive series of `action=query&list=logevents&letype=gblrename` requests.
+
+### Fixed
+
+* A failure while looking up the current username now shows "Could not load previous usernames." and leaves the rest of the **Get info** panel unaffected. A failure partway through an otherwise-successful chain now retains and displays the usernames already discovered, rather than discarding them.
+
+### Notes
+
+* This assumes `gblrename` log entries record `olduser`/`newuser` parameters and are searchable by the renamed-to username via `letitle`, consistent with the assumption already relied on for this row; this has not been independently confirmed against a live wiki.
+* A seen-usernames guard prevents infinite loops or duplicate entries if the API returns malformed or cyclical rename data.
+* Unchanged: this row is still skipped entirely for temporary accounts and IP addresses, and the rest of the **Get info** panel's sections, styling, and dark/light mode are unaffected.
+
 ## 2.147.1
 
 ### Fixed

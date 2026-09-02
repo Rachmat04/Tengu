@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.147.1
+ * Version 2.147.2
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -4749,54 +4749,91 @@ $(function () {
           // convention as the local renameuser log.
           if (previousNamesBody) {
             (async function () {
-              const oldNames = [];
-              const collectOldNames = function (data) {
-                const entries =
-                  (data && data.query && data.query.logevents) || [];
-                for (const e of entries) {
-                  const old = e.params && e.params.olduser;
-                  if (old && !oldNames.includes(old)) oldNames.push(old);
+              // Recursively walks the CentralAuth global rename chain,
+              // starting from the current username, via Meta-Wiki's
+              // gblrename log (action=query&list=logevents&letype=gblrename
+              // against foreignApiGet()) — the API-based equivalent of the
+              // rename history shown on Special:CentralAuth/<username>.
+              // This assumes gblrename log entries record
+              // olduser/newuser parameters and are searchable by the
+              // renamed-to username via letitle; this has not been
+              // independently confirmed against a live wiki.
+              //
+              // Each discovered previous username is looked up in turn
+              // (Special:CentralAuth/<previous username>, via the same API
+              // call) so the full rename chain is reconstructed, e.g.
+              // Rachmat02 → Rachmat01 → Rachmat. A seen-usernames guard
+              // prevents infinite loops or duplicate entries if the API
+              // returns malformed or cyclical data.
+              const chain = []; // Previous usernames, nearest-first
+              const seen = new Set([username]);
+              let currentName = username;
+              let initialLookupFailed = false;
+
+              while (currentName) {
+                let oldUser = null;
+                try {
+                  const data = await foreignApiGet({
+                    action: "query",
+                    list: "logevents",
+                    letype: "gblrename",
+                    letitle: "User:" + currentName,
+                    lelimit: 50,
+                    leprop: "details|timestamp",
+                  });
+                  const entries =
+                    (data && data.query && data.query.logevents) || [];
+                  // Prefer the entry that explicitly renamed *to* the
+                  // current name in the chain.
+                  for (const e of entries) {
+                    const params = e.params || {};
+                    if (params.newuser === currentName && params.olduser) {
+                      oldUser = params.olduser;
+                      break;
+                    }
+                  }
+                  // Fall back to the first olduser found, matching the
+                  // previous (non-recursive) lookup's behaviour, in case
+                  // newuser is not present in the response.
+                  if (!oldUser) {
+                    for (const e of entries) {
+                      const params = e.params || {};
+                      if (params.olduser) {
+                        oldUser = params.olduser;
+                        break;
+                      }
+                    }
+                  }
+                } catch (err) {
+                  // A failure on the initial/current username means no
+                  // rename history can be shown at all. A failure partway
+                  // through the chain stops traversal there but keeps
+                  // whatever was already discovered.
+                  if (currentName === username) initialLookupFailed = true;
+                  break;
                 }
-              };
 
-              let localFailed = false;
-              let globalFailed = false;
-
-              try {
-                const localData = await apiGet({
-                  action: "query",
-                  list: "logevents",
-                  letype: "renameuser",
-                  letitle: "User:" + username,
-                  lelimit: 50,
-                  leprop: "details|timestamp",
-                });
-                collectOldNames(localData);
-              } catch (err) {
-                localFailed = true;
+                if (oldUser && !seen.has(oldUser)) {
+                  chain.push(oldUser);
+                  seen.add(oldUser);
+                  currentName = oldUser;
+                } else {
+                  currentName = null; // No earlier rename, or a duplicate/cycle
+                }
               }
 
-              try {
-                const globalData = await foreignApiGet({
-                  action: "query",
-                  list: "logevents",
-                  letype: "gblrename",
-                  letitle: "User:" + username,
-                  lelimit: 50,
-                  leprop: "details|timestamp",
-                });
-                collectOldNames(globalData);
-              } catch (err) {
-                globalFailed = true;
-              }
-
-              if (oldNames.length) {
-                previousNamesBody.className = "tng-user-rights-list";
-                previousNamesBody.textContent = oldNames.join(", ");
-              } else if (localFailed && globalFailed) {
+              if (initialLookupFailed) {
                 previousNamesBody.className = "tng-info-empty";
                 previousNamesBody.textContent =
                   "Could not load previous usernames.";
+              } else if (chain.length) {
+                // chain is nearest-previous-first; reverse for chronological
+                // (oldest-first) display order.
+                previousNamesBody.className = "tng-user-rights-list";
+                previousNamesBody.textContent = chain
+                  .slice()
+                  .reverse()
+                  .join(" → ");
               } else {
                 previousNamesBody.className = "tng-info-empty";
                 previousNamesBody.textContent = "No previous usernames found.";
