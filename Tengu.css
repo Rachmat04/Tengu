@@ -1242,3 +1242,27 @@
 .tng-theme-dark .tng-inline-action-undo {
   color: #c894e8;
 }
+
+/* --- Destination-page existence checker (Move page section) --- */
+.tng-destcheck-btn {
+  transition:
+    color 0.2s ease,
+    border-color 0.2s ease,
+    background-color 0.2s ease;
+}
+.tng-destcheck-exists {
+  color: #b00020;
+  border-color: #f1b0b7;
+}
+.tng-destcheck-notexists {
+  color: #14866d;
+  border-color: #a5d6a7;
+}
+.tng-theme-dark .tng-destcheck-exists {
+  color: #ff6b6b;
+  border-color: #6a2d33;
+}
+.tng-theme-dark .tng-destcheck-notexists {
+  color: #00af89;
+  border-color: #2d6a3f;
+}

@@ -1,3 +1,16 @@
+## 2.149.0
+
+### Added
+
+* Added a destination-page existence checker (❓ / ❎ / ✅) to the **Move page** section, available in both the **Move page** and **Move to user's sandbox** sub-modes. The button sits immediately to the right of the relevant destination field (the destination title field in **Move page**; the subpage name field in **Move to user's sandbox**, checked against the full `User:[username]/[subpage]` title).
+* Clicking the button checks whether the current destination title already exists, using the exact title including its namespace. ❎ ("Destination page already exists") signals the page may need to be deleted first; ✅ ("Destination page does not exist") signals the title is available. Both states show an explanatory tooltip on hover.
+* The check result is retained until the destination title changes (via the namespace selector, the destination/subpage field, or the "Same as page creator" auto-fill), at which point the button resets to ❓, since the previous result no longer applies.
+* Added `.tng-destcheck-btn` and its `.tng-destcheck-exists`/`.tng-destcheck-notexists` state classes to `Tengu.css`, with a smooth colour transition between states and dark-mode variants.
+
+### Notes
+
+* If the existence check itself fails (e.g. a network error), the button resets to ❓ rather than reporting either state, so a failed check is never mistaken for a confirmed result.
+
 ## 2.148.1
 
 ### Fixed

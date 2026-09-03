@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.148.1
+ * Version 2.149.0
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -8742,6 +8742,68 @@ $(function () {
             enableChk: chkMoveSandbox,
           } = makeSection("Move page", "✂️", false);
 
+          // Creates a destination-page existence checker button (❓ / ❎ / ✅),
+          // shared by the Move page and Move to user's sandbox sub-modes.
+          // Clicking it checks whether the page returned by getDestTitle()
+          // currently exists. The result (❎ exists / ✅ does not exist) is
+          // kept until any of watchEls changes, at which point the button
+          // resets to ❓, since the previous check no longer applies to the
+          // (now different) destination title.
+          function makeDestChecker(getDestTitle) {
+            const btn = makeBtn("❓", "quiet");
+            btn.type = "button";
+            btn.className += " tng-btn-sm tng-destcheck-btn";
+            btn.title = "Check whether the destination page already exists";
+
+            function reset() {
+              btn.textContent = "❓";
+              btn.classList.remove(
+                "tng-destcheck-exists",
+                "tng-destcheck-notexists",
+              );
+              btn.title = "Check whether the destination page already exists";
+            }
+
+            btn.addEventListener("click", async function () {
+              const title = getDestTitle();
+              if (!title) return;
+              btn.disabled = true;
+              try {
+                const data = await apiGet({
+                  action: "query",
+                  titles: title,
+                  formatversion: 2,
+                });
+                const page =
+                  data.query && data.query.pages && data.query.pages[0];
+                const exists = !!(page && !page.missing);
+                btn.classList.remove(
+                  "tng-destcheck-exists",
+                  "tng-destcheck-notexists",
+                );
+                if (exists) {
+                  btn.textContent = "❎";
+                  btn.classList.add("tng-destcheck-exists");
+                  btn.title = "Destination page already exists";
+                } else {
+                  btn.textContent = "✅";
+                  btn.classList.add("tng-destcheck-notexists");
+                  btn.title = "Destination page does not exist";
+                }
+              } catch (e) {
+                // Do not report existence either way when the check itself failed.
+                reset();
+                btn.title =
+                  "Could not check destination page: " + formatApiError(e);
+              } finally {
+                btn.disabled = false;
+              }
+            });
+
+            btn.resetCheck = reset;
+            return btn;
+          }
+
           // --- Move mode selector ---
           const { row: rowMoveMode, field: fieldMoveMode } =
             makeRow("Move mode");
@@ -8774,6 +8836,14 @@ $(function () {
           inputMovePageDest.style.flex = "1";
           movePageDestGroup.appendChild(movePageNsWrap);
           movePageDestGroup.appendChild(inputMovePageDest);
+          const btnCheckMovePageDest = makeDestChecker(function () {
+            return buildMovePageDestTitle();
+          });
+          [selMovePageNs, inputMovePageDest].forEach(function (el) {
+            el.addEventListener("input", btnCheckMovePageDest.resetCheck);
+            el.addEventListener("change", btnCheckMovePageDest.resetCheck);
+          });
+          movePageDestGroup.appendChild(btnCheckMovePageDest);
           fieldMovePageDest.appendChild(movePageDestGroup);
           divMovePagePanel.appendChild(rowMovePageDest);
 
@@ -8806,6 +8876,11 @@ $(function () {
               inputMoveSandboxSubpage.value = _moveTargetObj
                 .getMain()
                 .replace(/_/g, " ");
+              // Values above are set programmatically, which does not fire
+              // input/change events; dispatch them so the destination
+              // checker buttons reset to ❓ for the new destination.
+              inputMovePageDest.dispatchEvent(new Event("input"));
+              inputMoveSandboxSubpage.dispatchEvent(new Event("input"));
             } catch (e) {
               // Title could not be parsed; leave the fields as-is
             }
@@ -8969,6 +9044,9 @@ $(function () {
                 null;
               if (creator) {
                 inputMoveSandboxUser.value = creator;
+                // Value set programmatically; dispatch input so the
+                // destination checker button resets for the new username.
+                inputMoveSandboxUser.dispatchEvent(new Event("input"));
               } else {
                 chkMoveSandboxSameAsCreator.checked = false;
                 inputMoveSandboxUser.disabled = false;
@@ -8986,6 +9064,7 @@ $(function () {
             } else {
               inputMoveSandboxUser.disabled = false;
               inputMoveSandboxUser.value = "";
+              inputMoveSandboxUser.dispatchEvent(new Event("input"));
             }
           });
 
@@ -8995,6 +9074,19 @@ $(function () {
             "Subpage (e.g. Draft article)",
           );
           fieldMoveSandboxSubpage.appendChild(inputMoveSandboxSubpage);
+          const btnCheckMoveSandboxDest = makeDestChecker(function () {
+            const u = inputMoveSandboxUser.value.trim();
+            const sp = inputMoveSandboxSubpage.value.trim();
+            if (!u || !sp) return "";
+            return "User:" + u + "/" + sp;
+          });
+          [inputMoveSandboxUser, inputMoveSandboxSubpage].forEach(
+            function (el) {
+              el.addEventListener("input", btnCheckMoveSandboxDest.resetCheck);
+              el.addEventListener("change", btnCheckMoveSandboxDest.resetCheck);
+            },
+          );
+          fieldMoveSandboxSubpage.appendChild(btnCheckMoveSandboxDest);
           divMoveSandboxPanel.appendChild(rowMoveSandboxSubpage);
 
           const helpMoveSandbox = document.createElement("div");
