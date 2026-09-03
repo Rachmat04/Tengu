@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.147.3
+ * Version 2.148.0
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -5036,15 +5036,40 @@ $(function () {
                   e.params && e.params.newgroups && e.params.newgroups.length
                     ? e.params.newgroups.join(", ")
                     : "(none)";
-                bodyRights.appendChild(
-                  makeEntry([
-                    ["Time", fmtTimestamp(e.timestamp)],
-                    ["Changed by", e.user || "—"],
-                    ["Previous groups", oldGroups],
-                    ["New groups", newGroups],
-                    ["Reason", e.comment || "(no reason given)"],
-                  ]),
-                );
+
+                // New-group expiry information, sourced from the log entry's
+                // newmetadata (an array of { group, expiry } pairs returned
+                // by leprop=details for rights-change log entries), rather
+                // than inferred from anything else. A group with no expiry
+                // value is indefinite; a group with an expiry shows the
+                // absolute timestamp and, where available, a relative time,
+                // matching the formatting already used elsewhere in this panel.
+                // This row is only shown when newmetadata is present, so
+                // wikis or entries lacking this data show no expiry row at
+                // all rather than a misleading one.
+                const newMetadata = (e.params && e.params.newmetadata) || null;
+                const rows = [
+                  ["Time", fmtTimestamp(e.timestamp)],
+                  ["Changed by", e.user || "—"],
+                  ["Previous groups", oldGroups],
+                  ["New groups", newGroups],
+                ];
+                if (newMetadata && newMetadata.length) {
+                  const expiryText = newMetadata
+                    .map(function (m) {
+                      const groupLabel = m.group || "—";
+                      if (!m.expiry) return groupLabel + ": indefinite";
+                      const abs = fmtTimestamp(m.expiry);
+                      const rel = fmtRelative(m.expiry);
+                      return (
+                        groupLabel + ": " + abs + (rel ? " (" + rel + ")" : "")
+                      );
+                    })
+                    .join("; ");
+                  rows.push(["Expiry", expiryText]);
+                }
+                rows.push(["Reason", e.comment || "(no reason given)"]);
+                bodyRights.appendChild(makeEntry(rows));
               }
             } catch (err) {
               setError(

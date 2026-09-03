@@ -1,3 +1,15 @@
+## 2.148.0
+
+### Added
+
+* Added an **Expiry** row to each applicable entry in the **Rights changes** section of the **Get info** panel (user mode), showing per-group expiry for the new group membership set on that log entry. Temporary group membership shows the absolute expiry timestamp with a relative time in parentheses, matching the formatting already used elsewhere in this panel; indefinite group membership is labelled "indefinite".
+
+### Notes
+
+* Sourced directly from the log entry's `newmetadata` (an array of `{ group, expiry }` pairs already returned by the existing `leprop=details` request for `letype=rights` log events); no additional API call was introduced.
+* The **Expiry** row is only added when `newmetadata` is present on the entry, so log entries or wikis that do not supply this data show no expiry row rather than a misleading or blank one.
+* All other rows (time, changed by, previous groups, new groups, reason) and the panel's existing styling and dark/light mode are unaffected.
+
 ## 2.147.3
 
 ### Changed
