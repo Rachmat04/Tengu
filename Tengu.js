@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.150.0
+ * Version 2.151.0
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -3896,6 +3896,16 @@ $(function () {
                 // used below cover the common cases but may not match every valid form
                 // (e.g. localised namespace aliases on this wiki).
                 let galleryLineRe = null;
+                // Matches the bare filename with no namespace prefix at all
+                // (e.g. an infobox parameter value such as "|image = Example.jpg"),
+                // as distinct from the namespace-prefixed forms above.
+                // Anchored to the surrounding context — a preceding "=", "|",
+                // "[[", or whitespace/start-of-line, and a following "|",
+                // "]]", whitespace/end-of-line — so the filename must appear
+                // as a standalone token rather than as a substring inside an
+                // unrelated word or URL. Group 1 captures the boundary
+                // character so it can be preserved in the replacement.
+                let bareFileNameRe = null;
                 if (isFileDeletion && fileMain) {
                   const escapedFileName = fileMain
                     .replace(/[.*+?^${}()|[\]\\]/g, "\\$&")
@@ -3910,6 +3920,10 @@ $(function () {
                       escapedFileName +
                       "[ \\t]*(?:\\|.*)?$\\n?",
                     "gim",
+                  );
+                  bareFileNameRe = new RegExp(
+                    "(^|[=|\\s])" + escapedFileName + "(?=$|[|\\s\\]])",
+                    "gm",
                   );
                 }
 
@@ -3987,7 +4001,9 @@ $(function () {
                           newWikitext = removeBalancedFileEmbeds(
                             wikitext,
                             fileMain,
-                          ).replace(galleryLineRe, "");
+                          )
+                            .replace(galleryLineRe, "")
+                            .replace(bareFileNameRe, "$1");
                         } else {
                           // Replace each matching wikilink with its display text,
                           // or with the base page title if no display text is present.

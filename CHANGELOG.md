@@ -1,3 +1,15 @@
+## 2.151.0
+
+### Changed
+
+* Expanded file-usage detection in the Page deletion section's "Remove links to deleted page or file" option. Previously, unlinking a deleted file only matched namespace-prefixed forms (`[[File:Example.jpg]]`, `[[Berkas:Example.jpg]]`, bare gallery lines with a prefix). A new bare-filename pattern now also matches the filename alone with no namespace prefix at all (e.g. `Example.jpg` used as an infobox parameter value), so such references are removed as well.
+
+### Notes
+
+* The bare-filename regex is anchored to boundary characters (`=`, `|`, whitespace, start/end of line, `]]`) on both sides of the filename, so a matching substring inside unrelated prose or a longer URL should not be affected, but this has not been tested live.
+* Pages to check are still discovered via the existing `list=imageusage` API call; this change only affects how a bare filename occurrence is matched and removed once such a page's wikitext is being processed.
+* `removeBalancedFileEmbeds()`, the gallery-line removal, nested-link/template handling, logging, and the deletion workflow itself are unchanged.
+
 ## 2.150.0
 
 ### Changed
