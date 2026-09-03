@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.149.0
+ * Version 2.150.0
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -2122,6 +2122,48 @@ $(function () {
                   reason: config.moveSandboxReason + toolTag,
                 };
                 if (config.moveSandboxNoRedirect) moveParams.noredirect = 1;
+
+                // Delete the destination page first, if requested and it exists.
+                // A move fails outright if the destination title is already
+                // occupied by an existing page, so this must run before the
+                // move attempt below, matching the equivalent option in the
+                // Move page sub-mode.
+                if (config.moveSandboxDeleteDest && !isAborted) {
+                  try {
+                    const destExistData = await apiGet({
+                      action: "query",
+                      titles: config.moveSandboxDest,
+                      formatversion: 2,
+                    });
+                    const destPage =
+                      destExistData.query &&
+                      destExistData.query.pages &&
+                      destExistData.query.pages[0];
+                    if (destPage && !destPage.missing) {
+                      await apiPost({
+                        action: "delete",
+                        title: config.moveSandboxDest,
+                        reason:
+                          (useIndonesian
+                            ? "Menghapus halaman tujuan untuk memungkinkan pemindahan halaman: "
+                            : "Deleting destination page to allow page move: ") +
+                          config.moveSandboxReason +
+                          toolTag,
+                      });
+                      addLog(
+                        `[Move] Deleted existing destination page: ${config.moveSandboxDest}`,
+                      );
+                      stats.delete++;
+                      updateStatusDisplay();
+                    }
+                  } catch (e) {
+                    addLog(
+                      `[Move] Failed to delete destination page "${config.moveSandboxDest}": ${formatApiError(e)}`,
+                      true,
+                    );
+                  }
+                }
+
                 try {
                   await apiPost(moveParams);
                   addLog(
@@ -8782,11 +8824,11 @@ $(function () {
                   "tng-destcheck-notexists",
                 );
                 if (exists) {
-                  btn.textContent = "❎";
+                  btn.textContent = "❌";
                   btn.classList.add("tng-destcheck-exists");
                   btn.title = "Destination page already exists";
                 } else {
-                  btn.textContent = "✅";
+                  btn.textContent = "✔️";
                   btn.classList.add("tng-destcheck-notexists");
                   btn.title = "Destination page does not exist";
                 }
@@ -9073,6 +9115,7 @@ $(function () {
           const inputMoveSandboxSubpage = makeInput(
             "Subpage (e.g. Draft article)",
           );
+          inputMoveSandboxSubpage.style.flex = "1";
           fieldMoveSandboxSubpage.appendChild(inputMoveSandboxSubpage);
           const btnCheckMoveSandboxDest = makeDestChecker(function () {
             const u = inputMoveSandboxUser.value.trim();
@@ -9149,12 +9192,23 @@ $(function () {
           wrapMoveSandboxSubpages.title =
             "When ticked, all subpages of the target page are also moved to the corresponding subpages of the destination. If 'Also move the talk page' is ticked, the talk page of each subpage is moved as well. Only applies to namespaces that support subpages.";
 
+          const {
+            wrap: wrapMoveSandboxDeleteDest,
+            chk: chkMoveSandboxDeleteDest,
+          } = makeCheckbox(
+            "Delete destination page if it already exists (destructive)",
+            false,
+          );
+          wrapMoveSandboxDeleteDest.title =
+            "When ticked, if the destination title already has an existing page, that page is deleted immediately before the move is attempted, allowing the move to proceed. This is a destructive, irreversible-by-default action: verify the destination title carefully before enabling this option.";
+
           const checksMoveSandbox = document.createElement("div");
           checksMoveSandbox.className = "tng-checks";
           checksMoveSandbox.style.paddingLeft = "0";
           checksMoveSandbox.appendChild(wrapMoveSandboxNoRedirect);
           checksMoveSandbox.appendChild(wrapMoveSandboxTalk);
           checksMoveSandbox.appendChild(wrapMoveSandboxSubpages);
+          checksMoveSandbox.appendChild(wrapMoveSandboxDeleteDest);
           divMoveSandboxPanel.appendChild(checksMoveSandbox);
 
           bodyMoveSandbox.appendChild(divMoveSandboxPanel);
@@ -11221,6 +11275,7 @@ $(function () {
               moveSandboxTalk:
                 chkMoveSandboxTalk.checked && !chkMoveSandboxTalk.disabled,
               moveSandboxSubpages: chkMoveSandboxSubpages.checked,
+              moveSandboxDeleteDest: chkMoveSandboxDeleteDest.checked,
               protect: chkProtect.checked,
               protectEdit: selProtectEdit.value,
               protectMove: selProtectMove.value,

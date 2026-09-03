@@ -1,3 +1,19 @@
+## 2.150.0
+
+### Changed
+
+* Updated the destination-page existence checker (Move page section) icon set: ❓ (not yet checked) / ❌ ("Destination page already exists") / ✔️ ("Destination page does not exist"), replacing the previous ❓ / ❎ / ✅ set. Behaviour is unchanged: the result is retained until the destination title changes, at which point the button resets to ❓.
+* Widened the **Subpage name** field in the **Move to user's sandbox** sub-mode so the destination-page existence checker button sits flush against it on the same row, matching the layout already used by the **Move page** sub-mode's destination title field.
+
+### Added
+
+* Added a **"Delete destination page if it already exists (destructive)"** option to the **Move to user's sandbox** sub-mode of the Move page section, matching the equivalent option already available in the **Move page** sub-mode. When ticked, if the destination subpage already exists, it is deleted immediately before the move is attempted, using the same reason entered for the move itself.
+
+### Notes
+
+* This is a destructive action: verify the destination username/subpage carefully before enabling this option, since the deleted page is not automatically restored if the subsequent move fails.
+* A `delete` operation counter increment is logged for the destination-page deletion, consistent with the equivalent behaviour in the Move page sub-mode.
+
 ## 2.149.0
 
 ### Added
