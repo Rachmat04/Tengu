@@ -1,3 +1,16 @@
+## 2.148.1
+
+### Fixed
+
+* Fixed the **Expiry** row in the **Rights changes** section of the **Get info** panel (user mode) always displaying "just now" for future expiry timestamps, instead of a future-relative time such as "in 3 weeks". `fmtRelative()` only ever computed elapsed time from a timestamp to now, so a future timestamp produced a negative difference that fell into the same "less than a minute" branch used for genuinely recent past timestamps.
+* `fmtRelative()` now compares the timestamp against the current time in both directions: timestamps in the past continue to read "X ago"; timestamps in the future now read "in X", using the same unit thresholds and pluralisation already in place (minutes, hours, days, weeks, months, years).
+
+### Notes
+
+* This affects the shared `fmtRelative()` helper inside `getUserInfo()`, also used by the **Registration date** and **Block log** rows in the same panel. Those rows are unaffected in practice, since they only ever receive past timestamps, but will now correctly show future-relative wording if ever passed one.
+* The absolute expiry timestamp display and the underlying `newmetadata` sourcing (added in v2.148.0) are unchanged.
+* `getPageInfo()`'s separate, page-mode `fmtRelative()` is a distinct function and was not modified.
+
 ## 2.148.0
 
 ### Added

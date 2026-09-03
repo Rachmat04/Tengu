@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.148.0
+ * Version 2.148.1
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -4308,34 +4308,43 @@ $(function () {
             return d.toUTCString().replace("GMT", "UTC");
           }
 
-          // Return a relative time string (e.g. "3 months ago") for a given ISO timestamp.
+          // Return a relative time string for a given ISO timestamp, correctly
+          // distinguishing past ("3 days ago") from future ("in 3 weeks")
+          // timestamps. Used for registration dates, block/rights log entries,
+          // and — critically — future expiry timestamps (e.g. the Rights
+          // changes expiry row), which previously always fell through the
+          // past-only "diffSec < 60" branch and rounded down to "just now"
+          // regardless of how far in the future the timestamp actually was.
           function fmtRelative(ts) {
             if (!ts) return "";
             const d = new Date(ts);
             if (isNaN(d.getTime())) return "";
-            const diffSec = Math.floor((Date.now() - d.getTime()) / 1000);
+            const rawDiffSec = Math.floor((d.getTime() - Date.now()) / 1000);
+            const isFuture = rawDiffSec > 0;
+            const diffSec = Math.abs(rawDiffSec);
+            const suffix = function (n, unit) {
+              const plural = unit + (n !== 1 ? "s" : "");
+              return isFuture
+                ? "in " + n + " " + plural
+                : n + " " + plural + " ago";
+            };
             if (diffSec < 60) return "just now";
             const diffMin = Math.floor(diffSec / 60);
-            if (diffMin < 60)
-              return diffMin + " minute" + (diffMin !== 1 ? "s" : "") + " ago";
+            if (diffMin < 60) return suffix(diffMin, "minute");
             const diffHr = Math.floor(diffMin / 60);
-            if (diffHr < 24)
-              return diffHr + " hour" + (diffHr !== 1 ? "s" : "") + " ago";
+            if (diffHr < 24) return suffix(diffHr, "hour");
             const diffDay = Math.floor(diffHr / 24);
-            if (diffDay < 7)
-              return diffDay + " day" + (diffDay !== 1 ? "s" : "") + " ago";
+            if (diffDay < 7) return suffix(diffDay, "day");
             if (diffDay < 30) {
               const diffWeek = Math.floor(diffDay / 7);
-              return diffWeek + " week" + (diffWeek !== 1 ? "s" : "") + " ago";
+              return suffix(diffWeek, "week");
             }
             if (diffDay < 365) {
               const diffMonth = Math.max(1, Math.floor(diffDay / 30.4375));
-              return (
-                diffMonth + " month" + (diffMonth !== 1 ? "s" : "") + " ago"
-              );
+              return suffix(diffMonth, "month");
             }
             const diffYear = Math.max(1, Math.round(diffDay / 365.25));
-            return diffYear + " year" + (diffYear !== 1 ? "s" : "") + " ago";
+            return suffix(diffYear, "year");
           }
 
           // Build a bordered entry card with labelled rows.
