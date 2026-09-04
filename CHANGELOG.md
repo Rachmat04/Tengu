@@ -1,3 +1,17 @@
+## 2.157.0
+
+### Changed
+
+* In the **Move page** sub-mode of the Move page section, the associated talk-page move (when "Also move the associated talk page" is ticked) is no longer requested via the native `movetalk` API parameter. It is now performed as its own explicit move request after the main page move succeeds, so it produces its own log entry, mirroring the equivalent behaviour already present in the "Move to user's sandbox" sub-mode.
+
+### Fixed
+
+* Fixed the associated talk-page move in the Move page sub-mode being silently folded into the main move's result, with no separate confirmation of whether the talk page itself was actually moved. The log now shows a distinct entry naming the original and new talk-page titles on success, a "does not exist" or "already a talk page" warning when the move is skipped, and a distinct failure entry with the underlying error if the talk-page move fails.
+
+### Notes
+
+* This only affects the Move page sub-mode. If the main page move succeeds but the talk-page move fails, the failure is logged separately and counted towards the run's error total, rather than being hidden inside an apparently successful main move.
+
 ## 2.156.0
 
 ### Fixed

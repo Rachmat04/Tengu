@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.156.0
+ * Version 2.157.0
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -1933,8 +1933,12 @@ $(function () {
                   reason: config.movePageReason + toolTag,
                 };
                 if (config.movePageNoRedirect) moveParams.noredirect = 1;
-                if (config.movePageTalk) moveParams.movetalk = 1;
                 if (config.movePageSubpages) moveParams.movesubpages = 1;
+                // The talk page move is no longer requested via the native
+                // movetalk parameter. It is instead performed as its own
+                // apiPost() call below (after the main move succeeds), so its
+                // success or failure can be logged independently rather than
+                // being folded silently into the main move's result.
 
                 // Delete the destination page first, if requested and it exists.
                 // A move fails outright if the destination title is already
@@ -1990,6 +1994,73 @@ $(function () {
                     `[Move] Failed to move "${targetVal}" to "${config.movePageDest}": ${formatApiError(e)}`,
                     true,
                   );
+                }
+
+                // Move the associated talk page, if requested. Performed as its
+                // own apiPost() call (rather than the native movetalk parameter)
+                // so its success or failure is logged separately from the main
+                // page move, and is only attempted once the main move has
+                // actually succeeded.
+                if (
+                  movePageMoveSucceeded &&
+                  config.movePageTalk &&
+                  !isAborted
+                ) {
+                  try {
+                    const sourceTitleObj = new mw.Title(targetVal);
+                    if (sourceTitleObj.isTalkPage()) {
+                      addLog(
+                        "[Move] Skipped talk page move: target is already a talk page",
+                        "warn",
+                      );
+                    } else {
+                      const sourceTalkTitle = sourceTitleObj
+                        .getTalkPage()
+                        .getPrefixedText();
+                      const destTalkTitle = new mw.Title(config.movePageDest)
+                        .getTalkPage()
+                        .getPrefixedText();
+                      const talkExistData = await apiGet({
+                        action: "query",
+                        titles: sourceTalkTitle,
+                        formatversion: 2,
+                      });
+                      const talkPage =
+                        talkExistData.query &&
+                        talkExistData.query.pages &&
+                        talkExistData.query.pages[0];
+                      if (talkPage && !talkPage.missing) {
+                        const talkMoveParams = {
+                          action: "move",
+                          from: sourceTalkTitle,
+                          to: destTalkTitle,
+                          reason:
+                            (useIndonesian
+                              ? `Halaman pembicaraan dari halaman yang dipindahkan: ${config.movePageReason}`
+                              : `Talk page of moved page: ${config.movePageReason}`) +
+                            toolTag,
+                        };
+                        if (config.movePageNoRedirect)
+                          talkMoveParams.noredirect = 1;
+                        await apiPost(talkMoveParams);
+                        addLog(
+                          `[Move] Moved talk page "${sourceTalkTitle}" to "${destTalkTitle}"`,
+                        );
+                        stats.move++;
+                        updateStatusDisplay();
+                      } else {
+                        addLog(
+                          `[Move] Skipped talk page move: "${sourceTalkTitle}" does not exist`,
+                          "warn",
+                        );
+                      }
+                    }
+                  } catch (e) {
+                    addLog(
+                      `[Move] Failed to move talk page for "${targetVal}": ${formatApiError(e)}`,
+                      true,
+                    );
+                  }
                 }
 
                 // Fix double redirects. A double redirect occurs when a page
