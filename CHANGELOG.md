@@ -1,3 +1,13 @@
+## 2.155.0
+
+### Changed
+
+* "Mark as bot edits" is now unticked by default, both in the main window's batch Rollback section and in the confirmation dialogue shown by the inline `[⛩️ rollback]` action. Previously both defaulted to ticked.
+
+### Notes
+
+* This affects only the construction-time default. Package presets that set `rollback.bot` (e.g. "Bot attack or automated spam") continue to tick the checkbox as before, since `applyPackage()` explicitly sets its state from the selected package. Manually ticking or unticking the checkbox is unaffected.
+
 ## 2.154.1
 
 ### Fixed

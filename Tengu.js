@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.154.1
+ * Version 2.155.0
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -7614,7 +7614,7 @@ $(function () {
           } = makeSection("Rollback", "🔙", false);
           const { wrap: wrapBot, chk: chkBot } = makeCheckbox(
             "Mark as bot edits",
-            true,
+            false,
           );
           const { wrap: wrapShow, chk: chkShow } = makeCheckbox(
             "Show username in summary",
@@ -13031,7 +13031,7 @@ $(function () {
             if (method === "rollback") {
               const { wrap: wrapQrBot, chk: _chkQrBot } = makeCheckbox(
                 "Mark as bot edits",
-                true,
+                false,
               );
               chkQrBot = _chkQrBot;
               checksQr.appendChild(wrapQrBot);
