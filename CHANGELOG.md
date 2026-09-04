@@ -1,3 +1,13 @@
+## 2.154.1
+
+### Fixed
+
+* Fixed `[⛩️ rollback]` on a user contributions page reporting a successful rollback as failed. `btnClose` was declared with `const` after the `try`/`catch` block in `runQuickRevert()` (Section 09b), but a successful contributions-page rollback called `updateCloseButtonLabel()` — which references `btnClose` — from inside that `try` block, before the declaration had run. This threw `ReferenceError: Cannot access 'btnClose' before initialization`, which was caught by the same `try`/`catch` and logged as `[Rollback] Failed`, even though the rollback API call itself had already succeeded and the page had already been updated in place. `btnClose` is now declared before the `try` block, so it is safely available whenever a success path needs it.
+
+### Notes
+
+* This affects only the log/status outcome shown for `[⛩️ rollback]` on contributions pages when the rollback succeeds; the rollback itself, its in-place link replacement, and the "Close" button relabelling were already working correctly. `[⛩️ undo]`, `[⛩️ restore this revision]`, and rollback on history/diff pages were unaffected, since they don't take the `updateCloseButtonLabel()` path.
+
 ## 2.154.0
 
 ### Added

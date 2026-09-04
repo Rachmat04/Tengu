@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.154.0
+ * Version 2.154.1
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -13163,6 +13163,21 @@ $(function () {
           const toolTag = " · [[w:id:Pengguna:Rachmat04/Tengu.js|⛩️]]";
           const diffLinkTarget = String(revId);
 
+          // Declared here, before the try block below, so that a successful
+          // contributions-page rollback can safely call
+          // updateCloseButtonLabel() (which references btnClose) without
+          // risking a "Cannot access 'btnClose' before initialization"
+          // ReferenceError. btnClose was previously declared after the
+          // try/catch block; since a rollback success is handled inside that
+          // block, referencing the not-yet-initialised const threw an error
+          // that was caught by the same try/catch and misreported the
+          // otherwise-successful rollback as failed.
+          const btnClose = makeBtn("Close and reload", "primary");
+          btnClose.addEventListener("click", function () {
+            overlay.closeHandler();
+          });
+          footer.appendChild(btnClose);
+
           // Posts a single-page reversion notification to the target's talk
           // page. Wording mirrors the single-title branch already used by
           // the main window's batch Rollback section notification (see
@@ -13449,12 +13464,6 @@ $(function () {
           } else {
             statusTextSpan.innerHTML = "<b>Status:</b> Completed: 1 error.";
           }
-
-          const btnClose = makeBtn("Close and reload", "primary");
-          btnClose.addEventListener("click", function () {
-            overlay.closeHandler();
-          });
-          footer.appendChild(btnClose);
 
           // Relabels the close button once a contributions-page rollback has
           // succeeded, since closing the dialogue no longer reloads the page.
