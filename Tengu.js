@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.151.0
+ * Version 2.152.0
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -11100,14 +11100,21 @@ $(function () {
                 );
               }
 
+              // When "lock and hide" is requested, the username itself is
+              // meant to be hidden from public view, so it is deliberately
+              // omitted from the report header (both single- and
+              // multi-account reports), a request to hide the username(s)
+              // is appended to the reason text, and the template parameter
+              // used is hidename=yes rather than hide=1.
+              if (chkSRGHideUsername.checked) {
+                reasonText = reasonText
+                  ? reasonText +
+                    " Also, request the username(s) to be hidden from public."
+                  : "Also, request the username(s) to be hidden from public.";
+              }
+
               if (isMultiSRG) {
                 const extraCount = allTargets.length - 1;
-                const headerLabel =
-                  targetVal +
-                  " and " +
-                  extraCount +
-                  " other account" +
-                  (extraCount !== 1 ? "s" : "");
                 // {{MultiLock}} takes one numbered parameter per account and
                 // does not require a leading bullet, unlike {{LockHide}}.
                 const multiLockParams = allTargets
@@ -11116,8 +11123,15 @@ $(function () {
                   })
                   .join("|");
                 const multiLockTemplate = chkSRGHideUsername.checked
-                  ? "{{MultiLock|" + multiLockParams + "|hide=1}}"
+                  ? "{{MultiLock|" + multiLockParams + "|hidename=yes}}"
                   : "{{MultiLock|" + multiLockParams + "}}";
+                const headerLabel = chkSRGHideUsername.checked
+                  ? allTargets.length + " accounts"
+                  : targetVal +
+                    " and " +
+                    extraCount +
+                    " other account" +
+                    (extraCount !== 1 ? "s" : "");
                 return (
                   "=== Global lock for " +
                   headerLabel +
@@ -11131,11 +11145,14 @@ $(function () {
               }
 
               const lockTemplate = chkSRGHideUsername.checked
-                ? "{{LockHide|1=" + targetVal + "|hide=1}}"
+                ? "{{LockHide|1=" + targetVal + "|hidename=yes}}"
                 : "{{LockHide|1=" + targetVal + "}}";
+              const headerLabelSingle = chkSRGHideUsername.checked
+                ? "account"
+                : targetVal;
               return (
                 "=== Global lock for " +
-                targetVal +
+                headerLabelSingle +
                 " ===\n" +
                 "{{Status}}\n" +
                 "* " +

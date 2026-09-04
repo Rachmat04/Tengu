@@ -1,3 +1,15 @@
+## 2.152.0
+
+### Fixed
+
+* Fixed the "Also request the username be hidden (lock and hide)" option in the Report to Steward requests/Global section not actually requesting a username hide. The generated `{{LockHide}}`/`{{MultiLock}}` templates now use `hidename=yes` instead of `hide=1` when this option is ticked, matching the parameter these templates expect for a hide request.
+* The target username(s) are no longer shown in the report section header when this option is ticked, since the whole point of the request is to keep the username out of public view. Single-account reports now head with "=== Global lock for account ===" and multi-account reports with "=== Global lock for N accounts ===" in this case.
+* A sentence requesting the hide ("Also, request the username(s) to be hidden from public.") is now appended directly to the end of the report reason when this option is ticked, rather than the request only existing implicitly via the template parameter.
+
+### Notes
+
+* This affects only report submissions where "Also request the username be hidden (lock and hide)" is ticked. Normal global lock requests (option unticked) are unaffected: header, reason text, and `{{LockHide}}`/`{{MultiLock}}` formatting are unchanged.
+
 ## 2.151.0
 
 ### Changed
