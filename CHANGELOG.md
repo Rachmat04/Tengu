@@ -1,3 +1,18 @@
+## 2.153.0
+
+### Added
+
+* Added checkbox options to the confirmation dialogue opened by the inline `[⛩️ rollback]`, `[⛩️ undo]`, and `[⛩️ restore this revision]` actions (`runQuickRevert()`, Section 09b), matching the equivalent controls already available in the main window's batch Rollback section:
+  * **"Mark as bot edits"** — shown only for `[⛩️ rollback]`, since native rollback is the only revert method that supports the `markbot` parameter. Not shown for `[⛩️ undo]` or `[⛩️ restore this revision]`.
+  * **"Show username in summary"** — shown for all three inline actions, replacing the previously hardcoded `true` passed to `buildQuickRevertSummaryText()`.
+  * **"Notify target user of reverted edits"** — new option, unticked by default. When ticked, a notification is posted to the target user's talk page after a successful revert, listing the reverted page and the reason given. Uses the same notice wording pattern (English and Indonesian) as the equivalent single-page notice in the main window's batch Rollback section.
+* Added `postQuickRevertNotification()`, a shared helper inside `runQuickRevert()` used by all three inline action branches (undo, rollback, restore) to post the new notification.
+
+### Notes
+
+* The reason field, Enter-to-confirm/Escape-to-cancel keyboard handling, progress log, status reporting, and page-reload-on-close behaviour are unchanged.
+* "Mark as bot edits" and "Show username in summary" default to ticked, matching the defaults of `chkBot` and `chkShow` in the main window's Rollback section. "Notify target user of reverted edits" defaults to unticked, matching `chkNotifyRollback`.
+
 ## 2.152.0
 
 ### Fixed

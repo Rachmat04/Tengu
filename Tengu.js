@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.152.0
+ * Version 2.153.0
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -12943,6 +12943,12 @@ $(function () {
           // provided, in which case the existing summary wording (Section
           // 09b, buildQuickActionSummaryText()) is used unchanged.
           let selectedReason = "";
+          // Captured from the checkboxes added to the confirmation dialogue
+          // below, mirroring the equivalent controls in the main window's
+          // batch Rollback section (chkBot, chkShow, chkNotifyRollback).
+          let selectedShowUsername = true;
+          let selectedBot = true;
+          let selectedNotify = false;
           const confirmed = await new Promise(function (resolve) {
             const { overlay, body, footer } = createDialog({
               title:
@@ -12995,6 +13001,35 @@ $(function () {
             fieldQrReason.appendChild(reasonWrapQr);
             body.appendChild(rowQrReason);
 
+            // Checkbox options, mirroring the equivalent controls in the
+            // main window's batch Rollback section. "Mark as bot edits"
+            // only applies to native rollback and is omitted for undo and
+            // restore-this-revision, matching updateBotAvailability()'s
+            // behaviour in Section 09.
+            const checksQr = document.createElement("div");
+            checksQr.className = "tng-checks";
+            checksQr.style.paddingLeft = "0";
+            let chkQrBot = null;
+            if (method === "rollback") {
+              const { wrap: wrapQrBot, chk: _chkQrBot } = makeCheckbox(
+                "Mark as bot edits",
+                true,
+              );
+              chkQrBot = _chkQrBot;
+              checksQr.appendChild(wrapQrBot);
+            }
+            const { wrap: wrapQrShowUsername, chk: chkQrShowUsername } =
+              makeCheckbox("Show username in summary", true);
+            checksQr.appendChild(wrapQrShowUsername);
+            const { wrap: wrapQrNotify, chk: chkQrNotify } = makeCheckbox(
+              "Notify target user of reverted edits",
+              false,
+            );
+            wrapQrNotify.title =
+              "When ticked, a notification will be posted to the target user's talk page listing this reverted edit and the reason given.";
+            checksQr.appendChild(wrapQrNotify);
+            body.appendChild(checksQr);
+
             // Mirrors buildRollbackReason() (Section 09): joins a selected
             // preset with custom text as "preset: custom" when both are
             // given, otherwise uses whichever one was provided.
@@ -13017,6 +13052,9 @@ $(function () {
             const btnConfirm = makeBtn("Confirm", "destructive");
             btnConfirm.addEventListener("click", function () {
               selectedReason = buildQuickRevertReason();
+              selectedShowUsername = chkQrShowUsername.checked;
+              selectedBot = chkQrBot ? chkQrBot.checked : false;
+              selectedNotify = chkQrNotify.checked;
               resolve(true);
               overlay.closeHandler();
             });
@@ -13104,6 +13142,47 @@ $(function () {
           const toolTag = " · [[w:id:Pengguna:Rachmat04/Tengu.js|⛩️]]";
           const diffLinkTarget = String(revId);
 
+          // Posts a single-page reversion notification to the target's talk
+          // page. Wording mirrors the single-title branch already used by
+          // the main window's batch Rollback section notification (see
+          // notifySummaryRollback / work()). Only called when "Notify
+          // target user of reverted edits" was ticked in the confirmation
+          // dialogue above.
+          async function postQuickRevertNotification() {
+            if (!targetUser) return;
+            const notifySummaryRollback =
+              (useIndonesian
+                ? "Notifikasi: Pemberitahuan pembatalan suntingan"
+                : "Notification: Edit reversion notice") + toolTag;
+            const talkTitle = new mw.Title(targetUser, 3).getPrefixedText();
+            const reasonText =
+              selectedReason ||
+              (useIndonesian
+                ? "(tidak ada alasan diberikan)"
+                : "(no reason given)");
+            try {
+              const talkExists = await pageExists(talkTitle);
+              const notice = useIndonesian
+                ? `== Pemberitahuan pembatalan suntingan ==\nHalo ${targetUser},\n\nSuntingan Anda pada halaman "${pageTitle}" telah dibatalkan dengan alasan berikut: ${reasonText}.\n\nPemberitahuan ini dikirimkan secara otomatis. Silakan sampaikan pertanyaan atau keberatan ke halaman pembicaraan saya. ~~~~`
+                : `== Edit reversion notice ==\nDear ${targetUser},\n\nYour edit to the page "${pageTitle}" has been reverted due to the following reason: ${reasonText}.\n\nThis notification was posted automatically. Please direct any questions or concerns to my user talk page. ~~~~`;
+              await apiPost({
+                action: "edit",
+                title: talkTitle,
+                appendtext: (talkExists ? "\n\n" : "") + notice,
+                summary: notifySummaryRollback,
+                bot: true,
+              });
+              quickLog(
+                `[Notify] Reversion notification posted to: ${talkTitle}`,
+              );
+            } catch (e) {
+              quickLog(
+                `[Notify] Failed to post reversion notification to ${talkTitle}: ${formatApiError(e)}`,
+                true,
+              );
+            }
+          }
+
           try {
             if (method === "singleundo") {
               // Undoes only the given revision itself (mirroring the main
@@ -13118,7 +13197,7 @@ $(function () {
                   targetUser || "",
                   diffLinkTarget,
                   selectedReason,
-                  true,
+                  selectedShowUsername,
                   null,
                   "undo",
                 ) + toolTag;
@@ -13148,6 +13227,7 @@ $(function () {
                     revId +
                     ")",
                 );
+                if (selectedNotify) await postQuickRevertNotification();
               }
             } else if (method === "rollback") {
               // Uses buildQuickRevertSummaryText() — the same helper, and
@@ -13160,13 +13240,17 @@ $(function () {
                   targetUser || "",
                   diffLinkTarget,
                   selectedReason,
-                  true,
+                  selectedShowUsername,
                   null,
                   "rollback",
                 ) + toolTag;
-              const rollbackResult = await apiRollback(pageTitle, targetUser, {
-                summary: summary,
-              });
+              const rbParams = { summary: summary };
+              if (selectedBot) rbParams.markbot = 1;
+              const rollbackResult = await apiRollback(
+                pageTitle,
+                targetUser,
+                rbParams,
+              );
               // Field names (old_revid = revision being rolled
               // back, last_revid = revision being restored to, revid = new
               // revision created) follow documented action=rollback
@@ -13221,6 +13305,7 @@ $(function () {
                       ".",
                   );
                 }
+                if (selectedNotify) await postQuickRevertNotification();
               }
             } else {
               const latestData = await apiGet({
@@ -13274,7 +13359,7 @@ $(function () {
                     targetUser || "",
                     diffLinkTarget,
                     selectedReason,
-                    true,
+                    selectedShowUsername,
                     null,
                     "restore",
                   ) + toolTag;
@@ -13311,6 +13396,7 @@ $(function () {
                       ".",
                   );
                 }
+                if (selectedNotify) await postQuickRevertNotification();
               }
             }
           } catch (e) {
