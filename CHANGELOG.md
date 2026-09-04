@@ -1,3 +1,22 @@
+## 2.154.0
+
+### Added
+
+* `[⛩️ rollback]` on a user contributions page no longer reloads the page after a successful rollback. The rolled-back entry's link is now replaced in place with a non-clickable `[⛩️ already rollbacked]` status, styled distinctly (muted, italicised) from an active rollback link, so the user can continue rolling back other eligible entries on the same contributions page without losing their scroll position or waiting for a reload.
+* Added `markInlineRollbackDone()` (Section 09b), which swaps a given rollback `<a>` element for the non-clickable status span.
+* Added a `.tng-inline-action-done` CSS class, with a dark-mode variant, for the new status.
+
+### Changed
+
+* `buildInlineRevisionLink()` now accepts an optional `isContribsPage` parameter, passed through to `runQuickRevert()` so it can tell whether this specific link was built on a contributions page.
+* `runQuickRevert()` now accepts an optional `opts` object (`{ linkEl, isContribsPage }`). When `isContribsPage` is true and the action is `"rollback"`, a successful rollback marks the link as done in place instead of navigating away on dialogue close; the dialogue's "Close and reload" button is relabelled to "Close" once this happens.
+
+### Notes
+
+* This applies only to `[⛩️ rollback]` on user contributions pages. `[⛩️ undo]` and `[⛩️ restore this revision]` are unaffected everywhere, as is `[⛩️ rollback]` on history and diff pages, which continue to navigate to the page's current URL on close exactly as before.
+* If the rollback fails (including the existing no-op/identical-content guard), the link is left untouched and remains clickable, so the user can retry.
+* The confirmation dialogue, reason field, checkbox options, edit summary wording, and notification behaviour are all unchanged.
+
 ## 2.153.0
 
 ### Added

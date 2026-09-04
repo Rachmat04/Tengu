@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.153.0
+ * Version 2.154.0
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -12925,7 +12925,25 @@ $(function () {
         // to, how Twinkle's twinklefluff.js module (addLinks.diff())
         // detects and places its own "[restore this revision]" link.
         // ============================================================================
-        async function runQuickRevert(pageTitle, targetUser, revId, method) {
+        async function runQuickRevert(
+          pageTitle,
+          targetUser,
+          revId,
+          method,
+          opts,
+        ) {
+          const { linkEl, isContribsPage } = opts || {};
+          // Only rollback on a contributions page skips the post-success
+          // reload; undo and restore-this-revision keep the existing
+          // reload-on-close behaviour everywhere, as do all actions outside
+          // contributions pages.
+          const suppressReloadOnSuccess = !!(
+            isContribsPage && method === "rollback"
+          );
+          // Set to true once the rollback has actually succeeded, so
+          // onClose() knows to skip navigation and the footer button can be
+          // relabelled accordingly.
+          let skipReloadOnClose = false;
           const actionLabel =
             method === "rollback"
               ? "roll back the latest edit(s) to"
@@ -13089,7 +13107,10 @@ $(function () {
               // diff, history, or contributions page), so the user
               // lands on the up-to-date article rather than a stale
               // diff/history view of the revision that was just
-              // rolled back or restored.
+              // rolled back or restored. Skipped for a successful
+              // contributions-page rollback (see skipReloadOnClose above),
+              // so the user stays on the same contributions list.
+              if (skipReloadOnClose) return;
               window.location.href = mw.util.getUrl(pageTitle);
             },
           });
@@ -13306,6 +13327,15 @@ $(function () {
                   );
                 }
                 if (selectedNotify) await postQuickRevertNotification();
+
+                // Contributions-page rollback: update the entry in place
+                // instead of navigating away, so the user can keep
+                // rolling back other eligible entries on the same page.
+                if (suppressReloadOnSuccess) {
+                  markInlineRollbackDone(linkEl);
+                  skipReloadOnClose = true;
+                  updateCloseButtonLabel();
+                }
               }
             } else {
               const latestData = await apiGet({
@@ -13425,13 +13455,34 @@ $(function () {
             overlay.closeHandler();
           });
           footer.appendChild(btnClose);
+
+          // Relabels the close button once a contributions-page rollback has
+          // succeeded, since closing the dialogue no longer reloads the page.
+          function updateCloseButtonLabel() {
+            if (skipReloadOnClose) {
+              btnClose.textContent = "Close";
+            }
+          }
         }
 
         // Builds a single inline "[⛩️ rollback]" / "[⛩️ restore this
         // revision]" link and wires up its click handler. Shared by the
         // history-page and contributions-page branches below so the click
         // handling only has to be written once.
-        function buildInlineRevisionLink(kind, pageTitle, targetUser, revId) {
+        // isContribsPage marks links built on a user contributions page. For
+        // these, a successful [⛩️ rollback] does not navigate away from the
+        // page afterwards; instead the link itself is replaced in place with
+        // a non-clickable "already rollbacked" status, so the user can keep
+        // working down the same contributions list without losing their
+        // position or waiting for a reload. See markInlineRollbackDone()
+        // and its use inside runQuickRevert().
+        function buildInlineRevisionLink(
+          kind,
+          pageTitle,
+          targetUser,
+          revId,
+          isContribsPage,
+        ) {
           const isRollback = kind === "rollback";
           const isSingleUndo = kind === "singleundo";
           const link = document.createElement("a");
@@ -13457,6 +13508,7 @@ $(function () {
               targetUser,
               revId,
               isRollback ? "rollback" : isSingleUndo ? "singleundo" : "undo",
+              { linkEl: link, isContribsPage: !!isContribsPage },
             ).catch(function (err) {
               // Surfaces any error occurring outside runQuickRevert()'s own
               // try/catch (e.g. while building the confirmation dialogue),
@@ -13468,6 +13520,20 @@ $(function () {
             });
           });
           return link;
+        }
+
+        // Replaces an in-page [⛩️ rollback] link with a non-clickable
+        // "already rollbacked" status span, once the rollback has actually
+        // succeeded. Only used for the contributions-page, no-reload flow;
+        // history and diff pages continue to navigate away on success as
+        // before, so their links never need this in-place swap.
+        function markInlineRollbackDone(linkEl) {
+          if (!linkEl || !linkEl.parentNode) return;
+          const span = document.createElement("span");
+          span.className = "tng-inline-action tng-inline-action-done";
+          span.textContent = "[⛩️ already rollbacked]";
+          span.title = "This edit has already been rolled back";
+          linkEl.parentNode.replaceChild(span, linkEl);
         }
 
         // Determines the page's actual current revision ID via a live
@@ -13742,7 +13808,13 @@ $(function () {
             const actionWrap = document.createElement("span");
             actionWrap.className = "tng-inline-actions";
             actionWrap.appendChild(
-              buildInlineRevisionLink("rollback", pageTitle, targetUser, revId),
+              buildInlineRevisionLink(
+                "rollback",
+                pageTitle,
+                targetUser,
+                revId,
+                true,
+              ),
             );
             li.appendChild(document.createTextNode(" "));
             li.appendChild(actionWrap);

@@ -1233,6 +1233,16 @@
 .tng-inline-action-undo {
   color: #7d3c98;
 }
+/* Non-clickable "already rollbacked" status, shown in place of an active
+   [⛩️ rollback] link on user contributions pages once the rollback has
+   succeeded. Muted and italicised so it reads clearly as a completed
+   status rather than an actionable link. */
+.tng-inline-action-done {
+  color: #72777d;
+  font-style: italic;
+  cursor: default;
+  text-decoration: none;
+}
 .tng-theme-dark .tng-inline-action-rollback {
   color: #ff6b6b;
 }
@@ -1241,6 +1251,9 @@
 }
 .tng-theme-dark .tng-inline-action-undo {
   color: #c894e8;
+}
+.tng-theme-dark .tng-inline-action-done {
+  color: #8a8a8a;
 }
 
 /* --- Destination-page existence checker (Move page section) --- */
