@@ -1,3 +1,16 @@
+## 2.158.0
+
+### Fixed
+
+* Fixed double redirects pointing to a page's associated talk page not being fixed when both "Also move the associated talk page" and "Fix double redirects" are enabled in the Move page sub-mode of the Move page section. Previously, only redirects pointing to the main page's old title were detected and updated; a redirect pointing to the old talk page title (e.g. `Talk:Old title` → `Talk:New title`) was left as a double redirect after the talk page was moved.
+* Extracted the double-redirect detection and fixing logic (previously written inline for the main page only) into a shared `fixDoubleRedirectsForMove()` helper, now applied to both the main page and, when applicable, its associated talk page within the same Move page operation.
+
+### Notes
+
+* Talk-page double-redirect fixes are logged with a "(talk page)" suffix, distinguishing them from main-page fixes in the progress log.
+* A failure while fixing a talk-page double redirect is logged separately via the existing error handling and does not affect the reported success of the main page move or the talk page move itself.
+* If no double redirects are found pointing to the talk page's old title, a single informational log line is shown, matching the existing behaviour for the main page; no misleading entries are produced.
+
 ## 2.157.0
 
 ### Changed

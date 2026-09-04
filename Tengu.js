@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.157.0
+ * Version 2.158.0
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -1321,6 +1321,128 @@ $(function () {
             return expiries;
           }
 
+          // Fixes double redirects pointing to oldTitle by updating them to
+          // point directly to newTitle. Shared by the main page and its
+          // associated talk page in the Move page sub-mode of the Move page
+          // section, since a redirect left behind at either title can leave
+          // a double redirect. labelSuffix (e.g. " (talk page)") is appended
+          // to log messages so it is clear which page a fixed redirect
+          // relates to; pass "" for the main page.
+          async function fixDoubleRedirectsForMove(
+            oldTitle,
+            newTitle,
+            labelSuffix,
+          ) {
+            try {
+              const drData = await apiGet({
+                action: "query",
+                list: "backlinks",
+                bltitle: oldTitle,
+                blfilterredir: "redirects",
+                bllimit: "max",
+                formatversion: 2,
+              });
+              const redirectPages =
+                (drData.query && drData.query.backlinks) || [];
+              if (!redirectPages.length) {
+                addLog(
+                  `[Move] No double redirects found pointing to${labelSuffix}: ${oldTitle}`,
+                );
+                return;
+              }
+              // Detect the local wiki's redirect magic word(s) (e.g.
+              // "#REDIRECT", "#ALIH") rather than assuming English.
+              const redirectAliases = await getRedirectMagicWords();
+              const redirectAliasPattern = redirectAliases
+                .map(function (a) {
+                  return a.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+                })
+                .join("|");
+              for (const rdPage of redirectPages) {
+                if (isAborted) break;
+                try {
+                  const revData = await apiGet({
+                    action: "query",
+                    prop: "revisions",
+                    titles: rdPage.title,
+                    rvprop: "content",
+                    rvslots: "main",
+                    formatversion: 2,
+                  });
+                  const page =
+                    revData.query &&
+                    revData.query.pages &&
+                    revData.query.pages[0];
+                  const slot =
+                    page &&
+                    page.revisions &&
+                    page.revisions[0] &&
+                    page.revisions[0].slots &&
+                    page.revisions[0].slots.main;
+                  if (!slot) continue;
+                  const wikitext = slot.content;
+
+                  // Matches "#REDIRECT [[Old title]]", optionally followed
+                  // by a section anchor (#Section) or a piped display text,
+                  // and rewrites only the title portion, preserving whatever
+                  // follows it.
+                  const escapedOld = oldTitle
+                    .replace(/[.*+?^${}()|[\]\\]/g, "\\$&")
+                    .replace(/[ _]/g, "[ _]");
+                  const redirRe = new RegExp(
+                    "((?:" +
+                      redirectAliasPattern +
+                      ")\\s*\\[\\[)\\s*" +
+                      escapedOld +
+                      "\\s*(\\]\\]|\\||#)",
+                    "i",
+                  );
+                  if (!redirRe.test(wikitext)) continue;
+                  const newWikitext = wikitext.replace(
+                    redirRe,
+                    function (match, prefix, tail) {
+                      return prefix + newTitle + tail;
+                    },
+                  );
+                  if (newWikitext === wikitext) continue;
+
+                  await apiPost({
+                    action: "edit",
+                    title: rdPage.title,
+                    text: newWikitext,
+                    summary:
+                      (useIndonesian
+                        ? "Memperbaiki pengalihan ganda setelah pemindahan halaman: "
+                        : "Fixing double redirect following page move: ") +
+                      oldTitle +
+                      " → " +
+                      newTitle +
+                      toolTag,
+                    bot: true,
+                  });
+                  addLog(
+                    `[Move] Fixed double redirect${labelSuffix}: ${rdPage.title} now points directly to "${newTitle}"`,
+                  );
+                  stats.redirfix++;
+                  updateStatusDisplay();
+                } catch (e) {
+                  addLog(
+                    `[Move] Failed to fix double redirect${labelSuffix} at ${rdPage.title}: ${formatApiError(e)}`,
+                    true,
+                  );
+                }
+                await new Promise((resolve) =>
+                  setTimeout(resolve, THROTTLE_MS),
+                );
+              }
+            } catch (e) {
+              addLog(
+                `[Move] Failed to fetch redirects pointing to${labelSuffix} "${oldTitle}": ${formatApiError(e)}`,
+                true,
+              );
+            }
+          }
+
           // Builds the wikitext line for a Global sysops/Requests report for
           // a specific target. Called per-target inside the targets loop so
           // every account or page in a multi-target run receives its own
@@ -2048,6 +2170,23 @@ $(function () {
                         );
                         stats.move++;
                         updateStatusDisplay();
+
+                        // Fix double redirects pointing to the talk page's old
+                        // title, mirroring the equivalent fix already applied
+                        // to the main page above. Only runs when both "Fix
+                        // double redirects" and a redirect being left behind
+                        // (i.e. "Suppress redirect" not used) apply.
+                        if (
+                          config.movePageFixDoubleRedirects &&
+                          !config.movePageNoRedirect &&
+                          !isAborted
+                        ) {
+                          await fixDoubleRedirectsForMove(
+                            sourceTalkTitle,
+                            destTalkTitle,
+                            " (talk page)",
+                          );
+                        }
                       } else {
                         addLog(
                           `[Move] Skipped talk page move: "${sourceTalkTitle}" does not exist`,
@@ -2077,113 +2216,11 @@ $(function () {
                   !config.movePageNoRedirect &&
                   !isAborted
                 ) {
-                  try {
-                    const drData = await apiGet({
-                      action: "query",
-                      list: "backlinks",
-                      bltitle: targetVal,
-                      blfilterredir: "redirects",
-                      bllimit: "max",
-                      formatversion: 2,
-                    });
-                    const redirectPages =
-                      (drData.query && drData.query.backlinks) || [];
-                    if (!redirectPages.length) {
-                      addLog(
-                        `[Move] No double redirects found pointing to: ${targetVal}`,
-                      );
-                    }
-                    // Detect the local wiki's redirect magic word(s) (e.g.
-                    // "#REDIRECT", "#ALIH") rather than assuming English.
-                    const redirectAliases = await getRedirectMagicWords();
-                    const redirectAliasPattern = redirectAliases
-                      .map(function (a) {
-                        return a.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-                      })
-                      .join("|");
-                    for (const rdPage of redirectPages) {
-                      if (isAborted) break;
-                      try {
-                        const revData = await apiGet({
-                          action: "query",
-                          prop: "revisions",
-                          titles: rdPage.title,
-                          rvprop: "content",
-                          rvslots: "main",
-                          formatversion: 2,
-                        });
-                        const page =
-                          revData.query &&
-                          revData.query.pages &&
-                          revData.query.pages[0];
-                        const slot =
-                          page &&
-                          page.revisions &&
-                          page.revisions[0] &&
-                          page.revisions[0].slots &&
-                          page.revisions[0].slots.main;
-                        if (!slot) continue;
-                        const wikitext = slot.content;
-
-                        // Matches "#REDIRECT [[Old title]]", optionally followed
-                        // by a section anchor (#Section) or a piped display text,
-                        // and rewrites only the title portion, preserving whatever
-                        // follows it.
-                        const escapedOld = targetVal
-                          .replace(/[.*+?^${}()|[\]\\]/g, "\\$&")
-                          .replace(/[ _]/g, "[ _]");
-                        const redirRe = new RegExp(
-                          "((?:" +
-                            redirectAliasPattern +
-                            ")\\s*\\[\\[)\\s*" +
-                            escapedOld +
-                            "\\s*(\\]\\]|\\||#)",
-                          "i",
-                        );
-                        if (!redirRe.test(wikitext)) continue;
-                        const newWikitext = wikitext.replace(
-                          redirRe,
-                          function (match, prefix, tail) {
-                            return prefix + config.movePageDest + tail;
-                          },
-                        );
-                        if (newWikitext === wikitext) continue;
-
-                        await apiPost({
-                          action: "edit",
-                          title: rdPage.title,
-                          text: newWikitext,
-                          summary:
-                            (useIndonesian
-                              ? "Memperbaiki pengalihan ganda setelah pemindahan halaman: "
-                              : "Fixing double redirect following page move: ") +
-                            targetVal +
-                            " → " +
-                            config.movePageDest +
-                            toolTag,
-                          bot: true,
-                        });
-                        addLog(
-                          `[Move] Fixed double redirect: ${rdPage.title} now points directly to "${config.movePageDest}"`,
-                        );
-                        stats.redirfix++;
-                        updateStatusDisplay();
-                      } catch (e) {
-                        addLog(
-                          `[Move] Failed to fix double redirect at ${rdPage.title}: ${formatApiError(e)}`,
-                          true,
-                        );
-                      }
-                      await new Promise((resolve) =>
-                        setTimeout(resolve, THROTTLE_MS),
-                      );
-                    }
-                  } catch (e) {
-                    addLog(
-                      `[Move] Failed to fetch redirects pointing to "${targetVal}": ${formatApiError(e)}`,
-                      true,
-                    );
-                  }
+                  await fixDoubleRedirectsForMove(
+                    targetVal,
+                    config.movePageDest,
+                    "",
+                  );
                 }
               } else {
                 const moveParams = {
