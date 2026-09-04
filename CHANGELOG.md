@@ -1,3 +1,14 @@
+## 2.156.0
+
+### Fixed
+
+* Fixed `applyModeLock()` unconditionally re-enabling a checkbox when its mode lock was removed, even if the same checkbox was still disabled by an independent status lock (e.g. `applyGSStatusLock()`). This could let the Report to Global sysops/Requests section become clickable again after switching a user-mode target away from an IP range, despite the current wiki being outside the scope of the global sysops service. The unlock path now checks for a remaining lock badge in the section header before re-enabling the checkbox.
+* Removed an unreachable branch in the Report to Global sysops/Requests status note. `globalSysopsScopePromise` always resolves with `resolved: true`, so the "Could not confirm global sysops eligibility for this wiki; reporting remains available." message could never actually be shown; the status note now always reads "This wiki appears to be within the scope of the global sysops service." when in scope.
+
+### Notes
+
+* Both fixes are internal correctness fixes with no change to normal single-lock behaviour. The first fix only changes outcomes in the specific case where a section is locked by more than one mechanism at once.
+
 ## 2.155.0
 
 ### Changed

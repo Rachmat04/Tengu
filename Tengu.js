@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.155.0
+ * Version 2.156.0
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -10162,6 +10162,15 @@ $(function () {
             } else {
               if (!modeLocked.has(chk)) return; // Not mode-locked; leave it alone
               modeLocked.delete(chk);
+              const hdr = sec.querySelector(".tng-section-header");
+              const badge = hdr.querySelector(".tng-mode-lock-badge");
+              if (badge) badge.remove();
+              // If another lock (e.g. a status lock such as applyGSStatusLock())
+              // still applies to this checkbox, its badge remains in the header.
+              // Leave the checkbox disabled and the section collapsed rather than
+              // re-enabling it here, since that lock is tracked independently and
+              // has not been lifted.
+              if (hdr.querySelector(".tng-rights-lock")) return;
               chk.disabled = false;
               sec.classList.toggle("tng-disabled", !chk.checked);
               const arrow = sec.querySelector(".tng-section-arrow");
@@ -10171,10 +10180,7 @@ $(function () {
                   !secBody.classList.contains("tng-hidden"),
                 );
               }
-              const hdr = sec.querySelector(".tng-section-header");
               hdr.title = "";
-              const badge = hdr.querySelector(".tng-mode-lock-badge");
-              if (badge) badge.remove();
               updateStartBtn();
             }
           }
@@ -12219,10 +12225,8 @@ $(function () {
             } else if (gsScopeInfo.inScope) {
               setNote(
                 divGSStatus,
-                gsScopeInfo.resolved ? "inactive" : "loading",
-                gsScopeInfo.resolved
-                  ? "This wiki appears to be within the scope of the global sysops service."
-                  : "Could not confirm global sysops eligibility for this wiki; reporting remains available.",
+                "inactive",
+                "This wiki appears to be within the scope of the global sysops service.",
               );
               applyGSStatusLock(false);
             } else {
