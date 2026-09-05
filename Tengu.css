@@ -1279,3 +1279,28 @@
   color: #00af89;
   border-color: #2d6a3f;
 }
+
+/* --- Link-correction button (reason fields) --- */
+.tng-linkfix-row {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  width: 100%;
+}
+.tng-linkfix-btn {
+  flex-shrink: 0;
+}
+@keyframes tng-linkfix-pulse {
+  0% {
+    transform: scale(1);
+  }
+  40% {
+    transform: scale(1.25);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+.tng-linkfix-pulse {
+  animation: tng-linkfix-pulse 0.3s ease;
+}

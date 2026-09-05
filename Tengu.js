@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.160.0
+ * Version 2.161.0
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -350,6 +350,120 @@ $(function () {
           inp.className = "tng-input" + (cls ? " " + cls : "");
           if (placeholder) inp.placeholder = placeholder;
           return inp;
+        }
+
+        // Rewrites recognised wiki-links and diff URLs within a reason
+        // string into a clickable-safe wikitext form. Only the recognised
+        // link patterns are touched; everything else in the string is left
+        // exactly as entered.
+        //
+        // Patterns handled:
+        //   1. Diff URLs (index.php?...diff=X&oldid=Y, any parameter order,
+        //      numeric IDs or "cur"/"prev") -> [[Special:Diff/oldid/diff]]
+        //   2. [[https://<wiki>/wiki/Title#Fragment]] -> [[Title#Fragment]]
+        //      (fragment underscores converted to spaces; title preserved
+        //      as-is other than percent-decoding)
+        //   3. [[Title#A_B_C]] (already bracketed, no URL) -> [[Title#A B C]]
+        //      (fragment underscores converted to spaces only)
+        //
+        // A bare, unbracketed article URL (e.g. "https://.../wiki/Title#X")
+        // is left unchanged, since it is not a wiki-link and cannot be
+        // "corrected" without changing what the person typed.
+        function correctReasonLinks(text) {
+          if (!text) return text;
+          let result = text;
+
+          function safeDecode(s) {
+            try {
+              return decodeURIComponent(s);
+            } catch (e) {
+              return s;
+            }
+          }
+
+          // 1. Diff URLs: .../w/index.php?...diff=X...oldid=Y... (any order)
+          result = result.replace(
+            /https?:\/\/[^\s\]]*\/w\/index\.php\?[^\s\]]*/gi,
+            function (match) {
+              const qIndex = match.indexOf("?");
+              if (qIndex === -1) return match;
+              const params = {};
+              match
+                .slice(qIndex + 1)
+                .split("&")
+                .forEach(function (pair) {
+                  const eq = pair.indexOf("=");
+                  if (eq === -1) return;
+                  params[pair.slice(0, eq)] = pair.slice(eq + 1);
+                });
+              if (
+                !Object.prototype.hasOwnProperty.call(params, "diff") ||
+                !Object.prototype.hasOwnProperty.call(params, "oldid")
+              ) {
+                return match;
+              }
+              return (
+                "[[Special:Diff/" + params.oldid + "/" + params.diff + "]]"
+              );
+            },
+          );
+
+          // 2. [[https://<wiki>/wiki/Title#Fragment]] -> [[Title#Fragment]]
+          result = result.replace(
+            /\[\[https?:\/\/[^/\]]+\/wiki\/([^\]#]+)(?:#([^\]]+))?\]\]/gi,
+            function (match, title, fragment) {
+              const decodedTitle = safeDecode(title);
+              if (fragment) {
+                const decodedFragment = safeDecode(fragment).replace(/_/g, " ");
+                return "[[" + decodedTitle + "#" + decodedFragment + "]]";
+              }
+              return "[[" + decodedTitle + "]]";
+            },
+          );
+
+          // 3. [[Title#A_B_C]] (already bracketed, no URL) -> [[Title#A B C]]
+          result = result.replace(
+            /\[\[([^\]|#]+)#([^\]|]+)\]\]/g,
+            function (match, title, fragment) {
+              if (/^https?:\/\//i.test(title)) return match; // Already handled above
+              return "[[" + title + "#" + fragment.replace(/_/g, " ") + "]]";
+            },
+          );
+
+          return result;
+        }
+
+        // Creates the ✨ "Fix links in reason" button for a given reason
+        // input. Clicking it rewrites only recognised links within the
+        // input's current value via correctReasonLinks(); a short scale
+        // animation gives visual feedback that something happened.
+        function makeLinkFixButton(inputEl) {
+          const btn = document.createElement("button");
+          btn.type = "button";
+          btn.className = "tng-btn tng-btn-quiet tng-btn-sm tng-linkfix-btn";
+          btn.textContent = "✨";
+          btn.title = "Fix links in reason";
+          btn.addEventListener("click", function () {
+            inputEl.value = correctReasonLinks(inputEl.value);
+            btn.classList.remove("tng-linkfix-pulse");
+            void btn.offsetWidth; // Force reflow so repeated clicks re-trigger the animation
+            btn.classList.add("tng-linkfix-pulse");
+          });
+          btn.addEventListener("animationend", function () {
+            btn.classList.remove("tng-linkfix-pulse");
+          });
+          return btn;
+        }
+
+        // Wraps a reason input and its link-fix button on a single row,
+        // placed immediately to the right of the field.
+        function wrapReasonInputWithLinkFix(inputEl) {
+          const row = document.createElement("div");
+          row.className = "tng-linkfix-row";
+          inputEl.style.flex = "1";
+          row.appendChild(inputEl);
+          row.appendChild(makeLinkFixButton(inputEl));
+          return row;
         }
         function makeCheckbox(labelText, checked) {
           const wrap = document.createElement("label");
@@ -7850,7 +7964,9 @@ $(function () {
           const reasonWrapRollback = document.createElement("div");
           reasonWrapRollback.className = "tng-reason-wrap";
           reasonWrapRollback.appendChild(filteredWrapRbReason);
-          reasonWrapRollback.appendChild(inputRbReason);
+          reasonWrapRollback.appendChild(
+            wrapReasonInputWithLinkFix(inputRbReason),
+          );
 
           fieldRbReason.appendChild(reasonWrapRollback);
           bodyRollback.appendChild(rowRbReason);
@@ -7914,7 +8030,9 @@ $(function () {
           const reasonWrapBlock = document.createElement("div");
           reasonWrapBlock.className = "tng-reason-wrap";
           reasonWrapBlock.appendChild(filteredWrapBlockReason);
-          reasonWrapBlock.appendChild(inputBlockReason);
+          reasonWrapBlock.appendChild(
+            wrapReasonInputWithLinkFix(inputBlockReason),
+          );
           fieldBlockReason.appendChild(reasonWrapBlock);
           bodyBlock.appendChild(rowBlockReason);
           const { wrap: wrapHardblock, chk: chkHardblock } = makeCheckbox(
@@ -8038,7 +8156,9 @@ $(function () {
           reasonTopUnblock.appendChild(filteredWrapUnblockReason);
           reasonTopUnblock.appendChild(btnUnblockAppend);
           reasonWrapUnblock.appendChild(reasonTopUnblock);
-          reasonWrapUnblock.appendChild(inputUnblockReason);
+          reasonWrapUnblock.appendChild(
+            wrapReasonInputWithLinkFix(inputUnblockReason),
+          );
           fieldUnblockReason.appendChild(reasonWrapUnblock);
           bodyUnblock.appendChild(rowUnblockReason);
 
@@ -8172,7 +8292,9 @@ $(function () {
           reasonTopLockAccount.appendChild(filteredWrapLockAccountReason);
           reasonTopLockAccount.appendChild(btnLockAccountAppend);
           reasonWrapLockAccount.appendChild(reasonTopLockAccount);
-          reasonWrapLockAccount.appendChild(inputLockAccountReason);
+          reasonWrapLockAccount.appendChild(
+            wrapReasonInputWithLinkFix(inputLockAccountReason),
+          );
           fieldLockAccountReason.appendChild(reasonWrapLockAccount);
           bodyLockAccount.appendChild(rowLockAccountReason);
 
@@ -8677,7 +8799,9 @@ $(function () {
           reasonTopPagedel.appendChild(filteredWrapPagedelReason);
           reasonTopPagedel.appendChild(btnPagedelAppend);
           reasonWrapPagedel.appendChild(reasonTopPagedel);
-          reasonWrapPagedel.appendChild(inputPagedelReason);
+          reasonWrapPagedel.appendChild(
+            wrapReasonInputWithLinkFix(inputPagedelReason),
+          );
           fieldPagedelReason.appendChild(reasonWrapPagedel);
           bodyPagedel.appendChild(rowPagedelReason);
 
@@ -8849,7 +8973,7 @@ $(function () {
             reasonTopPagedelProtectRecreation,
           );
           reasonWrapPagedelProtectRecreation.appendChild(
-            inputPagedelProtectRecreationReason,
+            wrapReasonInputWithLinkFix(inputPagedelProtectRecreationReason),
           );
           fieldRecreationReason.appendChild(reasonWrapPagedelProtectRecreation);
           rowRecreationReason.style.opacity = "0.5";
@@ -8917,7 +9041,9 @@ $(function () {
           reasonTopUndelete.appendChild(filteredWrapUndeleteReason);
           reasonTopUndelete.appendChild(btnUndeleteAppend);
           reasonWrapUndelete.appendChild(reasonTopUndelete);
-          reasonWrapUndelete.appendChild(inputUndeleteReason);
+          reasonWrapUndelete.appendChild(
+            wrapReasonInputWithLinkFix(inputUndeleteReason),
+          );
           fieldUndeleteReason.appendChild(reasonWrapUndelete);
           bodyUndelete.appendChild(rowUndeleteReason);
 
@@ -9177,7 +9303,9 @@ $(function () {
           reasonTopMovePage.appendChild(filteredWrapMovePageReason);
           reasonTopMovePage.appendChild(btnMovePageAppend);
           reasonWrapMovePage.appendChild(reasonTopMovePage);
-          reasonWrapMovePage.appendChild(inputMovePageReason);
+          reasonWrapMovePage.appendChild(
+            wrapReasonInputWithLinkFix(inputMovePageReason),
+          );
           fieldMovePageReason.appendChild(reasonWrapMovePage);
           divMovePagePanel.appendChild(rowMovePageReason);
 
@@ -9372,7 +9500,9 @@ $(function () {
           reasonTopMoveSandbox.appendChild(filteredWrapMoveSandboxReason);
           reasonTopMoveSandbox.appendChild(btnMoveSandboxAppend);
           reasonWrapMoveSandbox.appendChild(reasonTopMoveSandbox);
-          reasonWrapMoveSandbox.appendChild(inputMoveSandboxReason);
+          reasonWrapMoveSandbox.appendChild(
+            wrapReasonInputWithLinkFix(inputMoveSandboxReason),
+          );
           fieldMoveSandboxReason.appendChild(reasonWrapMoveSandbox);
           divMoveSandboxPanel.appendChild(rowMoveSandboxReason);
 
@@ -9929,7 +10059,9 @@ $(function () {
           reasonTopProtect.appendChild(filteredWrapProtectReason);
           reasonTopProtect.appendChild(btnProtectAppend);
           reasonWrapProtect.appendChild(reasonTopProtect);
-          reasonWrapProtect.appendChild(inputProtectReason);
+          reasonWrapProtect.appendChild(
+            wrapReasonInputWithLinkFix(inputProtectReason),
+          );
           fieldProtectReason.appendChild(reasonWrapProtect);
           bodyProtect.appendChild(rowProtectReason);
 
@@ -10096,7 +10228,9 @@ $(function () {
             btnProtectRecreationReasonAppend,
           );
           reasonWrapProtectRecreation.appendChild(reasonTopProtectRecreation);
-          reasonWrapProtectRecreation.appendChild(inputProtectRecreationReason);
+          reasonWrapProtectRecreation.appendChild(
+            wrapReasonInputWithLinkFix(inputProtectRecreationReason),
+          );
           fieldProtectRecreationReason.appendChild(reasonWrapProtectRecreation);
           rowProtectRecreationReason.style.opacity = "0.5";
           bodyProtectRecreation.appendChild(rowProtectRecreationReason);
@@ -10228,7 +10362,9 @@ $(function () {
           reasonTopFixRedirects.appendChild(filteredWrapFixRedirectsReason);
           reasonTopFixRedirects.appendChild(btnFixRedirectsAppend);
           reasonWrapFixRedirects.appendChild(reasonTopFixRedirects);
-          reasonWrapFixRedirects.appendChild(inputFixRedirectsReason);
+          reasonWrapFixRedirects.appendChild(
+            wrapReasonInputWithLinkFix(inputFixRedirectsReason),
+          );
           fieldFixRedirectsReason.appendChild(reasonWrapFixRedirects);
           bodyFixRedirects.appendChild(rowFixRedirectsReason);
 
@@ -10290,7 +10426,9 @@ $(function () {
           reasonTopRevdel.appendChild(filteredWrapRevdelReason);
           reasonTopRevdel.appendChild(btnRevdelAppend);
           reasonWrapRevdel.appendChild(reasonTopRevdel);
-          reasonWrapRevdel.appendChild(inputRevdelReason);
+          reasonWrapRevdel.appendChild(
+            wrapReasonInputWithLinkFix(inputRevdelReason),
+          );
           fieldRevdelReason.appendChild(reasonWrapRevdel);
           bodyRevdel.appendChild(rowRevdelReason);
           body.appendChild(secRevdel);

@@ -1,3 +1,19 @@
+## 2.161.0
+
+### Added
+
+* Added a ✨ "Fix links in reason" button next to every custom reason field (Rollback, Block, Unblock, Lock account, Page deletion, Page undeletion, Move page, Move to user's sandbox, Page protection, Protect against recreation, Revision deletion, Fix redirects). Clicking it rewrites only recognised links within that field's current text:
+  * `[[https://<wiki>/wiki/Title#Fragment]]` → `[[Title#Fragment]]` (fragment underscores converted to spaces)
+  * `[[Title#A_B_C]]` → `[[Title#A B C]]`
+  * A diff URL such as `.../w/index.php?title=...&diff=X&oldid=Y` → `[[Special:Diff/Y/X]]`, supporting numeric IDs as well as `cur`/`prev`, regardless of parameter order
+* Added a short scale-pulse animation on the button when clicked, as visual confirmation.
+* Added `.tng-linkfix-row` and `.tng-linkfix-btn` styles, plus the `tng-linkfix-pulse` animation, to `Tengu.css`.
+
+### Notes
+
+* Only the recognised link patterns above are rewritten; all other text in the field, including a bare unbracketed article URL, is left exactly as entered.
+* The diff-URL parsing is built from the documented `index.php?title=&diff=&oldid=` URL shape only.
+
 ## 2.160.0
 
 ### Changed
