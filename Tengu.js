@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.162.1
+ * Version 2.162.2
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -12104,13 +12104,13 @@ $(function () {
               const hasSuppressRedirect =
                 info.rights.indexOf("suppressredirect") !== -1;
               if (hasSuppressRedirect) {
-                chkMoveSandboxNoRedirect.checked = true;
+                // Only availability is granted here; the checkbox itself stays
+                // unticked by default in both Move page sub-modes, so a sysop
+                // must deliberately opt into suppressing the redirect rather
+                // than having it enabled automatically.
                 chkMoveSandboxNoRedirect.disabled = false;
                 wrapMoveSandboxNoRedirect.style.opacity = "";
                 wrapMoveSandboxNoRedirect.style.cursor = "";
-                // Also enable and tick the Move page suppress-redirect checkbox,
-                // matching the sandbox checkbox's behaviour above.
-                chkMovePageNoRedirect.checked = true;
                 chkMovePageNoRedirect.disabled = false;
                 wrapMovePageNoRedirect.style.opacity = "";
                 wrapMovePageNoRedirect.style.cursor = "";

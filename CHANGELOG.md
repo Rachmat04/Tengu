@@ -1,3 +1,13 @@
+## 2.162.2
+
+### Changed
+
+* The **"Suppress redirect"** checkbox in both Move page sub-modes (**Move page** and **Move to user's sandbox**) is no longer automatically ticked for sysops once the `suppressredirect` right is confirmed. The checkbox is still enabled (unlocked) for sysops as before, but now stays unticked by default in both sub-modes, requiring a deliberate choice to suppress the redirect.
+
+### Notes
+
+* This affects only the default checked state. Availability (enabled/disabled based on the `suppressredirect` right) is unchanged.
+
 ## 2.162.1
 
 ### Fixed
