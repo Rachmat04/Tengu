@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.162.0
+ * Version 2.162.1
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -7174,8 +7174,9 @@ $(function () {
             "When ticked, a text area appears where additional targets can be" +
             " pasted one per line. The primary target above is always included." +
             " Status checks and section status notes reflect the primary target" +
-            " only. GS/SRG report submissions apply to the primary target only." +
-            " Resume is not available for multi-target runs.";
+            " only. Reports to Global sysops/Requests and Steward requests/Global" +
+            " include every selected target. Resume is not available for" +
+            " multi-target runs.";
 
           const textareaMultiTarget = document.createElement("textarea");
           textareaMultiTarget.className = "tng-input";
@@ -7190,9 +7191,11 @@ $(function () {
           const helpMultiTarget = document.createElement("div");
           helpMultiTarget.className = "tng-help";
           helpMultiTarget.textContent =
-            "The primary target above is always processed first. Status checks," +
-            " section status notes, and GS/SRG report submissions reflect the" +
-            " primary target only. Resume is not available for multi-target runs.";
+            "The primary target above is always processed first. Status checks" +
+            " and section status notes reflect the primary target only. Reports" +
+            " to Global sysops/Requests and Steward requests/Global include" +
+            " every selected target. Resume is not available for multi-target" +
+            " runs.";
 
           const divMultiTargetPanel = document.createElement("div");
           divMultiTargetPanel.className = "tng-multitarget-panel";

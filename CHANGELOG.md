@@ -1,3 +1,13 @@
+## 2.162.1
+
+### Fixed
+
+* Corrected the multi-target help text and checkbox tooltip, which stated that Global sysops/Requests and Steward requests/Global report submissions reflect the primary target only. This was accurate at the time it was written but became outdated once per-target Global sysops/Requests reports (v2.112.0) and combined multi-target Steward requests/Global reports (v2.113.0) were added. The text now states that these two report types include every selected target, while status checks and section status notes correctly continue to reflect the primary target only.
+
+### Notes
+
+* This is a documentation/UI text fix only; no behavioural changes were made to report submission logic.
+
 ## 2.162.0
 
 ### Added
