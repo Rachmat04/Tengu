@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.159.0
+ * Version 2.160.0
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -1346,7 +1346,7 @@ $(function () {
                 (drData.query && drData.query.backlinks) || [];
               if (!redirectPages.length) {
                 addLog(
-                  `[Move] No double redirects found pointing to${labelSuffix}: ${oldTitle}`,
+                  `[Move] No double redirects found pointing to${labelSuffix}: "${oldTitle}"`,
                 );
                 return;
               }
@@ -1421,13 +1421,13 @@ $(function () {
                     bot: true,
                   });
                   addLog(
-                    `[Move] Fixed double redirect${labelSuffix}: ${rdPage.title} now points directly to "${newTitle}"`,
+                    `[Move] Fixed double redirect${labelSuffix}: "${rdPage.title}" now points directly to "${newTitle}"`,
                   );
                   stats.redirfix++;
                   updateStatusDisplay();
                 } catch (e) {
                   addLog(
-                    `[Move] Failed to fix double redirect${labelSuffix} at ${rdPage.title}: ${formatApiError(e)}`,
+                    `[Move] Failed to fix double redirect${labelSuffix} at "${rdPage.title}": ${formatApiError(e)}`,
                     true,
                   );
                 }
@@ -1653,10 +1653,10 @@ $(function () {
                   summary: notifySummaryWarn,
                   bot: true,
                 });
-                addLog(`[Warn] Warning posted to: ${talkTitle}`);
+                addLog(`[Warn] Warning posted to: "${talkTitle}"`);
               } catch (e) {
                 addLog(
-                  `[Warn] Failed to post warning to ${talkTitle}: ${formatApiError(e)}`,
+                  `[Warn] Failed to post warning to "${talkTitle}": ${formatApiError(e)}`,
                   "warn",
                 );
               }
@@ -1728,11 +1728,11 @@ $(function () {
 
                 try {
                   await apiPost(data);
-                  addLog(`[Block] Successfully blocked user ${targetVal}`);
+                  addLog(`[Block] Successfully blocked user "${targetVal}"`);
                   stats.block++;
                 } catch (e) {
                   addLog(
-                    `[Block] Failed to block ${targetVal}: ${formatApiError(e)}`,
+                    `[Block] Failed to block "${targetVal}": ${formatApiError(e)}`,
                     true,
                   );
                 }
@@ -1794,12 +1794,12 @@ $(function () {
                     await apiPost(editParams);
                     addLog(
                       shouldReplace
-                        ? `[Notify] Talk page replaced with notification: ${talkTitle}`
-                        : `[Notify] Notification posted to: ${talkTitle}`,
+                        ? `[Notify] Talk page replaced with notification: "${talkTitle}"`
+                        : `[Notify] Notification posted to: "${talkTitle}"`,
                     );
                   } catch (e) {
                     addLog(
-                      `[Notify] Failed to post block notification to ${talkTitle}: ${formatApiError(e)}`,
+                      `[Notify] Failed to post block notification to "${talkTitle}": ${formatApiError(e)}`,
                       "warn",
                     );
                   }
@@ -1821,7 +1821,7 @@ $(function () {
                   user: targetVal,
                   reason: config.unblockReason + toolTag,
                 });
-                addLog(`[Unblock] Successfully unblocked ${targetVal}`);
+                addLog(`[Unblock] Successfully unblocked "${targetVal}"`);
                 stats.unblock++;
 
                 if (config.notifyUnblock) {
@@ -1845,17 +1845,17 @@ $(function () {
                       summary: notifySummaryUnblock,
                       bot: true,
                     });
-                    addLog(`[Notify] Notification posted to: ${talkTitle}`);
+                    addLog(`[Notify] Notification posted to: "${talkTitle}"`);
                   } catch (e) {
                     addLog(
-                      `[Notify] Failed to post unblock notification to ${talkTitle}: ${formatApiError(e)}`,
+                      `[Notify] Failed to post unblock notification to "${talkTitle}": ${formatApiError(e)}`,
                       "warn",
                     );
                   }
                 }
               } catch (e) {
                 addLog(
-                  `[Unblock] Failed to unblock ${targetVal}: ${formatApiError(e)}`,
+                  `[Unblock] Failed to unblock "${targetVal}": ${formatApiError(e)}`,
                   true,
                 );
               }
@@ -1899,7 +1899,7 @@ $(function () {
                       ),
                     );
                 });
-                addLog(`[Lock] Successfully locked account: ${targetVal}`);
+                addLog(`[Lock] Successfully locked account: "${targetVal}"`);
                 stats.lockAccount++;
                 updateStatusDisplay();
 
@@ -1920,17 +1920,17 @@ $(function () {
                       summary: notifySummaryLockAccount,
                       bot: true,
                     });
-                    addLog(`[Notify] Notification posted to: ${talkTitle}`);
+                    addLog(`[Notify] Notification posted to: "${talkTitle}"`);
                   } catch (e) {
                     addLog(
-                      `[Notify] Failed to post lock notification to ${talkTitle}: ${formatApiError(e)}`,
+                      `[Notify] Failed to post lock notification to "${talkTitle}": ${formatApiError(e)}`,
                       "warn",
                     );
                   }
                 }
               } catch (e) {
                 addLog(
-                  `[Lock] Failed to lock ${targetVal}: ${formatApiError(e)}`,
+                  `[Lock] Failed to lock "${targetVal}": ${formatApiError(e)}`,
                   true,
                 );
               }
@@ -1952,7 +1952,7 @@ $(function () {
                   toolTag;
                 await submitGlobalSysopsReport(_gsLine, reportGSSummary);
                 addLog(
-                  `[Report] Submitted report to Global sysops/Requests for ${targetVal}`,
+                  `[Report] Submitted report to Global sysops/Requests for "${targetVal}"`,
                 );
                 stats.report++;
                 updateStatusDisplay();
@@ -1999,7 +1999,7 @@ $(function () {
                   srgSummary,
                 );
                 addLog(
-                  `[Report] Submitted ${config.reportSRGKind === "block" ? "global block" : "global lock"} report to Steward requests/Global for ${targetVal}`,
+                  `[Report] Submitted ${config.reportSRGKind === "block" ? "global block" : "global lock"} report to Steward requests/Global for "${targetVal}"`,
                 );
                 stats.report++;
                 updateStatusDisplay();
@@ -2025,12 +2025,12 @@ $(function () {
                   title: targetVal,
                   reason: config.undeleteReason + toolTag,
                 });
-                addLog(`[Undelete] Successfully restored page: ${targetVal}`);
+                addLog(`[Undelete] Successfully restored page: "${targetVal}"`);
                 stats.undelete++;
                 updateStatusDisplay();
               } catch (e) {
                 addLog(
-                  `[Undelete] Failed to restore ${targetVal}: ${formatApiError(e)}`,
+                  `[Undelete] Failed to restore "${targetVal}": ${formatApiError(e)}`,
                   true,
                 );
               }
@@ -2089,7 +2089,7 @@ $(function () {
                           toolTag,
                       });
                       addLog(
-                        `[Move] Deleted existing destination page: ${config.movePageDest}`,
+                        `[Move] Deleted existing destination page: "${config.movePageDest}"`,
                       );
                       stats.delete++;
                       updateStatusDisplay();
@@ -2171,7 +2171,7 @@ $(function () {
                                 toolTag,
                             });
                             addLog(
-                              `[Move] Deleted existing destination talk page: ${destTalkTitle}`,
+                              `[Move] Deleted existing destination talk page: "${destTalkTitle}"`,
                             );
                             stats.delete++;
                             updateStatusDisplay();
@@ -2301,7 +2301,7 @@ $(function () {
                           toolTag,
                       });
                       addLog(
-                        `[Move] Deleted existing destination page: ${config.moveSandboxDest}`,
+                        `[Move] Deleted existing destination page: "${config.moveSandboxDest}"`,
                       );
                       stats.delete++;
                       updateStatusDisplay();
@@ -2368,7 +2368,7 @@ $(function () {
                                 toolTag,
                             });
                             addLog(
-                              `[Move] Deleted existing destination talk page: ${config.moveSandboxTalkDest}`,
+                              `[Move] Deleted existing destination talk page: "${config.moveSandboxTalkDest}"`,
                             );
                             stats.delete++;
                             updateStatusDisplay();
@@ -2448,7 +2448,7 @@ $(function () {
                         (spData.query && spData.query.allpages) || [];
                       if (!subpages.length) {
                         addLog(
-                          `[Move] No subpages found for: ${targetVal}`,
+                          `[Move] No subpages found for: "${targetVal}"`,
                           "warn",
                         );
                       }
@@ -2739,13 +2739,13 @@ $(function () {
                       suppress: config.os ? "yes" : "nochange",
                     });
                     addLog(
-                      `[Revdel] Hiding ${idlist.length} revisions at: ${title}`,
+                      `[Revdel] Hiding ${idlist.length} revisions at: "${title}"`,
                     );
                     stats.revdel++;
                     updateStatusDisplay();
                   } catch (e) {
                     addLog(
-                      `[Revdel] Failed at ${title}: ${formatApiError(e)}`,
+                      `[Revdel] Failed at "${title}": ${formatApiError(e)}`,
                       true,
                     );
                   }
@@ -2835,7 +2835,7 @@ $(function () {
               const isZObject = pageContentModel === "zobject";
               if (isZObject && config.rollbackMethod === "undo") {
                 addLog(
-                  `[Rollback] ZObject content model detected at ${title}: undo is not supported for this content model. Falling back to native rollback.`,
+                  `[Rollback] ZObject content model detected at "${title}": undo is not supported for this content model. Falling back to native rollback.`,
                   "warn",
                 );
               }
@@ -2901,13 +2901,13 @@ $(function () {
                   if (noChangeMade) {
                     if (!mediainfoNeedsRevert) {
                       addLog(
-                        `[Undo] Skipped: ${title} — the edit appears to have already been undone; no changes were made`,
+                        `[Undo] Skipped: "${title}" — the edit appears to have already been undone; no changes were made`,
                         "warn",
                       );
                     }
                   } else {
                     addLog(
-                      `[Undo] Successfully reverted edits via undo: ${title}`,
+                      `[Undo] Successfully reverted edits via undo: "${title}"`,
                     );
                     standardRevertSuccess = true;
                     stats.rollback++;
@@ -2922,13 +2922,13 @@ $(function () {
                   ) {
                     if (!mediainfoNeedsRevert) {
                       addLog(
-                        `[Undo] Skipped: ${title} — page had already been reverted by another user; undo was not applied by this operation`,
+                        `[Undo] Skipped: "${title}" — page had already been reverted by another user; undo was not applied by this operation`,
                         "warn",
                       );
                     }
                   } else {
                     addLog(
-                      `[Undo] Failed at ${title}: ${formatApiError(e)}`,
+                      `[Undo] Failed at "${title}": ${formatApiError(e)}`,
                       true,
                     );
                   }
@@ -2940,7 +2940,7 @@ $(function () {
 
                 try {
                   await apiRollback(title, targetVal, rbData);
-                  addLog(`[Rollback] Successfully reverted: ${title}`);
+                  addLog(`[Rollback] Successfully reverted: "${title}"`);
                   standardRevertSuccess = true;
                   stats.rollback++;
                   rollbackNotifiedTitles.push(title);
@@ -2953,13 +2953,13 @@ $(function () {
                   ) {
                     if (!mediainfoNeedsRevert) {
                       addLog(
-                        `[Rollback] Skipped: ${title} — already reverted or user is the only author`,
+                        `[Rollback] Skipped: "${title}" — already reverted or user is the only author`,
                         "warn",
                       );
                     }
                   } else {
                     addLog(
-                      `[Rollback] Failed at ${title}: ${formatApiError(e)}`,
+                      `[Rollback] Failed at "${title}": ${formatApiError(e)}`,
                       true,
                     );
                   }
@@ -2986,7 +2986,7 @@ $(function () {
                     bot: config.rollbackBot ? 1 : 0,
                   });
                   addLog(
-                    `[Undo] Successfully reverted structured data at: ${title}`,
+                    `[Undo] Successfully reverted structured data at: "${title}"`,
                   );
                   if (!standardRevertSuccess) {
                     stats.rollback++;
@@ -2995,7 +2995,7 @@ $(function () {
                   }
                 } catch (e) {
                   addLog(
-                    `[Undo] Failed to revert structured data at ${title}: ${formatApiError(e)}`,
+                    `[Undo] Failed to revert structured data at "${title}": ${formatApiError(e)}`,
                     true,
                   );
                 }
@@ -3016,12 +3016,12 @@ $(function () {
                     reason: config.rdReason + toolTag,
                     suppress: config.os ? "yes" : "nochange",
                   });
-                  addLog(`[Revdel] Hiding revisions at: ${title}`);
+                  addLog(`[Revdel] Hiding revisions at: "${title}"`);
                   stats.revdel++;
                   updateStatusDisplay();
                 } catch (e) {
                   addLog(
-                    `[Revdel] Failed at ${title}: ${formatApiError(e)}`,
+                    `[Revdel] Failed at "${title}": ${formatApiError(e)}`,
                     true,
                   );
                 }
@@ -3071,11 +3071,11 @@ $(function () {
                   bot: true,
                 });
                 addLog(
-                  `[Notify] Reversion notification posted to: ${talkTitle}`,
+                  `[Notify] Reversion notification posted to: "${talkTitle}"`,
                 );
               } catch (e) {
                 addLog(
-                  `[Notify] Failed to post reversion notification to ${talkTitle}: ${formatApiError(e)}`,
+                  `[Notify] Failed to post reversion notification to "${talkTitle}": ${formatApiError(e)}`,
                   "warn",
                 );
               }
@@ -3103,12 +3103,12 @@ $(function () {
                     ...(config.protectCascade ? { cascade: "" } : {}),
                   };
                   await apiPost(protectData);
-                  addLog(`[Protect] Protected page: ${title}`);
+                  addLog(`[Protect] Protected page: "${title}"`);
                   stats.protect++;
                   updateStatusDisplay();
                 } catch (e) {
                   addLog(
-                    `[Protect] Failed to protect ${title}: ${formatApiError(e)}`,
+                    `[Protect] Failed to protect "${title}": ${formatApiError(e)}`,
                     true,
                   );
                   await new Promise((resolve) =>
@@ -3137,13 +3137,13 @@ $(function () {
                       reason: config.protectReason + toolTag,
                     });
                     addLog(
-                      `[Protect] Enabled pending changes protection: ${title}`,
+                      `[Protect] Enabled pending changes protection: "${title}"`,
                     );
                     stats.protect++;
                     updateStatusDisplay();
                   } catch (e) {
                     addLog(
-                      `[Protect] Failed to enable pending changes protection for ${title}: ${formatApiError(e)}`,
+                      `[Protect] Failed to enable pending changes protection for "${title}": ${formatApiError(e)}`,
                       true,
                     );
                   }
@@ -3175,13 +3175,13 @@ $(function () {
                         ...(config.protectCascade ? { cascade: "" } : {}),
                       });
                       addLog(
-                        `[Protect] Protected talk page: ${talkForProtect}`,
+                        `[Protect] Protected talk page: "${talkForProtect}"`,
                       );
                       stats.protect++;
                       updateStatusDisplay();
                     } catch (e) {
                       addLog(
-                        `[Protect] Failed to protect talk page ${talkForProtect}: ${formatApiError(e)}`,
+                        `[Protect] Failed to protect talk page "${talkForProtect}": ${formatApiError(e)}`,
                         true,
                       );
                     }
@@ -3261,10 +3261,10 @@ $(function () {
                     summary: notifySummaryProtect,
                     bot: true,
                   });
-                  addLog(`[Notify] Notification posted to: ${talkTitle}`);
+                  addLog(`[Notify] Notification posted to: "${talkTitle}"`);
                 } catch (e) {
                   addLog(
-                    `[Notify] Failed to post protection notification to ${talkTitle}: ${formatApiError(e)}`,
+                    `[Notify] Failed to post protection notification to "${talkTitle}": ${formatApiError(e)}`,
                     "warn",
                   );
                 }
@@ -3318,7 +3318,7 @@ $(function () {
                       null;
                   } catch (e) {
                     addLog(
-                      `[Notify] Could not look up creator for ${title}: ${formatApiError(e)}`,
+                      `[Notify] Could not look up creator for "${title}": ${formatApiError(e)}`,
                       "warn",
                     );
                   }
@@ -3333,7 +3333,7 @@ $(function () {
                     title: title,
                     reason: config.massdelReason + toolTag,
                   });
-                  addLog(`[Delete] Deleted page: ${title}`);
+                  addLog(`[Delete] Deleted page: "${title}"`);
                   stats.delete++;
                   updateStatusDisplay();
                   mainDeleted = true;
@@ -3357,7 +3357,7 @@ $(function () {
                       }
                     } else {
                       addLog(
-                        `[Notify] Skipped deletion notification for ${title}: page was created and deleted by the same user`,
+                        `[Notify] Skipped deletion notification for "${title}": page was created and deleted by the same user`,
                         "warn",
                       );
                     }
@@ -3377,13 +3377,13 @@ $(function () {
                         reason: config.massdelProtectRecreationReason + toolTag,
                       });
                       addLog(
-                        `[Protect] Protected deleted page against recreation: ${title}`,
+                        `[Protect] Protected deleted page against recreation: "${title}"`,
                       );
                       stats.protect++;
                       updateStatusDisplay();
                     } catch (e) {
                       addLog(
-                        `[Protect] Failed to protect ${title} against recreation: ${formatApiError(e)}`,
+                        `[Protect] Failed to protect "${title}" against recreation: ${formatApiError(e)}`,
                         true,
                       );
                     }
@@ -3393,7 +3393,7 @@ $(function () {
                   }
                 } catch (e) {
                   addLog(
-                    `[Delete] Failed to delete ${title}: ${formatApiError(e)}`,
+                    `[Delete] Failed to delete "${title}": ${formatApiError(e)}`,
                     true,
                   );
                 }
@@ -3417,7 +3417,7 @@ $(function () {
                       talkTitle === blockNotifyTalkTitle
                     ) {
                       addLog(
-                        `[Delete] Skipped talk page deletion: ${talkTitle} — block notification is present on this page.`,
+                        `[Delete] Skipped talk page deletion: "${talkTitle}" — block notification is present on this page.`,
                         "warn",
                       );
                     } else {
@@ -3444,7 +3444,7 @@ $(function () {
                             toolTag,
                         });
                         addLog(
-                          `[Delete] Deleted associated talk page: ${talkTitle}`,
+                          `[Delete] Deleted associated talk page: "${talkTitle}"`,
                         );
                         stats.delete++;
                         updateStatusDisplay();
@@ -3452,7 +3452,7 @@ $(function () {
                     }
                   } catch (e) {
                     addLog(
-                      `[Delete] Failed to delete talk page for ${title}: ${formatApiError(e)}`,
+                      `[Delete] Failed to delete talk page for "${title}": ${formatApiError(e)}`,
                       true,
                     );
                   }
@@ -3485,13 +3485,13 @@ $(function () {
                             toolTag,
                         });
                         addLog(
-                          `[Delete] Deleted redirect to deleted page: ${rdPage.title}`,
+                          `[Delete] Deleted redirect to deleted page: "${rdPage.title}"`,
                         );
                         stats.delete++;
                         updateStatusDisplay();
                       } catch (e) {
                         addLog(
-                          `[Delete] Failed to delete redirect ${rdPage.title}: ${formatApiError(e)}`,
+                          `[Delete] Failed to delete redirect "${rdPage.title}": ${formatApiError(e)}`,
                           true,
                         );
                       }
@@ -3501,7 +3501,7 @@ $(function () {
                     }
                   } catch (e) {
                     addLog(
-                      `[Delete] Failed to fetch redirects for ${title}: ${formatApiError(e)}`,
+                      `[Delete] Failed to fetch redirects for "${title}": ${formatApiError(e)}`,
                       true,
                     );
                   }
@@ -3538,14 +3538,14 @@ $(function () {
                             toolTag,
                         });
                         addLog(
-                          `[Delete] Deleted subpage of deleted page: ${sp.title}`,
+                          `[Delete] Deleted subpage of deleted page: "${sp.title}"`,
                         );
                         stats.delete++;
                         updateStatusDisplay();
                         subpageDeleted = true;
                       } catch (e) {
                         addLog(
-                          `[Delete] Failed to delete subpage ${sp.title}: ${formatApiError(e)}`,
+                          `[Delete] Failed to delete subpage "${sp.title}": ${formatApiError(e)}`,
                           true,
                         );
                       }
@@ -3580,7 +3580,7 @@ $(function () {
                                   toolTag,
                               });
                               addLog(
-                                `[Delete] Deleted associated talk page of subpage: ${spTalkTitle}`,
+                                `[Delete] Deleted associated talk page of subpage: "${spTalkTitle}"`,
                               );
                               stats.delete++;
                               updateStatusDisplay();
@@ -3588,7 +3588,7 @@ $(function () {
                           }
                         } catch (e) {
                           addLog(
-                            `[Delete] Failed to delete talk page for subpage ${sp.title}: ${formatApiError(e)}`,
+                            `[Delete] Failed to delete talk page for subpage "${sp.title}": ${formatApiError(e)}`,
                             true,
                           );
                         }
@@ -3624,13 +3624,13 @@ $(function () {
                                   toolTag,
                               });
                               addLog(
-                                `[Delete] Deleted redirect to deleted subpage: ${rdPage.title}`,
+                                `[Delete] Deleted redirect to deleted subpage: "${rdPage.title}"`,
                               );
                               stats.delete++;
                               updateStatusDisplay();
                             } catch (e) {
                               addLog(
-                                `[Delete] Failed to delete redirect ${rdPage.title}: ${formatApiError(e)}`,
+                                `[Delete] Failed to delete redirect "${rdPage.title}": ${formatApiError(e)}`,
                                 true,
                               );
                             }
@@ -3640,7 +3640,7 @@ $(function () {
                           }
                         } catch (e) {
                           addLog(
-                            `[Delete] Failed to fetch redirects for subpage ${sp.title}: ${formatApiError(e)}`,
+                            `[Delete] Failed to fetch redirects for subpage "${sp.title}": ${formatApiError(e)}`,
                             true,
                           );
                         }
@@ -3652,7 +3652,7 @@ $(function () {
                     }
                   } catch (e) {
                     addLog(
-                      `[Delete] Failed to fetch subpages for ${title}: ${formatApiError(e)}`,
+                      `[Delete] Failed to fetch subpages for "${title}": ${formatApiError(e)}`,
                       true,
                     );
                   }
@@ -3711,11 +3711,11 @@ $(function () {
                   bot: true,
                 });
                 addLog(
-                  `[Notify] Deletion notification posted to: ${talkTitle}`,
+                  `[Notify] Deletion notification posted to: "${talkTitle}"`,
                 );
               } catch (e) {
                 addLog(
-                  `[Notify] Failed to post deletion notification to ${talkTitle}: ${formatApiError(e)}`,
+                  `[Notify] Failed to post deletion notification to "${talkTitle}": ${formatApiError(e)}`,
                   "warn",
                 );
               }
@@ -3801,15 +3801,17 @@ $(function () {
                   reason: config.protectRecreationReason + toolTag,
                 });
                 addLog(
-                  "[Protect] Protected page against recreation: " + targetVal,
+                  '[Protect] Protected page against recreation: "' +
+                    targetVal +
+                    '"',
                 );
                 stats.protect++;
                 updateStatusDisplay();
               } catch (e) {
                 addLog(
-                  "[Protect] Failed to protect " +
+                  '[Protect] Failed to protect "' +
                     targetVal +
-                    " against recreation: " +
+                    '" against recreation: ' +
                     formatApiError(e),
                   true,
                 );
@@ -3829,7 +3831,7 @@ $(function () {
                 if (isAborted) break;
                 if (!deletedTitles.includes(title)) {
                   addLog(
-                    `[Protect] Skipped deferred protection for ${title}: page was not deleted`,
+                    `[Protect] Skipped deferred protection for "${title}": page was not deleted`,
                     "warn",
                   );
                   continue;
@@ -3846,13 +3848,13 @@ $(function () {
                     reason: config.protectReason + toolTag,
                   });
                   addLog(
-                    `[Protect] Protected deleted page against recreation: ${title}`,
+                    `[Protect] Protected deleted page against recreation: "${title}"`,
                   );
                   stats.protect++;
                   updateStatusDisplay();
                 } catch (e) {
                   addLog(
-                    `[Protect] Failed to protect ${title}: ${formatApiError(e)}`,
+                    `[Protect] Failed to protect "${title}": ${formatApiError(e)}`,
                     true,
                   );
                   await new Promise((resolve) =>
@@ -3904,13 +3906,13 @@ $(function () {
                       }
                       await apiPost(talkProtectParams);
                       addLog(
-                        `[Protect] Protected talk page: ${talkForProtect}`,
+                        `[Protect] Protected talk page: "${talkForProtect}"`,
                       );
                       stats.protect++;
                       updateStatusDisplay();
                     } catch (e) {
                       addLog(
-                        `[Protect] Failed to protect talk page ${talkForProtect}: ${formatApiError(e)}`,
+                        `[Protect] Failed to protect talk page "${talkForProtect}": ${formatApiError(e)}`,
                         true,
                       );
                     }
@@ -3964,7 +3966,7 @@ $(function () {
                       !talkExistCheck.query.pages[0].missing;
                     if (!talkExists) {
                       addLog(
-                        `[Notify] Skipped protection notification for ${talkTitle}: talk page no longer exists`,
+                        `[Notify] Skipped protection notification for "${talkTitle}": talk page no longer exists`,
                         "warn",
                       );
                       await new Promise((resolve) =>
@@ -3974,7 +3976,7 @@ $(function () {
                     }
                   } catch (e) {
                     addLog(
-                      `[Notify] Could not check talk page existence for ${talkTitle}: ${formatApiError(e)}`,
+                      `[Notify] Could not check talk page existence for "${talkTitle}": ${formatApiError(e)}`,
                       "warn",
                     );
                     await new Promise((resolve) =>
@@ -4017,10 +4019,10 @@ $(function () {
                       summary: notifySummaryProtect,
                       bot: true,
                     });
-                    addLog(`[Notify] Notification posted to: ${talkTitle}`);
+                    addLog(`[Notify] Notification posted to: "${talkTitle}"`);
                   } catch (e) {
                     addLog(
-                      `[Notify] Failed to post protection notification to ${talkTitle}: ${formatApiError(e)}`,
+                      `[Notify] Failed to post protection notification to "${talkTitle}": ${formatApiError(e)}`,
                       "warn",
                     );
                   }
@@ -4062,7 +4064,7 @@ $(function () {
                 }
 
                 addLog(
-                  `[Unlink] Searching for ${isFileDeletion ? "references to file" : "links to"}: ${delTitle}...`,
+                  `[Unlink] Searching for ${isFileDeletion ? "references to file" : "links to"}: "${delTitle}"...`,
                 );
 
                 // Escape the title for use in a regular expression.
@@ -4226,13 +4228,13 @@ $(function () {
                           bot: true,
                         });
                         addLog(
-                          `[Unlink] Removed ${isFileDeletion ? "references to file" : "links to"} "${delTitle}" in: ${linkTitle}`,
+                          `[Unlink] Removed ${isFileDeletion ? "references to file" : "links to"} "${delTitle}" in: "${linkTitle}"`,
                         );
                         stats.unlink++;
                         updateStatusDisplay();
                       } catch (e) {
                         addLog(
-                          `[Unlink] Failed to edit ${linkTitle}: ${formatApiError(e)}`,
+                          `[Unlink] Failed to edit "${linkTitle}": ${formatApiError(e)}`,
                           true,
                         );
                       }
@@ -4285,7 +4287,7 @@ $(function () {
                 );
 
                 addLog(
-                  `[Fix redirects] Searching for pages linking to: ${sourceTitle}...`,
+                  `[Fix redirects] Searching for pages linking to: "${sourceTitle}"...`,
                 );
 
                 let blContinue;
@@ -4367,13 +4369,13 @@ $(function () {
                           bot: true,
                         });
                         addLog(
-                          `[Fix redirects] Updated links in: ${linkTitle}`,
+                          `[Fix redirects] Updated links in: "${linkTitle}"`,
                         );
                         stats.redirfix++;
                         updateStatusDisplay();
                       } catch (e) {
                         addLog(
-                          `[Fix redirects] Failed to update ${linkTitle}: ${formatApiError(e)}`,
+                          `[Fix redirects] Failed to update "${linkTitle}": ${formatApiError(e)}`,
                           true,
                         );
                       }
@@ -4439,11 +4441,11 @@ $(function () {
                   bot: true,
                 });
                 addLog(
-                  `[Notify] Deletion notification posted to: ${talkTitle}`,
+                  `[Notify] Deletion notification posted to: "${talkTitle}"`,
                 );
               } catch (e) {
                 addLog(
-                  `[Notify] Failed to post deletion notification to ${talkTitle}: ${formatApiError(e)}`,
+                  `[Notify] Failed to post deletion notification to "${talkTitle}": ${formatApiError(e)}`,
                   "warn",
                 );
               }
@@ -13403,11 +13405,11 @@ $(function () {
                 bot: true,
               });
               quickLog(
-                `[Notify] Reversion notification posted to: ${talkTitle}`,
+                `[Notify] Reversion notification posted to: "${talkTitle}"`,
               );
             } catch (e) {
               quickLog(
-                `[Notify] Failed to post reversion notification to ${talkTitle}: ${formatApiError(e)}`,
+                `[Notify] Failed to post reversion notification to "${talkTitle}": ${formatApiError(e)}`,
                 true,
               );
             }
@@ -13444,16 +13446,16 @@ $(function () {
               );
               if (noChangeMade) {
                 quickLog(
-                  "[Undo] Skipped: " +
+                  '[Undo] Skipped: "' +
                     pageTitle +
-                    " — the edit appears to have already been undone; no changes were made",
+                    '" — the edit appears to have already been undone; no changes were made',
                   true,
                 );
               } else {
                 quickLog(
-                  "[Undo] Successfully undone edit at: " +
+                  '[Undo] Successfully undone edit at: "' +
                     pageTitle +
-                    " (revision " +
+                    '" (revision ' +
                     revId +
                     ")",
                 );
@@ -13503,15 +13505,16 @@ $(function () {
                     rolledBackRevId +
                     " already has identical content to revision " +
                     targetRevId +
-                    " — no change was made to " +
+                    ' — no change was made to "' +
                     pageTitle +
-                    ".",
+                    '".',
                   true,
                 );
               } else {
                 quickLog(
-                  "[Rollback] Successfully reverted: " +
+                  '[Rollback] Successfully reverted: "' +
                     pageTitle +
+                    '"' +
                     (rolledBackRevId && targetRevId
                       ? " (revision " +
                         rolledBackRevId +
@@ -13582,9 +13585,9 @@ $(function () {
                     latestRevId +
                     " already has identical content to revision " +
                     revId +
-                    " — no change was made to " +
+                    ' — no change was made to "' +
                     pageTitle +
-                    ".",
+                    '".',
                   true,
                 );
               } else {
@@ -13612,9 +13615,9 @@ $(function () {
                 const newRevId =
                   editResult && editResult.edit && editResult.edit.newrevid;
                 quickLog(
-                  "[Undo] Successfully restored revision at: " +
+                  '[Undo] Successfully restored revision at: "' +
                     pageTitle +
-                    " (revision " +
+                    '" (revision ' +
                     latestRevId +
                     " undone to revision " +
                     revId +

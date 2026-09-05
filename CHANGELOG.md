@@ -1,3 +1,14 @@
+## 2.160.0
+
+### Changed
+
+* Article/page titles and usernames named as the target of an operation in the progress log (main window and inline quick-action dialogue) are now enclosed in double quotation marks, making it easier to visually distinguish the target name from the surrounding log message. Applies across Rollback, Undo, Restore, Block, Unblock, Delete, Undelete, Move, Protect, Lock account, Warn, Report (GS/SRG), Unlink, and Fix redirects log lines.
+
+### Notes
+
+* This is a display-only change to log wording; no operational logic, API calls, or edit summaries were modified.
+* Titles that already appeared quoted in some log lines (e.g. destination-page deletion messages in Move page) are unaffected.
+
 ## 2.159.0
 
 ### Fixed
