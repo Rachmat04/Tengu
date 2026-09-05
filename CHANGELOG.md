@@ -1,3 +1,14 @@
+## 2.159.0
+
+### Fixed
+
+* Fixed "Also move the associated talk page" failing with `articleexists` in both the Move page and Move to user's sandbox submodes when "Delete destination page if it already exists (destructive)" was also enabled. The destructive deletion previously applied only to the main/article destination; the associated talk-page destination was never deleted first, so the talk-page move failed whenever a page already existed at that title. The destination talk page is now deleted first (when it exists), logged as "[Move] Deleted existing destination talk page: [title]", before the talk-page move is attempted.
+
+### Notes
+
+* This affects only runs where both options are enabled together. Deleting the main destination only, or moving the talk page only, are both unaffected and behave as before.
+* The destructive deletion of the talk-page destination uses the same reason text as the main page's destination deletion, consistent with how the existing main-page deletion reason is built.
+
 ## 2.158.0
 
 ### Fixed

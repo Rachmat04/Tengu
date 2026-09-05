@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.158.0
+ * Version 2.159.0
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -2142,6 +2142,48 @@ $(function () {
                       const destTalkTitle = new mw.Title(config.movePageDest)
                         .getTalkPage()
                         .getPrefixedText();
+
+                      // Delete the destination talk page first, if requested
+                      // and it exists, mirroring the destination deletion
+                      // already applied to the main page above. Without this,
+                      // the talk-page move below fails with "articleexists"
+                      // whenever the destination talk page already exists.
+                      if (config.movePageDeleteDest && !isAborted) {
+                        try {
+                          const destTalkExistData = await apiGet({
+                            action: "query",
+                            titles: destTalkTitle,
+                            formatversion: 2,
+                          });
+                          const destTalkPage =
+                            destTalkExistData.query &&
+                            destTalkExistData.query.pages &&
+                            destTalkExistData.query.pages[0];
+                          if (destTalkPage && !destTalkPage.missing) {
+                            await apiPost({
+                              action: "delete",
+                              title: destTalkTitle,
+                              reason:
+                                (useIndonesian
+                                  ? "Menghapus halaman pembicaraan tujuan untuk memungkinkan pemindahan halaman: "
+                                  : "Deleting destination talk page to allow page move: ") +
+                                config.movePageReason +
+                                toolTag,
+                            });
+                            addLog(
+                              `[Move] Deleted existing destination talk page: ${destTalkTitle}`,
+                            );
+                            stats.delete++;
+                            updateStatusDisplay();
+                          }
+                        } catch (e) {
+                          addLog(
+                            `[Move] Failed to delete destination talk page "${destTalkTitle}": ${formatApiError(e)}`,
+                            true,
+                          );
+                        }
+                      }
+
                       const talkExistData = await apiGet({
                         action: "query",
                         titles: sourceTalkTitle,
@@ -2299,6 +2341,46 @@ $(function () {
                       const sourceTalkTitle = sourceTitleObj
                         .getTalkPage()
                         .getPrefixedText();
+
+                      // Delete the destination talk page first, if requested
+                      // and it exists, mirroring the destination deletion
+                      // already applied to the main destination above.
+                      if (config.moveSandboxDeleteDest && !isAborted) {
+                        try {
+                          const destTalkExistData = await apiGet({
+                            action: "query",
+                            titles: config.moveSandboxTalkDest,
+                            formatversion: 2,
+                          });
+                          const destTalkPage =
+                            destTalkExistData.query &&
+                            destTalkExistData.query.pages &&
+                            destTalkExistData.query.pages[0];
+                          if (destTalkPage && !destTalkPage.missing) {
+                            await apiPost({
+                              action: "delete",
+                              title: config.moveSandboxTalkDest,
+                              reason:
+                                (useIndonesian
+                                  ? "Menghapus halaman pembicaraan tujuan untuk memungkinkan pemindahan halaman: "
+                                  : "Deleting destination talk page to allow page move: ") +
+                                config.moveSandboxReason +
+                                toolTag,
+                            });
+                            addLog(
+                              `[Move] Deleted existing destination talk page: ${config.moveSandboxTalkDest}`,
+                            );
+                            stats.delete++;
+                            updateStatusDisplay();
+                          }
+                        } catch (e) {
+                          addLog(
+                            `[Move] Failed to delete destination talk page "${config.moveSandboxTalkDest}": ${formatApiError(e)}`,
+                            true,
+                          );
+                        }
+                      }
+
                       const talkExistData = await apiGet({
                         action: "query",
                         titles: sourceTalkTitle,
