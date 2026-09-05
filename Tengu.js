@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.161.0
+ * Version 2.162.0
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -369,7 +369,16 @@ $(function () {
         // A bare, unbracketed article URL (e.g. "https://.../wiki/Title#X")
         // is left unchanged, since it is not a wiki-link and cannot be
         // "corrected" without changing what the person typed.
-        function correctReasonLinks(text) {
+        // forMeta: when true, recognised links are prefixed with the source
+        // wiki's interwiki project/language (e.g. "w:id:", "s:en:"), derived
+        // from the hostname embedded in the original URL — not the wiki
+        // Tengu currently happens to be open on. Used for the Report to
+        // Global sysops/Requests and Report to Steward requests/Global
+        // sections, whose reason text is submitted to Meta-Wiki, so a plain
+        // local link would not resolve to the intended page there. An
+        // explicit pipe label (the bare title/Special:Diff string) is added
+        // alongside the prefix so the displayed text stays readable.
+        function correctReasonLinks(text, forMeta) {
           if (!text) return text;
           let result = text;
 
@@ -381,10 +390,18 @@ $(function () {
             }
           }
 
+          function wrapLink(target, host) {
+            if (!forMeta) return "[[" + target + "]]";
+            const prefix = deriveInterwikiPrefix(host);
+            return prefix
+              ? "[[" + prefix + target + "|" + target + "]]"
+              : "[[" + target + "]]";
+          }
+
           // 1. Diff URLs: .../w/index.php?...diff=X...oldid=Y... (any order)
           result = result.replace(
-            /https?:\/\/[^\s\]]*\/w\/index\.php\?[^\s\]]*/gi,
-            function (match) {
+            /https?:\/\/([^/\s\]]+)\/w\/index\.php\?[^\s\]]*/gi,
+            function (match, host) {
               const qIndex = match.indexOf("?");
               if (qIndex === -1) return match;
               const params = {};
@@ -402,26 +419,29 @@ $(function () {
               ) {
                 return match;
               }
-              return (
-                "[[Special:Diff/" + params.oldid + "/" + params.diff + "]]"
-              );
+              const target = "Special:Diff/" + params.oldid + "/" + params.diff;
+              return wrapLink(target, host);
             },
           );
 
           // 2. [[https://<wiki>/wiki/Title#Fragment]] -> [[Title#Fragment]]
           result = result.replace(
-            /\[\[https?:\/\/[^/\]]+\/wiki\/([^\]#]+)(?:#([^\]]+))?\]\]/gi,
-            function (match, title, fragment) {
+            /\[\[https?:\/\/([^/\]]+)\/wiki\/([^\]#]+)(?:#([^\]]+))?\]\]/gi,
+            function (match, host, title, fragment) {
               const decodedTitle = safeDecode(title);
+              let target = decodedTitle;
               if (fragment) {
                 const decodedFragment = safeDecode(fragment).replace(/_/g, " ");
-                return "[[" + decodedTitle + "#" + decodedFragment + "]]";
+                target = decodedTitle + "#" + decodedFragment;
               }
-              return "[[" + decodedTitle + "]]";
+              return wrapLink(target, host);
             },
           );
 
           // 3. [[Title#A_B_C]] (already bracketed, no URL) -> [[Title#A B C]]
+          // No hostname is present in this pattern, so no project/language
+          // prefix can be derived; it is left as a plain local link
+          // regardless of forMeta.
           result = result.replace(
             /\[\[([^\]|#]+)#([^\]|]+)\]\]/g,
             function (match, title, fragment) {
@@ -437,14 +457,14 @@ $(function () {
         // input. Clicking it rewrites only recognised links within the
         // input's current value via correctReasonLinks(); a short scale
         // animation gives visual feedback that something happened.
-        function makeLinkFixButton(inputEl) {
+        function makeLinkFixButton(inputEl, forMeta) {
           const btn = document.createElement("button");
           btn.type = "button";
           btn.className = "tng-btn tng-btn-quiet tng-btn-sm tng-linkfix-btn";
           btn.textContent = "✨";
           btn.title = "Fix links in reason";
           btn.addEventListener("click", function () {
-            inputEl.value = correctReasonLinks(inputEl.value);
+            inputEl.value = correctReasonLinks(inputEl.value, forMeta);
             btn.classList.remove("tng-linkfix-pulse");
             void btn.offsetWidth; // Force reflow so repeated clicks re-trigger the animation
             btn.classList.add("tng-linkfix-pulse");
@@ -456,13 +476,15 @@ $(function () {
         }
 
         // Wraps a reason input and its link-fix button on a single row,
-        // placed immediately to the right of the field.
-        function wrapReasonInputWithLinkFix(inputEl) {
+        // placed immediately to the right of the field. Pass forMeta=true
+        // for fields whose text is submitted to Meta-Wiki (GS/SRG reports),
+        // so corrected links receive the source wiki's interwiki prefix.
+        function wrapReasonInputWithLinkFix(inputEl, forMeta) {
           const row = document.createElement("div");
           row.className = "tng-linkfix-row";
           inputEl.style.flex = "1";
           row.appendChild(inputEl);
-          row.appendChild(makeLinkFixButton(inputEl));
+          row.appendChild(makeLinkFixButton(inputEl, forMeta));
           return row;
         }
         function makeCheckbox(labelText, checked) {
@@ -855,11 +877,13 @@ $(function () {
         // independently confirmed against every Wikimedia project's actual
         // interwiki table. Returns an empty string if no mapping is found,
         // in which case callers fall back to a plain, non-prefixed link.
-        function getInterwikiPrefix() {
-          const server = (mw.config.get("wgServer") || "").replace(
-            /^(?:https?:)?\/\//,
-            "",
-          );
+        // Derives an interwiki prefix (project + language, e.g. "w:id:" or
+        // "s:en:") from an arbitrary wiki server hostname. Shared by
+        // getInterwikiPrefix() (current wiki) and correctReasonLinks()
+        // (a source URL embedded in a reason field, which may point to a
+        // different wiki/project than the one Tengu is currently open on).
+        function deriveInterwikiPrefix(server) {
+          server = (server || "").replace(/^(?:https?:)?\/\//, "");
           const SISTER_PROJECT_PREFIXES = {
             wikipedia: "w",
             wiktionary: "wikt",
@@ -892,6 +916,10 @@ $(function () {
             );
           }
           return "";
+        }
+
+        function getInterwikiPrefix() {
+          return deriveInterwikiPrefix(mw.config.get("wgServer"));
         }
 
         // Appends a pre-built report line to the bottom of Meta-Wiki's
@@ -8405,7 +8433,9 @@ $(function () {
           const reasonWrapWarn = document.createElement("div");
           reasonWrapWarn.className = "tng-reason-wrap";
           reasonWrapWarn.appendChild(filteredWrapWarnMsg);
-          reasonWrapWarn.appendChild(inputWarnExtra);
+          reasonWrapWarn.appendChild(
+            wrapReasonInputWithLinkFix(inputWarnExtra),
+          );
           reasonWrapWarn.appendChild(helpWarnExtra);
           fieldWarnMsg.appendChild(reasonWrapWarn);
           bodyWarn.appendChild(rowWarnMsg);
@@ -8572,7 +8602,9 @@ $(function () {
           const { row: rowGSDetails, field: fieldGSDetails } =
             makeRow("Additional details");
           const inputGSDetails = makeInput("Diffs or further context");
-          fieldGSDetails.appendChild(inputGSDetails);
+          fieldGSDetails.appendChild(
+            wrapReasonInputWithLinkFix(inputGSDetails, true),
+          );
           bodyGS.appendChild(rowGSDetails);
 
           const helpGSDetails = document.createElement("div");
@@ -8748,7 +8780,9 @@ $(function () {
           const { row: rowSRGDetails, field: fieldSRGDetails } =
             makeRow("Additional details");
           const inputSRGDetails = makeInput("Diffs or further context");
-          fieldSRGDetails.appendChild(inputSRGDetails);
+          fieldSRGDetails.appendChild(
+            wrapReasonInputWithLinkFix(inputSRGDetails, true),
+          );
           bodySRG.appendChild(rowSRGDetails);
 
           const helpSRGDetails = document.createElement("div");

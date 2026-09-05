@@ -1,3 +1,20 @@
+## 2.162.0
+
+### Added
+
+* Extended the ✨ "Fix links in reason" button to three more fields: the User warning section's "Additional information" field, and the "Additional details" fields in Report to Global sysops/Requests and Report to Steward requests/Global. Behaviour, positioning, tooltip, and animation are identical to the existing implementation.
+* For Report to Global sysops/Requests and Report to Steward requests/Global specifically, corrected links are now prefixed with the source wiki's interwiki project and language (e.g. `w:id:`, `s:en:`), since report text submitted to these sections is posted on Meta-Wiki and a plain local link would not resolve correctly there. The prefix is derived from the hostname in the original URL, not from whichever wiki Tengu happens to be open on. An explicit pipe label is added alongside the prefix (e.g. `[[w:id:Special:Diff/17212935/22088867|Special:Diff/17212935/22088867]]`) so the displayed text stays readable.
+
+### Changed
+
+* `correctReasonLinks()` now accepts an optional second parameter, `forMeta`, controlling whether the interwiki prefix described above is added. Existing call sites (Rollback, Block, Unblock, Lock account, Page deletion, Page undeletion, Move page, Move to user's sandbox, Page protection, Protect against recreation, Revision deletion, Fix redirects) are unaffected, since this parameter defaults to falsy.
+* `getInterwikiPrefix()`'s host-parsing logic has been extracted into a new shared helper, `deriveInterwikiPrefix(server)`, which accepts an arbitrary hostname rather than always reading the current wiki's `wgServer`. `getInterwikiPrefix()` itself is unchanged in behaviour, now calling the new helper with the current wiki's hostname.
+
+### Notes
+
+* The `[[Title#A_B_C]]` link-correction pattern (no URL present) has no hostname to derive a prefix from, so it is left as a plain local link even when `forMeta` is set. This is unlikely to matter in practice for GS/SRG reports, which are expected to reference diffs and article URLs rather than bare bracketed section links.
+* Project/language derivation reuses the same mapping already used for report line prefixes (`Tengu-packages.js`-adjacent `SISTER_PROJECT_PREFIXES`/`NO_LANG_HOSTS` tables in `getInterwikiPrefix()`), so its accuracy is subject to the same [Inference] caveat already noted for that function: it covers common Wikimedia project subdomain patterns but has not been independently confirmed against every Wikimedia project's actual interwiki table.
+
 ## 2.161.0
 
 ### Added
