@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.163.0
+ * Version 2.164.0
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -596,6 +596,14 @@ $(function () {
             }
           }
           return e;
+        }
+
+        // Joins a reason/summary string with the tool attribution tag, but only
+        // inserts the " · " separator when there is actual reason text. Without
+        // this, an empty reason produced a summary reading " · ⛩️" — a visible
+        // separator with nothing in front of it.
+        function withToolTag(text, tag) {
+          return text && text.trim() ? text + tag : tag.replace(/^\s*·\s*/, "");
         }
 
         // Translates a MediaWiki duration string into Indonesian for use in
@@ -1855,7 +1863,7 @@ $(function () {
                   action: "block",
                   user: targetVal,
                   expiry: config.blockDur,
-                  reason: config.blockReason + toolTag,
+                  reason: withToolTag(config.blockReason, toolTag),
                 };
                 // If hardblock is checked, we do NOT want anononly=1 (registered users should be blocked too)
                 if (isTargetIP) {
@@ -1964,7 +1972,7 @@ $(function () {
                 await apiPost({
                   action: "unblock",
                   user: targetVal,
-                  reason: config.unblockReason + toolTag,
+                  reason: withToolTag(config.unblockReason, toolTag),
                 });
                 addLog(`[Unblock] Successfully unblocked "${targetVal}"`);
                 stats.unblock++;
@@ -2029,7 +2037,7 @@ $(function () {
                       action: "setglobalaccountstatus",
                       user: targetVal,
                       locked: "lock",
-                      reason: config.lockAccountReason + toolTag,
+                      reason: withToolTag(config.lockAccountReason, toolTag),
                       ...(config.lockAccountHideUsername
                         ? { hidden: "lists" }
                         : {}),
@@ -2168,7 +2176,7 @@ $(function () {
                 await apiPost({
                   action: "undelete",
                   title: targetVal,
-                  reason: config.undeleteReason + toolTag,
+                  reason: withToolTag(config.undeleteReason, toolTag),
                 });
                 addLog(`[Undelete] Successfully restored page: "${targetVal}"`);
                 stats.undelete++;
@@ -2197,7 +2205,7 @@ $(function () {
                   action: "move",
                   from: targetVal,
                   to: config.movePageDest,
-                  reason: config.movePageReason + toolTag,
+                  reason: withToolTag(config.movePageReason, toolTag),
                 };
                 if (config.movePageNoRedirect) moveParams.noredirect = 1;
                 if (config.movePageSubpages) moveParams.movesubpages = 1;
@@ -2414,7 +2422,7 @@ $(function () {
                   action: "move",
                   from: targetVal,
                   to: config.moveSandboxDest,
-                  reason: config.moveSandboxReason + toolTag,
+                  reason: withToolTag(config.moveSandboxReason, toolTag),
                 };
                 if (config.moveSandboxNoRedirect) moveParams.noredirect = 1;
 
@@ -2880,7 +2888,7 @@ $(function () {
                       type: "revision",
                       ids: idlist,
                       hide: config.rdHides,
-                      reason: config.rdReason + toolTag,
+                      reason: withToolTag(config.rdReason, toolTag),
                       suppress: config.os ? "yes" : "nochange",
                     });
                     addLog(
@@ -3023,7 +3031,10 @@ $(function () {
                 );
               };
 
-              const revertSummaryStr = buildRevertSummaryText() + toolTag;
+              const revertSummaryStr = withToolTag(
+                buildRevertSummaryText(),
+                toolTag,
+              );
 
               // Execute standard rollback or undo operation sequentially based on settings
               if (config.rollbackMethod === "undo" && !isZObject) {
@@ -3158,7 +3169,7 @@ $(function () {
                     type: "revision",
                     ids: idlist,
                     hide: config.rdHides,
-                    reason: config.rdReason + toolTag,
+                    reason: withToolTag(config.rdReason, toolTag),
                     suppress: config.os ? "yes" : "nochange",
                   });
                   addLog(`[Revdel] Hiding revisions at: "${title}"`);
@@ -3244,7 +3255,7 @@ $(function () {
                     title: title,
                     protections: buildPageProtections(title),
                     expiry: buildPageProtectionExpiries(title),
-                    reason: config.protectReason + toolTag,
+                    reason: withToolTag(config.protectReason, toolTag),
                     ...(config.protectCascade ? { cascade: "" } : {}),
                   };
                   await apiPost(protectData);
@@ -3279,7 +3290,7 @@ $(function () {
                         config.protectPendingChangesExpiry === "never"
                           ? "infinite"
                           : config.protectPendingChangesExpiry,
-                      reason: config.protectReason + toolTag,
+                      reason: withToolTag(config.protectReason, toolTag),
                     });
                     addLog(
                       `[Protect] Enabled pending changes protection: "${title}"`,
@@ -3316,7 +3327,7 @@ $(function () {
                         title: talkForProtect,
                         protections: `edit=${config.protectEdit}|move=${config.protectMove}`,
                         expiry: `${config.protectExpiry}|${config.protectMoveExpiry}`,
-                        reason: config.protectReason + toolTag,
+                        reason: withToolTag(config.protectReason, toolTag),
                         ...(config.protectCascade ? { cascade: "" } : {}),
                       });
                       addLog(
@@ -3476,7 +3487,7 @@ $(function () {
                   await apiPost({
                     action: "delete",
                     title: title,
-                    reason: config.massdelReason + toolTag,
+                    reason: withToolTag(config.massdelReason, toolTag),
                   });
                   addLog(`[Delete] Deleted page: "${title}"`);
                   stats.delete++;
@@ -3519,7 +3530,10 @@ $(function () {
                         protections:
                           "create=" + config.massdelProtectRecreationLevel,
                         expiry: config.massdelProtectRecreationExpiry,
-                        reason: config.massdelProtectRecreationReason + toolTag,
+                        reason: withToolTag(
+                          config.massdelProtectRecreationReason,
+                          toolTag,
+                        ),
                       });
                       addLog(
                         `[Protect] Protected deleted page against recreation: "${title}"`,
@@ -3943,7 +3957,7 @@ $(function () {
                   title: targetVal,
                   protections: "create=" + config.protectRecreationLevel,
                   expiry: config.protectRecreationExpiry,
-                  reason: config.protectRecreationReason + toolTag,
+                  reason: withToolTag(config.protectRecreationReason, toolTag),
                 });
                 addLog(
                   '[Protect] Protected page against recreation: "' +
@@ -3990,7 +4004,7 @@ $(function () {
                     title: title,
                     protections: `create=${config.protectEdit}`,
                     expiry: config.protectExpiry,
-                    reason: config.protectReason + toolTag,
+                    reason: withToolTag(config.protectReason, toolTag),
                   });
                   addLog(
                     `[Protect] Protected deleted page against recreation: "${title}"`,
@@ -4041,7 +4055,7 @@ $(function () {
                         action: "protect",
                         title: talkForProtect,
                         protections: talkProtections,
-                        reason: config.protectReason + toolTag,
+                        reason: withToolTag(config.protectReason, toolTag),
                       };
                       // Expiry and cascade only apply when the page exists.
                       if (talkExists) {
@@ -4510,7 +4524,10 @@ $(function () {
                           action: "edit",
                           title: linkTitle,
                           text: newWikitext,
-                          summary: config.fixRedirectsReason + toolTag,
+                          summary: withToolTag(
+                            config.fixRedirectsReason,
+                            toolTag,
+                          ),
                           bot: true,
                         });
                         addLog(

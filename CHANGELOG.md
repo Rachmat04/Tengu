@@ -1,3 +1,14 @@
+## 2.164.0
+
+### Fixed
+
+* Fixed edit summaries showing a stray ` · ⛩️` separator with nothing before it when a reason or custom summary was left blank. The tool attribution tag is now joined to the reason text only when the reason is non-empty; an empty reason now produces a plain `⛩️` with no leading separator.
+
+### Notes
+
+* Added a shared `withToolTag()` helper (Section 04) used everywhere a reason or summary is concatenated with the tool tag, replacing the previous unconditional `reason + toolTag` pattern.
+* This is a display-only fix to generated edit summaries and notifications; no operational logic was changed.
+
 ## 2.163.0
 
 ### Added
