@@ -75,9 +75,9 @@ Tengu automatically selects the most appropriate mode based on the page you open
 Two sub-modes, selectable via a dropdown:
 
 - **Move to user's sandbox** — moves the target page into a user's subpage (e.g. `User:[username]/[subpage name]`). Supports a "Same as page creator" option to auto-fill the username, an optional talk-page move, and an optional subpage move.
-- **Move page** — moves the target page to an arbitrary destination title. Supports moving the associated talk page and all subpages via native API parameters in a single call, with configurable reason and suppress-redirect option.
+- **Move page** — moves the target page to an arbitrary destination title, with a namespace selector. Supports moving the associated talk page, all subpages, a "Fix double redirects" option, and a configurable reason.
 
-Suppressing the redirect requires the `suppressredirect` right (sysops only).
+Both sub-modes include a destination-page existence checker button (❓ / ❌ / ✔️) and a "Delete destination page if it already exists (destructive)" option. Suppressing the redirect requires the `suppressredirect` right (sysops only) and stays unticked by default even when available.
 
 Only available in page mode.
 
@@ -140,9 +140,14 @@ Only available in page mode.
 
 ### Get info
 - Opens a read-only information panel for the current target.
-- **User mode** — shows the target's block log, rights changes, abuse filter log, local groups and rights, global groups and rights, and global lock/block status.
-- **Page mode** — shows the page's abuse filter log, protection log, deletion log, and move log.
+- **User mode** — shows the target's account info (local and global edit counts, registration date, previous usernames), access rights (local and global groups and rights), block log, rights changes, abuse filter log, and global lock/block status.
+- **Page mode** — shows the page's current revision info (size, last editor, last edited, revision count, creator, creation date), what links here, abuse filter log, protection log, deletion log, and move log.
 - Sections that have entries expand automatically.
+
+### Inline revision actions
+- Adds `[⛩️ rollback]`, `[⛩️ undo]`, and — where applicable — `[⛩️ restore this revision]` links directly to page history, user contributions, and diff pages, without opening the full Tengu dialogue.
+- Each link opens a small confirmation dialogue with a reason field and options to mark as a bot edit (rollback only), show the username in the summary, and notify the target user.
+- On contributions pages, a successful rollback replaces the link in place with a non-clickable "already rollbacked" status instead of reloading the page.
 
 ### Task control
 - An abort button cancels ongoing operations.
@@ -164,6 +169,9 @@ Custom packages can be supplied via the `window.p4js_all_in_one.packages` config
 
 ### Rights panel
 Displayed in the dialogue footer. Shows your rollback and sysop status on the current wiki, and your global rollback, global sysop, and steward status. Sections you lack the rights to use are locked automatically.
+
+### Recently active administrators
+A 👮 button opens a list of administrators and other advanced rights holders (bureaucrats, CheckUsers, interface admins, global sysops, stewards) active within the last 24 hours, sorted by most recent activity, with quick links to message or email each one.
 
 ### Dark mode
 A manual light/dark mode toggle is available in the dialogue, on the same row as the mode toggle. The selected theme is saved to `localStorage` and reapplied the next time Tengu opens. If no preference has been saved, Tengu falls back to the browser's `prefers-color-scheme` setting.
