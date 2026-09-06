@@ -1,3 +1,13 @@
+## 2.162.3
+
+### Fixed
+
+* The ✨ "Fix links in reason" button now converts underscores to spaces in the article title when rewriting a full wiki URL into a wiki link (e.g. `[[https://id.wikipedia.org/wiki/ABC_DEF]]` → `[[ABC DEF]]`, not `[[ABC_DEF]]`). Previously only the fragment's underscores were converted, leaving the title itself unreadable when the source URL used underscores in place of spaces.
+
+### Notes
+
+* This affects `correctReasonLinks()`'s pattern 2 (`[[https://<wiki>/wiki/Title#Fragment]]`), used across all supported Wikimedia project hosts, not just Wikipedia. Pattern 1 (diff URLs) and pattern 3 (`[[Title#A_B_C]]` with no URL) are unaffected, as neither involves a URL-sourced article title.
+
 ## 2.162.2
 
 ### Changed

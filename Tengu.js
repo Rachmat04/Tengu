@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.162.2
+ * Version 2.162.3
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -428,7 +428,10 @@ $(function () {
           result = result.replace(
             /\[\[https?:\/\/([^/\]]+)\/wiki\/([^\]#]+)(?:#([^\]]+))?\]\]/gi,
             function (match, host, title, fragment) {
-              const decodedTitle = safeDecode(title);
+              // Underscores in the article title are converted to spaces,
+              // matching the human-readable page title, consistent with the
+              // fragment underscore-to-space handling below.
+              const decodedTitle = safeDecode(title).replace(/_/g, " ");
               let target = decodedTitle;
               if (fragment) {
                 const decodedFragment = safeDecode(fragment).replace(/_/g, " ");
