@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.162.3
+ * Version 2.163.0
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -13656,19 +13656,59 @@ $(function () {
                 ) + toolTag;
               const rbParams = { summary: summary };
               if (selectedBot) rbParams.markbot = 1;
-              const rollbackResult = await apiRollback(
-                pageTitle,
-                targetUser,
-                rbParams,
-              );
-              // Field names (old_revid = revision being rolled
-              // back, last_revid = revision being restored to, revid = new
-              // revision created) follow documented action=rollback
-              // response shape.
-              const rb = rollbackResult && rollbackResult.rollback;
-              const rolledBackRevId = rb && rb.old_revid;
-              const targetRevId = rb && rb.last_revid;
-              const newRevId = rb && rb.revid;
+              let rolledBackRevId = null;
+              let targetRevId = null;
+              let newRevId = null;
+              // Set when native rollback is unavailable (missing rollback
+              // right) and the undo-based fallback below was used instead,
+              // so the log can note that a different mechanism was used.
+              let usedRollbackFallback = false;
+              try {
+                const rollbackResult = await apiRollback(
+                  pageTitle,
+                  targetUser,
+                  rbParams,
+                );
+                // Field names (old_revid = revision being rolled
+                // back, last_revid = revision being restored to, revid = new
+                // revision created) follow documented action=rollback
+                // response shape.
+                const rb = rollbackResult && rollbackResult.rollback;
+                rolledBackRevId = rb && rb.old_revid;
+                targetRevId = rb && rb.last_revid;
+                newRevId = rb && rb.revid;
+              } catch (rbErr) {
+                // action=rollback is assumed to fail with the
+                // "permissiondenied" error code when the current user lacks
+                // the rollback right, consistent with MediaWiki's generic
+                // permission-error handling. If the
+                // failure looks like anything else, it is rethrown and
+                // handled by the existing failure path below instead of
+                // being silently swallowed.
+                const rbErrStr = String(rbErr);
+                if (!rbErrStr.startsWith("permissiondenied")) throw rbErr;
+                const fallbackRevs = await findRollbackFallbackRevisions(
+                  pageTitle,
+                  targetUser,
+                );
+                if (!fallbackRevs) throw rbErr;
+                const undoData = {
+                  action: "edit",
+                  title: pageTitle,
+                  undo: fallbackRevs.latestRevId,
+                  summary: summary,
+                };
+                if (fallbackRevs.oldestParent) {
+                  undoData.undoafter = fallbackRevs.oldestParent;
+                }
+                if (selectedBot) undoData.bot = 1;
+                const editResult = await apiPost(undoData);
+                rolledBackRevId = fallbackRevs.latestRevId;
+                targetRevId = fallbackRevs.oldestParent;
+                newRevId =
+                  editResult && editResult.edit && editResult.edit.newrevid;
+                usedRollbackFallback = true;
+              }
               // Guards against a no-op rollback: if the revision being
               // rolled back already had the same content as the revision
               // being restored to, the API may still report a "successful"
@@ -13699,6 +13739,9 @@ $(function () {
                         " rolled back to revision " +
                         targetRevId +
                         ")"
+                      : "") +
+                    (usedRollbackFallback
+                      ? " (via undo — you do not have rollback rights on this wiki)"
                       : ""),
                 );
                 const sameContent = await revisionsContentIdentical(
@@ -13950,6 +13993,42 @@ $(function () {
           }
           const fallback = parseInt(mw.config.get("wgCurRevisionId"), 10);
           return fallback || null;
+        }
+
+        // Locates the revision range needed to replicate native rollback
+        // for a user who lacks the rollback right. Mirrors rollback's own
+        // behaviour of reverting every consecutive top revision made by the
+        // same user, back to the last revision made by someone else, but
+        // resolves the range via a plain revision-history query instead of
+        // the rollback API. Returns null if the page's current revision is
+        // not by targetUser (nothing to roll back) or if no revisions could
+        // be fetched.
+        // Limited to the 100 most recent revisions; if the same
+        // user made more than 100 consecutive edits, oldestParent is not
+        // found and the fallback in runQuickRevert() reverts only the
+        // latest edit, rather than the full run.
+        async function findRollbackFallbackRevisions(pageTitle, targetUser) {
+          const data = await apiGet({
+            action: "query",
+            prop: "revisions",
+            titles: pageTitle,
+            rvlimit: 100,
+            rvprop: "ids|user",
+            formatversion: 2,
+          });
+          const page = data.query && data.query.pages && data.query.pages[0];
+          const revs = (page && page.revisions) || [];
+          if (!revs.length) return null;
+          const latestRevId = revs[0].revid;
+          if ((revs[0].user || "") !== targetUser) return null;
+          let oldestParent = null;
+          for (let i = 1; i < revs.length; i++) {
+            if ((revs[i].user || "") !== targetUser) {
+              oldestParent = revs[i].revid;
+              break;
+            }
+          }
+          return { latestRevId, oldestParent };
         }
 
         // Adds "[⛩️ rollback]" or "[⛩️ restore this revision]" to each

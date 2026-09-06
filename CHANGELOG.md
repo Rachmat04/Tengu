@@ -1,3 +1,16 @@
+## 2.163.0
+
+### Added
+
+* Added an automatic fallback for the `[⛩️ rollback]` inline action when the current user does not have the rollback right. Instead of surfacing a permission error, Tengu now reverts the target's consecutive top edits using the same `action=edit` undo mechanism already used by the "Use undo instead of rollback" option, replicating native rollback's behaviour of reverting back to the last revision made by a different user. The confirmation dialogue, reason selection, edit summary wording, checkbox options, status/log handling, and contributions-page in-place update all behave exactly as they do for native rollback; the log line notes when the fallback mechanism was used.
+* Added `findRollbackFallbackRevisions()` (Section 09b), which resolves the revision range needed for the fallback by querying up to the 50 most recent revisions and locating the last one not authored by the target user.
+
+### Notes
+
+* The fallback is triggered when `action=rollback` fails with an error starting with `permissiondenied`, assumed to indicate a missing rollback right consistent with MediaWiki's generic permission-error handling. Any other rollback failure is handled by the existing failure path unchanged.
+* The fallback only examines the 100 most recent revisions. If the target user made more than 100 consecutive edits, the earliest edit not by them cannot be located within this range, and the fallback reverts only the latest edit rather than the full run.
+* This affects only the `[⛩️ rollback]` inline action (history, contributions, and diff pages). The main window's batch Rollback section already falls back to undo automatically when the user lacks rollback rights, via the existing "Use undo instead of rollback" auto-tick behaviour, and is unaffected by this change.
+
 ## 2.162.3
 
 ### Fixed
