@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.166.0
+ * Version 2.167.0
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -5454,11 +5454,20 @@ $(function () {
                   e.params && e.params.expiry
                     ? e.params.expiry === "infinity"
                       ? "Indefinite"
-                      : fmtTimestamp(e.params.expiry)
+                      : fmtTimestamp(e.params.expiry) +
+                        (fmtRelative(e.params.expiry)
+                          ? " (" + fmtRelative(e.params.expiry) + ")"
+                          : "")
                     : "—";
                 bodyBlockLog.appendChild(
                   makeEntry([
-                    ["Time", fmtTimestamp(e.timestamp)],
+                    [
+                      "Time",
+                      fmtTimestamp(e.timestamp) +
+                        (fmtRelative(e.timestamp)
+                          ? " (" + fmtRelative(e.timestamp) + ")"
+                          : ""),
+                    ],
                     ["Action", e.action || "block"],
                     ["Performed by", e.user || "—"],
                     ["Duration", duration],
@@ -5517,7 +5526,13 @@ $(function () {
                 // all rather than a misleading one.
                 const newMetadata = (e.params && e.params.newmetadata) || null;
                 const rows = [
-                  ["Time", fmtTimestamp(e.timestamp)],
+                  [
+                    "Time",
+                    fmtTimestamp(e.timestamp) +
+                      (fmtRelative(e.timestamp)
+                        ? " (" + fmtRelative(e.timestamp) + ")"
+                        : ""),
+                  ],
                   ["Changed by", e.user || "—"],
                   ["Previous groups", oldGroups],
                   ["New groups", newGroups],
@@ -5572,7 +5587,13 @@ $(function () {
                   : "—";
                 bodyAbuseLog.appendChild(
                   makeEntry([
-                    ["Time", fmtTimestamp(e.timestamp)],
+                    [
+                      "Time",
+                      fmtTimestamp(e.timestamp) +
+                        (fmtRelative(e.timestamp)
+                          ? " (" + fmtRelative(e.timestamp) + ")"
+                          : ""),
+                    ],
                     ["Page", e.title || "—"],
                     ["Action", e.action || "—"],
                     ["Filter", filterLabel],
@@ -5950,7 +5971,13 @@ $(function () {
                   : "—";
                 bodyAbuseLog.appendChild(
                   makeEntry([
-                    ["Time", fmtTimestamp(e.timestamp)],
+                    [
+                      "Time",
+                      fmtTimestamp(e.timestamp) +
+                        (fmtRelative(e.timestamp)
+                          ? " (" + fmtRelative(e.timestamp) + ")"
+                          : ""),
+                    ],
                     ["User", e.user || "—"],
                     ["Action", e.action || "—"],
                     ["Filter", filterLabel],
@@ -6069,7 +6096,13 @@ $(function () {
                     ? String(e.params.count)
                     : null;
                 const rows = [
-                  ["Time", fmtTimestamp(e.timestamp)],
+                  [
+                    "Time",
+                    fmtTimestamp(e.timestamp) +
+                      (fmtRelative(e.timestamp)
+                        ? " (" + fmtRelative(e.timestamp) + ")"
+                        : ""),
+                  ],
                   ["Action", e.action || "delete"],
                   ["Performed by", e.user || "—"],
                 ];
@@ -6171,7 +6204,13 @@ $(function () {
                       : "No (redirect left)"
                     : "—";
                 const rows = [
-                  ["Time", fmtTimestamp(e.timestamp)],
+                  [
+                    "Time",
+                    fmtTimestamp(e.timestamp) +
+                      (fmtRelative(e.timestamp)
+                        ? " (" + fmtRelative(e.timestamp) + ")"
+                        : ""),
+                  ],
                   ["Performed by", e.user || "—"],
                 ];
                 if (e._tngSourceTitle && e._tngSourceTitle !== pageName) {

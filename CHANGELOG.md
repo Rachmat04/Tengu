@@ -1,3 +1,14 @@
+## 2.167.0
+
+### Added
+
+* Added relative time to entries that were previously showing absolute timestamps only, so formatting is consistent across every section of the Get info panel (both user mode and page mode): the **Block log** section's **Time** and **Expiry** rows, the **Rights changes** section's **Time** row, both **Abuse filter log** sections' **Time** row (user mode and page mode), the **Deletion log** section's **Time** row, and the **Move log** section's **Time** row.
+
+### Notes
+
+* This affects display only; no changes were made to the underlying API calls, log data, or any other logic.
+* Sections that already showed relative time (Account info's Registration date, page mode's Current revision, Protection log's Time and expiry rows) are unaffected.
+
 ## 2.166.0
 
 ### Added
