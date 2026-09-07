@@ -1,3 +1,17 @@
+## 2.166.0
+
+### Added
+
+* Added relative time to the **Time** row and to each level's expiry in the **Protection log** section of the **Get info** panel (page mode), matching the relative-time formatting already used elsewhere in this panel.
+
+### Fixed
+
+* Fixed `getPageInfo()`'s `fmtRelative()` always computing elapsed time from a timestamp to now, so a future expiry timestamp (e.g. an active protection's expiry) fell into the "less than a minute" branch and incorrectly displayed as "just now" regardless of how far in the future it actually was. `fmtRelative()` now compares the timestamp against the current time in both directions, matching the equivalent fix already applied to `getUserInfo()`'s `fmtRelative()` in v2.148.1.
+
+### Notes
+
+* This affects only the Protection log section of the page-mode **Get info** panel. `getUserInfo()`'s `fmtRelative()` was already fixed in v2.148.1 and is unaffected. Other sections of `getPageInfo()` (Current revision, deletion log, move log) already used past-only relative timestamps intentionally, since they only ever receive past timestamps.
+
 ## 2.165.0
 
 ### Added
