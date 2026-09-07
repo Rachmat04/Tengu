@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.164.0
+ * Version 2.165.0
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -939,7 +939,50 @@ $(function () {
         // the report stays visible in normal recent-changes views.
         // summaryText is built by the caller so it can reflect whether an
         // account or a page is being reported.
-        async function submitGlobalSysopsReport(reportLine, summaryText) {
+        // Checks whether a report referencing the given target already
+        // appears to be open on Global sysops/Requests before submitting,
+        // mirroring the equivalent safeguard already used by
+        // submitSRGReport() for Steward requests/Global. Unlike SRG,
+        // Global sysops/Requests reports have no {{Status}} template to
+        // anchor against, so the check instead looks for the target as a
+        // whole word within an existing report bullet line ("* Please ...").
+        // This heuristic may miss a duplicate if the target is
+        // phrased differently in an older entry (e.g. a different
+        // interwiki prefix), or very rarely flag a false positive if the
+        // target string happens to appear inside an unrelated bullet line.
+        async function submitGlobalSysopsReport(
+          reportLine,
+          summaryText,
+          target,
+        ) {
+          const data = await foreignApiGet({
+            action: "query",
+            prop: "revisions",
+            titles: "Global sysops/Requests",
+            rvslots: "main",
+            rvprop: "content",
+            formatversion: 2,
+          });
+          const page = data.query && data.query.pages && data.query.pages[0];
+          const content =
+            (page &&
+              page.revisions &&
+              page.revisions[0] &&
+              page.revisions[0].slots &&
+              page.revisions[0].slots.main &&
+              page.revisions[0].slots.main.content) ||
+            "";
+
+          const escapedTarget = target.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+          const dupRe = new RegExp("^\\*.*\\b" + escapedTarget + "\\b", "im");
+          if (dupRe.test(content)) {
+            throw new Error(
+              "a report for " +
+                target +
+                " already appears to be open on Global sysops/Requests",
+            );
+          }
+
           const foreignApi = await getMetaForeignApi();
           await new Promise((resolve, reject) => {
             foreignApi
@@ -2103,7 +2146,11 @@ $(function () {
                     ? "Reporting page for global sysops' attention"
                     : "Reporting account for global sysops' attention") +
                   toolTag;
-                await submitGlobalSysopsReport(_gsLine, reportGSSummary);
+                await submitGlobalSysopsReport(
+                  _gsLine,
+                  reportGSSummary,
+                  targetVal,
+                );
                 addLog(
                   `[Report] Submitted report to Global sysops/Requests for "${targetVal}"`,
                 );

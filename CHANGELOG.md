@@ -1,3 +1,14 @@
+## 2.165.0
+
+### Added
+
+* Added duplicate-report detection to the Report to Global sysops/Requests feature, matching the equivalent safeguard already in place for Report to Steward requests/Global. Before submitting, Tengu now fetches the current Global sysops/Requests page and checks whether a report bullet line already mentions the target; if so, the submission is stopped and the failure is logged instead of a duplicate report being filed.
+
+### Notes
+
+* Global sysops/Requests reports have no `{{Status}}` template to anchor against (unlike Steward requests/Global), so the duplicate check instead looks for the target as a whole word within an existing "* Please ..." bullet line. This may miss a duplicate phrased with a different interwiki prefix, or very rarely flag a false positive if the target string happens to appear inside an unrelated bullet line.
+* This affects only `submitGlobalSysopsReport()` and its one call site in the Report to Global sysops/Requests step of the main work loop. Report to Steward requests/Global's existing duplicate check (`submitSRGReport()`) is unchanged.
+
 ## 2.164.0
 
 ### Fixed
