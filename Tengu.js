@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.167.0
+ * Version 2.168.0
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -285,13 +285,35 @@ $(function () {
           const wrap = document.createElement("div");
           wrap.className = "tng-filtered-select";
 
+          // Filter input and clear button sit on their own row, above the select.
+          const filterRow = document.createElement("div");
+          filterRow.className = "tng-filtered-select-row";
+
           const filter = document.createElement("input");
           filter.type = "text";
           filter.className = "tng-input tng-filtered-select-input";
           filter.placeholder = "Filter options...";
           filter.setAttribute("aria-label", "Filter options");
 
-          wrap.appendChild(filter);
+          // Clear button — hidden until the filter has text, so it doesn't
+          // clutter the row when there's nothing to clear.
+          const btnClearFilter = document.createElement("button");
+          btnClearFilter.type = "button";
+          btnClearFilter.className =
+            "tng-btn tng-btn-quiet tng-btn-sm tng-filtered-select-clear tng-hidden";
+          btnClearFilter.textContent = "✕";
+          btnClearFilter.title = "Clear filter";
+          btnClearFilter.setAttribute("aria-label", "Clear filter");
+          btnClearFilter.addEventListener("click", function () {
+            filter.value = "";
+            filter.dispatchEvent(new Event("input"));
+            filter.focus();
+          });
+
+          filterRow.appendChild(filter);
+          filterRow.appendChild(btnClearFilter);
+
+          wrap.appendChild(filterRow);
           wrap.appendChild(wrapSelect(sel));
 
           // Collect all <option> elements once, preserving their original parent
@@ -300,6 +322,7 @@ $(function () {
 
           filter.addEventListener("input", function () {
             const query = filter.value.toLowerCase().trim();
+            btnClearFilter.classList.toggle("tng-hidden", !query);
 
             if (!query) {
               // Restore everything in original order

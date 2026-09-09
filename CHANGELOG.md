@@ -1,3 +1,14 @@
+## 2.168.0
+
+### Added
+
+* Added a clear (✕) button to every filterable reason/message dropdown (rollback, block, page deletion, page protection, revision deletion, undeletion, recreation protection, move, warning, GS/SRG report reasons, lock account, fix redirects). The button appears next to the filter box only once text has been typed, and clears the filter in one click instead of requiring the text to be deleted manually.
+
+### Notes
+
+* This affects only `makeFilteredSelect()`'s filter row; the underlying filtering logic, dropdown population, and selection behaviour are unchanged.
+* Added `.tng-filtered-select-row` and `.tng-filtered-select-clear` to `Tengu.css`; no dark-mode-specific rules were needed since the button reuses the existing themed `.tng-btn-quiet` styling.
+
 ## 2.167.0
 
 ### Added

@@ -1053,9 +1053,23 @@
   width: 100%;
 }
 
+/* Row holding the filter input and its clear button */
+.tng-filtered-select-row {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+  width: 100%;
+}
+
 .tng-filtered-select-input {
   width: 100%;
   box-sizing: border-box;
+  flex: 1;
+}
+
+/* Hidden until the filter has text (see .tng-hidden toggle in Tengu.js) */
+.tng-filtered-select-clear {
+  flex-shrink: 0;
 }
 
 /* Ensure the <select> inside fills the wrapper width */
