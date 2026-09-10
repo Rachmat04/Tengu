@@ -1,3 +1,13 @@
+## 2.169.0
+
+### Fixed
+
+* Fixed long text in the Get info panel (user mode and page mode) — such as long reasons, comments, or URLs — causing the entry to overflow and require horizontal scrolling. Long unbroken text now wraps within the available width of the entry card.
+
+### Notes
+
+* This is a CSS-only fix (`.tng-info-entry` in `Tengu.css`); no changes were made to how log data is fetched or displayed.
+
 ## 2.168.0
 
 ### Added

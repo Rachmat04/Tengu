@@ -565,6 +565,8 @@
   display: flex;
   flex-direction: column;
   gap: 1px;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 .tng-info-entry + .tng-info-entry {
   margin-top: 6px;
