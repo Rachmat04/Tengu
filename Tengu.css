@@ -936,6 +936,15 @@
   color: #00af89;
 }
 
+/* Dark mode for in-field filter clear icon */
+.tng-theme-dark .tng-filtered-select-clear {
+  color: #a2a9b1;
+}
+.tng-theme-dark .tng-filtered-select-clear:hover {
+  background: #3a3a3a;
+  color: #eaecf0;
+}
+
 /* Dark mode for inline field error */
 .tng-theme-dark .tng-input-error {
   border-color: #ff6b6b !important;
@@ -1055,23 +1064,50 @@
   width: 100%;
 }
 
-/* Row holding the filter input and its clear button */
+/* Row holding the filter input */
 .tng-filtered-select-row {
   display: flex;
-  gap: 4px;
   align-items: center;
+  width: 100%;
+}
+
+/* Positions the in-field clear icon relative to the input */
+.tng-filtered-select-input-wrap {
+  position: relative;
+  flex: 1;
+  min-width: 0;
   width: 100%;
 }
 
 .tng-filtered-select-input {
   width: 100%;
   box-sizing: border-box;
-  flex: 1;
+  padding-right: 26px;
 }
 
-/* Hidden until the filter has text (see .tng-hidden toggle in Tengu.js) */
+/* In-field clear icon (✕), right-aligned inside the filter input. Hidden
+   until the filter has text (see .tng-hidden toggle in Tengu.js). */
 .tng-filtered-select-clear {
-  flex-shrink: 0;
+  position: absolute;
+  top: 50%;
+  right: 5px;
+  transform: translateY(-50%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  padding: 0;
+  background: none;
+  border: none;
+  border-radius: 3px;
+  color: #72777d;
+  font-size: 0.82em;
+  cursor: pointer;
+}
+.tng-filtered-select-clear:hover {
+  background: #eaecf0;
+  color: #202122;
 }
 
 /* Ensure the <select> inside fills the wrapper width */

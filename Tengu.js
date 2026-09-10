@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.169.0
+ * Version 2.170.0
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -285,9 +285,15 @@ $(function () {
           const wrap = document.createElement("div");
           wrap.className = "tng-filtered-select";
 
-          // Filter input and clear button sit on their own row, above the select.
+          // Filter input sits on its own row, above the select. The clear
+          // control is rendered as a ✕ inside the input itself (right-aligned),
+          // rather than as a separate button, so it only appears once there is
+          // text to clear and does not add a second control alongside the field.
           const filterRow = document.createElement("div");
           filterRow.className = "tng-filtered-select-row";
+
+          const filterInputWrap = document.createElement("div");
+          filterInputWrap.className = "tng-filtered-select-input-wrap";
 
           const filter = document.createElement("input");
           filter.type = "text";
@@ -295,12 +301,10 @@ $(function () {
           filter.placeholder = "Filter options...";
           filter.setAttribute("aria-label", "Filter options");
 
-          // Clear button — hidden until the filter has text, so it doesn't
-          // clutter the row when there's nothing to clear.
+          // In-field clear icon — hidden until the filter has text.
           const btnClearFilter = document.createElement("button");
           btnClearFilter.type = "button";
-          btnClearFilter.className =
-            "tng-btn tng-btn-quiet tng-btn-sm tng-filtered-select-clear tng-hidden";
+          btnClearFilter.className = "tng-filtered-select-clear tng-hidden";
           btnClearFilter.textContent = "✕";
           btnClearFilter.title = "Clear filter";
           btnClearFilter.setAttribute("aria-label", "Clear filter");
@@ -310,8 +314,9 @@ $(function () {
             filter.focus();
           });
 
-          filterRow.appendChild(filter);
-          filterRow.appendChild(btnClearFilter);
+          filterInputWrap.appendChild(filter);
+          filterInputWrap.appendChild(btnClearFilter);
+          filterRow.appendChild(filterInputWrap);
 
           wrap.appendChild(filterRow);
           wrap.appendChild(wrapSelect(sel));

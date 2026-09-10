@@ -1,3 +1,13 @@
+## 2.170.0
+
+### Changed
+
+* The clear (✕) control on every filterable reason/message dropdown's filter box is no longer a separate button beside the text field. It's now shown inside the field itself, right-aligned, appearing only once text has been typed — clicking it clears the filter, same as before.
+
+### Notes
+
+* This affects only `makeFilteredSelect()`'s filter row layout in `Tengu.js` and its supporting styles in `Tengu.css` (`.tng-filtered-select-input-wrap`, restyled `.tng-filtered-select-clear`). The filtering logic, dropdown population, and selection behaviour are unchanged.
+
 ## 2.169.0
 
 ### Fixed
