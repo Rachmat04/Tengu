@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.170.0
+ * Version 2.171.0
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -1508,6 +1508,10 @@ $(function () {
             (useIndonesian
               ? "Notifikasi: Pemberitahuan pembatalan suntingan"
               : "Notification: Edit reversion notice") + toolTag;
+          const notifySummaryUndelete =
+            (useIndonesian
+              ? "Notifikasi: Pemberitahuan pemulihan halaman"
+              : "Notification: Page restoration notice") + toolTag;
 
           // Builds the protections parameter for a page protection request, adding
           // upload= for File-namespace pages. Assumes upload-level
@@ -2256,6 +2260,71 @@ $(function () {
                 addLog(`[Undelete] Successfully restored page: "${targetVal}"`);
                 stats.undelete++;
                 updateStatusDisplay();
+
+                if (config.notifyUndelete) {
+                  try {
+                    const creatorData = await apiGet({
+                      action: "query",
+                      prop: "revisions",
+                      titles: targetVal,
+                      rvdir: "newer",
+                      rvlimit: 1,
+                      rvprop: "user",
+                      formatversion: 2,
+                    });
+                    const cp =
+                      creatorData.query &&
+                      creatorData.query.pages &&
+                      creatorData.query.pages[0];
+                    const pageCreator =
+                      (cp &&
+                        !cp.missing &&
+                        cp.revisions &&
+                        cp.revisions[0] &&
+                        cp.revisions[0].user) ||
+                      null;
+                    const currentUser = mw.config.get("wgUserName") || "";
+                    if (
+                      pageCreator &&
+                      pageCreator.toLowerCase() !== currentUser.toLowerCase()
+                    ) {
+                      const talkTitle = new mw.Title(
+                        pageCreator,
+                        3,
+                      ).getPrefixedText();
+                      const undeleteReasonNotice =
+                        config.undeleteReason && config.undeleteReason.trim()
+                          ? config.undeleteReason
+                          : useIndonesian
+                            ? "(tidak ada alasan diberikan)"
+                            : "(no reason given)";
+                      const talkExists = await pageExists(talkTitle);
+                      const notice = useIndonesian
+                        ? `== Pemberitahuan pemulihan halaman ==\nHalo ${pageCreator},\n\nHalaman "${targetVal}" yang Anda buat telah dipulihkan dengan alasan berikut: ${undeleteReasonNotice}.\n\nPemberitahuan ini dikirimkan secara otomatis. Silakan sampaikan pertanyaan atau keberatan ke halaman pembicaraan saya. ~~~~`
+                        : `== Page restoration notice ==\nDear ${pageCreator},\n\nThe page "${targetVal}" you created has been restored due to the following reason: ${undeleteReasonNotice}.\n\nThis notification was posted automatically. Please direct any questions or concerns to my user talk page. ~~~~`;
+                      await apiPost({
+                        action: "edit",
+                        title: talkTitle,
+                        appendtext: (talkExists ? "\n\n" : "") + notice,
+                        summary: notifySummaryUndelete,
+                        bot: true,
+                      });
+                      addLog(
+                        `[Notify] Undeletion notification posted to: "${talkTitle}"`,
+                      );
+                    } else if (pageCreator) {
+                      addLog(
+                        `[Notify] Skipped undeletion notification: page was created and restored by the same user`,
+                        "warn",
+                      );
+                    }
+                  } catch (e) {
+                    addLog(
+                      `[Notify] Failed to post undeletion notification: ${formatApiError(e)}`,
+                      "warn",
+                    );
+                  }
+                }
               } catch (e) {
                 addLog(
                   `[Undelete] Failed to restore "${targetVal}": ${formatApiError(e)}`,
@@ -9241,6 +9310,19 @@ $(function () {
           fieldUndeleteReason.appendChild(reasonWrapUndelete);
           bodyUndelete.appendChild(rowUndeleteReason);
 
+          const { wrap: wrapNotifyUndelete, chk: chkNotifyUndelete } =
+            makeCheckbox(
+              "Send undeletion notification to page creator's talk page",
+              true,
+            );
+          wrapNotifyUndelete.title =
+            "When ticked, a notification will be posted to the talk page of the page's original creator after a successful undeletion. Not sent when the page creator and the restoring user are the same person.";
+          const checksUndelete = document.createElement("div");
+          checksUndelete.className = "tng-checks";
+          checksUndelete.style.paddingLeft = "0";
+          checksUndelete.appendChild(wrapNotifyUndelete);
+          bodyUndelete.appendChild(checksUndelete);
+
           // Reversible lock for this section, driven by the target's deletion
           // history and the current mode. Tracked separately from the
           // permanent rights lock (lockSection) via its own set, mirroring
@@ -11806,6 +11888,7 @@ $(function () {
               massdelReason: buildPagedelReason() + suffix,
               undelete: chkUndelete.checked && !chkUndelete.disabled,
               undeleteReason: buildUndeleteReason() + suffix,
+              notifyUndelete: chkNotifyUndelete.checked,
               fixRedirects:
                 chkFixRedirects.checked && !chkFixRedirects.disabled,
               fixRedirectsDest: inputFixRedirectsDest.value.trim(),

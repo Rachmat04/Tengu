@@ -1,3 +1,15 @@
+## 2.171.0
+
+### Added
+
+* Added a **"Send undeletion notification to page creator's talk page"** option to the Page undeletion section, ticked by default. When enabled, Tengu looks up the page's original creator (via its first revision after restoration) and posts a notification to their talk page listing the restoration reason.
+* Added a `notifyUndelete` config key and a bilingual (English/Indonesian) restoration notice, following the same wording pattern already used for block, deletion, and protection notifications.
+
+### Notes
+
+* The notification is skipped, with a log entry noting why, when the page creator and the user performing the restoration are the same account — matching the existing self-deletion suppression behaviour in the Page deletion section.
+* A failure to post the notification is logged as a warning and does not affect the reported success of the undeletion itself.
+
 ## 2.170.0
 
 ### Changed

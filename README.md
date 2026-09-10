@@ -70,6 +70,7 @@ Tengu automatically selects the most appropriate mode based on the page you open
 - Restores a previously deleted page.
 - Only available in page mode when the target has deletion log entries and you hold the undelete right.
 - Preset and free-text restoration reasons.
+- Optionally sends a restoration notification to the page creator's talk page. Not sent when the page creator and the restoring user are the same person.
 
 ### Move page
 Two sub-modes, selectable via a dropdown:
