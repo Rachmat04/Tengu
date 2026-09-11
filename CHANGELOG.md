@@ -1,3 +1,14 @@
+## 2.176.0
+
+### Changed
+
+* The partial block sub-panel (Block section) and the additional-targets textarea (Process additional targets, target row) now animate open and closed with the same smooth max-height/opacity transition, instead of appearing or disappearing instantly.
+* Introduced a shared `.tng-collapse-panel` / `.tng-collapse-panel--open` CSS class pair in `Tengu.css`, replacing the multi-target-specific animation classes so both reveals use identical timing.
+
+### Notes
+
+* This is a UI-only change; no config keys, submission behaviour, or reset logic were affected. `applyPackage()`'s reset of the partial block sub-panel now removes the open class instead of adding a hidden class, with equivalent effect.
+
 ## 2.175.0
 
 ### Changed

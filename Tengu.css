@@ -1214,24 +1214,29 @@
   color: #ffe082;
 }
 
-/* --- Multi-target panel (animated reveal) --- */
-/* Uses max-height + opacity so the reveal animates smoothly
-   rather than appearing or disappearing instantly. */
+/* --- Collapsible panel (animated reveal) --- */
+/* Shared by the multi-target textarea and the partial block sub-panel.
+   Uses max-height + opacity so the reveal animates smoothly rather than
+   appearing or disappearing instantly. */
+.tng-collapse-panel {
+  overflow: hidden;
+  max-height: 0;
+  opacity: 0;
+  transition:
+    max-height 0.3s ease,
+    opacity 0.25s ease;
+}
+.tng-collapse-panel--open {
+  max-height: 800px;
+  opacity: 1;
+}
+
+/* --- Multi-target panel (textarea + help text) --- */
 .tng-multitarget-panel {
   display: flex;
   flex-direction: column;
   gap: 4px;
   margin-top: 4px;
-  overflow: hidden;
-  max-height: 0;
-  opacity: 0;
-  transition:
-    max-height 0.25s ease,
-    opacity 0.2s ease;
-}
-.tng-multitarget-panel--open {
-  max-height: 200px;
-  opacity: 1;
 }
 
 /* --- Confirmation dialogue target list --- */

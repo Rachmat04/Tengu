@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.175.0
+ * Version 2.176.0
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -7439,13 +7439,14 @@ $(function () {
             " runs.";
 
           const divMultiTargetPanel = document.createElement("div");
-          divMultiTargetPanel.className = "tng-multitarget-panel";
+          divMultiTargetPanel.className =
+            "tng-multitarget-panel tng-collapse-panel";
           divMultiTargetPanel.appendChild(textareaMultiTarget);
           divMultiTargetPanel.appendChild(helpMultiTarget);
 
           chkMultiTarget.addEventListener("change", function () {
             divMultiTargetPanel.classList.toggle(
-              "tng-multitarget-panel--open",
+              "tng-collapse-panel--open",
               chkMultiTarget.checked,
             );
           });
@@ -8293,7 +8294,8 @@ $(function () {
           // selected above, so the hierarchy is clear: Block type governs
           // the overall mode, and this subpanel configures that mode.
           const wrapBlockPartialGroup = document.createElement("div");
-          wrapBlockPartialGroup.className = "tng-recreation-group tng-hidden";
+          wrapBlockPartialGroup.className =
+            "tng-recreation-group tng-collapse-panel";
 
           // Namespaces to restrict
           const { row: rowBlockPartialNs, field: fieldBlockPartialNs } =
@@ -8383,7 +8385,10 @@ $(function () {
             ].forEach(function (c) {
               c.disabled = !enabled;
             });
-            wrapBlockPartialGroup.classList.toggle("tng-hidden", !enabled);
+            wrapBlockPartialGroup.classList.toggle(
+              "tng-collapse-panel--open",
+              enabled,
+            );
           });
 
           bodyBlock.appendChild(wrapBlockPartialGroup);
@@ -12699,7 +12704,7 @@ $(function () {
             ].forEach(function (c) {
               c.disabled = true;
             });
-            wrapBlockPartialGroup.classList.add("tng-hidden");
+            wrapBlockPartialGroup.classList.remove("tng-collapse-panel--open");
 
             const pd = pkg.pagedelete || {};
             if (!chkPagedel.disabled) {
