@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.173.0
+ * Version 2.174.0
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -8262,6 +8262,135 @@ $(function () {
           divGlobalStatus.textContent = "Enter a target to see global status.";
           bodyBlock.appendChild(divGlobalStatus);
 
+          // --- Block type (full or partial) ---
+          // Lets the user choose between a full block and a partial block,
+          // which restricts the block to specific pages, namespaces, and/or
+          // actions (upload, move, create) instead of blocking the whole
+          // wiki. Mirrors MediaWiki's own "partial block" feature
+          // (Special:Block). Placed at the top of the section, before the
+          // expiry, reason, and other options, since it changes the shape
+          // of the block being configured. The partial-block sub-controls
+          // are grouped in their own bordered panel (mirroring the
+          // recreation-protection group elsewhere in Tengu) and are hidden
+          // entirely — not merely dimmed — unless "Partial block" is selected.
+          const wrapBlockTypeGroup = document.createElement("div");
+          wrapBlockTypeGroup.className = "tng-recreation-group";
+
+          const { row: rowBlockType, field: fieldBlockType } =
+            makeRow("Block type");
+          const selBlockType = makeSelect([
+            { value: "full", label: "Full block" },
+            { value: "partial", label: "Partial block" },
+          ]);
+          selBlockType.title =
+            "When set to partial block, the block only prevents editing on the specified pages and/or namespaces, and/or performing the specified actions, instead of blocking the user from the whole wiki.";
+          fieldBlockType.appendChild(wrapSelect(selBlockType));
+          wrapBlockTypeGroup.appendChild(rowBlockType);
+
+          // Namespaces to restrict
+          const { row: rowBlockPartialNs, field: fieldBlockPartialNs } =
+            makeRow("Namespaces");
+          const divBlockPartialNsChecks = document.createElement("div");
+          divBlockPartialNsChecks.style.cssText =
+            "display:flex;flex-wrap:wrap;gap:6px;width:100%;";
+          fieldBlockPartialNs.appendChild(divBlockPartialNsChecks);
+          rowBlockPartialNs.classList.add("tng-hidden");
+          wrapBlockTypeGroup.appendChild(rowBlockPartialNs);
+
+          let blockPartialNsChecks = [];
+          namespacesPromise.then(function (list) {
+            divBlockPartialNsChecks.innerHTML = "";
+            blockPartialNsChecks = [];
+            list.forEach(function (n) {
+              const label =
+                n.id === 0 ? "(Main)" : n.name || n.canonical || String(n.id);
+              const { wrap, chk } = makeCheckbox(label, false);
+              wrap.style.marginBottom = "0";
+              chk.dataset.nsId = String(n.id);
+              chk.disabled = selBlockType.value !== "partial";
+              divBlockPartialNsChecks.appendChild(wrap);
+              blockPartialNsChecks.push(chk);
+            });
+          });
+
+          // Specific pages to restrict
+          const { row: rowBlockPartialPages, field: fieldBlockPartialPages } =
+            makeRow("Specific pages");
+          const inputBlockPartialPages = document.createElement("textarea");
+          inputBlockPartialPages.className = "tng-input";
+          inputBlockPartialPages.rows = 3;
+          inputBlockPartialPages.placeholder = "One page title per line";
+          inputBlockPartialPages.style.cssText =
+            "resize:vertical;width:100%;font-family:monospace;font-size:1em;";
+          inputBlockPartialPages.disabled = true;
+          fieldBlockPartialPages.appendChild(inputBlockPartialPages);
+          rowBlockPartialPages.classList.add("tng-hidden");
+          wrapBlockTypeGroup.appendChild(rowBlockPartialPages);
+
+          // Actions to restrict — mirrors MediaWiki's own action-restriction
+          // labels (upload, move, create) used on Special:Block.
+          const { wrap: wrapBlockActionUpload, chk: chkBlockActionUpload } =
+            makeCheckbox(
+              "Uploading files (including overwriting existing files)",
+              false,
+            );
+          const { wrap: wrapBlockActionMove, chk: chkBlockActionMove } =
+            makeCheckbox("Moving pages and files", false);
+          const { wrap: wrapBlockActionCreate, chk: chkBlockActionCreate } =
+            makeCheckbox("Creating new pages and uploading new files", false);
+          [
+            chkBlockActionUpload,
+            chkBlockActionMove,
+            chkBlockActionCreate,
+          ].forEach(function (c) {
+            c.disabled = true;
+          });
+          const {
+            row: rowBlockPartialActions,
+            field: fieldBlockPartialActions,
+          } = makeRow("Restrict actions");
+          const divBlockPartialActionsChecks = document.createElement("div");
+          divBlockPartialActionsChecks.style.cssText =
+            "display:flex;flex-wrap:wrap;gap:10px;width:100%;";
+          divBlockPartialActionsChecks.appendChild(wrapBlockActionUpload);
+          divBlockPartialActionsChecks.appendChild(wrapBlockActionMove);
+          divBlockPartialActionsChecks.appendChild(wrapBlockActionCreate);
+          fieldBlockPartialActions.appendChild(divBlockPartialActionsChecks);
+          rowBlockPartialActions.classList.add("tng-hidden");
+          wrapBlockTypeGroup.appendChild(rowBlockPartialActions);
+
+          const helpBlockPartial = document.createElement("div");
+          helpBlockPartial.className = "tng-help tng-hidden";
+          helpBlockPartial.textContent =
+            "Select at least one page, namespace, or action to restrict. Pages, namespaces, and actions can be combined in a single partial block.";
+          wrapBlockTypeGroup.appendChild(helpBlockPartial);
+
+          selBlockType.addEventListener("change", function () {
+            const enabled = selBlockType.value === "partial";
+            inputBlockPartialPages.disabled = !enabled;
+            blockPartialNsChecks.forEach(function (c) {
+              c.disabled = !enabled;
+            });
+            [
+              chkBlockActionUpload,
+              chkBlockActionMove,
+              chkBlockActionCreate,
+            ].forEach(function (c) {
+              c.disabled = !enabled;
+            });
+            rowBlockPartialNs.classList.toggle("tng-hidden", !enabled);
+            rowBlockPartialPages.classList.toggle("tng-hidden", !enabled);
+            rowBlockPartialActions.classList.toggle("tng-hidden", !enabled);
+            helpBlockPartial.classList.toggle("tng-hidden", !enabled);
+          });
+
+          bodyBlock.appendChild(wrapBlockTypeGroup);
+
+          // Increased so the partial-block sub-controls above, once
+          // revealed, do not force an additional nested scrollbar within
+          // this section's body.
+          bodyBlock.style.maxHeight = "900px";
+
           const { row: rowBlockDur, field: fieldBlockDur } = makeRow("Expiry");
           const selBlockDur = makeSelect([
             { value: "1 day", label: "1 day" },
@@ -8385,121 +8514,6 @@ $(function () {
             if (!isIndef) chkClearTalkPageBeforeNotify.checked = false;
           }
           selBlockDur.addEventListener("change", updateClearTalkState);
-
-          // --- Block type (full or partial) ---
-          // Lets the user choose between a full block and a partial block,
-          // which restricts the block to specific pages, namespaces, and/or
-          // actions (upload, move, create) instead of blocking the whole
-          // wiki. Mirrors MediaWiki's own "partial block" feature
-          // (Special:Block). Unlike the recreation-protection and pending
-          // changes controls elsewhere in Tengu, these rows are not wrapped
-          // in a bordered sub-panel; they sit directly in the section body.
-          const { row: rowBlockType, field: fieldBlockType } =
-            makeRow("Block type");
-          const selBlockType = makeSelect([
-            { value: "full", label: "Full block" },
-            { value: "partial", label: "Partial block" },
-          ]);
-          selBlockType.title =
-            "When set to partial block, the block only prevents editing on the specified pages and/or namespaces, and/or performing the specified actions, instead of blocking the user from the whole wiki.";
-          fieldBlockType.appendChild(wrapSelect(selBlockType));
-          checksBlock.appendChild(rowBlockType);
-
-          // Namespaces to restrict
-          const { row: rowBlockPartialNs, field: fieldBlockPartialNs } =
-            makeRow("Namespaces");
-          const divBlockPartialNsChecks = document.createElement("div");
-          divBlockPartialNsChecks.style.cssText =
-            "display:flex;flex-wrap:wrap;gap:6px;width:100%;";
-          fieldBlockPartialNs.appendChild(divBlockPartialNsChecks);
-          rowBlockPartialNs.style.opacity = "0.5";
-          checksBlock.appendChild(rowBlockPartialNs);
-
-          let blockPartialNsChecks = [];
-          namespacesPromise.then(function (list) {
-            divBlockPartialNsChecks.innerHTML = "";
-            blockPartialNsChecks = [];
-            list.forEach(function (n) {
-              const label =
-                n.id === 0 ? "(Main)" : n.name || n.canonical || String(n.id);
-              const { wrap, chk } = makeCheckbox(label, false);
-              wrap.style.marginBottom = "0";
-              chk.dataset.nsId = String(n.id);
-              chk.disabled = selBlockType.value !== "partial";
-              divBlockPartialNsChecks.appendChild(wrap);
-              blockPartialNsChecks.push(chk);
-            });
-          });
-
-          // Specific pages to restrict
-          const { row: rowBlockPartialPages, field: fieldBlockPartialPages } =
-            makeRow("Specific pages");
-          const inputBlockPartialPages = document.createElement("textarea");
-          inputBlockPartialPages.className = "tng-input";
-          inputBlockPartialPages.rows = 3;
-          inputBlockPartialPages.placeholder = "One page title per line";
-          inputBlockPartialPages.style.cssText =
-            "resize:vertical;width:100%;font-family:monospace;font-size:1em;";
-          inputBlockPartialPages.disabled = true;
-          fieldBlockPartialPages.appendChild(inputBlockPartialPages);
-          rowBlockPartialPages.style.opacity = "0.5";
-          checksBlock.appendChild(rowBlockPartialPages);
-
-          // Actions to restrict — mirrors MediaWiki's own action-restriction
-          // labels (upload, move, create) used on Special:Block.
-          const { wrap: wrapBlockActionUpload, chk: chkBlockActionUpload } =
-            makeCheckbox(
-              "Uploading files (including overwriting existing files)",
-              false,
-            );
-          const { wrap: wrapBlockActionMove, chk: chkBlockActionMove } =
-            makeCheckbox("Moving pages and files", false);
-          const { wrap: wrapBlockActionCreate, chk: chkBlockActionCreate } =
-            makeCheckbox("Creating new pages and uploading new files", false);
-          [
-            chkBlockActionUpload,
-            chkBlockActionMove,
-            chkBlockActionCreate,
-          ].forEach(function (c) {
-            c.disabled = true;
-          });
-          const {
-            row: rowBlockPartialActions,
-            field: fieldBlockPartialActions,
-          } = makeRow("Restrict actions");
-          const divBlockPartialActionsChecks = document.createElement("div");
-          divBlockPartialActionsChecks.style.cssText =
-            "display:flex;flex-wrap:wrap;gap:10px;width:100%;";
-          divBlockPartialActionsChecks.appendChild(wrapBlockActionUpload);
-          divBlockPartialActionsChecks.appendChild(wrapBlockActionMove);
-          divBlockPartialActionsChecks.appendChild(wrapBlockActionCreate);
-          fieldBlockPartialActions.appendChild(divBlockPartialActionsChecks);
-          rowBlockPartialActions.style.opacity = "0.5";
-          checksBlock.appendChild(rowBlockPartialActions);
-
-          const helpBlockPartial = document.createElement("div");
-          helpBlockPartial.className = "tng-help";
-          helpBlockPartial.textContent =
-            "Select at least one page, namespace, or action to restrict. Pages, namespaces, and actions can be combined in a single partial block.";
-          checksBlock.appendChild(helpBlockPartial);
-
-          selBlockType.addEventListener("change", function () {
-            const enabled = selBlockType.value === "partial";
-            inputBlockPartialPages.disabled = !enabled;
-            blockPartialNsChecks.forEach(function (c) {
-              c.disabled = !enabled;
-            });
-            [
-              chkBlockActionUpload,
-              chkBlockActionMove,
-              chkBlockActionCreate,
-            ].forEach(function (c) {
-              c.disabled = !enabled;
-            });
-            rowBlockPartialNs.style.opacity = enabled ? "" : "0.5";
-            rowBlockPartialPages.style.opacity = enabled ? "" : "0.5";
-            rowBlockPartialActions.style.opacity = enabled ? "" : "0.5";
-          });
 
           bodyBlock.appendChild(checksBlock);
           body.appendChild(secBlock);
@@ -12683,9 +12697,10 @@ $(function () {
             ].forEach(function (c) {
               c.disabled = true;
             });
-            rowBlockPartialNs.style.opacity = "0.5";
-            rowBlockPartialPages.style.opacity = "0.5";
-            rowBlockPartialActions.style.opacity = "0.5";
+            rowBlockPartialNs.classList.add("tng-hidden");
+            rowBlockPartialPages.classList.add("tng-hidden");
+            rowBlockPartialActions.classList.add("tng-hidden");
+            helpBlockPartial.classList.add("tng-hidden");
 
             const pd = pkg.pagedelete || {};
             if (!chkPagedel.disabled) {

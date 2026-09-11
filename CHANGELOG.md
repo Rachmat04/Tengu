@@ -1,3 +1,17 @@
+## 2.174.0
+
+### Changed
+
+* Moved the **Block type** dropdown and its partial-block sub-controls (namespaces, specific pages, restrict actions) to the top of the Block section, before the expiry, reason, and other options, since block type shapes the rest of the configuration.
+* The partial-block sub-controls are once again grouped in a bordered sub-panel (`.tng-recreation-group`), matching the style used elsewhere in Tengu (e.g. recreation protection).
+* The partial-block sub-controls are now hidden entirely (rather than dimmed) when "Full block" is selected, and revealed only when "Partial block" is selected.
+* Increased the Block section body's maximum height so the partial-block sub-controls, once revealed, do not create an additional nested scrollbar within the section.
+
+### Notes
+
+* This is a UI-only change; no new config keys were introduced, and submission behaviour (`action=block` with `partial=1`, `pagerestrictions`, `namespacerestrictions`, `actionrestrictions`) is unchanged.
+* The `applyPackage()` reset for these controls now hides them via the same class used for their default hidden state, rather than resetting an opacity value that no longer applies.
+
 ## 2.173.0
 
 ### Changed
