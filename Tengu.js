@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.172.0
+ * Version 2.173.0
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -8386,20 +8386,24 @@ $(function () {
           }
           selBlockDur.addEventListener("change", updateClearTalkState);
 
-          // --- Partial block ---
-          // Restricts the block to specific pages, namespaces, and/or actions
-          // (upload, move, create), instead of blocking the whole wiki.
-          // Mirrors MediaWiki's own "partial block" feature (Special:Block).
-          const { wrap: wrapBlockPartial, chk: chkBlockPartial } = makeCheckbox(
-            "Partial block (restrict to specific pages, namespaces, and/or actions)",
-            false,
-          );
-          wrapBlockPartial.title =
-            "When ticked, the block only prevents editing on the specified pages and/or namespaces, and/or performing the specified actions, instead of blocking the user from the whole wiki.";
-
-          const divBlockPartialGroup = document.createElement("div");
-          divBlockPartialGroup.className = "tng-recreation-group";
-          divBlockPartialGroup.appendChild(wrapBlockPartial);
+          // --- Block type (full or partial) ---
+          // Lets the user choose between a full block and a partial block,
+          // which restricts the block to specific pages, namespaces, and/or
+          // actions (upload, move, create) instead of blocking the whole
+          // wiki. Mirrors MediaWiki's own "partial block" feature
+          // (Special:Block). Unlike the recreation-protection and pending
+          // changes controls elsewhere in Tengu, these rows are not wrapped
+          // in a bordered sub-panel; they sit directly in the section body.
+          const { row: rowBlockType, field: fieldBlockType } =
+            makeRow("Block type");
+          const selBlockType = makeSelect([
+            { value: "full", label: "Full block" },
+            { value: "partial", label: "Partial block" },
+          ]);
+          selBlockType.title =
+            "When set to partial block, the block only prevents editing on the specified pages and/or namespaces, and/or performing the specified actions, instead of blocking the user from the whole wiki.";
+          fieldBlockType.appendChild(wrapSelect(selBlockType));
+          checksBlock.appendChild(rowBlockType);
 
           // Namespaces to restrict
           const { row: rowBlockPartialNs, field: fieldBlockPartialNs } =
@@ -8409,7 +8413,7 @@ $(function () {
             "display:flex;flex-wrap:wrap;gap:6px;width:100%;";
           fieldBlockPartialNs.appendChild(divBlockPartialNsChecks);
           rowBlockPartialNs.style.opacity = "0.5";
-          divBlockPartialGroup.appendChild(rowBlockPartialNs);
+          checksBlock.appendChild(rowBlockPartialNs);
 
           let blockPartialNsChecks = [];
           namespacesPromise.then(function (list) {
@@ -8421,7 +8425,7 @@ $(function () {
               const { wrap, chk } = makeCheckbox(label, false);
               wrap.style.marginBottom = "0";
               chk.dataset.nsId = String(n.id);
-              chk.disabled = !chkBlockPartial.checked;
+              chk.disabled = selBlockType.value !== "partial";
               divBlockPartialNsChecks.appendChild(wrap);
               blockPartialNsChecks.push(chk);
             });
@@ -8439,7 +8443,7 @@ $(function () {
           inputBlockPartialPages.disabled = true;
           fieldBlockPartialPages.appendChild(inputBlockPartialPages);
           rowBlockPartialPages.style.opacity = "0.5";
-          divBlockPartialGroup.appendChild(rowBlockPartialPages);
+          checksBlock.appendChild(rowBlockPartialPages);
 
           // Actions to restrict — mirrors MediaWiki's own action-restriction
           // labels (upload, move, create) used on Special:Block.
@@ -8471,16 +8475,16 @@ $(function () {
           divBlockPartialActionsChecks.appendChild(wrapBlockActionCreate);
           fieldBlockPartialActions.appendChild(divBlockPartialActionsChecks);
           rowBlockPartialActions.style.opacity = "0.5";
-          divBlockPartialGroup.appendChild(rowBlockPartialActions);
+          checksBlock.appendChild(rowBlockPartialActions);
 
           const helpBlockPartial = document.createElement("div");
           helpBlockPartial.className = "tng-help";
           helpBlockPartial.textContent =
             "Select at least one page, namespace, or action to restrict. Pages, namespaces, and actions can be combined in a single partial block.";
-          divBlockPartialGroup.appendChild(helpBlockPartial);
+          checksBlock.appendChild(helpBlockPartial);
 
-          chkBlockPartial.addEventListener("change", function () {
-            const enabled = chkBlockPartial.checked;
+          selBlockType.addEventListener("change", function () {
+            const enabled = selBlockType.value === "partial";
             inputBlockPartialPages.disabled = !enabled;
             blockPartialNsChecks.forEach(function (c) {
               c.disabled = !enabled;
@@ -8497,7 +8501,6 @@ $(function () {
             rowBlockPartialActions.style.opacity = enabled ? "" : "0.5";
           });
 
-          checksBlock.appendChild(divBlockPartialGroup);
           bodyBlock.appendChild(checksBlock);
           body.appendChild(secBlock);
 
@@ -11522,7 +11525,7 @@ $(function () {
               return;
             }
 
-            if (chkBlock.checked && chkBlockPartial.checked) {
+            if (chkBlock.checked && selBlockType.value === "partial") {
               const hasPartialPages =
                 inputBlockPartialPages.value.trim().length;
               const hasPartialNs = blockPartialNsChecks.some(function (c) {
@@ -12006,31 +12009,35 @@ $(function () {
               blockTalk: chkTalk.checked,
               blockMail: chkMail.checked,
               blockHide: chkHidename.checked,
-              blockPartial: chkBlock.checked && chkBlockPartial.checked,
-              blockPagerestrictions: chkBlockPartial.checked
-                ? inputBlockPartialPages.value
-                    .split("\n")
-                    .map(function (s) {
-                      return s.trim();
-                    })
-                    .filter(Boolean)
-                : [],
-              blockNamespacerestrictions: chkBlockPartial.checked
-                ? blockPartialNsChecks
-                    .filter(function (c) {
-                      return c.checked;
-                    })
-                    .map(function (c) {
-                      return c.dataset.nsId;
-                    })
-                : [],
-              blockActionRestrictions: chkBlockPartial.checked
-                ? [
-                    chkBlockActionUpload.checked && "upload",
-                    chkBlockActionMove.checked && "move",
-                    chkBlockActionCreate.checked && "create",
-                  ].filter(Boolean)
-                : [],
+              blockPartial:
+                chkBlock.checked && selBlockType.value === "partial",
+              blockPagerestrictions:
+                selBlockType.value === "partial"
+                  ? inputBlockPartialPages.value
+                      .split("\n")
+                      .map(function (s) {
+                        return s.trim();
+                      })
+                      .filter(Boolean)
+                  : [],
+              blockNamespacerestrictions:
+                selBlockType.value === "partial"
+                  ? blockPartialNsChecks
+                      .filter(function (c) {
+                        return c.checked;
+                      })
+                      .map(function (c) {
+                        return c.dataset.nsId;
+                      })
+                  : [],
+              blockActionRestrictions:
+                selBlockType.value === "partial"
+                  ? [
+                      chkBlockActionUpload.checked && "upload",
+                      chkBlockActionMove.checked && "move",
+                      chkBlockActionCreate.checked && "create",
+                    ].filter(Boolean)
+                  : [],
               unblock: chkUnblock.checked && !chkUnblock.disabled,
               unblockReason: buildUnblockReason() + suffix,
               notifyUnblock: chkNotifyUnblock.checked,
@@ -12656,10 +12663,10 @@ $(function () {
             chkTalk.checked = bl.talk !== false;
             chkMail.checked = bl.mail !== false;
             chkHidename.checked = !!bl.hidename;
-            // Partial block is not currently configurable via packages,
-            // so reset it and its sub-controls to their construction
-            // defaults on every package switch.
-            chkBlockPartial.checked = false;
+            // Block type is not currently configurable via packages,
+            // so reset it and the partial-block sub-controls to their
+            // construction defaults on every package switch.
+            selBlockType.value = "full";
             inputBlockPartialPages.value = "";
             inputBlockPartialPages.disabled = true;
             blockPartialNsChecks.forEach(function (c) {

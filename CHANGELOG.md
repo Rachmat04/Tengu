@@ -1,3 +1,16 @@
+## 2.173.0
+
+### Changed
+
+* Replaced the "Partial block" checkbox in the Block section with a **"Block type"** dropdown offering **Full block** and **Partial block**, so the two block modes are presented as a single choice rather than a checkbox layered on top of a full block.
+* The namespaces, specific pages, and restrict-actions controls that appear when partial block is selected are no longer wrapped in a bordered sub-panel (`.tng-recreation-group`). They now sit directly in the Block section body, consistent with the rest of the section's rows.
+
+### Notes
+
+* Submission behaviour is unchanged: `action=block` with `partial=1`, plus `pagerestrictions`, `namespacerestrictions`, and `actionrestrictions` as applicable, following documented MediaWiki API parameters for partial blocks.
+* Block type is not currently configurable via packages; it and its sub-controls reset to "Full block"/empty on every package switch, matching the existing reset pattern for other non-package-configurable block/protection options.
+* This is a UI-only change; no new config keys were introduced, and existing keys (`blockPartial`, `blockPagerestrictions`, `blockNamespacerestrictions`, `blockActionRestrictions`) are unaffected.
+
 ## 2.172.0
 
 ### Added
