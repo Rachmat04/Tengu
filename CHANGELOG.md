@@ -1,3 +1,15 @@
+## 2.175.0
+
+### Changed
+
+* Moved the **Block type** dropdown out of the bordered subpanel so it sits directly in the Block section body as the section's primary control, governing full versus partial block.
+* The bordered subpanel now contains only the settings specific to a partial block (namespaces, specific pages, restrict actions) and is shown or hidden as a single unit based on the Block type selection, rather than toggling each row individually.
+
+### Notes
+
+* This is a layout-only change; no new config keys were introduced, and submission behaviour is unchanged from v2.174.0.
+* The `applyPackage()` reset for these controls now hides the whole subpanel via one class toggle instead of one per row.
+
 ## 2.174.0
 
 ### Changed

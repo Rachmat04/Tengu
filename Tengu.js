@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.174.0
+ * Version 2.175.0
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -8273,9 +8273,9 @@ $(function () {
           // are grouped in their own bordered panel (mirroring the
           // recreation-protection group elsewhere in Tengu) and are hidden
           // entirely — not merely dimmed — unless "Partial block" is selected.
-          const wrapBlockTypeGroup = document.createElement("div");
-          wrapBlockTypeGroup.className = "tng-recreation-group";
-
+          // Block type is the primary control for this section — it selects
+          // full or partial block — so it sits directly in the section body,
+          // outside any bordered subpanel.
           const { row: rowBlockType, field: fieldBlockType } =
             makeRow("Block type");
           const selBlockType = makeSelect([
@@ -8285,7 +8285,15 @@ $(function () {
           selBlockType.title =
             "When set to partial block, the block only prevents editing on the specified pages and/or namespaces, and/or performing the specified actions, instead of blocking the user from the whole wiki.";
           fieldBlockType.appendChild(wrapSelect(selBlockType));
-          wrapBlockTypeGroup.appendChild(rowBlockType);
+          bodyBlock.appendChild(rowBlockType);
+
+          // Bordered subpanel — holds only the secondary controls that
+          // define the scope of a partial block (pages, namespaces,
+          // restricted actions). Hidden entirely unless "Partial block" is
+          // selected above, so the hierarchy is clear: Block type governs
+          // the overall mode, and this subpanel configures that mode.
+          const wrapBlockPartialGroup = document.createElement("div");
+          wrapBlockPartialGroup.className = "tng-recreation-group tng-hidden";
 
           // Namespaces to restrict
           const { row: rowBlockPartialNs, field: fieldBlockPartialNs } =
@@ -8294,8 +8302,7 @@ $(function () {
           divBlockPartialNsChecks.style.cssText =
             "display:flex;flex-wrap:wrap;gap:6px;width:100%;";
           fieldBlockPartialNs.appendChild(divBlockPartialNsChecks);
-          rowBlockPartialNs.classList.add("tng-hidden");
-          wrapBlockTypeGroup.appendChild(rowBlockPartialNs);
+          wrapBlockPartialGroup.appendChild(rowBlockPartialNs);
 
           let blockPartialNsChecks = [];
           namespacesPromise.then(function (list) {
@@ -8324,8 +8331,7 @@ $(function () {
             "resize:vertical;width:100%;font-family:monospace;font-size:1em;";
           inputBlockPartialPages.disabled = true;
           fieldBlockPartialPages.appendChild(inputBlockPartialPages);
-          rowBlockPartialPages.classList.add("tng-hidden");
-          wrapBlockTypeGroup.appendChild(rowBlockPartialPages);
+          wrapBlockPartialGroup.appendChild(rowBlockPartialPages);
 
           // Actions to restrict — mirrors MediaWiki's own action-restriction
           // labels (upload, move, create) used on Special:Block.
@@ -8356,14 +8362,13 @@ $(function () {
           divBlockPartialActionsChecks.appendChild(wrapBlockActionMove);
           divBlockPartialActionsChecks.appendChild(wrapBlockActionCreate);
           fieldBlockPartialActions.appendChild(divBlockPartialActionsChecks);
-          rowBlockPartialActions.classList.add("tng-hidden");
-          wrapBlockTypeGroup.appendChild(rowBlockPartialActions);
+          wrapBlockPartialGroup.appendChild(rowBlockPartialActions);
 
           const helpBlockPartial = document.createElement("div");
-          helpBlockPartial.className = "tng-help tng-hidden";
+          helpBlockPartial.className = "tng-help";
           helpBlockPartial.textContent =
             "Select at least one page, namespace, or action to restrict. Pages, namespaces, and actions can be combined in a single partial block.";
-          wrapBlockTypeGroup.appendChild(helpBlockPartial);
+          wrapBlockPartialGroup.appendChild(helpBlockPartial);
 
           selBlockType.addEventListener("change", function () {
             const enabled = selBlockType.value === "partial";
@@ -8378,13 +8383,10 @@ $(function () {
             ].forEach(function (c) {
               c.disabled = !enabled;
             });
-            rowBlockPartialNs.classList.toggle("tng-hidden", !enabled);
-            rowBlockPartialPages.classList.toggle("tng-hidden", !enabled);
-            rowBlockPartialActions.classList.toggle("tng-hidden", !enabled);
-            helpBlockPartial.classList.toggle("tng-hidden", !enabled);
+            wrapBlockPartialGroup.classList.toggle("tng-hidden", !enabled);
           });
 
-          bodyBlock.appendChild(wrapBlockTypeGroup);
+          bodyBlock.appendChild(wrapBlockPartialGroup);
 
           // Increased so the partial-block sub-controls above, once
           // revealed, do not force an additional nested scrollbar within
@@ -12697,10 +12699,7 @@ $(function () {
             ].forEach(function (c) {
               c.disabled = true;
             });
-            rowBlockPartialNs.classList.add("tng-hidden");
-            rowBlockPartialPages.classList.add("tng-hidden");
-            rowBlockPartialActions.classList.add("tng-hidden");
-            helpBlockPartial.classList.add("tng-hidden");
+            wrapBlockPartialGroup.classList.add("tng-hidden");
 
             const pd = pkg.pagedelete || {};
             if (!chkPagedel.disabled) {
