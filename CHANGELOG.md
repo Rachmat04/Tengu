@@ -1,3 +1,9 @@
+## 2.176.1
+
+### Fixed
+
+* Fixed inconsistent spacing between the "Uploading files (including overwriting existing files)", "Moving pages and files", and "Creating new pages and uploading new files" checkboxes in the Block section's partial-block subpanel. These previously used a standalone flexbox layout with a fixed 10px gap instead of the shared `.tng-checks`/`.tng-checkrow` spacing pattern used by every other checkbox group in the interface.
+
 ## 2.176.0
 
 ### Changed

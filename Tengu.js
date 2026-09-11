@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.176.0
+ * Version 2.176.1
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -8358,8 +8358,8 @@ $(function () {
             field: fieldBlockPartialActions,
           } = makeRow("Restrict actions");
           const divBlockPartialActionsChecks = document.createElement("div");
-          divBlockPartialActionsChecks.style.cssText =
-            "display:flex;flex-wrap:wrap;gap:10px;width:100%;";
+          divBlockPartialActionsChecks.className = "tng-checks";
+          divBlockPartialActionsChecks.style.paddingLeft = "0";
           divBlockPartialActionsChecks.appendChild(wrapBlockActionUpload);
           divBlockPartialActionsChecks.appendChild(wrapBlockActionMove);
           divBlockPartialActionsChecks.appendChild(wrapBlockActionCreate);
