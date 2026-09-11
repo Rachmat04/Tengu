@@ -1,3 +1,20 @@
+## 2.172.0
+
+### Added
+
+* Added a **"Partial block"** option to the Block section, mirroring MediaWiki's own partial block feature (Special:Block). When ticked, a bordered sub-panel appears with:
+  * **Namespaces** — a checkbox per namespace on the wiki, to restrict the block to specific namespaces.
+  * **Specific pages** — a textarea for entering page titles, one per line, to restrict the block to specific pages.
+  * **Restrict actions** — three checkboxes matching MediaWiki's own action-restriction options: "Uploading files (including overwriting existing files)", "Moving pages and files", and "Creating new pages and uploading new files".
+* Pages, namespaces, and actions can all be combined in a single partial block, matching native MediaWiki behaviour.
+* The Start button now validates that at least one page, namespace, or action is selected whenever "Partial block" is ticked.
+
+### Notes
+
+* Submitted via `action=block` with `partial=1`, plus `pagerestrictions`, `namespacerestrictions`, and `actionrestrictions` as applicable, following documented MediaWiki API parameters for partial blocks.
+* Partial block is not currently configurable via packages; it and its sub-controls reset to unticked/empty on every package switch, matching the existing reset pattern for other non-package-configurable block/protection options.
+* Namespace options are sourced from the same `namespacesPromise` request already used to populate the Move page section's namespace selector; no additional API call was introduced.
+
 ## 2.171.0
 
 ### Added
