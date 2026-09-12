@@ -1,3 +1,14 @@
+## 2.178.0
+
+### Changed
+
+* Replaced the namespace filter checkboxes in the Export edits dialogue and the Select specific edits/pages picker with multi-select comboboxes, since these controls only filter the list shown below them rather than representing a setting or action. All namespaces are selected by default, matching the previous all-checked state; ctrl/cmd-click (or shift-click) selects more than one namespace, same as before.
+
+### Notes
+
+* Filtering behaviour and results are unchanged; only the control type was replaced with `<select multiple>` styled via the existing `.tng-select` class, so it matches the styling and dark/light mode support already used elsewhere in Tengu.
+* The Block section's partial-block namespace checkboxes and the Move page namespace selector were not touched, since they configure what an action applies to rather than filtering a list.
+
 ## 2.177.0
 
 ### Fixed

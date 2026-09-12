@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.177.0
+ * Version 2.178.0
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -6524,7 +6524,11 @@ $(function () {
           const sortedNsIds = [...presentNsIds].sort(function (a, b) {
             return a - b;
           });
-          const nsFilterChecks = [];
+          // Namespace filter row — only rendered when results span more than one namespace.
+          // Uses a multi-select combobox (all namespaces selected by default)
+          // rather than a row of checkboxes, since this control only filters
+          // the list below and does not represent a setting or action.
+          let selNsFilter = null;
 
           if (sortedNsIds.length > 1) {
             const nsFilterEl = document.createElement("div");
@@ -6535,14 +6539,22 @@ $(function () {
             nsFilterLbl.style.marginRight = "2px";
             nsFilterLbl.textContent = "Filter by namespace:";
             nsFilterEl.appendChild(nsFilterLbl);
+            selNsFilter = document.createElement("select");
+            selNsFilter.className = "tng-select";
+            selNsFilter.multiple = true;
+            selNsFilter.size = Math.min(sortedNsIds.length, 4);
+            selNsFilter.title =
+              "Ctrl/Cmd-click (or Shift-click) to select more than one namespace";
+            selNsFilter.style.cssText = "flex:1;min-width:160px;";
             for (const nsId of sortedNsIds) {
               const nsName = formattedNamespaces[nsId] || "Main";
-              const { wrap: wNs, chk: cNs } = makeCheckbox(nsName, true);
-              wNs.style.marginBottom = "0";
-              cNs.dataset.nsId = String(nsId);
-              nsFilterEl.appendChild(wNs);
-              nsFilterChecks.push(cNs);
+              const opt = document.createElement("option");
+              opt.value = String(nsId);
+              opt.textContent = nsName;
+              opt.selected = true;
+              selNsFilter.appendChild(opt);
             }
+            nsFilterEl.appendChild(wrapSelect(selNsFilter, "1"));
             exportBody.appendChild(nsFilterEl);
           }
 
@@ -6586,18 +6598,14 @@ $(function () {
             return "[[" + prefix + title + "]]";
           }
 
-          // Returns the set of active namespace ID strings from the filter checkboxes,
-          // or null when no filter row was rendered (single-namespace result).
+          // Returns the set of active namespace ID strings from the filter combobox,
+          // or null when no filter control was rendered (single-namespace result).
           function getActiveNsIds() {
-            if (!nsFilterChecks.length) return null;
+            if (!selNsFilter) return null;
             return new Set(
-              nsFilterChecks
-                .filter(function (c) {
-                  return c.checked;
-                })
-                .map(function (c) {
-                  return c.dataset.nsId;
-                }),
+              Array.from(selNsFilter.selectedOptions).map(function (o) {
+                return o.value;
+              }),
             );
           }
 
@@ -6657,9 +6665,9 @@ $(function () {
             }
           }
 
-          nsFilterChecks.forEach(function (cNs) {
-            cNs.addEventListener("change", renderExportList);
-          });
+          if (selNsFilter) {
+            selNsFilter.addEventListener("change", renderExportList);
+          }
 
           btnSortAZ.addEventListener("click", function () {
             currentSort = "az";
@@ -7811,7 +7819,9 @@ $(function () {
             // Build the namespace filter row. Only rendered when the results
             // span more than one namespace; a single-namespace result needs no
             // filter.
-            const nsFilterChecks = [];
+            // Namespace filter — only a filter, not a setting or action, so
+            // it uses a multi-select combobox rather than a row of checkboxes.
+            let selNsFilterPicker = null;
             if (sortedNsIds.length > 1) {
               const nsFilterEl = document.createElement("div");
               nsFilterEl.style.cssText =
@@ -7821,16 +7831,24 @@ $(function () {
               nsFilterLbl.style.marginRight = "2px";
               nsFilterLbl.textContent = "Filter by namespace:";
               nsFilterEl.appendChild(nsFilterLbl);
+              selNsFilterPicker = document.createElement("select");
+              selNsFilterPicker.className = "tng-select";
+              selNsFilterPicker.multiple = true;
+              selNsFilterPicker.size = Math.min(sortedNsIds.length, 4);
+              selNsFilterPicker.title =
+                "Ctrl/Cmd-click (or Shift-click) to select more than one namespace";
+              selNsFilterPicker.style.cssText = "flex:1;min-width:160px;";
               for (const nsId of sortedNsIds) {
                 // wgFormattedNamespaces returns an empty string for the main
                 // namespace (ID 0); fall back to "Main" in that case.
                 const nsName = formattedNamespaces[nsId] || "Main";
-                const { wrap: wNs, chk: cNs } = makeCheckbox(nsName, true);
-                wNs.style.marginBottom = "0";
-                cNs.dataset.nsId = String(nsId);
-                nsFilterEl.appendChild(wNs);
-                nsFilterChecks.push(cNs);
+                const opt = document.createElement("option");
+                opt.value = String(nsId);
+                opt.textContent = nsName;
+                opt.selected = true;
+                selNsFilterPicker.appendChild(opt);
               }
+              nsFilterEl.appendChild(wrapSelect(selNsFilterPicker, "1"));
               pickerBody.appendChild(nsFilterEl);
             }
 
@@ -8154,16 +8172,14 @@ $(function () {
             // are built so the filter function can reference the correct list
             // elements. These listeners were dropped during the sort-controls
             // refactor in v2.72.0/v2.74.0.
-            if (nsFilterChecks.length) {
+            if (selNsFilterPicker) {
               const applyPickerNamespaceFilter = function () {
                 const activeNsIds = new Set(
-                  nsFilterChecks
-                    .filter(function (c) {
-                      return c.checked;
-                    })
-                    .map(function (c) {
-                      return c.dataset.nsId;
-                    }),
+                  Array.from(selNsFilterPicker.selectedOptions).map(
+                    function (o) {
+                      return o.value;
+                    },
+                  ),
                 );
                 [listElEdited, listElCreated].forEach(function (listEl) {
                   if (!listEl) return;
@@ -8175,9 +8191,10 @@ $(function () {
                   });
                 });
               };
-              nsFilterChecks.forEach(function (cNs) {
-                cNs.addEventListener("change", applyPickerNamespaceFilter);
-              });
+              selNsFilterPicker.addEventListener(
+                "change",
+                applyPickerNamespaceFilter,
+              );
             }
 
             const btnCancelPicker = makeBtn("Cancel", "quiet");
