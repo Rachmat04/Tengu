@@ -1217,18 +1217,36 @@
 /* --- Collapsible panel (animated reveal) --- */
 /* Shared by the multi-target textarea and the partial block sub-panel.
    Uses max-height + opacity so the reveal animates smoothly rather than
-   appearing or disappearing instantly. */
+   appearing or disappearing instantly. Vertical margin/padding are zeroed
+   here too and restored only in the open state (per consumer below), so a
+   collapsed panel leaves no residual gap from spacing declared by its own
+   class (e.g. .tng-recreation-group's padding/margin-top). */
 .tng-collapse-panel {
   overflow: hidden;
   max-height: 0;
   opacity: 0;
+  margin-top: 0;
+  padding-top: 0;
+  padding-bottom: 0;
   transition:
     max-height 0.3s ease,
-    opacity 0.25s ease;
+    opacity 0.25s ease,
+    margin-top 0.3s ease,
+    padding-top 0.3s ease,
+    padding-bottom 0.3s ease;
 }
 .tng-collapse-panel--open {
   max-height: 800px;
   opacity: 1;
+}
+/* Restores each consumer's own vertical spacing only once open. */
+.tng-multitarget-panel.tng-collapse-panel--open {
+  margin-top: 4px;
+}
+.tng-recreation-group.tng-collapse-panel--open {
+  margin-top: 6px;
+  padding-top: 8px;
+  padding-bottom: 8px;
 }
 
 /* --- Multi-target panel (textarea + help text) --- */

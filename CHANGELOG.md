@@ -1,3 +1,14 @@
+## 2.176.2
+
+### Fixed
+
+* Fixed leftover vertical spacing left behind by a collapsed `.tng-collapse-panel` (the partial-block subpanel in the Block section, and the additional-targets textarea panel on the target row). The panel's own `padding`/`margin-top` — declared by `.tng-recreation-group` and `.tng-multitarget-panel` respectively — were never reset when the panel was closed, so a gap remained even though the panel's content was fully collapsed (e.g. between the Block type dropdown and the Expiry row when "Partial block" was not selected).
+
+### Notes
+
+* `.tng-collapse-panel` now zeroes vertical margin/padding by default and restores each consumer's own spacing only in the `--open` state, via `.tng-multitarget-panel.tng-collapse-panel--open` and `.tng-recreation-group.tng-collapse-panel--open`. This is CSS-only; no `Tengu.js` changes were needed since both consumers already carry both classes together.
+* Horizontal padding on `.tng-recreation-group` is unaffected.
+
 ## 2.176.1
 
 ### Fixed
