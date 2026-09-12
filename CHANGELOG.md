@@ -1,3 +1,22 @@
+## 2.177.0
+
+### Fixed
+
+* Fixed the "Remove links to deleted page or file" option in the Page deletion section failing to remove file references that used a namespace prefix other than "File" or "Image" — for example, `[[Berkas:Contoh.jpg]]` on Indonesian Wikipedia, or any other localised File-namespace alias. File embeds, gallery entries, and their namespace-prefix matching now recognise every alias registered for the File namespace on the current wiki, not just the English "File"/"Image" forms.
+
+### Added
+
+* Added `getFileNamespaceAliases()`, which fetches and caches the current wiki's full set of File-namespace aliases via `siprop=namespaces|namespacealiases`, following the same one-time-fetch-and-cache pattern already used by `getRedirectMagicWords()`. Falls back to `["File", "Image"]` if the request fails.
+
+### Changed
+
+* `removeBalancedFileEmbeds()` now accepts an alias-pattern parameter built from `getFileNamespaceAliases()`, used to match `[[<prefix>:...]]` embeds against every recognised File-namespace prefix instead of a hardcoded `File`/`Image` alternation. The gallery-line removal pattern was updated the same way.
+* "File" is now always included as a recognised prefix alongside the localised name and any other registered aliases, since some pages on non-English wikis still reference files using the English prefix.
+
+### Notes
+
+* This affects only the file-delinking branch of the "Remove links to deleted page or file" option, which remains an experimental feature. Ordinary page-link removal (non-file deletions) and the bare-filename pattern (no namespace prefix at all) are unchanged.
+
 ## 2.176.2
 
 ### Fixed

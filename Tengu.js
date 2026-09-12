@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.176.2
+ * Version 2.177.0
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -886,6 +886,51 @@ $(function () {
           return redirectMagicWordsPromise;
         }
 
+        // Cache of this wiki's File namespace aliases (e.g. "File", "Berkas",
+        // "Image"), fetched once via siprop=namespaces|namespacealiases and
+        // reused for the rest of the session. Used so file references left
+        // by a deleted file are recognised regardless of which recognised
+        // namespace prefix was used to link them — the localised prefix
+        // (e.g. "Berkas:" on Indonesian-language wikis), any other
+        // registered alias, and "File:" as an English fallback, since some
+        // pages on non-English wikis still use the English prefix. Adapted
+        // from the namespace-alias handling used by Twinkle
+        // (twinkleunlink.js), which relies on registered namespace data
+        // rather than a hardcoded prefix list.
+        // Falls back to ["File", "Image"] if the request fails, so
+        // file-reference detection keeps working (in its English-only form)
+        // even when this cannot be determined.
+        let fileNamespaceAliasesPromise = null;
+        function getFileNamespaceAliases() {
+          if (!fileNamespaceAliasesPromise) {
+            fileNamespaceAliasesPromise = apiGet({
+              action: "query",
+              meta: "siteinfo",
+              siprop: "namespaces|namespacealiases",
+              formatversion: 2,
+            })
+              .then(function (data) {
+                const aliases = new Set(["File", "Image"]);
+                const namespaces = (data.query && data.query.namespaces) || {};
+                const nsInfo = namespaces["6"];
+                if (nsInfo) {
+                  if (nsInfo.name) aliases.add(nsInfo.name);
+                  if (nsInfo.canonical) aliases.add(nsInfo.canonical);
+                }
+                const nsAliases =
+                  (data.query && data.query.namespacealiases) || [];
+                nsAliases.forEach(function (a) {
+                  if (a.id === 6 && a.alias) aliases.add(a.alias);
+                });
+                return Array.from(aliases).filter(Boolean);
+              })
+              .catch(function () {
+                return ["File", "Image"];
+              });
+          }
+          return fileNamespaceAliasesPromise;
+        }
+
         // Loads mw.ForeignApi and returns an instance pointed at Meta-Wiki.
         function getMetaForeignApi() {
           return new Promise((resolve, reject) => {
@@ -1731,14 +1776,27 @@ $(function () {
           // the "]]" that actually closes the file embed. Any horizontal
           // whitespace immediately before or after the removed construct is also
           // trimmed, so the removal does not leave behind stray spaces.
-          function removeBalancedFileEmbeds(text, fileNameForMatch) {
+          function removeBalancedFileEmbeds(
+            text,
+            fileNameForMatch,
+            fileNsAliasPattern,
+          ) {
             const escapedFileName = fileNameForMatch
               .replace(/[.*+?^${}()|[\]\\]/g, "\\$&")
               .replace(/[ _]/g, "[ _]");
+            // fileNsAliasPattern is a pre-escaped, pipe-separated alternation
+            // of every recognised File-namespace prefix on this wiki (e.g.
+            // "File|Berkas|Image"), so embeds using any of them are matched,
+            // not only the English "File"/"Image" forms. Falls back to the
+            // English forms if no pattern was supplied.
+            const nsPattern = fileNsAliasPattern || "[Ff]ile|[Ii]mage";
             const startRe = new RegExp(
-              "\\[\\[\\s*(?:[Ff]ile|[Ii]mage)\\s*:\\s*" +
+              "\\[\\[\\s*(?:" +
+                nsPattern +
+                ")\\s*:\\s*" +
                 escapedFileName +
                 "\\s*(?:\\||\\]\\])",
+              "i",
             );
             let result = text;
             let searchFrom = 0;
@@ -4416,17 +4474,33 @@ $(function () {
                 // unrelated word or URL. Group 1 captures the boundary
                 // character so it can be preserved in the replacement.
                 let bareFileNameRe = null;
+                // Escaped, pipe-separated alternation of every recognised
+                // File-namespace prefix on this wiki (localised prefix,
+                // registered aliases, and "File" as an English fallback used
+                // by many wikis regardless of content language). Fetched
+                // once per session via getFileNamespaceAliases().
+                let fileNsAliasPattern = null;
                 if (isFileDeletion && fileMain) {
                   const escapedFileName = fileMain
                     .replace(/[.*+?^${}()|[\]\\]/g, "\\$&")
                     .replace(/[ _]/g, "[ _]");
+                  const fileNsAliases = await getFileNamespaceAliases();
+                  fileNsAliasPattern = fileNsAliases
+                    .map(function (a) {
+                      return a.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+                    })
+                    .join("|");
                   // Matches a bare gallery entry on its own line, e.g.
-                  // "File:Example.jpg|caption", as used inside <gallery> tags.
-                  // Whole [[File:...]]/[[Image:...]] embeds are now handled
-                  // separately by removeBalancedFileEmbeds(), which correctly
-                  // handles nested wikilinks and templates within the caption.
+                  // "File:Example.jpg|caption" or "Berkas:Contoh.jpg|caption",
+                  // as used inside <gallery> tags, using any recognised
+                  // File-namespace prefix. Whole [[File:...]]/[[Berkas:...]]
+                  // embeds are handled separately by
+                  // removeBalancedFileEmbeds(), which correctly handles
+                  // nested wikilinks and templates within the caption.
                   galleryLineRe = new RegExp(
-                    "^[ \\t]*(?:[Ff]ile|[Ii]mage)\\s*:\\s*" +
+                    "^[ \\t]*(?:" +
+                      fileNsAliasPattern +
+                      ")\\s*:\\s*" +
                       escapedFileName +
                       "[ \\t]*(?:\\|.*)?$\\n?",
                     "gim",
@@ -4511,6 +4585,7 @@ $(function () {
                           newWikitext = removeBalancedFileEmbeds(
                             wikitext,
                             fileMain,
+                            fileNsAliasPattern,
                           )
                             .replace(galleryLineRe, "")
                             .replace(bareFileNameRe, "$1");
