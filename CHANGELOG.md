@@ -1,3 +1,17 @@
+## 2.178.1
+
+### Changed
+
+* Replaced the namespace filter's `<select multiple>` control (introduced in v2.178.0, in the Export edits dialogue and the Select specific edits/pages picker) with a checkbox combobox: a text field that opens a dropdown of individually checkable options when clicked. Selected namespaces are shown as plain text in the field, the dropdown stays open across multiple checkbox clicks, and it closes when clicking outside — matching Tengu's existing dropdown, checkbox, and dark/light mode styling.
+
+### Added
+
+* Added `makeCheckboxCombobox()`, a reusable multi-select control used by both namespace filters. Added `.tng-combobox`, `.tng-combobox-input`, `.tng-combobox-dropdown`, and `.tng-combobox-option` to `Tengu.css`, with a dark mode variant.
+
+### Notes
+
+* Filtering behaviour and results are unchanged; only the control used to select namespaces was replaced. `<select multiple>` no longer requires ctrl/cmd-click, and the current selection is now visible directly in the field rather than only within the dropdown.
+
 ## 2.178.0
 
 ### Changed

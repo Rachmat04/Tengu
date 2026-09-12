@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.178.0
+ * Version 2.178.1
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -111,7 +111,8 @@ $(function () {
 
         // ============================================================================
         // [Section 01] Stylesheet
-        // The CSS components were moved to an external file, [[Pengguna:Rachmat04/Tengu.css]], to allow easier maintenance and quicker iteration without needing to edit the main script.
+        // The CSS components were moved to an external file, [[Pengguna:Rachmat04/Tengu.css]],
+        // to allow easier maintenance and quicker iteration without needing to edit the main script.
         // ============================================================================
 
         // ============================================================================
@@ -224,11 +225,11 @@ $(function () {
 
         // ============================================================================
         // [Section 04] DOM helpers
-        // Standardised DOM element generation scripts for form inputs, checkboxes, and section boxes.
-        // Includes showNotification(), which applies an inline error state to a target input field,
-        // and clearInputError(), which reverts it. Also includes formatApiError(), which annotates
-        // permission-related API error strings with a plain-language hint so users understand why
-        // an action may have failed.
+        // Standardised DOM element generation scripts for form inputs, checkboxes, and section
+        // boxes. Includes showNotification(), which applies an inline error state to a target
+        // input field, and clearInputError(), which reverts it. Also includes formatApiError(),
+        // which annotates permission-related API error strings with a plain-language hint so
+        // users understand why an action may have failed.
         // ============================================================================
         function makeRow(labelText) {
           const row = document.createElement("div");
@@ -370,6 +371,97 @@ $(function () {
           });
 
           return { wrap, filter };
+        }
+
+        // Multi-select checkbox combobox: a text field that opens a dropdown
+        // of checkboxes on click, letting the user select multiple options
+        // at once. Used for filters (not settings/actions), where a
+        // <select multiple> would require ctrl/cmd-click and hides the
+        // current selection. The dropdown stays open across multiple
+        // checkbox clicks and only closes when the user clicks outside it.
+        // items: array of { value, label, selected }.
+        // Returns { wrap, getSelectedValues(), onChange(cb) }.
+        function makeCheckboxCombobox(items, placeholderText) {
+          const wrap = document.createElement("div");
+          wrap.className = "tng-combobox";
+
+          const input = document.createElement("input");
+          input.type = "text";
+          input.className = "tng-input tng-combobox-input";
+          input.readOnly = true;
+          input.placeholder = placeholderText || "Select...";
+
+          const dropdown = document.createElement("div");
+          dropdown.className = "tng-combobox-dropdown tng-hidden";
+
+          const checkboxes = [];
+          items.forEach(function (item) {
+            const { wrap: rowWrap, chk } = makeCheckbox(
+              item.label,
+              !!item.selected,
+            );
+            rowWrap.className = "tng-checkrow tng-combobox-option";
+            chk.dataset.comboValue = item.value;
+            dropdown.appendChild(rowWrap);
+            checkboxes.push({ chk, label: item.label });
+          });
+
+          function updateInputText() {
+            const selectedLabels = checkboxes
+              .filter(function (c) {
+                return c.chk.checked;
+              })
+              .map(function (c) {
+                return c.label;
+              });
+            input.value = selectedLabels.length
+              ? selectedLabels.join(", ")
+              : "";
+          }
+          updateInputText();
+
+          let changeCallback = null;
+          checkboxes.forEach(function (c) {
+            c.chk.addEventListener("change", function () {
+              updateInputText();
+              if (changeCallback) changeCallback();
+            });
+          });
+
+          function toggleDropdown(open) {
+            dropdown.classList.toggle("tng-hidden", !open);
+            wrap.classList.toggle("tng-combobox-open", open);
+          }
+
+          input.addEventListener("click", function (e) {
+            e.stopPropagation();
+            toggleDropdown(dropdown.classList.contains("tng-hidden"));
+          });
+
+          // Clicking anywhere outside the control closes the dropdown;
+          // clicks on a checkbox or its label keep it open.
+          document.addEventListener("click", function (e) {
+            if (!wrap.contains(e.target)) toggleDropdown(false);
+          });
+
+          wrap.appendChild(input);
+          wrap.appendChild(dropdown);
+
+          return {
+            wrap: wrap,
+            getSelectedValues: function () {
+              return checkboxes
+                .filter(function (c) {
+                  return c.chk.checked;
+                })
+                .map(function (c) {
+                  return c.chk.dataset.comboValue;
+                });
+            },
+            onChange: function (cb) {
+              changeCallback = cb;
+            },
+          };
         }
 
         function makeInput(placeholder, cls) {
@@ -6525,10 +6617,11 @@ $(function () {
             return a - b;
           });
           // Namespace filter row — only rendered when results span more than one namespace.
-          // Uses a multi-select combobox (all namespaces selected by default)
-          // rather than a row of checkboxes, since this control only filters
-          // the list below and does not represent a setting or action.
-          let selNsFilter = null;
+          // Uses a checkbox combobox (all namespaces selected by default)
+          // rather than a native <select multiple>, since this control only
+          // filters the list below, and a text field with a checkbox
+          // dropdown shows the current selection without ctrl/cmd-click.
+          let nsCombobox = null;
 
           if (sortedNsIds.length > 1) {
             const nsFilterEl = document.createElement("div");
@@ -6539,22 +6632,17 @@ $(function () {
             nsFilterLbl.style.marginRight = "2px";
             nsFilterLbl.textContent = "Filter by namespace:";
             nsFilterEl.appendChild(nsFilterLbl);
-            selNsFilter = document.createElement("select");
-            selNsFilter.className = "tng-select";
-            selNsFilter.multiple = true;
-            selNsFilter.size = Math.min(sortedNsIds.length, 4);
-            selNsFilter.title =
-              "Ctrl/Cmd-click (or Shift-click) to select more than one namespace";
-            selNsFilter.style.cssText = "flex:1;min-width:160px;";
-            for (const nsId of sortedNsIds) {
-              const nsName = formattedNamespaces[nsId] || "Main";
-              const opt = document.createElement("option");
-              opt.value = String(nsId);
-              opt.textContent = nsName;
-              opt.selected = true;
-              selNsFilter.appendChild(opt);
-            }
-            nsFilterEl.appendChild(wrapSelect(selNsFilter, "1"));
+            const nsItems = sortedNsIds.map(function (nsId) {
+              return {
+                value: String(nsId),
+                label: formattedNamespaces[nsId] || "Main",
+                selected: true,
+              };
+            });
+            nsCombobox = makeCheckboxCombobox(nsItems, "Select namespaces...");
+            nsCombobox.wrap.style.flex = "1";
+            nsCombobox.wrap.style.minWidth = "160px";
+            nsFilterEl.appendChild(nsCombobox.wrap);
             exportBody.appendChild(nsFilterEl);
           }
 
@@ -6601,12 +6689,8 @@ $(function () {
           // Returns the set of active namespace ID strings from the filter combobox,
           // or null when no filter control was rendered (single-namespace result).
           function getActiveNsIds() {
-            if (!selNsFilter) return null;
-            return new Set(
-              Array.from(selNsFilter.selectedOptions).map(function (o) {
-                return o.value;
-              }),
-            );
+            if (!nsCombobox) return null;
+            return new Set(nsCombobox.getSelectedValues());
           }
 
           let currentSort = "az";
@@ -6665,8 +6749,8 @@ $(function () {
             }
           }
 
-          if (selNsFilter) {
-            selNsFilter.addEventListener("change", renderExportList);
+          if (nsCombobox) {
+            nsCombobox.onChange(renderExportList);
           }
 
           btnSortAZ.addEventListener("click", function () {
@@ -7820,8 +7904,9 @@ $(function () {
             // span more than one namespace; a single-namespace result needs no
             // filter.
             // Namespace filter — only a filter, not a setting or action, so
-            // it uses a multi-select combobox rather than a row of checkboxes.
-            let selNsFilterPicker = null;
+            // it uses a checkbox combobox (text field + checkbox dropdown)
+            // rather than a native <select multiple>.
+            let nsComboboxPicker = null;
             if (sortedNsIds.length > 1) {
               const nsFilterEl = document.createElement("div");
               nsFilterEl.style.cssText =
@@ -7831,24 +7916,22 @@ $(function () {
               nsFilterLbl.style.marginRight = "2px";
               nsFilterLbl.textContent = "Filter by namespace:";
               nsFilterEl.appendChild(nsFilterLbl);
-              selNsFilterPicker = document.createElement("select");
-              selNsFilterPicker.className = "tng-select";
-              selNsFilterPicker.multiple = true;
-              selNsFilterPicker.size = Math.min(sortedNsIds.length, 4);
-              selNsFilterPicker.title =
-                "Ctrl/Cmd-click (or Shift-click) to select more than one namespace";
-              selNsFilterPicker.style.cssText = "flex:1;min-width:160px;";
-              for (const nsId of sortedNsIds) {
-                // wgFormattedNamespaces returns an empty string for the main
-                // namespace (ID 0); fall back to "Main" in that case.
-                const nsName = formattedNamespaces[nsId] || "Main";
-                const opt = document.createElement("option");
-                opt.value = String(nsId);
-                opt.textContent = nsName;
-                opt.selected = true;
-                selNsFilterPicker.appendChild(opt);
-              }
-              nsFilterEl.appendChild(wrapSelect(selNsFilterPicker, "1"));
+              // wgFormattedNamespaces returns an empty string for the main
+              // namespace (ID 0); fall back to "Main" in that case.
+              const nsItemsPicker = sortedNsIds.map(function (nsId) {
+                return {
+                  value: String(nsId),
+                  label: formattedNamespaces[nsId] || "Main",
+                  selected: true,
+                };
+              });
+              nsComboboxPicker = makeCheckboxCombobox(
+                nsItemsPicker,
+                "Select namespaces...",
+              );
+              nsComboboxPicker.wrap.style.flex = "1";
+              nsComboboxPicker.wrap.style.minWidth = "160px";
+              nsFilterEl.appendChild(nsComboboxPicker.wrap);
               pickerBody.appendChild(nsFilterEl);
             }
 
@@ -8167,19 +8250,14 @@ $(function () {
               pickerBody.appendChild(sec);
             }
 
-            // Wire namespace filter change listeners now that listElEdited and
-            // listElCreated are both defined. Must run after the picker sections
-            // are built so the filter function can reference the correct list
-            // elements. These listeners were dropped during the sort-controls
-            // refactor in v2.72.0/v2.74.0.
-            if (selNsFilterPicker) {
+            // Wire the namespace filter's change callback now that listElEdited
+            // and listElCreated are both defined. Must run after the picker
+            // sections are built so the filter function can reference the
+            // correct list elements.
+            if (nsComboboxPicker) {
               const applyPickerNamespaceFilter = function () {
                 const activeNsIds = new Set(
-                  Array.from(selNsFilterPicker.selectedOptions).map(
-                    function (o) {
-                      return o.value;
-                    },
-                  ),
+                  nsComboboxPicker.getSelectedValues(),
                 );
                 [listElEdited, listElCreated].forEach(function (listEl) {
                   if (!listEl) return;
@@ -8191,10 +8269,7 @@ $(function () {
                   });
                 });
               };
-              selNsFilterPicker.addEventListener(
-                "change",
-                applyPickerNamespaceFilter,
-              );
+              nsComboboxPicker.onChange(applyPickerNamespaceFilter);
             }
 
             const btnCancelPicker = makeBtn("Cancel", "quiet");
