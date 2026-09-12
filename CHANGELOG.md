@@ -1,3 +1,17 @@
+## 2.178.2
+
+### Added
+
+* Added a chevron indicator to the checkbox combobox's text field (namespace filters in Export edits and Select specific edits/pages), matching the appearance and open/closed rotation animation already used by `.tng-section-arrow` elsewhere in Tengu. The chevron sits inside the field, fixed in place at the right edge.
+
+### Changed
+
+* The combobox's selected-value text now truncates with an ellipsis instead of overlapping or pushing the chevron out of position when it's too long for the field width, at any window size.
+
+### Notes
+
+* CSS-only change (`Tengu.css`). No changes to `makeCheckboxCombobox()` in `Tengu.js`: the chevron's open/closed rotation reuses the existing `tng-combobox-open` class already toggled by `toggleDropdown()`.
+
 ## 2.178.1
 
 ### Changed

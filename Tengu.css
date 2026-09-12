@@ -1126,9 +1126,36 @@
 }
 .tng-combobox-input {
   cursor: pointer;
+  padding-right: 26px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .tng-combobox-input::placeholder {
   color: #72777d;
+}
+/* Chevron indicating the dropdown state, matching the animated chevron
+     used elsewhere in Tengu (.tng-section-arrow): border-drawn, rotating
+     between closed (pointing down) and open (pointing up). Positioned
+     inside the input via the wrapping .tng-combobox element so it stays
+     fixed in place regardless of the input's text content, which is
+     truncated with an ellipsis via .tng-combobox-input above rather than
+     overlapping or pushing the chevron out of position. */
+.tng-combobox::after {
+  content: "";
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  width: 7px;
+  height: 7px;
+  border-right: 2px solid #54595d;
+  border-bottom: 2px solid #54595d;
+  transform: translateY(-65%) rotate(45deg);
+  transition: transform 0.18s ease;
+  pointer-events: none;
+}
+.tng-combobox-open::after {
+  transform: translateY(-35%) rotate(225deg);
 }
 .tng-combobox-dropdown {
   position: absolute;
@@ -1157,6 +1184,9 @@
 }
 .tng-theme-dark .tng-combobox-input::placeholder {
   color: #a2a9b1;
+}
+.tng-theme-dark .tng-combobox::after {
+  border-color: #a2a9b1;
 }
 
 /* Experimental feature badge (e.g. Lock account section header).
