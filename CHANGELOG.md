@@ -1,3 +1,13 @@
+## 2.179.1
+
+### Changed
+
+* Removed the chevron indicator from every checkbox combobox (namespace filters in Export edits and Select specific edits/pages), previously shown at the right edge of the field to indicate open/closed dropdown state.
+
+### Notes
+
+* CSS-only change (`Tengu.css`). No changes to `makeCheckboxCombobox()` in `Tengu.js`; the dropdown's open/closed behaviour is unaffected, only the visual chevron is removed.
+
 ## 2.179.0
 
 ### Changed
