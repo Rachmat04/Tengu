@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.178.2
+ * Version 2.180.1
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -266,30 +266,316 @@ $(function () {
           }
           return sel;
         }
-        // Wraps a <select> in a .tng-select-wrap container that provides the custom
-        // chevron arrow via ::after. Pass a CSS flex value to apply it to the wrapper
-        // when the wrapper itself is a flex item (e.g. in a flex row alongside an input).
-        function wrapSelect(sel, flex) {
+        // Attaches a combobox-style custom dropdown (the same visual style,
+        // chevron, and open/close animation already used by
+        // makeCheckboxCombobox()) to a native <select>, so every dropdown in
+        // Tengu looks and behaves consistently. The <select> itself is kept in
+        // the DOM (visually hidden) and remains the source of truth: existing
+        // code that reads or sets sel.value, sel.selectedIndex, sel.disabled,
+        // or sel.options, or that listens for its "change" event, keeps working
+        // unmodified. A MutationObserver rebuilds the dropdown's rows whenever
+        // options are added, removed, or replaced wholesale (e.g. innerHTML
+        // reset followed by re-populating <option> elements).
+        // Tracks the currently open combobox-style dropdown (shared by
+        // attachComboboxStyleDropdown() and makeCheckboxCombobox() below),
+        // so opening a new dropdown always closes whichever one was left
+        // open, preventing two menus from overlapping on screen.
+        let openComboboxCloseFn = null;
+        let comboboxScrollListenerBound = false;
+        function ensureComboboxScrollListener() {
+          if (comboboxScrollListenerBound) return;
+          comboboxScrollListenerBound = true;
+          // Scroll events don't bubble, so this is registered with capture
+          // on document to catch scrolling within any ancestor (e.g. a
+          // section body), closing the open dropdown so it doesn't become
+          // detached from its trigger.
+          document.addEventListener(
+            "scroll",
+            function () {
+              if (openComboboxCloseFn) openComboboxCloseFn();
+            },
+            true,
+          );
+        }
+        ensureComboboxScrollListener();
+
+        // Positions a dropdown panel that has been reparented to <body>
+        // (so it can escape being clipped by a scrolling/overflow-hidden
+        // ancestor such as a section body) directly under its trigger, and
+        // caps its height to whatever space is actually available above or
+        // below in the viewport, so a scrollbar only appears when the
+        // option list genuinely does not fit.
+        function positionDropdownFixed(wrap, dropdown) {
+          const rect = wrap.getBoundingClientRect();
+          const spaceBelow = window.innerHeight - rect.bottom - 8;
+          const spaceAbove = rect.top - 8;
+          const preferredMax = 220;
+          let top, maxHeight;
+          if (spaceBelow >= 120 || spaceBelow >= spaceAbove) {
+            top = rect.bottom + 4;
+            maxHeight = Math.max(60, Math.min(preferredMax, spaceBelow));
+          } else {
+            maxHeight = Math.max(60, Math.min(preferredMax, spaceAbove));
+            top = rect.top - 4 - maxHeight;
+          }
+          dropdown.style.position = "fixed";
+          dropdown.style.left = rect.left + "px";
+          dropdown.style.width = rect.width + "px";
+          dropdown.style.top = top + "px";
+          dropdown.style.maxHeight = maxHeight + "px";
+        }
+
+        function attachComboboxStyleDropdown(sel) {
           const wrap = document.createElement("div");
-          wrap.className = "tng-select-wrap";
-          if (flex) wrap.style.flex = flex;
+          wrap.className = "tng-combobox";
+
+          const input = document.createElement("input");
+          input.type = "text";
+          input.readOnly = true;
+          input.className = "tng-input tng-combobox-input";
+          input.disabled = sel.disabled;
+
+          const dropdown = document.createElement("div");
+          dropdown.className = "tng-combobox-dropdown tng-hidden";
+
+          sel.style.display = "none";
           wrap.appendChild(sel);
+          wrap.appendChild(input);
+          // Appended to <body> rather than wrap, so the dropdown can extend
+          // beyond a clipping/scrolling ancestor (e.g. a section body) and
+          // is positioned via positionDropdownFixed() when opened.
+          document.body.appendChild(dropdown);
+
+          let rowByValue = new Map();
+          let lastFilterQuery = "";
+
+          const nativeValueDescriptor = Object.getOwnPropertyDescriptor(
+            HTMLSelectElement.prototype,
+            "value",
+          );
+          const nativeSelectedIndexDescriptor = Object.getOwnPropertyDescriptor(
+            HTMLSelectElement.prototype,
+            "selectedIndex",
+          );
+          const nativeDisabledDescriptor = Object.getOwnPropertyDescriptor(
+            HTMLSelectElement.prototype,
+            "disabled",
+          );
+
+          function updateLabel() {
+            const opt = sel.options[sel.selectedIndex];
+            input.value = opt ? opt.textContent : "";
+          }
+
+          function updateSelectedRow() {
+            rowByValue.forEach(function (row) {
+              row.classList.remove("tng-dropdown-row-selected");
+            });
+            const row = rowByValue.get(nativeValueDescriptor.get.call(sel));
+            if (row) row.classList.add("tng-dropdown-row-selected");
+          }
+
+          function closeDropdown() {
+            dropdown.classList.add("tng-hidden");
+            wrap.classList.remove("tng-combobox-open");
+            if (openComboboxCloseFn === closeDropdown)
+              openComboboxCloseFn = null;
+          }
+          function toggleDropdown(open) {
+            if (sel.disabled) open = false;
+            if (open) {
+              if (
+                openComboboxCloseFn &&
+                openComboboxCloseFn !== closeDropdown
+              ) {
+                openComboboxCloseFn();
+              }
+              // Dropdown is reparented to <body> (see comment above), so it
+              // is no longer a CSS descendant of .tng-overlay and does not
+              // automatically pick up .tng-theme-dark. Sync the class here,
+              // each time the dropdown opens, so it always matches the
+              // current theme rather than whatever theme was active when
+              // the dropdown was first built.
+              dropdown.classList.toggle("tng-theme-dark", theme === "dark");
+              positionDropdownFixed(wrap, dropdown);
+              dropdown.classList.remove("tng-hidden");
+              wrap.classList.add("tng-combobox-open");
+              openComboboxCloseFn = closeDropdown;
+            } else {
+              closeDropdown();
+            }
+          }
+
+          function selectValue(value) {
+            // Bypasses our own overridden setter below to avoid recursion,
+            // then dispatches "change" so existing listeners fire exactly as
+            // they would for a native selection made by the user.
+            nativeValueDescriptor.set.call(sel, value);
+            updateLabel();
+            updateSelectedRow();
+            toggleDropdown(false);
+            sel.dispatchEvent(new Event("change", { bubbles: true }));
+          }
+
+          function buildRow(optionEl) {
+            const row = document.createElement("div");
+            row.className = "tng-dropdown-row";
+            row.textContent = optionEl.textContent;
+            row.dataset.value = optionEl.value;
+            row.addEventListener("click", function () {
+              if (sel.disabled) return;
+              selectValue(optionEl.value);
+            });
+            rowByValue.set(optionEl.value, row);
+            return row;
+          }
+
+          function applyFilter(query) {
+            lastFilterQuery = query || "";
+            const q = lastFilterQuery.toLowerCase().trim();
+            const groups = [];
+            let currentGroup = null;
+            Array.from(dropdown.children).forEach(function (child) {
+              if (child.classList.contains("tng-optgroup-label")) {
+                currentGroup = { label: child, rows: [] };
+                groups.push(currentGroup);
+              } else if (child.classList.contains("tng-dropdown-row")) {
+                const matches =
+                  !q || child.textContent.toLowerCase().includes(q);
+                child.classList.toggle("tng-hidden", !matches);
+                if (currentGroup) currentGroup.rows.push(child);
+              }
+            });
+            groups.forEach(function (g) {
+              const visible = g.rows.some(function (r) {
+                return !r.classList.contains("tng-hidden");
+              });
+              g.label.classList.toggle("tng-hidden", !visible);
+            });
+            // If the currently selected row has become hidden, jump to the
+            // first visible row, matching the previous native-<select>
+            // filtering behaviour.
+            const selectedRow = rowByValue.get(
+              nativeValueDescriptor.get.call(sel),
+            );
+            if (selectedRow && selectedRow.classList.contains("tng-hidden")) {
+              const firstVisible = Array.from(
+                dropdown.querySelectorAll(".tng-dropdown-row"),
+              ).find(function (r) {
+                return !r.classList.contains("tng-hidden");
+              });
+              if (firstVisible) sel.value = firstVisible.dataset.value;
+            }
+          }
+
+          function rebuildRows() {
+            dropdown.innerHTML = "";
+            rowByValue = new Map();
+            Array.from(sel.children).forEach(function (child) {
+              if (child.tagName === "OPTGROUP") {
+                const label = document.createElement("div");
+                label.className = "tng-optgroup-label";
+                label.textContent = child.label;
+                dropdown.appendChild(label);
+                Array.from(child.children).forEach(function (opt) {
+                  dropdown.appendChild(buildRow(opt));
+                });
+              } else if (child.tagName === "OPTION") {
+                dropdown.appendChild(buildRow(child));
+              }
+            });
+            updateLabel();
+            updateSelectedRow();
+            applyFilter(lastFilterQuery);
+          }
+
+          input.addEventListener("click", function (e) {
+            e.stopPropagation();
+            if (sel.disabled) return;
+            toggleDropdown(dropdown.classList.contains("tng-hidden"));
+          });
+          document.addEventListener("click", function (e) {
+            if (!wrap.contains(e.target) && !dropdown.contains(e.target)) {
+              toggleDropdown(false);
+            }
+          });
+
+          // Overrides value/selectedIndex/disabled so the many places in
+          // Tengu that set these properties directly on a <select> (rather
+          // than through a UI interaction) keep the custom trigger and
+          // dropdown in sync without requiring any changes at those call
+          // sites.
+          Object.defineProperty(sel, "value", {
+            get: function () {
+              return nativeValueDescriptor.get.call(sel);
+            },
+            set: function (v) {
+              nativeValueDescriptor.set.call(sel, v);
+              updateLabel();
+              updateSelectedRow();
+            },
+            configurable: true,
+          });
+          Object.defineProperty(sel, "selectedIndex", {
+            get: function () {
+              return nativeSelectedIndexDescriptor.get.call(sel);
+            },
+            set: function (i) {
+              nativeSelectedIndexDescriptor.set.call(sel, i);
+              updateLabel();
+              updateSelectedRow();
+            },
+            configurable: true,
+          });
+          Object.defineProperty(sel, "disabled", {
+            get: function () {
+              return nativeDisabledDescriptor.get.call(sel);
+            },
+            set: function (v) {
+              nativeDisabledDescriptor.set.call(sel, v);
+              input.disabled = v;
+              if (v) toggleDropdown(false);
+            },
+            configurable: true,
+          });
+
+          // Keeps the dropdown's rows in sync whenever options are added,
+          // removed, or the option list is rebuilt wholesale.
+          const observer = new MutationObserver(rebuildRows);
+          observer.observe(sel, { childList: true, subtree: true });
+
+          rebuildRows();
+
+          wrap._tngFilterRows = applyFilter;
+          return wrap;
+        }
+
+        // Wraps a <select> in a combobox-style custom dropdown (see
+        // attachComboboxStyleDropdown() above), matching the visual style and
+        // animation already used elsewhere in Tengu. Pass a CSS flex value to
+        // apply it to the wrapper when the wrapper itself is a flex item (e.g.
+        // in a flex row alongside an input).
+        function wrapSelect(sel, flex) {
+          const wrap = attachComboboxStyleDropdown(sel);
+          if (flex) wrap.style.flex = flex;
           return wrap;
         }
 
         // Wraps a <select> in a container with a filter text box above it.
-        // Typing in the box hides non-matching options in real time; clearing it
-        // restores all options. Works with both flat lists and <optgroup> elements.
-        // Returns { wrap, filter } — wrap replaces the bare <select> in the DOM,
-        // filter is the <input> element (exposed so callers can clear it if needed).
+        // Typing in the box hides non-matching rows in the dropdown in real
+        // time; clearing it restores all rows. Works with both flat lists and
+        // <optgroup> elements. Returns { wrap, filter } — wrap replaces the
+        // bare <select> in the DOM, filter is the <input> element (exposed so
+        // callers can clear it if needed).
         function makeFilteredSelect(sel) {
           const wrap = document.createElement("div");
           wrap.className = "tng-filtered-select";
 
-          // Filter input sits on its own row, above the select. The clear
-          // control is rendered as a ✕ inside the input itself (right-aligned),
-          // rather than as a separate button, so it only appears once there is
-          // text to clear and does not add a second control alongside the field.
+          // Filter input sits on its own row, above the dropdown trigger. The
+          // clear control is rendered as a ✕ inside the input itself
+          // (right-aligned), rather than as a separate button, so it only
+          // appears once there is text to clear and does not add a second
+          // control alongside the field.
           const filterRow = document.createElement("div");
           filterRow.className = "tng-filtered-select-row";
 
@@ -320,54 +606,13 @@ $(function () {
           filterRow.appendChild(filterInputWrap);
 
           wrap.appendChild(filterRow);
-          wrap.appendChild(wrapSelect(sel));
-
-          // Collect all <option> elements once, preserving their original parent
-          // (<select> or <optgroup>) so they can be moved in and out cleanly.
-          const allOptions = Array.from(sel.querySelectorAll("option"));
+          const selWrap = wrapSelect(sel);
+          wrap.appendChild(selWrap);
 
           filter.addEventListener("input", function () {
             const query = filter.value.toLowerCase().trim();
             btnClearFilter.classList.toggle("tng-hidden", !query);
-
-            if (!query) {
-              // Restore everything in original order
-              allOptions.forEach(function (opt) {
-                opt.hidden = false;
-              });
-              // Re-show all optgroups
-              Array.from(sel.querySelectorAll("optgroup")).forEach(
-                function (og) {
-                  og.hidden = false;
-                },
-              );
-              return;
-            }
-
-            // Hide non-matching options; show matching ones
-            allOptions.forEach(function (opt) {
-              opt.hidden = !opt.textContent.toLowerCase().includes(query);
-            });
-
-            // Hide any optgroup whose every child option is now hidden
-            Array.from(sel.querySelectorAll("optgroup")).forEach(function (og) {
-              const visible = Array.from(og.querySelectorAll("option")).some(
-                function (o) {
-                  return !o.hidden;
-                },
-              );
-              og.hidden = !visible;
-            });
-
-            // If the currently selected option has become hidden, move focus to
-            // the first visible option so the <select> value stays meaningful.
-            const selectedOpt = sel.options[sel.selectedIndex];
-            if (selectedOpt && selectedOpt.hidden) {
-              const firstVisible = allOptions.find(function (o) {
-                return !o.hidden;
-              });
-              if (firstVisible) sel.value = firstVisible.value;
-            }
+            selWrap._tngFilterRows(query);
           });
 
           return { wrap, filter };
@@ -428,9 +673,31 @@ $(function () {
             });
           });
 
+          function closeDropdown() {
+            dropdown.classList.add("tng-hidden");
+            wrap.classList.remove("tng-combobox-open");
+            if (openComboboxCloseFn === closeDropdown)
+              openComboboxCloseFn = null;
+          }
           function toggleDropdown(open) {
-            dropdown.classList.toggle("tng-hidden", !open);
-            wrap.classList.toggle("tng-combobox-open", open);
+            if (open) {
+              if (
+                openComboboxCloseFn &&
+                openComboboxCloseFn !== closeDropdown
+              ) {
+                openComboboxCloseFn();
+              }
+              // Same reasoning as attachComboboxStyleDropdown() above: this
+              // dropdown lives on <body>, outside .tng-overlay, so its dark
+              // mode class must be synced manually on each open.
+              dropdown.classList.toggle("tng-theme-dark", theme === "dark");
+              positionDropdownFixed(wrap, dropdown);
+              dropdown.classList.remove("tng-hidden");
+              wrap.classList.add("tng-combobox-open");
+              openComboboxCloseFn = closeDropdown;
+            } else {
+              closeDropdown();
+            }
           }
 
           input.addEventListener("click", function (e) {
@@ -438,14 +705,21 @@ $(function () {
             toggleDropdown(dropdown.classList.contains("tng-hidden"));
           });
 
-          // Clicking anywhere outside the control closes the dropdown;
-          // clicks on a checkbox or its label keep it open.
+          // Clicking anywhere outside the control (including the dropdown
+          // itself, now reparented to <body> so it can escape a clipping
+          // ancestor) closes the dropdown; clicks on a checkbox or its
+          // label keep it open.
           document.addEventListener("click", function (e) {
-            if (!wrap.contains(e.target)) toggleDropdown(false);
+            if (!wrap.contains(e.target) && !dropdown.contains(e.target)) {
+              toggleDropdown(false);
+            }
           });
 
           wrap.appendChild(input);
-          wrap.appendChild(dropdown);
+          // Appended to <body> rather than wrap, so the dropdown can extend
+          // beyond a clipping/scrolling ancestor and is positioned via
+          // positionDropdownFixed() when opened.
+          document.body.appendChild(dropdown);
 
           return {
             wrap: wrap,
@@ -2336,6 +2610,9 @@ $(function () {
             // In multi-target mode, a separate entry is appended for each
             // target so every account or page gets its own individual report.
             if (!rs.reportGSDone && config.reportGS && !isAborted) {
+              addLog(
+                `[Report] Processing "${targetVal}" for Global sysops/Requests...`,
+              );
               try {
                 const _gsLine = buildGSLineForTarget(targetVal);
                 const reportGSSummary =
@@ -2349,13 +2626,13 @@ $(function () {
                   targetVal,
                 );
                 addLog(
-                  `[Report] Submitted report to Global sysops/Requests for "${targetVal}"`,
+                  `[Report] Completed: "${targetVal}" submitted to Global sysops/Requests`,
                 );
                 stats.report++;
                 updateStatusDisplay();
               } catch (e) {
                 addLog(
-                  `[Report] Failed to submit report to Global sysops/Requests: ${formatApiError(e)}`,
+                  `[Report] Failed for "${targetVal}" on Global sysops/Requests: ${formatApiError(e)}`,
                   true,
                 );
               }
@@ -2375,10 +2652,32 @@ $(function () {
               !isAborted &&
               (!isMultiTarget || targetVal === config.target)
             ) {
+              // A Steward requests/Global report is submitted as a single edit
+              // covering every selected account (via {{MultiLock}} or multiple
+              // {{Luxotool}} lines), rather than one API call per account. Since
+              // there is only one underlying request, "processing" and
+              // "completed"/"failed" are logged once per account so the state
+              // of every account is still visible, even though they resolve
+              // together rather than one at a time.
+              const _srgAllTargets = config.targets || [targetVal];
+              const _srgTargetCount = _srgAllTargets.length;
+              const _srgKindLabel =
+                config.reportSRGKind === "block"
+                  ? "global block"
+                  : "global lock";
+
+              if (_srgTargetCount > 1) {
+                addLog(
+                  `[Report] Queued ${_srgTargetCount} accounts for Steward requests/Global (${_srgKindLabel}): ${_srgAllTargets.join(", ")}`,
+                );
+              }
+              for (const _srgTarget of _srgAllTargets) {
+                addLog(
+                  `[Report] Processing "${_srgTarget}" for Steward requests/Global (${_srgKindLabel})...`,
+                );
+              }
+
               try {
-                const _srgTargetCount = config.targets
-                  ? config.targets.length
-                  : 1;
                 const srgSummary =
                   _srgTargetCount > 1
                     ? "Reporting " +
@@ -2391,20 +2690,25 @@ $(function () {
                       toolTag;
                 await submitSRGReport(
                   config.reportSRGKind,
-                  config.targets || [targetVal],
+                  _srgAllTargets,
                   config.reportSRGSection,
                   srgSummary,
                 );
-                addLog(
-                  `[Report] Submitted ${config.reportSRGKind === "block" ? "global block" : "global lock"} report to Steward requests/Global for "${targetVal}"`,
-                );
+                for (const _srgTarget of _srgAllTargets) {
+                  addLog(
+                    `[Report] Completed: "${_srgTarget}" submitted to Steward requests/Global (${_srgKindLabel})`,
+                  );
+                }
                 stats.report++;
                 updateStatusDisplay();
               } catch (e) {
-                addLog(
-                  `[Report] Failed to submit report to Steward requests/Global: ${formatApiError(e)}`,
-                  true,
-                );
+                const _srgErrText = formatApiError(e);
+                for (const _srgTarget of _srgAllTargets) {
+                  addLog(
+                    `[Report] Failed for "${_srgTarget}" on Steward requests/Global: ${_srgErrText}`,
+                    true,
+                  );
+                }
               }
               rs.reportSRGDone = true;
             }

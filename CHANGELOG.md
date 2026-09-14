@@ -1,3 +1,54 @@
+## 2.180.2
+
+### Fixed
+
+* Fixed dropdown menus (block/protection/deletion/move/warning/report reason pickers, expiry pickers, package selector, and every other combobox-style dropdown) showing insufficient contrast in dark mode. Since v2.180.0/v2.180.1, dropdown panels are appended directly to `<body>` so they can escape a clipping section, which moved them outside the `.tng-theme-dark` scope (only applied to `.tng-overlay`). The dropdown stayed light-themed even while the rest of Tengu was in dark mode, making its text hard to read. Each dropdown now syncs its own `.tng-theme-dark` class with the active theme every time it opens.
+
+## 2.180.1
+
+### Fixed
+
+* Fixed two dropdown menus (block/protection/deletion/move/warning/report reason pickers, expiry pickers, package selector, and every other combobox-style dropdown introduced in v2.180.0) overlapping on screen when a second dropdown was opened without closing the first. Opening any dropdown now automatically closes whichever other one was left open.
+* Fixed dropdown menus being clipped or hidden when opened inside a feature section that did not have enough remaining height to display them. Dropdowns are now positioned independently of their enclosing section, so the full menu remains visible even when the section body is short or scrolled.
+* Removed an unnecessary vertical scrollbar that could appear on a dropdown menu even when its contents did not require scrolling. The dropdown's height is now calculated from the space actually available in the viewport, so a scrollbar only appears when the option list genuinely does not fit.
+
+### Notes
+
+* Dropdown panels built by `attachComboboxStyleDropdown()` and `makeCheckboxCombobox()` are now appended to `<body>` and positioned with `position: fixed`, rather than remaining nested inside their trigger's container, so a section's `overflow`/scrolling no longer clips them. A dropdown also now closes automatically if the page is scrolled while it is open, since its fixed position would otherwise no longer line up with its trigger.
+* Dropdown appearance, open/close animation, and selection behaviour are unchanged; this release only affects how dropdowns are positioned and how overlapping/scrollbar display issues are resolved.
+
+## 2.180.0
+
+### Changed
+
+* All dropdown menus built from a `<select>` (block/protection/deletion/undeletion/move/warning/report reason pickers, expiry pickers, block type, edits filter, package selector, and every other plain or filtered dropdown throughout Tengu) now use the same combobox-style trigger, chevron, and animated dropdown list already used by the multi-select namespace filter, instead of the browser's native `<select>` popup. Every dropdown in Tengu now looks and animates the same way.
+
+### Added
+
+* Added `attachComboboxStyleDropdown()` (Section 04), which builds the shared combobox-style UI for a given `<select>` and keeps it in sync with the element's `value`, `selectedIndex`, `disabled` state, and option list, so existing code that reads or sets these properties directly, or listens for the `change` event, continues to work unchanged.
+* Added `.tng-dropdown-row` and `.tng-dropdown-row-selected` styles to `Tengu.css`, with dark mode variants, plus a general disabled-state style for `.tng-input`/`.tng-select`.
+
+### Notes
+
+* `wrapSelect()` now returns the new combobox-style wrapper instead of the previous `.tng-select-wrap` container; `makeFilteredSelect()` filters the dropdown's rows directly instead of hiding native `<option>` elements.
+* The underlying `<select>` element is kept in the DOM (visually hidden) as the source of truth, so no changes were required at the hundreds of existing call sites that build, populate, or read these dropdowns.
+* [Inference] Syncing the custom dropdown via overridden `value`/`selectedIndex`/`disabled` property accessors on each `<select>` instance is expected to behave consistently across current major browsers, but this has not been exhaustively tested against every browser/version.
+* The multi-select checkbox combobox (`makeCheckboxCombobox()`, namespace filters) is unchanged; it was already using this visual style and served as the reference for this change.
+* `.tng-select-wrap` and its CSS rules remain in `Tengu.css` but are no longer used for dropdown chrome; left in place to avoid unrelated churn.
+
+## 2.179.0
+
+### Changed
+
+* Improved progress-log visibility for multi-account **Report to Global sysops/Requests** and **Report to Steward requests/Global** submissions. Each target account now gets an explicit "Processing..." log line before its report is submitted, and a distinct "Completed" or "Failed" line afterwards naming that account, so it's clear at a glance which account is currently being handled, which have finished, and which (if any) failed — instead of only a single line appearing once the whole batch settles.
+* Global sysops/Requests reports were already submitted one at a time per account; they now also log a "Processing" line before each submission, matching the style of the existing success/failure lines.
+* Steward requests/Global reports are still submitted as a single combined edit covering every selected account (via `{{MultiLock}}` or multiple `{{Luxotool}}` lines), since that's how the report is actually structured. A "Queued N accounts..." line is now shown up front for multi-account runs, followed by a "Processing" line for each account, and then a "Completed"/"Failed" line naming each account once the single underlying request settles.
+
+### Notes
+
+* This is a logging-only change. Submission logic, duplicate-report detection, report wikitext, and edit summaries for both sections are unchanged.
+* Because Steward requests/Global submits one edit for all accounts, a failure still applies to every account in that batch (there's no partial per-account success/failure at the API level); the log now makes that explicit by naming each account rather than only the primary target.
+
 ## 2.178.2
 
 ### Added
