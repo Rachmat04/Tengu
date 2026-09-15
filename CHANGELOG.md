@@ -1,3 +1,14 @@
+## 2.180.0
+
+### Fixed
+
+* Fixed page protection notifications claiming a page was "protected" when the selected Edit and Move restriction levels were both "All users (unrestricted)" — meaning no protection was actually applied, or existing protection was being removed. The notification (both the immediate and deferred dispatch paths, single-page and multi-page variants, English and Indonesian) now reads "is no longer protected" / "tidak lagi dilindungi" and states that all users may edit without restriction, instead of implying the page remains protected.
+
+### Notes
+
+* Detection is based solely on `protectEdit`/`protectMove` both being `"all"` at the time the notification is built; upload restriction (file pages) is not considered, since edit/move being unrestricted already means the page itself carries no protection.
+* This affects notification wording only. The underlying `action=protect` call already correctly submits `edit=all|move=all`, which MediaWiki treats as removing protection; no change to the API call itself was needed.
+
 ## 2.179.1
 
 ### Changed

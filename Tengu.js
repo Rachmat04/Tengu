@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.179.1
+ * Version 2.180.0
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -1684,6 +1684,16 @@ $(function () {
               // Skip if the title cannot be resolved
             }
             return expiries;
+          }
+
+          // Returns true when the selected edit and move restriction levels are
+          // both "all" (no restriction), meaning the page is not actually
+          // protected despite the Page protection section being enabled. Used
+          // to adjust notification wording so it doesn't claim the page was
+          // "protected" when protection was effectively removed or never
+          // applied.
+          function isProtectionRemoved() {
+            return config.protectEdit === "all" && config.protectMove === "all";
           }
 
           // Fixes double redirects pointing to oldTitle by updating them to
@@ -3734,7 +3744,22 @@ $(function () {
                       : useIndonesian
                         ? "(tidak ada alasan diberikan)"
                         : "(no reason given)";
-                  if (titles.length === 1) {
+                  const isUnprotected = isProtectionRemoved();
+                  if (isUnprotected) {
+                    if (titles.length === 1) {
+                      notice = useIndonesian
+                        ? `== Pemberitahuan perlindungan halaman ==\nHalaman "${titles[0]}" tidak lagi dilindungi dengan alasan berikut: ${protectReasonNotice}.\n\nSemua pengguna kini dapat menyunting halaman ini tanpa pembatasan.\n\nPemberitahuan ini dikirimkan secara otomatis. Silakan sampaikan pertanyaan atau keberatan ke halaman pembicaraan saya. ~~~~`
+                        : `== Page protection notice ==\nThe page "${titles[0]}" is no longer protected due to the following reason: ${protectReasonNotice}.\n\nAll users may now edit this page without restriction.\n\nThis notification was posted automatically. Please direct any questions or concerns to my user talk page. ~~~~`;
+                    } else {
+                      const listed = titles.map((t) => `"${t}"`).join(" and ");
+                      const listedId = titles
+                        .map((t) => `"${t}"`)
+                        .join(" dan ");
+                      notice = useIndonesian
+                        ? `== Pemberitahuan perlindungan halaman ==\nHalaman-halaman berikut tidak lagi dilindungi dengan alasan berikut: ${protectReasonNotice}.\n\n${listedId}\n\nSemua pengguna kini dapat menyunting halaman-halaman ini tanpa pembatasan.\n\nPemberitahuan ini dikirimkan secara otomatis. Silakan sampaikan pertanyaan atau keberatan ke halaman pembicaraan saya. ~~~~`
+                        : `== Page protection notice ==\nThe following pages are no longer protected due to the following reason: ${protectReasonNotice}.\n\n${listed}\n\nAll users may now edit these pages without restriction.\n\nThis notification was posted automatically. Please direct any questions or concerns to my user talk page. ~~~~`;
+                    }
+                  } else if (titles.length === 1) {
                     notice = useIndonesian
                       ? isProtectIndef
                         ? `== Pemberitahuan perlindungan halaman ==\nHalaman "${titles[0]}" telah dilindungi secara tidak terbatas dengan alasan berikut: ${protectReasonNotice}.\n\nSelama masa perlindungan, sebagian atau seluruh tindakan penyuntingan mungkin dibatasi bergantung pada tingkat perlindungan yang diterapkan. Perlindungan ini tidak berakhir secara otomatis dan akan tetap berlaku kecuali diubah oleh pengurus.\n\nPemberitahuan ini dikirimkan secara otomatis. Silakan sampaikan pertanyaan atau keberatan ke halaman pembicaraan saya. ~~~~`
@@ -4493,7 +4518,24 @@ $(function () {
                         : useIndonesian
                           ? "(tidak ada alasan diberikan)"
                           : "(no reason given)";
-                    if (titles.length === 1) {
+                    const isUnprotectedDeferred = isProtectionRemoved();
+                    if (isUnprotectedDeferred) {
+                      if (titles.length === 1) {
+                        notice = useIndonesian
+                          ? `== Pemberitahuan perlindungan halaman ==\nHalaman "${titles[0]}" tidak lagi dilindungi dengan alasan berikut: ${protectReasonNotice}.\n\nSemua pengguna kini dapat menyunting halaman ini tanpa pembatasan.\n\nPemberitahuan ini dikirimkan secara otomatis. Silakan sampaikan pertanyaan atau keberatan ke halaman pembicaraan saya. ~~~~`
+                          : `== Page protection notice ==\nThe page "${titles[0]}" is no longer protected due to the following reason: ${protectReasonNotice}.\n\nAll users may now edit this page without restriction.\n\nThis notification was posted automatically. Please direct any questions or concerns to my user talk page. ~~~~`;
+                      } else {
+                        const listed = titles
+                          .map((t) => `"${t}"`)
+                          .join(" and ");
+                        const listedId = titles
+                          .map((t) => `"${t}"`)
+                          .join(" dan ");
+                        notice = useIndonesian
+                          ? `== Pemberitahuan perlindungan halaman ==\nHalaman-halaman berikut tidak lagi dilindungi dengan alasan berikut: ${protectReasonNotice}.\n\n${listedId}\n\nSemua pengguna kini dapat menyunting halaman-halaman ini tanpa pembatasan.\n\nPemberitahuan ini dikirimkan secara otomatis. Silakan sampaikan pertanyaan atau keberatan ke halaman pembicaraan saya. ~~~~`
+                          : `== Page protection notice ==\nThe following pages are no longer protected due to the following reason: ${protectReasonNotice}.\n\n${listed}\n\nAll users may now edit these pages without restriction.\n\nThis notification was posted automatically. Please direct any questions or concerns to my user talk page. ~~~~`;
+                      }
+                    } else if (titles.length === 1) {
                       notice = useIndonesian
                         ? isProtectIndefDeferred
                           ? `== Pemberitahuan perlindungan halaman ==\nHalaman "${titles[0]}" telah dilindungi secara tidak terbatas dengan alasan berikut: ${protectReasonNotice}.\n\nSelama masa perlindungan, sebagian atau seluruh tindakan penyuntingan mungkin dibatasi bergantung pada tingkat perlindungan yang diterapkan. Perlindungan ini tidak berakhir secara otomatis dan akan tetap berlaku kecuali diubah oleh pengurus.\n\nPemberitahuan ini dikirimkan secara otomatis. Silakan sampaikan pertanyaan atau keberatan ke halaman pembicaraan saya. ~~~~`
