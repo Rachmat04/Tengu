@@ -1,3 +1,14 @@
+## 2.181.0
+
+### Changed
+
+* Block log entries in the Get info panel (user mode) now visually distinguish block/reblock actions from unblock actions: each entry gets a coloured left border (red for block/reblock, green for unblock) and the "Action" row is prefixed with a matching icon (⛔️ Block / ⛔️ Reblock / 🔓 Unblock) instead of the raw API action string.
+
+### Notes
+
+* This is a display-only change to `getUserInfo()`'s Block log section; no changes were made to how block log data is fetched.
+* Added `.tng-blocklog-block` and `.tng-blocklog-unblock` to `Tengu.css`, with dark mode variants.
+
 ## 2.180.0
 
 ### Fixed

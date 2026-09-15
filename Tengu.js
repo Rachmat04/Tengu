@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.180.0
+ * Version 2.181.0
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -5157,10 +5157,13 @@ $(function () {
             return suffix(diffYear, "year");
           }
 
-          // Build a bordered entry card with labelled rows.
-          function makeEntry(rows) {
+          // Build a bordered entry card with labelled rows. extraClass, if given, is
+          // appended to the entry's class list (used by the block log to tint block
+          // vs unblock entries).
+          function makeEntry(rows, extraClass) {
             const entry = document.createElement("div");
-            entry.className = "tng-info-entry";
+            entry.className =
+              "tng-info-entry" + (extraClass ? " " + extraClass : "");
             for (const [label, value] of rows) {
               const line = document.createElement("div");
               const b = document.createElement("b");
@@ -5810,21 +5813,36 @@ $(function () {
                           ? " (" + fmtRelative(e.params.expiry) + ")"
                           : "")
                     : "—";
+                // Distinguishes block/reblock entries from unblock entries
+                // with an icon-prefixed label and a coloured left border
+                // (tng-blocklog-block / tng-blocklog-unblock), so the two
+                // are easy to tell apart at a glance rather than only by
+                // reading the "Action" text.
+                const isUnblock = e.action === "unblock";
+                const actionLabel =
+                  e.action === "unblock"
+                    ? "🔓 Unblock"
+                    : e.action === "reblock"
+                      ? "⛔️ Reblock"
+                      : "⛔️ Block";
                 bodyBlockLog.appendChild(
-                  makeEntry([
+                  makeEntry(
                     [
-                      "Time",
-                      fmtTimestamp(e.timestamp) +
-                        (fmtRelative(e.timestamp)
-                          ? " (" + fmtRelative(e.timestamp) + ")"
-                          : ""),
+                      [
+                        "Time",
+                        fmtTimestamp(e.timestamp) +
+                          (fmtRelative(e.timestamp)
+                            ? " (" + fmtRelative(e.timestamp) + ")"
+                            : ""),
+                      ],
+                      ["Action", actionLabel],
+                      ["Performed by", e.user || "—"],
+                      ["Duration", duration],
+                      ["Expiry", expiry],
+                      ["Reason", e.comment || "(no reason given)"],
                     ],
-                    ["Action", e.action || "block"],
-                    ["Performed by", e.user || "—"],
-                    ["Duration", duration],
-                    ["Expiry", expiry],
-                    ["Reason", e.comment || "(no reason given)"],
-                  ]),
+                    isUnblock ? "tng-blocklog-unblock" : "tng-blocklog-block",
+                  ),
                 );
               }
             } catch (err) {
