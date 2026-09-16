@@ -1,3 +1,14 @@
+## 2.182.0
+
+### Added
+
+* Added a live "N of M selected" indicator to each section (Edited pages, Created pages) of the Select specific edits/pages picker, shown next to the existing Select all / Deselect all / Invert selection controls. It updates immediately as checkboxes are ticked or unticked — via direct clicks, shift-click range selection, or the bulk-selection buttons — so the current selection is visible before pressing "Confirm selection".
+
+### Notes
+
+* This is separate from, and does not change, the existing item count shown in each section's heading (e.g. "Edited pages (12)"), which reflects the total number of fetched items in that section, not how many are currently selected. The two counts previously looked similar enough that the heading count could be mistaken for a selection count; the new indicator removes that ambiguity without altering the heading's existing meaning.
+* Display-only change to the picker dialogue. No changes to how selections are stored, confirmed, or applied in `work()`.
+
 ## 2.181.2
 
 ### Changed

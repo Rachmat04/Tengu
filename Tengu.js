@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.181.1
+ * Version 2.182.0
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -8085,13 +8085,32 @@ $(function () {
 
               const ctrlRow = document.createElement("div");
               ctrlRow.style.cssText =
-                "display: flex; gap: 6px; margin-bottom: 6px;";
+                "display: flex; gap: 6px; align-items: center; margin-bottom: 6px;";
               const btnAll = makeBtn("Select all", "quiet");
               btnAll.className += " tng-btn-sm";
               const btnNone = makeBtn("Deselect all", "quiet");
               btnNone.className += " tng-btn-sm";
               const btnInvert = makeBtn("Invert selection", "quiet");
               btnInvert.className += " tng-btn-sm";
+
+              // Live count of currently ticked checkboxes in this section,
+              // shown separately from the section heading's total-item count
+              // (built above as sectionTitle + " (" + items.length + ")").
+              // The heading count is the number of items available, not the
+              // number selected; this label makes that distinction explicit
+              // and updates immediately as the user ticks or unticks items,
+              // so the selection is visible before "Confirm selection" is
+              // pressed.
+              const selCountEl = document.createElement("span");
+              selCountEl.className = "tng-help";
+              selCountEl.style.cssText = "margin: 0 0 0 auto;";
+              function updateSelCount() {
+                const n = checkboxes.filter(function (c) {
+                  return c.checked;
+                }).length;
+                selCountEl.textContent =
+                  n + " of " + checkboxes.length + " selected";
+              }
 
               const checkboxes = [];
               const listEl = document.createElement("div");
@@ -8161,7 +8180,11 @@ $(function () {
                     }
                   }
                   if (currentIndex !== -1) lastClickedChk = chk;
+                  updateSelCount();
                 });
+                // Also covers keyboard-driven toggles (space bar), which
+                // fire "change" without a preceding "click" range action.
+                chk.addEventListener("change", updateSelCount);
               });
 
               // All three bulk-action buttons operate only on currently visible
@@ -8173,6 +8196,7 @@ $(function () {
                     c.checked = true;
                   }
                 });
+                updateSelCount();
               });
               btnNone.addEventListener("click", function () {
                 checkboxes.forEach(function (c) {
@@ -8180,6 +8204,7 @@ $(function () {
                     c.checked = false;
                   }
                 });
+                updateSelCount();
               });
               btnInvert.addEventListener("click", function () {
                 checkboxes.forEach(function (c) {
@@ -8187,17 +8212,21 @@ $(function () {
                     c.checked = !c.checked;
                   }
                 });
+                updateSelCount();
               });
 
               ctrlRow.appendChild(btnAll);
               ctrlRow.appendChild(btnNone);
               ctrlRow.appendChild(btnInvert);
+              ctrlRow.appendChild(selCountEl);
               secBody.appendChild(ctrlRow);
               secBody.appendChild(listEl);
               sec.appendChild(hdr);
               sec.appendChild(secBody);
 
-              return { sec, checkboxes, listEl };
+              updateSelCount();
+
+              return { sec, checkboxes, listEl, updateSelCount };
             }
 
             // Sort controls — shown above the picker sections so they are immediately visible.
@@ -8317,6 +8346,7 @@ $(function () {
                 sec,
                 checkboxes,
                 listEl: _leEdited,
+                updateSelCount: updateEditedSelCount,
               } = makePickerSection(
                 "Edited pages",
                 pickerEditedTitles,
@@ -8335,6 +8365,7 @@ $(function () {
                   c.checked = true;
                 }
               });
+              updateEditedSelCount();
               allEditedCheckboxes.push(...checkboxes);
               pickerBody.appendChild(sec);
             }
@@ -8344,6 +8375,7 @@ $(function () {
                 sec,
                 checkboxes,
                 listEl: _leCreated,
+                updateSelCount: updateCreatedSelCount,
               } = makePickerSection(
                 "Created pages",
                 pickerCreatedTitles,
@@ -8362,6 +8394,7 @@ $(function () {
                   c.checked = true;
                 }
               });
+              updateCreatedSelCount();
               allCreatedCheckboxes.push(...checkboxes);
               pickerBody.appendChild(sec);
             }
