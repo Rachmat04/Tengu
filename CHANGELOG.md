@@ -1,3 +1,13 @@
+## 2.181.2
+
+### Changed
+
+* Removed the coloured left-border tinting (`.tng-blocklog-block` / `.tng-blocklog-unblock`) from Block log entries in the Get info panel (user mode), added in v2.181.0. Entries are now styled consistently with every other Get info section, relying solely on the icon-prefixed Action label (⛔️ Block / ⛔️ Reblock / 🔓 Unblock) to distinguish block/reblock from unblock.
+
+### Notes
+
+* `classifyBlockLogEntry()` and the icon-prefixed Action label from v2.181.0/v2.181.1 are unchanged; only the extra border-colour styling is removed.
+
 ## 2.181.1
 
 ### Fixed

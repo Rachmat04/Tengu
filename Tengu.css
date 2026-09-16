@@ -579,22 +579,6 @@
   padding: 4px 0;
 }
 
-/* --- Block log entry tinting (Get info panel, user mode) --- */
-/* Distinguishes block/reblock entries from unblock entries at a glance,
-   since the "Action" text alone is easy to miss when scanning the log. */
-.tng-blocklog-block {
-  border-left: 3px solid #b00020;
-}
-.tng-blocklog-unblock {
-  border-left: 3px solid #14866d;
-}
-.tng-theme-dark .tng-blocklog-block {
-  border-left-color: #ff6b6b;
-}
-.tng-theme-dark .tng-blocklog-unblock {
-  border-left-color: #00af89;
-}
-
 /* --- Target user rights card (user info dialogue) --- */
 .tng-user-rights-card {
   border: 1px solid #a2a9b1;

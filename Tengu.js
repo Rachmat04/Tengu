@@ -5855,23 +5855,20 @@ $(function () {
                 const { isUnblock, label: actionLabel } =
                   classifyBlockLogEntry(e);
                 bodyBlockLog.appendChild(
-                  makeEntry(
+                  makeEntry([
                     [
-                      [
-                        "Time",
-                        fmtTimestamp(e.timestamp) +
-                          (fmtRelative(e.timestamp)
-                            ? " (" + fmtRelative(e.timestamp) + ")"
-                            : ""),
-                      ],
-                      ["Action", actionLabel],
-                      ["Performed by", e.user || "—"],
-                      ["Duration", duration],
-                      ["Expiry", expiry],
-                      ["Reason", e.comment || "(no reason given)"],
+                      "Time",
+                      fmtTimestamp(e.timestamp) +
+                        (fmtRelative(e.timestamp)
+                          ? " (" + fmtRelative(e.timestamp) + ")"
+                          : ""),
                     ],
-                    isUnblock ? "tng-blocklog-unblock" : "tng-blocklog-block",
-                  ),
+                    ["Action", actionLabel],
+                    ["Performed by", e.user || "—"],
+                    ["Duration", duration],
+                    ["Expiry", expiry],
+                    ["Reason", e.comment || "(no reason given)"],
+                  ]),
                 );
               }
             } catch (err) {
