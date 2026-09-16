@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.181.0
+ * Version 2.181.1
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -5782,6 +5782,37 @@ $(function () {
           btnClose.addEventListener("click", () => overlay.closeHandler());
           footer.appendChild(btnClose);
 
+          // Determines whether a block log entry represents a block/reblock
+          // action or an unblock action. The API's action field ("block",
+          // "reblock", "unblock") is checked first, but is not solely relied
+          // upon: block-specific parameters (duration/expiry) are present
+          // only on block/reblock entries, so an entry missing both is
+          // treated as an unblock even if the action field is absent or
+          // unrecognised. This ensures block and unblock actions are
+          // correctly separated even when represented by the same block log
+          // entry.
+          function classifyBlockLogEntry(e) {
+            const action = e.action || "";
+            const hasBlockParams = !!(
+              e.params &&
+              (e.params.duration !== undefined || e.params.expiry !== undefined)
+            );
+            let isUnblock;
+            if (action === "unblock") {
+              isUnblock = true;
+            } else if (action === "block" || action === "reblock") {
+              isUnblock = false;
+            } else {
+              isUnblock = !hasBlockParams;
+            }
+            const label = isUnblock
+              ? "🔓 Unblock"
+              : action === "reblock"
+                ? "⛔️ Reblock"
+                : "⛔️ Block";
+            return { isUnblock, label };
+          }
+
           // --- Block log ---
           (async function () {
             try {
@@ -5817,14 +5848,12 @@ $(function () {
                 // with an icon-prefixed label and a coloured left border
                 // (tng-blocklog-block / tng-blocklog-unblock), so the two
                 // are easy to tell apart at a glance rather than only by
-                // reading the "Action" text.
-                const isUnblock = e.action === "unblock";
-                const actionLabel =
-                  e.action === "unblock"
-                    ? "🔓 Unblock"
-                    : e.action === "reblock"
-                      ? "⛔️ Reblock"
-                      : "⛔️ Block";
+                // reading the "Action" text. Classification uses
+                // classifyBlockLogEntry() rather than trusting e.action
+                // alone, since both actions can be represented by the same
+                // block log entry.
+                const { isUnblock, label: actionLabel } =
+                  classifyBlockLogEntry(e);
                 bodyBlockLog.appendChild(
                   makeEntry(
                     [

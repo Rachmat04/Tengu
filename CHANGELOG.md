@@ -1,3 +1,13 @@
+## 2.181.1
+
+### Fixed
+
+* Fixed block log entries in the Get info panel (user mode) being classified as block or unblock actions based solely on the API's `action` field, which did not reliably separate the two. Entries are now classified with a new `classifyBlockLogEntry()` helper, which also checks for block-specific parameters (duration/expiry) — present only on block/reblock entries — so block and unblock are correctly distinguished even when represented by the same block log entry, rather than only changing wording or styling.
+
+### Notes
+
+* This is a logic-only fix to `getUserInfo()`'s Block log section; the entry layout, colour coding, and icon-prefixed labels introduced in v2.181.0 are unchanged.
+
 ## 2.181.0
 
 ### Changed
