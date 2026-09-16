@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.182.0
+ * Version 2.183.0
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -6079,6 +6079,27 @@ $(function () {
             return entry;
           }
 
+          // Determines whether a deletion log entry represents a delete
+          // action or an undelete (restore) action, rather than trusting the
+          // API's action field alone (which also carries "revision" and
+          // "event" sub-actions for revision-deletion and other delete-log
+          // housekeeping entries that are neither a page deletion nor a page
+          // restoration). Mirrors classifyBlockLogEntry() so the two actions
+          // are correctly separated even when represented by the same log
+          // entry.
+          function classifyDeleteLogEntry(e) {
+            const action = e.action || "";
+            const isRestore = action === "restore";
+            const label = isRestore
+              ? "♻️ Restore"
+              : action === "revision"
+                ? "🗑️ Revision change"
+                : action === "event"
+                  ? "🗑️ Log change"
+                  : "🗑️ Delete";
+            return { isRestore, label };
+          }
+
           function setLoading(container, msg) {
             container.innerHTML = "";
             const el = document.createElement("div");
@@ -6490,6 +6511,7 @@ $(function () {
                   e.params && e.params.count !== undefined
                     ? String(e.params.count)
                     : null;
+                const { label: actionLabel } = classifyDeleteLogEntry(e);
                 const rows = [
                   [
                     "Time",
@@ -6498,7 +6520,7 @@ $(function () {
                         ? " (" + fmtRelative(e.timestamp) + ")"
                         : ""),
                   ],
-                  ["Action", e.action || "delete"],
+                  ["Action", actionLabel],
                   ["Performed by", e.user || "—"],
                 ];
                 if (revCount !== null)

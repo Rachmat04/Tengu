@@ -1,3 +1,13 @@
+## 2.183.0
+
+### Added
+
+* Delete log entries in the Get info panel (page mode) now distinguish delete actions from undelete (restore) actions using a new `classifyDeleteLogEntry()` helper, mirroring `classifyBlockLogEntry()` (v2.181.1). The Action row now reads "🗑️ Delete" or "♻️ Restore" (with "🗑️ Revision change" / "🗑️ Log change" for the delete log's `revision`/`event` sub-actions) instead of the raw API action string, so entries are correctly identified even when both a deletion and a restoration could otherwise be represented ambiguously by the same log entry.
+
+### Notes
+
+* This is a logic-and-display change to `getPageInfo()`'s Deletion log section only. Other Get info sections (Current revision, What links here, Abuse filter log, Protection log, Move log) and the user-mode Block log are unaffected.
+
 ## 2.182.0
 
 ### Added
