@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.183.0
+ * Version 2.183.1
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -6079,25 +6079,42 @@ $(function () {
             return entry;
           }
 
-          // Determines whether a deletion log entry represents a delete
-          // action or an undelete (restore) action, rather than trusting the
-          // API's action field alone (which also carries "revision" and
-          // "event" sub-actions for revision-deletion and other delete-log
-          // housekeeping entries that are neither a page deletion nor a page
-          // restoration). Mirrors classifyBlockLogEntry() so the two actions
-          // are correctly separated even when represented by the same log
-          // entry.
+          // Determines the specific action recorded by a "delete"-type log
+          // entry. MediaWiki's delete log (letype=delete) carries several
+          // distinct sub-actions in the API's "action" field: "delete" (page
+          // deletion), "restore" (page undeletion), "revision" (revision
+          // deletion/RevisionDelete applied to this page's revisions), and
+          // "event" (a log-entry visibility change, e.g. suppressing a log
+          // row). These are genuinely different events and are classified
+          // strictly from e.action — the API's own action field — never from
+          // the entry's displayed comment, username, or timestamp, since
+          // those carry no reliable signal of which action actually
+          // occurred. If e.action is missing or holds a value not in this
+          // known set, the entry is reported as an unspecified delete-log
+          // action rather than being guessed at or silently dropped, so the
+          // original log data is never misclassified or hidden.
           function classifyDeleteLogEntry(e) {
-            const action = e.action || "";
-            const isRestore = action === "restore";
-            const label = isRestore
-              ? "♻️ Restore"
-              : action === "revision"
-                ? "🗑️ Revision change"
-                : action === "event"
-                  ? "🗑️ Log change"
-                  : "🗑️ Delete";
-            return { isRestore, label };
+            const action = e.action;
+            if (action === "delete") {
+              return { kind: "delete", label: "🗑️ Delete" };
+            }
+            if (action === "restore") {
+              return { kind: "restore", label: "♻️ Restore (undelete)" };
+            }
+            if (action === "revision") {
+              return { kind: "revision", label: "👁️ Revision deletion" };
+            }
+            if (action === "event") {
+              return { kind: "event", label: "📝 Log entry visibility change" };
+            }
+            return {
+              kind: "unspecified",
+              label:
+                "❓ Unspecified delete-log action" +
+                (action
+                  ? " (raw action: " + action + ")"
+                  : " (no action data)"),
+            };
           }
 
           function setLoading(container, msg) {
@@ -6512,6 +6529,11 @@ $(function () {
                     ? String(e.params.count)
                     : null;
                 const { label: actionLabel } = classifyDeleteLogEntry(e);
+                // Revision deletion entries hide/show individual revisions
+                // (or log entries) rather than deleting/restoring the page
+                // itself, so "Revisions affected" is relevant to them too —
+                // this row is unaffected by the classification change and
+                // continues to render for any entry with a count param.
                 const rows = [
                   [
                     "Time",

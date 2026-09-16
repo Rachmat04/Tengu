@@ -1,3 +1,15 @@
+## 2.183.1
+
+### Fixed
+
+* Fixed `classifyDeleteLogEntry()` in the Get info panel's Deletion log section (page mode) misclassifying entries. The previous logic treated any `action` value other than `"restore"`, `"revision"`, or `"event"` as a delete — including a missing or unrecognised action — which could report an entry as "Delete" (or the generic "Revision change"/"Log change" sub-actions) without actually confirming that from the API. Classification is now based strictly on the MediaWiki delete log's own `action` field returned by `list=logevents`: `"delete"` → Delete, `"restore"` → Restore (undelete), `"revision"` → Revision deletion, `"event"` → Log entry visibility change. An entry whose `action` is missing or does not match one of these four values is now shown as "❓ Unspecified delete-log action" (with the raw action value, if any) instead of being guessed at as a delete.
+
+### Notes
+
+* This affects only `classifyDeleteLogEntry()` and its use in the page-mode Deletion log section. `classifyBlockLogEntry()` (Block log, user mode) is unaffected, and is a separate classification with its own field (block-specific duration/expiry parameters) to distinguish block from unblock — the two log types are not related.
+* No log entries are hidden or discarded by this change: every entry is still shown with its full existing row set (Time, Performed by, Revisions affected, Reason); only the "Action" label's accuracy and the fallback for unrecognised action values were changed.
+* Classification never consults the entry's comment, username, or timestamp — only `e.action` as returned by the API.
+
 ## 2.183.0
 
 ### Added
