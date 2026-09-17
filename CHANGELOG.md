@@ -1,3 +1,18 @@
+## 2.185.0
+
+### Fixed
+
+* Fixed the Protection log section in Get info (page mode) always displaying the raw API action string (or "protect" as a fallback) instead of correctly distinguishing protection from unprotection. Entries are now classified strictly from the MediaWiki protect log's own `action` field, mirroring the approach already used for the Deletion log's `classifyDeleteLogEntry()`: `"protect"` → Protect, `"modify"` → Modify protection, `"unprotect"` → Unprotect, `"move_prot"` → Protection moved. An entry whose `action` is missing or unrecognised now reads "❓ Unspecified protection-log action" instead of being guessed at or showing a raw value.
+
+### Added
+
+* Added `type` to the `leprop` parameter of the Protection log section's `list=logevents` API call, so the API returns the `action` field needed by the new `classifyProtectLogEntry()` helper.
+
+### Notes
+
+* This affects only the Protection log section's "Action" row. Protection levels, expiry, cascading status, reason, and every other row are unchanged, as is the rest of Get info (Current revision, What links here, Abuse filter log, Deletion log, Move log) and the user-mode panel.
+* Classification never consults the entry's comment, username, timestamp, or displayed protection levels — only `e.action` as returned by the API, consistent with `classifyDeleteLogEntry()`.
+
 ## 2.184.0
 
 ### Fixed

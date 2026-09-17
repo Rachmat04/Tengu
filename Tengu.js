@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.184.0
+ * Version 2.185.0
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -6426,6 +6426,42 @@ $(function () {
             }
           })();
 
+          // Determines whether a protection-log entry represents a
+          // protection/modification action or an unprotection action.
+          // Classified strictly from the MediaWiki protect log's own
+          // "action" field (as returned by list=logevents with
+          // leprop=type) — never from the entry's comment, username,
+          // timestamp, or displayed protection levels. The protect log's
+          // documented action values are "protect" (new protection),
+          // "modify" (protection settings changed), "unprotect"
+          // (protection removed), and "move_prot" (protection moved
+          // along with the page). An entry whose action is missing or
+          // does not match one of these is reported as an unspecified
+          // protection-log action rather than being guessed at.
+          function classifyProtectLogEntry(e) {
+            const action = e.action;
+            if (action === "protect") {
+              return { kind: "protect", label: "🛡️ Protect" };
+            }
+            if (action === "modify") {
+              return { kind: "modify", label: "🛡️ Modify protection" };
+            }
+            if (action === "unprotect") {
+              return { kind: "unprotect", label: "🔓 Unprotect" };
+            }
+            if (action === "move_prot") {
+              return { kind: "move_prot", label: "🛡️ Protection moved" };
+            }
+            return {
+              kind: "unspecified",
+              label:
+                "❓ Unspecified protection-log action" +
+                (action
+                  ? " (raw action: " + action + ")"
+                  : " (no action data)"),
+            };
+          }
+
           // --- Protection log ---
           (async function () {
             try {
@@ -6435,7 +6471,7 @@ $(function () {
                 letype: "protect",
                 letitle: pageName,
                 lelimit: 50,
-                leprop: "user|timestamp|comment|details",
+                leprop: "user|timestamp|comment|details|type",
               });
               const entries = (data.query && data.query.logevents) || [];
               if (!entries.length) {
@@ -6478,6 +6514,8 @@ $(function () {
                         .join("; ")
                     : "—";
                 const cascade = e.params && e.params.cascade ? "Yes" : "No";
+                const { label: protectActionLabel } =
+                  classifyProtectLogEntry(e);
                 bodyProtectLog.appendChild(
                   makeEntry([
                     [
@@ -6487,7 +6525,7 @@ $(function () {
                           ? " (" + fmtRelative(e.timestamp) + ")"
                           : ""),
                     ],
-                    ["Action", e.action || "protect"],
+                    ["Action", protectActionLabel],
                     ["Performed by", e.user || "—"],
                     ["Levels", levels],
                     ["Cascading", cascade],
