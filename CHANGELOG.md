@@ -1,3 +1,13 @@
+## 2.183.2
+
+### Fixed
+
+* Fixed the Deletion log section in Get info (page mode) showing "❓ Unspecified delete-log action (no action data)" for every entry, regardless of what the entry actually was. `classifyDeleteLogEntry()` (added in v2.183.0/v2.183.1) classifies strictly from `e.action`, but the section's `list=logevents` API call did not request `type` in `leprop`, and `type` must be explicitly requested for the API to return the `action` field on each log event. With `e.action` always `undefined`, every entry fell through to the unspecified fallback. `leprop` for this call now includes `type`, so `action` is populated correctly and entries are classified as delete, restore (undelete), revision deletion, or log entry visibility change as intended. The unspecified-action fallback now only applies when the API genuinely returns no recognised action value.
+
+### Notes
+
+* This affects only the API call feeding `getPageInfo()`'s Deletion log section. `classifyDeleteLogEntry()` itself, the row layout, and the icon-prefixed labels from v2.183.0 are unchanged and correct — the bug was purely a missing request parameter. `classifyBlockLogEntry()` (Block log, user mode) was unaffected by this bug since it already has a params-based fallback for a missing `action` field.
+
 ## 2.183.1
 
 ### Fixed
