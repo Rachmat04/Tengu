@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.183.2
+ * Version 2.184.0
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -6503,6 +6503,99 @@ $(function () {
             }
           })();
 
+          // Builds a safe, human-readable "Revisions affected" value from a
+          // delete-log entry's params, for the given classified kind
+          // ("restore" or "revision"). MediaWiki's delete-log params can
+          // carry revision counts and IDs in different shapes depending on
+          // the action and API version (e.g. a plain number, an array of
+          // IDs, or an object keyed by index), so this never renders a raw
+          // params object directly — only strings built from values it can
+          // positively identify as a count or a list of revision IDs.
+          // Returns null when nothing usable is found, so the caller can
+          // show an explicit "not available" fallback instead of guessing.
+          function formatRevisionsAffected(e, kind) {
+            const params = (e && e.params) || {};
+
+            // Normalise an ids-like value (array, or an object of
+            // index -> id) into a flat array of primitive IDs. Anything
+            // that isn't a number or string is dropped rather than
+            // stringified, so a nested object never leaks into the display.
+            function normaliseIds(val) {
+              if (!val) return null;
+              let arr = null;
+              if (Array.isArray(val)) {
+                arr = val;
+              } else if (typeof val === "object") {
+                arr = Object.values(val);
+              }
+              if (!arr) return null;
+              const ids = arr.filter(function (v) {
+                return typeof v === "number" || typeof v === "string";
+              });
+              return ids.length ? ids : null;
+            }
+
+            const ids =
+              normaliseIds(params.ids) ||
+              normaliseIds(params.old) ||
+              normaliseIds(params.new);
+
+            // A count is only trusted when it is a plain number or a
+            // numeric string; an object (as seen on some restore-log
+            // entries) is never coerced into a displayed count.
+            let count = null;
+            if (typeof params.count === "number") {
+              count = params.count;
+            } else if (
+              typeof params.count === "string" &&
+              params.count.trim() !== "" &&
+              !isNaN(Number(params.count))
+            ) {
+              count = Number(params.count);
+            } else if (ids) {
+              count = ids.length;
+            }
+
+            if (kind === "revision") {
+              if (count === null && !ids) return null;
+              let text =
+                count !== null
+                  ? count + " revision" + (count !== 1 ? "s" : "")
+                  : "Unknown number of revisions";
+              if (ids && ids.length) {
+                text +=
+                  " (revision ID" +
+                  (ids.length !== 1 ? "s" : "") +
+                  ": " +
+                  ids.join(", ") +
+                  ")";
+              }
+              return text;
+            }
+
+            if (kind === "restore") {
+              if (count === null && !ids) return null;
+              let text =
+                count !== null
+                  ? count + " revision" + (count !== 1 ? "s" : "")
+                  : "Unknown number of revisions";
+              if (ids && ids.length) {
+                text +=
+                  " (revision ID" +
+                  (ids.length !== 1 ? "s" : "") +
+                  ": " +
+                  ids.join(", ") +
+                  ")";
+              }
+              return text;
+            }
+
+            // Delete / log-visibility-change entries: keep the existing,
+            // simple count-only behaviour.
+            if (count !== null) return String(count);
+            return null;
+          }
+
           // --- Deletion log ---
           (async function () {
             try {
@@ -6524,16 +6617,13 @@ $(function () {
               arrowDeleteLog.classList.add("tng-arrow-up");
               bodyDeleteLog.innerHTML = "";
               for (const e of entries) {
-                const revCount =
-                  e.params && e.params.count !== undefined
-                    ? String(e.params.count)
-                    : null;
-                const { label: actionLabel } = classifyDeleteLogEntry(e);
-                // Revision deletion entries hide/show individual revisions
-                // (or log entries) rather than deleting/restoring the page
-                // itself, so "Revisions affected" is relevant to them too —
-                // this row is unaffected by the classification change and
-                // continues to render for any entry with a count param.
+                const { kind, label: actionLabel } = classifyDeleteLogEntry(e);
+                // Revision deletion and restore entries carry revision-level
+                // detail (count and/or specific revision IDs) that plain
+                // delete/log-visibility entries don't; formatRevisionsAffected()
+                // extracts whatever the API actually returned for this entry's
+                // kind, safely, without ever rendering a raw params object.
+                const revisionsAffected = formatRevisionsAffected(e, kind);
                 const rows = [
                   [
                     "Time",
@@ -6545,8 +6635,14 @@ $(function () {
                   ["Action", actionLabel],
                   ["Performed by", e.user || "—"],
                 ];
-                if (revCount !== null)
-                  rows.push(["Revisions affected", revCount]);
+                if (kind === "revision" || kind === "restore") {
+                  rows.push([
+                    "Revisions affected",
+                    revisionsAffected || "Not available for this entry.",
+                  ]);
+                } else if (revisionsAffected !== null) {
+                  rows.push(["Revisions affected", revisionsAffected]);
+                }
                 rows.push(["Reason", e.comment || "(no reason given)"]);
                 bodyDeleteLog.appendChild(makeEntry(rows));
               }

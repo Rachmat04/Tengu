@@ -1,3 +1,20 @@
+## 2.184.0
+
+### Fixed
+
+* Fixed the Deletion log section in Get info (page mode) displaying "[object Object]" in the Revisions affected field for restore-log entries whose `count` parameter is an object rather than a plain number. Revisions affected is now built by a new `formatRevisionsAffected()` helper that only renders values it can positively identify as a revision count or a list of revision IDs, never a raw API object.
+
+### Added
+
+* Revision deletion entries in the Deletion log section now show the specific revision IDs affected, alongside the total count, whenever the API response includes them (e.g. `"Revisions affected: 2 revisions (revision IDs: 12345, 12346)"`).
+* Restore (undelete) entries now show the number of revisions restored, and their IDs when available, instead of omitting this information or showing a malformed value.
+* When the API provides no usable revision count or ID data for a restore or revision-deletion entry, the row now reads "Not available for this entry." instead of a blank row or a raw object.
+
+### Notes
+
+* This affects only the Deletion log section's "Revisions affected" row, via `formatRevisionsAffected()`. `classifyDeleteLogEntry()` and every other row (Time, Action, Performed by, Reason) are unchanged.
+* Plain delete and log-visibility-change entries keep their existing count-only display when a count is available.
+
 ## 2.183.2
 
 ### Fixed
