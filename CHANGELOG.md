@@ -1,3 +1,9 @@
+## 2.185.1
+
+### Fixed
+
+* Fixed an ESLint `no-unused-vars` warning in the Get info panel's Block log section (user mode). `classifyBlockLogEntry()` still returns both `isUnblock` and `label`, but only `label` is used for rendering since the border-tinting that consumed `isUnblock` was removed in v2.181.2; the destructuring assignment no longer extracts the unused value.
+
 ## 2.185.0
 
 ### Fixed

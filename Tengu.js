@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.185.0
+ * Version 2.185.1
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -5852,8 +5852,7 @@ $(function () {
                 // classifyBlockLogEntry() rather than trusting e.action
                 // alone, since both actions can be represented by the same
                 // block log entry.
-                const { isUnblock, label: actionLabel } =
-                  classifyBlockLogEntry(e);
+                const { label: actionLabel } = classifyBlockLogEntry(e);
                 bodyBlockLog.appendChild(
                   makeEntry([
                     [
