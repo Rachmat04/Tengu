@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.186.0
+ * Version 2.186.1
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -15080,12 +15080,10 @@ $(function () {
             if (!scores) return "No ORES score";
             const parts = [];
             if (scores.damaging) {
-              parts.push(Math.round(scores.damaging.true * 100) + "% damaging");
+              parts.push(Math.round(scores.damaging.true * 100) + "% 🚨");
             }
             if (scores.goodfaith) {
-              parts.push(
-                Math.round(scores.goodfaith.true * 100) + "% good faith",
-              );
+              parts.push(Math.round(scores.goodfaith.true * 100) + "% 👍");
             }
             return parts.length ? parts.join(" · ") : "No ORES score";
           }

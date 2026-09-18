@@ -1,3 +1,9 @@
+## 2.187.0
+
+### Changed
+
+* In the "more information" line on diff pages (added in v2.186.0), the ORES damaging and good faith percentages now use 🚨 and 👍 emoji instead of the text labels "damaging" and "good faith".
+
 ## 2.186.0
 
 ### Added
