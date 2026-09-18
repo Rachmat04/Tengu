@@ -1337,6 +1337,13 @@
   white-space: nowrap;
   margin-bottom: 3px;
 }
+/* "More information" line (revision ID, size, ORES score) added below
+   each side's title box on diff pages. Inherits font-size and colour
+   from its container, matching .tng-inline-actions-diffline. */
+.tng-diffinfo-line {
+  display: block;
+  margin-top: 2px;
+}
 .tng-inline-action {
   font-size: 1em;
   font-weight: 600;

@@ -1,3 +1,14 @@
+## 2.186.0
+
+### Added
+
+* Added a "more information" line beneath each side's title box on diff pages, showing that revision's ID, size (with the size change and elapsed time shown on the newer side), and ORES score (damaging/good faith percentages) where available.
+
+### Notes
+
+* Adapted from `User:BrandonXLF/MoreDiffInfo.js` (see README credits). The ORES status icons and the link to the original script's help page have been removed; separators use Tengu's existing middle-dot (·) convention instead of pipes, and elapsed-time formatting is computed directly rather than via the moment.js library used by the original.
+* Display-only addition; no existing diff-page behaviour (rollback/undo/restore links) was changed.
+
 ## 2.185.1
 
 ### Fixed
