@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.186.1
+ * Version 2.187.0
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -6826,8 +6826,17 @@ $(function () {
 
           // titleNsMap stores title → namespace ID for every unique page edited.
           // allTitles preserves insertion order before sorting is applied; Set
-          // deduplication removes repeated page titles.
+          // deduplication removes repeated page titles. creationTitles and
+          // regularEditTitles are separate Sets tracking, per title, whether
+          // the user has at least one creation revision and/or at least one
+          // non-creation revision there — a title can belong to both (e.g. a
+          // page the user created and later also edited again). "flags" is
+          // added to ucprop so each contribution's "new" property is
+          // returned, matching how creations are detected elsewhere in
+          // Tengu (see work()'s contribution-processing loop).
           const allTitles = new Set();
+          const creationTitles = new Set();
+          const regularEditTitles = new Set();
           const titleNsMap = new Map();
           let continueToken = {};
           let fetching = true;
@@ -6839,7 +6848,7 @@ $(function () {
                   action: "query",
                   list: "usercontribs",
                   ucuser: username,
-                  ucprop: "title",
+                  ucprop: "title|flags",
                   uclimit: "max",
                 },
                 continueToken,
@@ -6856,6 +6865,11 @@ $(function () {
                       /* empty */
                     }
                     titleNsMap.set(edit.title, nsId);
+                  }
+                  if (edit.new === "") {
+                    creationTitles.add(edit.title);
+                  } else {
+                    regularEditTitles.add(edit.title);
                   }
                 }
                 loadingEl.textContent =
@@ -6939,6 +6953,60 @@ $(function () {
             exportBody.appendChild(nsFilterEl);
           }
 
+          // Scope filter — narrows the export to page creations, regular
+          // (non-creation) edits, or both. "Both" is the default and shows
+          // the full deduplicated set of unique pages.
+          const scopeRow = document.createElement("div");
+          scopeRow.style.cssText =
+            "display: flex; flex-wrap: wrap; gap: 6px; align-items: center; padding: 6px 0;";
+          const scopeLbl = document.createElement("span");
+          scopeLbl.className = "tng-rights-subtitle";
+          scopeLbl.textContent = "Show:";
+          scopeRow.appendChild(scopeLbl);
+
+          const btnScopeAll = makeBtn("All edits", "primary");
+          btnScopeAll.className += " tng-btn-sm";
+          btnScopeAll.title =
+            "Show pages from both page creations and regular edits";
+          const btnScopeCreations = makeBtn("Page creations only", "quiet");
+          btnScopeCreations.className += " tng-btn-sm";
+          btnScopeCreations.title = "Show only pages this user created";
+          const btnScopeRegular = makeBtn("Regular edits only", "quiet");
+          btnScopeRegular.className += " tng-btn-sm";
+          btnScopeRegular.title =
+            "Show only pages this user edited without creating them";
+          scopeRow.appendChild(btnScopeAll);
+          scopeRow.appendChild(btnScopeCreations);
+          scopeRow.appendChild(btnScopeRegular);
+          exportBody.appendChild(scopeRow);
+
+          function setScopeActive(activeBtn) {
+            [btnScopeAll, btnScopeCreations, btnScopeRegular].forEach(
+              function (b) {
+                b.classList.remove("tng-btn-primary");
+                b.classList.add("tng-btn-quiet");
+              },
+            );
+            activeBtn.classList.remove("tng-btn-quiet");
+            activeBtn.classList.add("tng-btn-primary");
+          }
+
+          btnScopeAll.addEventListener("click", function () {
+            currentScope = "all";
+            setScopeActive(btnScopeAll);
+            renderExportList();
+          });
+          btnScopeCreations.addEventListener("click", function () {
+            currentScope = "creation";
+            setScopeActive(btnScopeCreations);
+            renderExportList();
+          });
+          btnScopeRegular.addEventListener("click", function () {
+            currentScope = "regular";
+            setScopeActive(btnScopeRegular);
+            renderExportList();
+          });
+
           // Sort controls.
           const sortRow = document.createElement("div");
           sortRow.style.cssText =
@@ -6986,11 +7054,23 @@ $(function () {
             return new Set(nsCombobox.getSelectedValues());
           }
 
+          // Returns the titles matching the currently selected scope
+          // ("all", "creation", or "regular"). "all" reuses allTitles
+          // directly, which is already deduplicated via Set, so entries
+          // appearing in both creationTitles and regularEditTitles are
+          // still listed exactly once.
+          let currentScope = "all";
+          function getScopeFilteredTitles() {
+            if (currentScope === "creation") return [...creationTitles];
+            if (currentScope === "regular") return [...regularEditTitles];
+            return [...allTitles];
+          }
+
           let currentSort = "az";
 
           function getFilteredSortedTitles() {
             const activeNs = getActiveNsIds();
-            let titles = [...allTitles];
+            let titles = getScopeFilteredTitles();
             if (activeNs) {
               titles = titles.filter(function (t) {
                 return activeNs.has(String(titleNsMap.get(t) || 0));
@@ -7020,7 +7100,7 @@ $(function () {
           function renderExportList() {
             listBox.innerHTML = "";
             const titles = getFilteredSortedTitles();
-            const total = allTitles.size;
+            const total = getScopeFilteredTitles().length;
             summaryEl.textContent =
               titles.length +
               " of " +

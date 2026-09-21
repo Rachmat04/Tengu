@@ -127,6 +127,7 @@ Only available in page mode.
 
 ### Export edits
 - Fetches the target user's full contribution history and collects all unique pages they have edited.
+- **Show** scope filter: All edits (default), Page creations only, or Regular edits only. Selecting "All edits" lists each page once even if the user both created and later edited it again.
 - Namespace filter, A–Z and Z–A sort, a page count summary, and a scrollable wikitext preview.
 - Copy-to-clipboard output in numbered wikitext list format.
 - File and Category pages are prefixed with a colon to render as hyperlinks rather than embeds or category tags.

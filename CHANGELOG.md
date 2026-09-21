@@ -1,5 +1,21 @@
 ## 2.187.0
 
+### Added
+
+* Added a **"Show:"** scope filter to the Export edits dialogue, with three options: **All edits** (default), **Page creations only**, and **Regular edits only**. Lets the user export just the pages a target created, just the pages they edited without creating, or both.
+
+### Changed
+
+* The contribution fetch used by Export edits now requests `flags` (`ucprop: "title|flags"`) alongside `title`, so each contribution's creation status is known, matching the detection already used elsewhere in Tengu (`edit.new === ""`).
+* When **"All edits"** is selected, the exported list continues to contain each page exactly once, even if it was both created and later edited again by the same user — the existing `Set`-based deduplication already guarantees this.
+
+### Notes
+
+* `getScopeFilteredTitles()` is applied before the existing namespace filter and sort, so all three controls combine as expected.
+* Sorting, the namespace filter, the summary count, and the **Copy as wiki links** output all respect the active scope selection.
+
+## 2.186.1
+
 ### Changed
 
 * In the "more information" line on diff pages (added in v2.186.0), the ORES damaging and good faith percentages now use 🚨 and 👍 emoji instead of the text labels "damaging" and "good faith".
