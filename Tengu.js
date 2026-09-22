@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.188.0
+ * Version 2.188.1
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -2076,13 +2076,13 @@ $(function () {
                     "<p>You are about to block your own account. Are you certain you wish to proceed?</p>";
                   const btnCancel = makeBtn("Cancel", "quiet");
                   btnCancel.addEventListener("click", () => {
-                    overlay.closeHandler();
                     resolve(false);
+                    overlay.closeHandler();
                   });
                   const btnConfirm = makeBtn("Proceed", "destructive");
                   btnConfirm.addEventListener("click", () => {
-                    overlay.closeHandler();
                     resolve(true);
+                    overlay.closeHandler();
                   });
                   footer.appendChild(btnCancel);
                   footer.appendChild(btnConfirm);

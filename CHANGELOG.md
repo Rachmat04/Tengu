@@ -1,3 +1,14 @@
+## 2.188.1
+
+### Fixed
+
+* Fixed the self-block confirmation dialogue (Block section) always resolving as cancelled, regardless of which button was clicked. Both the Cancel and Proceed buttons called `overlay.closeHandler()` before `resolve()`; `closeHandler()` always triggers `onClose()` too (see `createDialog()`), which calls `resolve(false)`. Because a promise only settles once, and `closeHandler()` ran first, the promise always resolved to `false` before the button's own `resolve()` call had any effect — meaning "Proceed" silently behaved as "Cancel" and a legitimate self-block could never actually be confirmed. Confirm and Cancel now call `resolve()` before `overlay.closeHandler()`, matching the identical fix already applied to the inline rollback/undo confirmation dialogue in v2.124.1.
+
+### Notes
+
+* This bug was flagged but left unfixed in the v2.124.1 changelog note, which identified the same `closeHandler()`-before-`resolve()` ordering issue in this exact dialogue ("around line 1477") as a separate, unaddressed code path.
+* This affects only the self-block confirmation step in the Block section's execution flow (`work()`). No other confirmation dialogues in Tengu shared this bug, since `runQuickRevert()`'s equivalent dialogue was already corrected in v2.124.1.
+
 ## 2.188.0
 
 ### Fixed
