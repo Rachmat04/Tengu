@@ -1,3 +1,13 @@
+## 2.188.0
+
+### Fixed
+
+* Fixed `updateMovePageDestFromTarget()` (Move page section) running with no mode guard, unlike every other target-dependent helper (`updateMoveSandboxTalkAvailability()`, `updateMovePageTalkAvailability()`, `isTargetSpecialPage()`, `isTargetFilePage()`). Because it is also called from `namespacesPromise.then()`, which can resolve at any time regardless of the active mode, it could run while Tengu was in user mode and parse the *username* currently in the target field as a page title — overwriting the Move page destination fields and the Move to user's sandbox subpage field with that username. Masked in practice because the Move page section is mode-locked in user mode, but it left stale, incorrect values in the section's form state. `updateMovePageDestFromTarget()` now returns immediately unless `tenguMode === "page"`, matching the guard pattern already used by the other target-dependent helpers.
+
+### Notes
+
+* This is a state-correctness fix; no user-facing behaviour changed for anyone using Move page normally in page mode. It removes a source of incorrect pre-filled values that could otherwise appear if the section were ever made available before a mode switch completed.
+
 ## 2.187.0
 
 ### Added

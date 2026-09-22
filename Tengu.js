@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.187.0
+ * Version 2.188.0
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -10242,6 +10242,7 @@ $(function () {
           // target-change handler, and namespacesPromise above, so the
           // namespace selector stays in sync however the target was set.
           function updateMovePageDestFromTarget() {
+            if (tenguMode !== "page") return;
             const _pageTargetForMove = inputTarget.value.trim();
             if (!_pageTargetForMove) return;
             try {
