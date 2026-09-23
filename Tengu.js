@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.189.0
+ * Version 2.189.1
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -6981,7 +6981,7 @@ $(function () {
             nsFilterEl.style.cssText =
               "display: flex; flex-wrap: wrap; gap: 6px; align-items: center; padding: 6px 0 4px;";
             const nsFilterLbl = document.createElement("span");
-            nsFilterLbl.className = "tng-rights-subtitle";
+            nsFilterLbl.className = "tng-inline-label";
             nsFilterLbl.style.marginRight = "2px";
             nsFilterLbl.textContent = "Filter by namespace:";
             nsFilterEl.appendChild(nsFilterLbl);
@@ -7007,7 +7007,7 @@ $(function () {
           scopeRow.style.cssText =
             "display: flex; flex-wrap: wrap; gap: 6px; align-items: center; padding: 6px 0;";
           const scopeLbl = document.createElement("span");
-          scopeLbl.className = "tng-rights-subtitle";
+          scopeLbl.className = "tng-inline-label";
           scopeLbl.textContent = "Show:";
           scopeRow.appendChild(scopeLbl);
 
@@ -7062,7 +7062,7 @@ $(function () {
           sortRow.style.cssText =
             "display: flex; gap: 6px; align-items: center; padding: 6px 0;";
           const sortLbl = document.createElement("span");
-          sortLbl.className = "tng-rights-subtitle";
+          sortLbl.className = "tng-inline-label";
           sortLbl.textContent = "Sort by:";
           sortRow.appendChild(sortLbl);
 
@@ -8396,7 +8396,7 @@ $(function () {
               nsFilterEl.style.cssText =
                 "display: flex; flex-wrap: wrap; gap: 6px; align-items: center; padding: 6px 0 4px;";
               const nsFilterLbl = document.createElement("span");
-              nsFilterLbl.className = "tng-rights-subtitle";
+              nsFilterLbl.className = "tng-inline-label";
               nsFilterLbl.style.marginRight = "2px";
               nsFilterLbl.textContent = "Filter by namespace:";
               nsFilterEl.appendChild(nsFilterLbl);
@@ -8603,7 +8603,7 @@ $(function () {
             sortRow.style.cssText =
               "display: flex; gap: 6px; align-items: center; padding: 6px 0;";
             const sortLbl = document.createElement("span");
-            sortLbl.className = "tng-rights-subtitle";
+            sortLbl.className = "tng-inline-label";
             sortLbl.textContent = "Sort by:";
             sortRow.appendChild(sortLbl);
 

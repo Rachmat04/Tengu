@@ -1,3 +1,13 @@
+## 2.189.1
+
+### Fixed
+
+* Fixed the "Filter by namespace:", "Show:", and "Sort by:" labels in the Export edits dialogue and the Select specific edits/pages picker rendering noticeably smaller than the other labels in the same dialogues. These labels used `.tng-rights-subtitle` (0.75em, sized for the compact footer rights panel); they now use `.tng-inline-label` (0.88em), matching the size of surrounding form labels such as "Reason:" and "Protection level:".
+
+### Notes
+
+* This is a CSS class change only, applied at the four label locations in `Tengu.js` (two in the Export edits dialogue, two in the Select specific edits/pages picker). No layout, functionality, or other labels were affected. `.tng-rights-subtitle` itself is unchanged and continues to be used by the footer rights panel's "This wiki:" and "Global:" labels.
+ 
 ## 2.189.0
 
 ### Added
