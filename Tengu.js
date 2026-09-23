@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.188.1
+ * Version 2.189.0
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -6838,6 +6838,11 @@ $(function () {
           const creationTitles = new Set();
           const regularEditTitles = new Set();
           const titleNsMap = new Map();
+          // Raw per-edit records (title, ISO 8601 UTC timestamp, whether the
+          // edit created the page), kept alongside the deduplicated sets
+          // above so the date-range/scope filter applied on "Generate list"
+          // can be computed locally without a second API fetch.
+          const allContribsData = [];
           let continueToken = {};
           let fetching = true;
 
@@ -6848,7 +6853,7 @@ $(function () {
                   action: "query",
                   list: "usercontribs",
                   ucuser: username,
-                  ucprop: "title|flags",
+                  ucprop: "title|flags|timestamp",
                   uclimit: "max",
                 },
                 continueToken,
@@ -6866,11 +6871,17 @@ $(function () {
                     }
                     titleNsMap.set(edit.title, nsId);
                   }
-                  if (edit.new === "") {
+                  const isCreation = edit.new === "";
+                  if (isCreation) {
                     creationTitles.add(edit.title);
                   } else {
                     regularEditTitles.add(edit.title);
                   }
+                  allContribsData.push({
+                    title: edit.title,
+                    timestamp: edit.timestamp || "",
+                    isNew: isCreation,
+                  });
                 }
                 loadingEl.textContent =
                   "Fetching contributions... (" +
@@ -6916,6 +6927,41 @@ $(function () {
             return;
           }
 
+          // Date range — From/To, both in UTC. Either may be left blank for
+          // an open-ended range. Changing these fields does not update the
+          // list on its own; the list is only (re)generated when "Generate
+          // list" below is pressed.
+          const { row: rowExportRange, field: fieldExportRange } =
+            makeRow("Date range (UTC)");
+          const inputExportFrom = document.createElement("input");
+          inputExportFrom.type = "date";
+          inputExportFrom.className = "tng-input";
+          inputExportFrom.style.flex = "1";
+          const todayUtc = new Date().toISOString().slice(0, 10);
+          inputExportFrom.max = todayUtc;
+          const lblExportRangeTo = document.createElement("span");
+          lblExportRangeTo.className = "tng-inline-label";
+          lblExportRangeTo.textContent = "to";
+          const inputExportTo = document.createElement("input");
+          inputExportTo.type = "date";
+          inputExportTo.className = "tng-input";
+          inputExportTo.style.flex = "1";
+          inputExportTo.max = todayUtc;
+          const rangeGroup = document.createElement("div");
+          rangeGroup.style.cssText =
+            "display: flex; gap: 6px; align-items: center; width: 100%;";
+          rangeGroup.appendChild(inputExportFrom);
+          rangeGroup.appendChild(lblExportRangeTo);
+          rangeGroup.appendChild(inputExportTo);
+          fieldExportRange.appendChild(rangeGroup);
+          exportBody.appendChild(rowExportRange);
+
+          const helpExportRange = document.createElement("div");
+          helpExportRange.className = "tng-help";
+          helpExportRange.textContent =
+            "Leave either field blank for an open-ended range. All dates are interpreted as UTC.";
+          exportBody.appendChild(helpExportRange);
+
           // Namespace filter row — only rendered when results span more than one namespace.
           const formattedNamespaces =
             mw.config.get("wgFormattedNamespaces") || {};
@@ -6954,8 +7000,9 @@ $(function () {
           }
 
           // Scope filter — narrows the export to page creations, regular
-          // (non-creation) edits, or both. "Both" is the default and shows
-          // the full deduplicated set of unique pages.
+          // (non-creation) edits, or both. "Both types of edits" is the
+          // default. Selecting an option only marks it as pending; it takes
+          // effect only once "Generate list" below is pressed.
           const scopeRow = document.createElement("div");
           scopeRow.style.cssText =
             "display: flex; flex-wrap: wrap; gap: 6px; align-items: center; padding: 6px 0;";
@@ -6964,17 +7011,20 @@ $(function () {
           scopeLbl.textContent = "Show:";
           scopeRow.appendChild(scopeLbl);
 
-          const btnScopeAll = makeBtn("All edits", "primary");
+          const btnScopeAll = makeBtn("Both types of edits", "primary");
           btnScopeAll.className += " tng-btn-sm";
           btnScopeAll.title =
-            "Show pages from both page creations and regular edits";
-          const btnScopeCreations = makeBtn("Page creations only", "quiet");
+            "Include pages from both page creations and regular edits";
+          const btnScopeCreations = makeBtn(
+            "Edits that create new pages",
+            "quiet",
+          );
           btnScopeCreations.className += " tng-btn-sm";
-          btnScopeCreations.title = "Show only pages this user created";
-          const btnScopeRegular = makeBtn("Regular edits only", "quiet");
+          btnScopeCreations.title = "Include only pages this user created";
+          const btnScopeRegular = makeBtn("Regular edits", "quiet");
           btnScopeRegular.className += " tng-btn-sm";
           btnScopeRegular.title =
-            "Show only pages this user edited without creating them";
+            "Include only pages this user edited without creating them";
           scopeRow.appendChild(btnScopeAll);
           scopeRow.appendChild(btnScopeCreations);
           scopeRow.appendChild(btnScopeRegular);
@@ -6991,23 +7041,23 @@ $(function () {
             activeBtn.classList.add("tng-btn-primary");
           }
 
+          let pendingScope = "all";
           btnScopeAll.addEventListener("click", function () {
-            currentScope = "all";
+            pendingScope = "all";
             setScopeActive(btnScopeAll);
-            renderExportList();
           });
           btnScopeCreations.addEventListener("click", function () {
-            currentScope = "creation";
+            pendingScope = "creation";
             setScopeActive(btnScopeCreations);
-            renderExportList();
           });
           btnScopeRegular.addEventListener("click", function () {
-            currentScope = "regular";
+            pendingScope = "regular";
             setScopeActive(btnScopeRegular);
-            renderExportList();
           });
 
-          // Sort controls.
+          // Sort controls — reorder whichever list is currently shown.
+          // Sorting does not depend on the date range or scope, so it is
+          // applied immediately rather than requiring "Generate list".
           const sortRow = document.createElement("div");
           sortRow.style.cssText =
             "display: flex; gap: 6px; align-items: center; padding: 6px 0;";
@@ -7026,7 +7076,16 @@ $(function () {
           sortRow.appendChild(btnSortZA);
           exportBody.appendChild(sortRow);
 
-          // Summary line — updated whenever the filter or sort changes.
+          // Generate button — the date range and scope above only take
+          // effect once this is pressed, so the list is never regenerated
+          // whilst those options are still being adjusted.
+          const generateRow = document.createElement("div");
+          generateRow.style.cssText = "padding: 4px 0 6px;";
+          const btnGenerate = makeBtn("📋 Generate list", "primary");
+          generateRow.appendChild(btnGenerate);
+          exportBody.appendChild(generateRow);
+
+          // Summary line — updated whenever the list is generated or sorted.
           const summaryEl = document.createElement("div");
           summaryEl.className = "tng-help";
           exportBody.appendChild(summaryEl);
@@ -7036,6 +7095,17 @@ $(function () {
           listBox.className = "tng-log-box";
           listBox.style.height = "320px";
           exportBody.appendChild(listBox);
+
+          function showPlaceholder() {
+            listBox.innerHTML = "";
+            summaryEl.textContent = "";
+            const el = document.createElement("div");
+            el.className = "tng-info-empty";
+            el.textContent =
+              'Set your date range and options above, then click "Generate list".';
+            listBox.appendChild(el);
+          }
+          showPlaceholder();
 
           // Namespaces that require a colon prefix in wikilinks to render as a
           // hyperlink rather than an embedded file or a category membership tag.
@@ -7054,38 +7124,37 @@ $(function () {
             return new Set(nsCombobox.getSelectedValues());
           }
 
-          // Returns the titles matching the currently selected scope
-          // ("all", "creation", or "regular"). "all" reuses allTitles
-          // directly, which is already deduplicated via Set, so entries
-          // appearing in both creationTitles and regularEditTitles are
-          // still listed exactly once.
-          let currentScope = "all";
-          function getScopeFilteredTitles() {
-            if (currentScope === "creation") return [...creationTitles];
-            if (currentScope === "regular") return [...regularEditTitles];
-            return [...allTitles];
-          }
+          // Titles produced by the most recent "Generate list" press.
+          // Null until the first successful generation, in which case the
+          // list shows the placeholder rather than any page.
+          let generatedTitles = null;
 
           let currentSort = "az";
 
+          function getSortedTitles(titles) {
+            const copy = titles.slice();
+            if (currentSort === "az") {
+              copy.sort(function (a, b) {
+                return a.localeCompare(b, undefined, { sensitivity: "base" });
+              });
+            } else {
+              copy.sort(function (a, b) {
+                return b.localeCompare(a, undefined, { sensitivity: "base" });
+              });
+            }
+            return copy;
+          }
+
           function getFilteredSortedTitles() {
+            if (!generatedTitles) return [];
             const activeNs = getActiveNsIds();
-            let titles = getScopeFilteredTitles();
+            let titles = generatedTitles;
             if (activeNs) {
               titles = titles.filter(function (t) {
                 return activeNs.has(String(titleNsMap.get(t) || 0));
               });
             }
-            if (currentSort === "az") {
-              titles.sort(function (a, b) {
-                return a.localeCompare(b, undefined, { sensitivity: "base" });
-              });
-            } else {
-              titles.sort(function (a, b) {
-                return b.localeCompare(a, undefined, { sensitivity: "base" });
-              });
-            }
-            return titles;
+            return getSortedTitles(titles);
           }
 
           function setSortActive(activeBtn) {
@@ -7098,9 +7167,13 @@ $(function () {
           }
 
           function renderExportList() {
+            if (!generatedTitles) {
+              showPlaceholder();
+              return;
+            }
             listBox.innerHTML = "";
             const titles = getFilteredSortedTitles();
-            const total = getScopeFilteredTitles().length;
+            const total = generatedTitles.length;
             summaryEl.textContent =
               titles.length +
               " of " +
@@ -7138,12 +7211,50 @@ $(function () {
             renderExportList();
           });
 
-          renderExportList();
+          // Validates the From/To date fields (either may be blank for an
+          // open-ended range), then computes the scope- and date-filtered
+          // title list from the raw per-edit records collected during the
+          // initial fetch. Comparison uses lexicographic ordering of ISO
+          // 8601 UTC timestamp strings, which sorts correctly without
+          // needing to parse them into Date objects. Building the result as
+          // a Set before converting to an array keeps every entry unique
+          // even when "Both types of edits" is selected and a page appears
+          // in both the creation and regular-edit records.
+          btnGenerate.addEventListener("click", function () {
+            clearInputError(inputExportFrom);
+            clearInputError(inputExportTo);
+
+            const fromVal = inputExportFrom.value;
+            const toVal = inputExportTo.value;
+            const fromTs = fromVal ? fromVal + "T00:00:00.000Z" : null;
+            const toTs = toVal ? toVal + "T23:59:59.999Z" : null;
+
+            if (fromTs && toTs && fromTs > toTs) {
+              showNotification(
+                fieldExportRange,
+                "The 'From' date must not be after the 'To' date.",
+              );
+              inputExportFrom.focus();
+              return;
+            }
+
+            const scopedTitles = new Set();
+            for (const c of allContribsData) {
+              if (fromTs && c.timestamp && c.timestamp < fromTs) continue;
+              if (toTs && c.timestamp && c.timestamp > toTs) continue;
+              if (pendingScope === "creation" && !c.isNew) continue;
+              if (pendingScope === "regular" && c.isNew) continue;
+              scopedTitles.add(c.title);
+            }
+            generatedTitles = Array.from(scopedTitles);
+            renderExportList();
+          });
 
           // Footer buttons.
           const btnCopy = makeBtn("Copy as wiki links", "primary");
           btnCopy.addEventListener("click", function () {
             const titles = getFilteredSortedTitles();
+            if (!titles.length) return;
             const text = titles
               .map(function (t) {
                 return "# " + toWikiLink(t);

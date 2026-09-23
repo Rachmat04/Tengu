@@ -1,3 +1,22 @@
+## 2.189.0
+
+### Added
+
+* Added a **date range** picker (From/To, both in UTC) to the Export edits dialogue, letting the exported list be limited to edits made within a specific window.
+* Added a **"Generate list"** button. The list is no longer generated or updated automatically as the date range or the Show scope (Both types of edits / Edits that create new pages / Regular edits) is changed; it is only (re)built once this button is pressed.
+* Added inline validation for the date range: if "From" is after "To", the fields show an error and no list is generated.
+
+### Changed
+
+* Renamed the Show scope buttons to "Both types of edits", "Edits that create new pages", and "Regular edits" (previously "All edits", "Page creations only", "Regular edits only").
+* The namespace filter and sort controls (A–Z / Z–A) continue to apply immediately to whichever list is currently shown, since neither requires regenerating the underlying data.
+* `ucprop` for the underlying `list=usercontribs` fetch now also requests `timestamp`, so date-range filtering can be applied locally against the already-fetched contribution data without a second API call.
+
+### Notes
+
+* When "Both types of edits" is selected, the generated list is still built via a `Set`, so a page that was both created and later edited again by the user within the selected range is listed exactly once.
+* This affects only `openExportEditsDialog()` (the Export edits feature, user mode). The Select specific edits/pages picker and the main `work()` contribution fetch are unaffected.
+
 ## 2.188.1
 
 ### Fixed
