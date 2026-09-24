@@ -1,3 +1,20 @@
+## 2.190.0
+
+### Changed
+
+* Reorganised the Export edits dialogue so that all filtering controls (Date range (UTC), Filter by namespace, Show, and Sort by) sit inside a single bordered section, using the existing `.tng-recreation-group` style. The "Generate list" button remains outside this section.
+* Each filtering control now uses a standard form row (`makeRow()`) with a shared label column, replacing the previous mix of inline labels and ad hoc flex rows, so all controls start at the same left edge with consistent spacing.
+* The Show and Sort by buttons now share the row width equally and use the same padding and font size as the date and namespace fields, so their heights and widths line up with the other controls. They no longer use `.tng-btn-sm`.
+* The labels "Filter by namespace", "Show", and "Sort by" no longer end in a colon, matching other form-row labels in Tengu.
+
+### Added
+
+* Added `.tng-export-toggle-group` and `.tng-export-toggle-btn` to `Tengu.css` for the aligned Show and Sort by button groups.
+
+### Notes
+
+* This is a layout-only change. The date-range filtering (including the UTC indication), namespace filter, Show scope options, sort options, and the requirement to press "Generate list" before a list is built are all unchanged, as is the export logic itself.
+
 ## 2.189.1
 
 ### Fixed

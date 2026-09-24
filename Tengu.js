@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.189.1
+ * Version 2.190.0
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -6954,13 +6954,22 @@ $(function () {
           rangeGroup.appendChild(lblExportRangeTo);
           rangeGroup.appendChild(inputExportTo);
           fieldExportRange.appendChild(rangeGroup);
-          exportBody.appendChild(rowExportRange);
+
+          // Bordered section holding every filtering control (date range,
+          // namespace filter, scope, and sort). Reuses .tng-recreation-group,
+          // the border style already used for grouped controls elsewhere in
+          // Tengu. The "Generate list" button is deliberately appended to
+          // exportBody, outside this group, further below.
+          const filterGroup = document.createElement("div");
+          filterGroup.className = "tng-recreation-group";
+          exportBody.appendChild(filterGroup);
+          filterGroup.appendChild(rowExportRange);
 
           const helpExportRange = document.createElement("div");
           helpExportRange.className = "tng-help";
           helpExportRange.textContent =
             "Leave either field blank for an open-ended range. All dates are interpreted as UTC.";
-          exportBody.appendChild(helpExportRange);
+          filterGroup.appendChild(helpExportRange);
 
           // Namespace filter row — only rendered when results span more than one namespace.
           const formattedNamespaces =
@@ -6977,14 +6986,9 @@ $(function () {
           let nsCombobox = null;
 
           if (sortedNsIds.length > 1) {
-            const nsFilterEl = document.createElement("div");
-            nsFilterEl.style.cssText =
-              "display: flex; flex-wrap: wrap; gap: 6px; align-items: center; padding: 6px 0 4px;";
-            const nsFilterLbl = document.createElement("span");
-            nsFilterLbl.className = "tng-inline-label";
-            nsFilterLbl.style.marginRight = "2px";
-            nsFilterLbl.textContent = "Filter by namespace:";
-            nsFilterEl.appendChild(nsFilterLbl);
+            const { row: rowExportNs, field: fieldExportNs } = makeRow(
+              "Filter by namespace",
+            );
             const nsItems = sortedNsIds.map(function (nsId) {
               return {
                 value: String(nsId),
@@ -6994,41 +6998,37 @@ $(function () {
             });
             nsCombobox = makeCheckboxCombobox(nsItems, "Select namespaces...");
             nsCombobox.wrap.style.flex = "1";
-            nsCombobox.wrap.style.minWidth = "160px";
-            nsFilterEl.appendChild(nsCombobox.wrap);
-            exportBody.appendChild(nsFilterEl);
+            fieldExportNs.appendChild(nsCombobox.wrap);
+            filterGroup.appendChild(rowExportNs);
           }
 
           // Scope filter — narrows the export to page creations, regular
           // (non-creation) edits, or both. "Both types of edits" is the
           // default. Selecting an option only marks it as pending; it takes
           // effect only once "Generate list" below is pressed.
-          const scopeRow = document.createElement("div");
-          scopeRow.style.cssText =
-            "display: flex; flex-wrap: wrap; gap: 6px; align-items: center; padding: 6px 0;";
-          const scopeLbl = document.createElement("span");
-          scopeLbl.className = "tng-inline-label";
-          scopeLbl.textContent = "Show:";
-          scopeRow.appendChild(scopeLbl);
+          const { row: scopeRow, field: fieldScope } = makeRow("Show");
+          const scopeBtnGroup = document.createElement("div");
+          scopeBtnGroup.className = "tng-export-toggle-group";
 
           const btnScopeAll = makeBtn("Both types of edits", "primary");
-          btnScopeAll.className += " tng-btn-sm";
+          btnScopeAll.className += " tng-export-toggle-btn";
           btnScopeAll.title =
             "Include pages from both page creations and regular edits";
           const btnScopeCreations = makeBtn(
             "Edits that create new pages",
             "quiet",
           );
-          btnScopeCreations.className += " tng-btn-sm";
+          btnScopeCreations.className += " tng-export-toggle-btn";
           btnScopeCreations.title = "Include only pages this user created";
           const btnScopeRegular = makeBtn("Regular edits", "quiet");
-          btnScopeRegular.className += " tng-btn-sm";
+          btnScopeRegular.className += " tng-export-toggle-btn";
           btnScopeRegular.title =
             "Include only pages this user edited without creating them";
-          scopeRow.appendChild(btnScopeAll);
-          scopeRow.appendChild(btnScopeCreations);
-          scopeRow.appendChild(btnScopeRegular);
-          exportBody.appendChild(scopeRow);
+          scopeBtnGroup.appendChild(btnScopeAll);
+          scopeBtnGroup.appendChild(btnScopeCreations);
+          scopeBtnGroup.appendChild(btnScopeRegular);
+          fieldScope.appendChild(scopeBtnGroup);
+          filterGroup.appendChild(scopeRow);
 
           function setScopeActive(activeBtn) {
             [btnScopeAll, btnScopeCreations, btnScopeRegular].forEach(
@@ -7058,23 +7058,20 @@ $(function () {
           // Sort controls — reorder whichever list is currently shown.
           // Sorting does not depend on the date range or scope, so it is
           // applied immediately rather than requiring "Generate list".
-          const sortRow = document.createElement("div");
-          sortRow.style.cssText =
-            "display: flex; gap: 6px; align-items: center; padding: 6px 0;";
-          const sortLbl = document.createElement("span");
-          sortLbl.className = "tng-inline-label";
-          sortLbl.textContent = "Sort by:";
-          sortRow.appendChild(sortLbl);
+          const { row: sortRow, field: fieldSort } = makeRow("Sort by");
+          const sortBtnGroup = document.createElement("div");
+          sortBtnGroup.className = "tng-export-toggle-group";
 
           const btnSortAZ = makeBtn("A–Z", "primary");
-          btnSortAZ.className += " tng-btn-sm";
+          btnSortAZ.className += " tng-export-toggle-btn";
           btnSortAZ.title = "Sort alphabetically, A to Z";
           const btnSortZA = makeBtn("Z–A", "quiet");
-          btnSortZA.className += " tng-btn-sm";
+          btnSortZA.className += " tng-export-toggle-btn";
           btnSortZA.title = "Sort alphabetically, Z to A";
-          sortRow.appendChild(btnSortAZ);
-          sortRow.appendChild(btnSortZA);
-          exportBody.appendChild(sortRow);
+          sortBtnGroup.appendChild(btnSortAZ);
+          sortBtnGroup.appendChild(btnSortZA);
+          fieldSort.appendChild(sortBtnGroup);
+          filterGroup.appendChild(sortRow);
 
           // Generate button — the date range and scope above only take
           // effect once this is pressed, so the list is never regenerated

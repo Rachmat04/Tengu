@@ -1434,3 +1434,22 @@
 .tng-linkfix-pulse {
   animation: tng-linkfix-pulse 0.3s ease;
 }
+
+/* --- Export edits: aligned toggle button groups (Show, Sort by) --- */
+/* Buttons share the row width equally and use the same padding and font size
+   as .tng-input, so they line up with the date fields and namespace field.
+   Declared after .tng-btn so its padding, font size, and white-space are
+   overridden. */
+.tng-export-toggle-group {
+  display: flex;
+  gap: 6px;
+  width: 100%;
+}
+.tng-export-toggle-btn {
+  flex: 1;
+  min-width: 0;
+  box-sizing: border-box;
+  padding: 4px 8px;
+  font-size: 0.9em;
+  white-space: normal;
+}
