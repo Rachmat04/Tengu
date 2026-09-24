@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.190.0
+ * Version 2.191.0
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -7014,10 +7014,7 @@ $(function () {
           btnScopeAll.className += " tng-export-toggle-btn";
           btnScopeAll.title =
             "Include pages from both page creations and regular edits";
-          const btnScopeCreations = makeBtn(
-            "Edits that create new pages",
-            "quiet",
-          );
+          const btnScopeCreations = makeBtn("New page edits", "quiet");
           btnScopeCreations.className += " tng-export-toggle-btn";
           btnScopeCreations.title = "Include only pages this user created";
           const btnScopeRegular = makeBtn("Regular edits", "quiet");
@@ -8387,16 +8384,20 @@ $(function () {
             // Namespace filter — only a filter, not a setting or action, so
             // it uses a checkbox combobox (text field + checkbox dropdown)
             // rather than a native <select multiple>.
+            // Bordered section holding the filtering and sorting controls,
+            // using the same .tng-recreation-group style and form-row
+            // structure as the Export edits dialogue. It is always created,
+            // since the sort controls are needed even when the results span
+            // a single namespace; only the namespace row is conditional.
+            const filterGroupPicker = document.createElement("div");
+            filterGroupPicker.className = "tng-recreation-group";
+            pickerBody.appendChild(filterGroupPicker);
+
             let nsComboboxPicker = null;
             if (sortedNsIds.length > 1) {
-              const nsFilterEl = document.createElement("div");
-              nsFilterEl.style.cssText =
-                "display: flex; flex-wrap: wrap; gap: 6px; align-items: center; padding: 6px 0 4px;";
-              const nsFilterLbl = document.createElement("span");
-              nsFilterLbl.className = "tng-inline-label";
-              nsFilterLbl.style.marginRight = "2px";
-              nsFilterLbl.textContent = "Filter by namespace:";
-              nsFilterEl.appendChild(nsFilterLbl);
+              const { row: rowPickerNs, field: fieldPickerNs } = makeRow(
+                "Filter by namespace",
+              );
               // wgFormattedNamespaces returns an empty string for the main
               // namespace (ID 0); fall back to "Main" in that case.
               const nsItemsPicker = sortedNsIds.map(function (nsId) {
@@ -8411,9 +8412,8 @@ $(function () {
                 "Select namespaces...",
               );
               nsComboboxPicker.wrap.style.flex = "1";
-              nsComboboxPicker.wrap.style.minWidth = "160px";
-              nsFilterEl.appendChild(nsComboboxPicker.wrap);
-              pickerBody.appendChild(nsFilterEl);
+              fieldPickerNs.appendChild(nsComboboxPicker.wrap);
+              filterGroupPicker.appendChild(rowPickerNs);
             }
 
             function fmtPickerDate(ts) {
@@ -8594,35 +8594,35 @@ $(function () {
               return { sec, checkboxes, listEl, updateSelCount };
             }
 
-            // Sort controls — shown above the picker sections so they are immediately visible.
-            // Built here before the sections so the row is appended in the correct position.
-            const sortRow = document.createElement("div");
-            sortRow.style.cssText =
-              "display: flex; gap: 6px; align-items: center; padding: 6px 0;";
-            const sortLbl = document.createElement("span");
-            sortLbl.className = "tng-inline-label";
-            sortLbl.textContent = "Sort by:";
-            sortRow.appendChild(sortLbl);
+            // Sort controls — placed inside the bordered filter section
+            // above the picker sections so they are immediately visible.
+            // Uses the same aligned toggle-button group as the Export edits
+            // dialogue: the buttons share the row width equally and match
+            // the padding and font size of the other controls.
+            const { row: sortRow, field: fieldPickerSort } = makeRow("Sort by");
+            const sortBtnGroup = document.createElement("div");
+            sortBtnGroup.className = "tng-export-toggle-group";
 
             const btnSortAlpha = makeBtn("A–Z", "quiet");
-            btnSortAlpha.className += " tng-btn-sm";
+            btnSortAlpha.className += " tng-export-toggle-btn";
             btnSortAlpha.title = "Sort alphabetically by page title (A to Z)";
             const btnSortZA = makeBtn("Z–A", "quiet");
-            btnSortZA.className += " tng-btn-sm";
+            btnSortZA.className += " tng-export-toggle-btn";
             btnSortZA.title = "Sort alphabetically by page title (Z to A)";
             const btnSortOldest = makeBtn("Oldest first", "quiet");
-            btnSortOldest.className += " tng-btn-sm";
+            btnSortOldest.className += " tng-export-toggle-btn";
             btnSortOldest.title =
               "Sort by date/time, oldest edits or creations first";
             const btnSortNewest = makeBtn("Newest first", "quiet");
-            btnSortNewest.className += " tng-btn-sm";
+            btnSortNewest.className += " tng-export-toggle-btn";
             btnSortNewest.title =
               "Sort by date/time, newest edits or creations first";
-            sortRow.appendChild(btnSortAlpha);
-            sortRow.appendChild(btnSortZA);
-            sortRow.appendChild(btnSortOldest);
-            sortRow.appendChild(btnSortNewest);
-            pickerBody.appendChild(sortRow);
+            sortBtnGroup.appendChild(btnSortAlpha);
+            sortBtnGroup.appendChild(btnSortZA);
+            sortBtnGroup.appendChild(btnSortOldest);
+            sortBtnGroup.appendChild(btnSortNewest);
+            fieldPickerSort.appendChild(sortBtnGroup);
+            filterGroupPicker.appendChild(sortRow);
 
             function setSortActive(activeBtn) {
               [btnSortAlpha, btnSortZA, btnSortOldest, btnSortNewest].forEach(

@@ -1,3 +1,18 @@
+## 2.191.0
+
+### Changed
+
+* Reorganised the Select edits/pages picker so that the Filter by namespace and Sort by controls sit inside a single bordered section, using the existing `.tng-recreation-group` style, matching the Export edits dialogue.
+* Both controls now use a standard form row (`makeRow()`) with a shared label column, replacing the previous ad hoc flex rows, so they start at the same left edge with consistent spacing.
+* The Sort by buttons (A–Z, Z–A, Oldest first, Newest first) now share the row width equally and use the same padding and font size as the namespace field, via the existing `.tng-export-toggle-group` and `.tng-export-toggle-btn` classes. They no longer use `.tng-btn-sm`.
+* The "Filter by namespace" and "Sort by" labels no longer end in a colon, and use standard form-row label styling instead of `.tng-inline-label`.
+
+### Notes
+
+* This is a layout-only change. Namespace filtering, the sorting options and their behaviour, per-section selection controls, and the confirmation workflow are unchanged.
+* The bordered section is always shown, so the sort controls remain available. The Filter by namespace row is still shown only when the fetched contributions span more than one namespace.
+* No changes were made to `Tengu.css`; the classes were added in v2.190.0.
+
 ## 2.190.0
 
 ### Changed
