@@ -78,7 +78,7 @@ Two sub-modes, selectable via a dropdown:
 - **Move to user's sandbox** — moves the target page into a user's subpage (e.g. `User:[username]/[subpage name]`). Supports a "Same as page creator" option to auto-fill the username, an optional talk-page move, and an optional subpage move.
 - **Move page** — moves the target page to an arbitrary destination title, with a namespace selector. Supports moving the associated talk page, all subpages, a "Fix double redirects" option, and a configurable reason.
 
-Both sub-modes include a destination-page existence checker button (❓ / ❌ / ✔️) and a "Delete destination page if it already exists (destructive)" option. Suppressing the redirect requires the `suppressredirect` right (sysops only) and stays unticked by default even when available.
+Both sub-modes include a destination-page existence checker button (❓ / ❌ / ✔️) and a "Delete destination page if it already exists (destructive)" option. The **Move page** sub-mode also has an "Also move the pages in the category" option, available only when both the source and the destination are categories. It rewrites the category tag in each member page so that the source category is left empty. Members categorised through a template are not changed. Suppressing the redirect requires the `suppressredirect` right (sysops only) and stays unticked by default even when available.
 
 Only available in page mode.
 

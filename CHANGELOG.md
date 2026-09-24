@@ -1,3 +1,19 @@
+## 2.192.0
+
+### Added
+
+* Added an **"Also move the pages in the category"** option to the **Move page** sub-mode of the Move page section. When ticked, after the category is moved, Tengu lists the pages, subcategories, and files in the source category and rewrites the category tag in each one so that it points to the new category. This leaves the source category empty.
+* The option is only available when both the source (target field) and the destination title are in the Category namespace. Otherwise it is unticked, disabled, and its tooltip states why (source not a category, destination not a category, or neither). Its state updates automatically when the target field, the destination namespace selector, or the destination title changes.
+* Added edit summaries for these edits, in both languages, built from the actual source and destination category names.
+* Added `getCategoryNamespaceAliases()`, which fetches and caches the wiki's Category namespace aliases, following the pattern of `getFileNamespaceAliases()`.
+* Added a `recat` counter, shown in the completion summary as "pages recategorised".
+
+### Notes
+
+* Sort keys are kept (`[[Category:Old|key]]` becomes `[[Category:New|key]]`).
+* Members that reach the category through a template have no explicit tag to rewrite. They are logged as warnings and left unchanged, so the source category may not be empty afterwards. 
+* The option is not part of any package preset. All other Move page options are unchanged.
+
 ## 2.191.0
 
 ### Changed

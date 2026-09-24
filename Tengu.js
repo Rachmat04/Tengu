@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.191.0
+ * Version 2.192.0
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -1023,6 +1023,43 @@ $(function () {
           return fileNamespaceAliasesPromise;
         }
 
+        // Cache of this wiki's Category namespace aliases (e.g. "Category",
+        // "Kategori"), fetched once via siprop=namespaces|namespacealiases and
+        // reused for the rest of the session. Used to match category tags in
+        // wikitext when moving the pages of a category. Follows the same
+        // pattern as getFileNamespaceAliases(). Falls back to ["Category"]
+        // if the request fails.
+        let categoryNamespaceAliasesPromise = null;
+        function getCategoryNamespaceAliases() {
+          if (!categoryNamespaceAliasesPromise) {
+            categoryNamespaceAliasesPromise = apiGet({
+              action: "query",
+              meta: "siteinfo",
+              siprop: "namespaces|namespacealiases",
+              formatversion: 2,
+            })
+              .then(function (data) {
+                const aliases = new Set(["Category"]);
+                const namespaces = (data.query && data.query.namespaces) || {};
+                const nsInfo = namespaces["14"];
+                if (nsInfo) {
+                  if (nsInfo.name) aliases.add(nsInfo.name);
+                  if (nsInfo.canonical) aliases.add(nsInfo.canonical);
+                }
+                const nsAliases =
+                  (data.query && data.query.namespacealiases) || [];
+                nsAliases.forEach(function (a) {
+                  if (a.id === 14 && a.alias) aliases.add(a.alias);
+                });
+                return Array.from(aliases).filter(Boolean);
+              })
+              .catch(function () {
+                return ["Category"];
+              });
+          }
+          return categoryNamespaceAliasesPromise;
+        }
+
         // Loads mw.ForeignApi and returns an instance pointed at Meta-Wiki.
         function getMetaForeignApi() {
           return new Promise((resolve, reject) => {
@@ -1457,6 +1494,7 @@ $(function () {
             protect: 0,
             unlink: 0,
             redirfix: 0,
+            recat: 0,
             report: 0,
             error: 0,
           };
@@ -1491,6 +1529,7 @@ $(function () {
             add(statsObj.move, "page moved", "pages moved");
             add(statsObj.unlink, "link removed", "links removed");
             add(statsObj.redirfix, "redirect fixed", "redirects fixed");
+            add(statsObj.recat, "page recategorised", "pages recategorised");
             add(statsObj.protect, "page protected", "pages protected");
             add(statsObj.revdel, "revision hidden", "revisions hidden");
             add(statsObj.report, "report filed", "reports filed");
@@ -1815,6 +1854,164 @@ $(function () {
                 `[Move] Failed to fetch redirects pointing to${labelSuffix} "${oldTitle}": ${formatApiError(e)}`,
                 true,
               );
+            }
+          }
+
+          // Moves the members of a category to another category by rewriting
+          // the explicit category tag in each member's wikitext, so the source
+          // category is left empty. Members are collected first and edited
+          // afterwards, so the list does not change while it is being read.
+          // Members that reach the category through a template have no
+          // explicit tag to rewrite; these are logged as warnings and left
+          // unchanged.
+          async function moveCategoryMembers(sourceTitle, destTitle) {
+            let sourceObj;
+            let destObj;
+            try {
+              sourceObj = new mw.Title(sourceTitle);
+              destObj = new mw.Title(destTitle);
+            } catch (e) {
+              addLog(
+                `[Move] Skipped moving category members: could not parse "${sourceTitle}" or "${destTitle}"`,
+                "warn",
+              );
+              return;
+            }
+            if (
+              sourceObj.getNamespaceId() !== 14 ||
+              destObj.getNamespaceId() !== 14
+            ) {
+              addLog(
+                "[Move] Skipped moving category members: both the source and the destination must be categories",
+                "warn",
+              );
+              return;
+            }
+
+            const oldName = sourceObj.getMainText();
+            const newName = destObj.getMainText();
+            const destPrefixed = destObj.getPrefixedText();
+            const categorySummary =
+              (useIndonesian
+                ? `Memindahkan halaman dari [[:Kategori:${oldName}]] ke [[:Kategori:${newName}]]`
+                : `Moving pages from [[:Category:${oldName}]] to [[:Category:${newName}]]`) +
+              toolTag;
+
+            // Collect every member (pages, subcategories, and files).
+            const memberTitles = [];
+            let cmContinue;
+            do {
+              if (isAborted) return;
+              const params = {
+                action: "query",
+                list: "categorymembers",
+                cmtitle: sourceTitle,
+                cmlimit: "max",
+                cmprop: "title",
+                formatversion: 2,
+              };
+              if (cmContinue) params.cmcontinue = cmContinue;
+              try {
+                const data = await apiGet(params);
+                cmContinue = data.continue && data.continue.cmcontinue;
+                const members =
+                  (data.query && data.query.categorymembers) || [];
+                members.forEach(function (m) {
+                  memberTitles.push(m.title);
+                });
+              } catch (e) {
+                addLog(
+                  `[Move] Failed to list members of "${sourceTitle}": ${formatApiError(e)}`,
+                  true,
+                );
+                return;
+              }
+            } while (cmContinue);
+
+            if (!memberTitles.length) {
+              addLog(`[Move] No members found in "${sourceTitle}"`, "warn");
+              return;
+            }
+
+            const nsAliases = await getCategoryNamespaceAliases();
+            const nsPattern = nsAliases
+              .map(function (a) {
+                return a.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+              })
+              .join("|");
+            const escapedOld = oldName
+              .replace(/[.*+?^${}()|[\]\\]/g, "\\$&")
+              .replace(/[ _]/g, "[ _]");
+            // Matches [[Category:Old]] and [[Category:Old|sort key]]. A link
+            // such as [[:Category:Old]] is not a membership tag and is not
+            // matched. Group 1 keeps the sort key, if any.
+            const tagRe = new RegExp(
+              "\\[\\[\\s*(?:" +
+                nsPattern +
+                ")\\s*:\\s*" +
+                escapedOld +
+                "\\s*(\\|[^\\]]*)?\\]\\]",
+              "gi",
+            );
+
+            addLog(
+              `[Move] Moving ${memberTitles.length} member(s) of "${sourceTitle}" to "${destTitle}"...`,
+            );
+
+            for (const memberTitle of memberTitles) {
+              if (isAborted) break;
+              try {
+                const revData = await apiGet({
+                  action: "query",
+                  prop: "revisions",
+                  titles: memberTitle,
+                  rvprop: "content",
+                  rvslots: "main",
+                  formatversion: 2,
+                });
+                const page =
+                  revData.query &&
+                  revData.query.pages &&
+                  revData.query.pages[0];
+                const slot =
+                  page &&
+                  !page.missing &&
+                  page.revisions &&
+                  page.revisions[0] &&
+                  page.revisions[0].slots &&
+                  page.revisions[0].slots.main;
+                if (!slot) continue;
+                const wikitext = slot.content;
+                const newWikitext = wikitext.replace(
+                  tagRe,
+                  function (match, sortKey) {
+                    return "[[" + destPrefixed + (sortKey || "") + "]]";
+                  },
+                );
+                if (newWikitext === wikitext) {
+                  addLog(
+                    `[Move] No explicit category tag found in "${memberTitle}"; it may be categorised through a template`,
+                    "warn",
+                  );
+                  continue;
+                }
+                await apiPost({
+                  action: "edit",
+                  title: memberTitle,
+                  text: newWikitext,
+                  summary: categorySummary,
+                  bot: true,
+                });
+                addLog(`[Move] Moved "${memberTitle}" to "${destTitle}"`);
+                stats.recat++;
+                updateStatusDisplay();
+              } catch (e) {
+                addLog(
+                  `[Move] Failed to update "${memberTitle}": ${formatApiError(e)}`,
+                  true,
+                );
+              }
+              await new Promise((resolve) => setTimeout(resolve, THROTTLE_MS));
             }
           }
 
@@ -2765,6 +2962,16 @@ $(function () {
                     config.movePageDest,
                     "",
                   );
+                }
+
+                // Move the members of the category to the new category, once
+                // the category itself has been moved.
+                if (
+                  movePageMoveSucceeded &&
+                  config.movePageCategoryMembers &&
+                  !isAborted
+                ) {
+                  await moveCategoryMembers(targetVal, config.movePageDest);
                 }
               } else {
                 const moveParams = {
@@ -10460,6 +10667,17 @@ $(function () {
           wrapMovePageDeleteDest.title =
             "When ticked, if the destination title already has an existing page, that page is deleted immediately before the move is attempted, allowing the move to proceed. This is a destructive, irreversible-by-default action: verify the destination title carefully before enabling this option.";
 
+          const {
+            wrap: wrapMovePageCategoryMembers,
+            chk: chkMovePageCategoryMembers,
+          } = makeCheckbox("Also move the pages in the category", false);
+          const movePageCategoryMembersHelp =
+            "When ticked, the pages, subcategories, and files in the source category are moved to the new category by changing their category tag, leaving the source category empty. Members that are categorised through a template are not changed. Only available when both the source and the destination are categories.";
+          wrapMovePageCategoryMembers.title = movePageCategoryMembersHelp;
+          chkMovePageCategoryMembers.disabled = true;
+          wrapMovePageCategoryMembers.style.opacity = "0.5";
+          wrapMovePageCategoryMembers.style.cursor = "not-allowed";
+
           const checksMovePagePanel = document.createElement("div");
           checksMovePagePanel.className = "tng-checks";
           checksMovePagePanel.style.paddingLeft = "0";
@@ -10468,9 +10686,60 @@ $(function () {
           checksMovePagePanel.appendChild(wrapMovePageSubpages);
           checksMovePagePanel.appendChild(wrapMovePageFixDoubleRedirects);
           checksMovePagePanel.appendChild(wrapMovePageDeleteDest);
+          checksMovePagePanel.appendChild(wrapMovePageCategoryMembers);
           divMovePagePanel.appendChild(checksMovePagePanel);
 
           bodyMoveSandbox.appendChild(divMovePagePanel);
+
+          // Enables "Also move the pages in the category" only when both the
+          // source (the target field) and the destination title are in the
+          // Category namespace (ID 14). Otherwise the option is unticked,
+          // disabled, and its tooltip states why.
+          function updateMovePageCategoryAvailability() {
+            const source = inputTarget.value.trim();
+            const dest = buildMovePageDestTitle();
+            let sourceIsCategory = false;
+            let destIsCategory = false;
+            try {
+              sourceIsCategory =
+                !!source && new mw.Title(source).getNamespaceId() === 14;
+            } catch (e) {
+              // Title could not be parsed; treat as not a category.
+            }
+            try {
+              destIsCategory =
+                !!dest && new mw.Title(dest).getNamespaceId() === 14;
+            } catch (e) {
+              // Title could not be parsed; treat as not a category.
+            }
+            const available = sourceIsCategory && destIsCategory;
+            chkMovePageCategoryMembers.disabled = !available;
+            wrapMovePageCategoryMembers.style.opacity = available ? "" : "0.5";
+            wrapMovePageCategoryMembers.style.cursor = available
+              ? ""
+              : "not-allowed";
+            if (available) {
+              wrapMovePageCategoryMembers.title = movePageCategoryMembersHelp;
+              return;
+            }
+            chkMovePageCategoryMembers.checked = false;
+            let reason;
+            if (!sourceIsCategory && !destIsCategory) {
+              reason = "neither the source nor the destination is a category.";
+            } else if (!sourceIsCategory) {
+              reason = "the source page is not a category.";
+            } else {
+              reason = "the destination is not a category.";
+            }
+            wrapMovePageCategoryMembers.title = "Not available: " + reason;
+          }
+          [inputTarget, selMovePageNs, inputMovePageDest].forEach(
+            function (el) {
+              el.addEventListener("input", updateMovePageCategoryAvailability);
+              el.addEventListener("change", updateMovePageCategoryAvailability);
+            },
+          );
+          updateMovePageCategoryAvailability();
 
           // --- Move to user's sandbox panel ---
           const divMoveSandboxPanel = document.createElement("div");
@@ -12787,6 +13056,9 @@ $(function () {
               movePageSubpages: chkMovePageSubpages.checked,
               movePageFixDoubleRedirects: chkMovePageFixDoubleRedirects.checked,
               movePageDeleteDest: chkMovePageDeleteDest.checked,
+              movePageCategoryMembers:
+                chkMovePageCategoryMembers.checked &&
+                !chkMovePageCategoryMembers.disabled,
               moveSandboxUser: inputMoveSandboxUser.value.trim(),
               moveSandboxSubpage: inputMoveSandboxSubpage.value.trim(),
               moveSandboxDest:
