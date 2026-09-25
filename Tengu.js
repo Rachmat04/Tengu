@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.196.0
+ * Version 2.197.0
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -1534,6 +1534,7 @@ $(function () {
             unlink: 0,
             redirfix: 0,
             recat: 0,
+            uncategorize: 0,
             report: 0,
             error: 0,
           };
@@ -1569,6 +1570,11 @@ $(function () {
             add(statsObj.unlink, "link removed", "links removed");
             add(statsObj.redirfix, "redirect fixed", "redirects fixed");
             add(statsObj.recat, "page recategorised", "pages recategorised");
+            add(
+              statsObj.uncategorize,
+              "page uncategorised",
+              "pages uncategorised",
+            );
             add(statsObj.protect, "page protected", "pages protected");
             add(statsObj.revdel, "revision hidden", "revisions hidden");
             add(statsObj.report, "report filed", "reports filed");
@@ -2047,6 +2053,155 @@ $(function () {
               } catch (e) {
                 addLog(
                   `[Move] Failed to update "${memberTitle}": ${formatApiError(e)}`,
+                  true,
+                );
+              }
+              await new Promise((resolve) => setTimeout(resolve, THROTTLE_MS));
+            }
+          }
+
+          // Removes the category tag for a just-deleted category from each
+          // of its current member pages, so they do not retain a link to a
+          // category that has just been deleted. Members are collected via
+          // list=categorymembers (paginated) before any edits are made, so
+          // the list reflects membership at the time of deletion rather than
+          // changing mid-run. Only the tag matching the deleted category
+          // (including any sort key) is removed from each page; other
+          // category links are left untouched. Members categorised through a
+          // template have no explicit tag to remove and are logged as
+          // warnings, following the same pattern as moveCategoryMembers()
+          // above. Only ever called for a single (non-multi-target)
+          // Category-namespace deletion target — see
+          // updatePagedelUncategorizeAvailability().
+          async function removeDeletedCategoryFromMembers(catTitle) {
+            let catObj;
+            try {
+              catObj = new mw.Title(catTitle);
+            } catch (e) {
+              addLog(
+                `[Delete] Skipped removing category from members: could not parse "${catTitle}"`,
+                "warn",
+              );
+              return;
+            }
+            if (catObj.getNamespaceId() !== 14) return;
+
+            const catName = catObj.getMainText();
+            const memberTitles = [];
+            let cmContinue;
+            do {
+              if (isAborted) return;
+              const params = {
+                action: "query",
+                list: "categorymembers",
+                cmtitle: catTitle,
+                cmlimit: "max",
+                cmprop: "title",
+                formatversion: 2,
+              };
+              if (cmContinue) params.cmcontinue = cmContinue;
+              try {
+                const data = await apiGet(params);
+                cmContinue = data.continue && data.continue.cmcontinue;
+                const members =
+                  (data.query && data.query.categorymembers) || [];
+                members.forEach(function (m) {
+                  memberTitles.push(m.title);
+                });
+              } catch (e) {
+                addLog(
+                  `[Delete] Failed to list members of "${catTitle}": ${formatApiError(e)}`,
+                  true,
+                );
+                return;
+              }
+            } while (cmContinue);
+
+            if (!memberTitles.length) {
+              addLog(`[Delete] No member pages found in "${catTitle}"`, "warn");
+              return;
+            }
+
+            const nsAliases = await getCategoryNamespaceAliases();
+            const nsPattern = nsAliases
+              .map(function (a) {
+                return a.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+              })
+              .join("|");
+            const escapedName = catName
+              .replace(/[.*+?^${}()|[\]\\]/g, "\\$&")
+              .replace(/[ _]/g, "[ _]");
+            // Matches [[Category:Name]] and [[Category:Name|sort key]],
+            // including a trailing newline so removal does not leave a blank
+            // line behind. A link such as [[:Category:Name]] is not a
+            // membership tag and is not matched.
+            const tagRe = new RegExp(
+              "[ \\t]*\\[\\[\\s*(?:" +
+                nsPattern +
+                ")\\s*:\\s*" +
+                escapedName +
+                "\\s*(?:\\|[^\\]]*)?\\]\\]\\n?",
+              "gi",
+            );
+
+            const uncatSummary =
+              (useIndonesian
+                ? "Menghapus kategori yang telah dihapus dari halaman ini: "
+                : "Removing deleted category from this page: ") +
+              catName +
+              toolTag;
+
+            addLog(
+              `[Delete] Removing "${catTitle}" from ${memberTitles.length} member page(s)...`,
+            );
+
+            for (const memberTitle of memberTitles) {
+              if (isAborted) break;
+              try {
+                const revData = await apiGet({
+                  action: "query",
+                  prop: "revisions",
+                  titles: memberTitle,
+                  rvprop: "content",
+                  rvslots: "main",
+                  formatversion: 2,
+                });
+                const page =
+                  revData.query &&
+                  revData.query.pages &&
+                  revData.query.pages[0];
+                const slot =
+                  page &&
+                  !page.missing &&
+                  page.revisions &&
+                  page.revisions[0] &&
+                  page.revisions[0].slots &&
+                  page.revisions[0].slots.main;
+                if (!slot) continue;
+                const wikitext = slot.content;
+                const newWikitext = wikitext.replace(tagRe, "");
+                if (newWikitext === wikitext) {
+                  addLog(
+                    `[Delete] No explicit category tag found in "${memberTitle}"; it may be categorised through a template`,
+                    "warn",
+                  );
+                  continue;
+                }
+                await apiPost({
+                  action: "edit",
+                  title: memberTitle,
+                  text: newWikitext,
+                  summary: uncatSummary,
+                  bot: true,
+                });
+                addLog(
+                  `[Delete] Removed category "${catTitle}" from: "${memberTitle}"`,
+                );
+                stats.uncategorize++;
+                updateStatusDisplay();
+              } catch (e) {
+                addLog(
+                  `[Delete] Failed to remove category from "${memberTitle}": ${formatApiError(e)}`,
                   true,
                 );
               }
@@ -4169,6 +4324,15 @@ $(function () {
                     await new Promise((resolve) =>
                       setTimeout(resolve, THROTTLE_MS),
                     );
+                  }
+
+                  // Remove this category from its member pages, so they do
+                  // not retain a link to a category that has just been
+                  // deleted. Only ever true for a single (non-multi-target)
+                  // Category-namespace target — see
+                  // updatePagedelUncategorizeAvailability().
+                  if (config.massdelUncategorize && !isMultiTarget) {
+                    await removeDeletedCategoryFromMembers(title);
                   }
                 } catch (e) {
                   addLog(
@@ -8429,6 +8593,7 @@ $(function () {
               "tng-collapse-panel--open",
               chkMultiTarget.checked,
             );
+            updatePagedelUncategorizeAvailability();
           });
 
           fieldMultiTarget.style.flexDirection = "column";
@@ -10268,6 +10433,20 @@ $(function () {
           wrapPagedelUnlink.title =
             "When ticked, wikilinks pointing to each deleted page are removed from articles in the main namespace. When the deleted item is a file, references to it — including [[File:...]] embeds and <gallery> entries — are also removed. Talk pages, user pages, and other namespaces are not modified. File delinking is an experimental feature; please check the results carefully before relying on it.";
           checksPagedel.appendChild(wrapPagedelUnlink);
+
+          // 'Remove this category from its member pages' option — only
+          // available for a single (non-multi-target) deletion target that
+          // resolves to the Category namespace. Availability is re-evaluated
+          // by updatePagedelUncategorizeAvailability() whenever the target
+          // or multi-target checkbox changes.
+          const { wrap: wrapPagedelUncategorize, chk: chkPagedelUncategorize } =
+            makeCheckbox("Remove this category from its member pages", false);
+          chkPagedelUncategorize.disabled = true;
+          wrapPagedelUncategorize.style.opacity = "0.5";
+          wrapPagedelUncategorize.style.cursor = "not-allowed";
+          wrapPagedelUncategorize.title =
+            "Only available for a single deletion target in the Category namespace.";
+          checksPagedel.appendChild(wrapPagedelUncategorize);
           const { wrap: wrapNotifyDelete, chk: chkNotifyDelete } = makeCheckbox(
             "Send deletion notification to page creator's talk page",
             true,
@@ -11470,6 +11649,44 @@ $(function () {
               chkPagedelTalk.disabled = false;
               wrapPagedelTalk.style.opacity = "";
               wrapPagedelTalk.style.cursor = "";
+            }
+          }
+
+          // Evaluates whether the "Remove this category from its member
+          // pages" checkbox in the Page deletion section should be
+          // available: only when in page mode, multi-target mode is off
+          // (exactly one deletion target), and the target resolves to the
+          // Category namespace. Unticks the checkbox whenever it becomes
+          // unavailable, so a stale selection is never silently carried
+          // over to an invalid target.
+          function updatePagedelUncategorizeAvailability() {
+            const target = inputTarget.value.trim();
+            const isSingleTarget = !chkMultiTarget.checked;
+            let isCategory = false;
+            if (target) {
+              try {
+                isCategory = new mw.Title(target).getNamespaceId() === 14;
+              } catch (e) {
+                // Title could not be parsed; treat as not a category.
+              }
+            }
+            const available =
+              tenguMode === "page" && isSingleTarget && isCategory;
+            chkPagedelUncategorize.disabled = !available;
+            wrapPagedelUncategorize.style.opacity = available ? "" : "0.5";
+            wrapPagedelUncategorize.style.cursor = available
+              ? ""
+              : "not-allowed";
+            if (!available) {
+              chkPagedelUncategorize.checked = false;
+              wrapPagedelUncategorize.title = !isSingleTarget
+                ? "Only available for a single deletion target (multi-target mode is off)."
+                : tenguMode !== "page"
+                  ? "Only available in page mode."
+                  : "Only available when the target page is in the Category namespace.";
+            } else {
+              wrapPagedelUncategorize.title =
+                "When ticked, the category link for this category is removed from every page currently listed as a member, so member pages do not retain a link to a category that has been deleted.";
             }
           }
 
@@ -13329,6 +13546,9 @@ $(function () {
               massdelRedirects: chkPagedelRedirects.checked,
               massdelSubpages: chkPagedelSubpages.checked,
               massdelUnlink: chkPagedelUnlink.checked,
+              massdelUncategorize:
+                chkPagedelUncategorize.checked &&
+                !chkPagedelUncategorize.disabled,
               massdelProtectRecreation: chkPagedelProtectRecreation.checked,
               massdelProtectRecreationLevel:
                 selPagedelProtectRecreationLevel.value,
@@ -14950,6 +15170,7 @@ $(function () {
             }
             // Re-evaluate talk page deletion availability (handles both modes internally).
             updatePagedelTalkAvailability();
+            updatePagedelUncategorizeAvailability();
             updateUploadAvailability();
             updateSectionStatus();
           });

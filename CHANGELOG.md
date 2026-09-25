@@ -1,3 +1,17 @@
+## 2.197.0
+
+### Added
+
+* Added a **"Remove this category from its member pages"** option to the Page deletion section. Only available when there is a single deletion target (multi-target mode off) and that target is in the Category namespace. When ticked, after the category page is deleted, Tengu fetches the category's current members via `list=categorymembers` (paginated) and removes the matching `[[Category:Name]]` (or `[[Category:Name|sort key]]`) tag from each one, so member pages do not retain a link to a category that no longer exists.
+* Added `removeDeletedCategoryFromMembers()`, following the same member-fetching pattern already used by `moveCategoryMembers()` (the Move page section's "Also move the pages in the category" option), but removing the matched tag outright instead of rewriting it to a new category.
+* Added an `uncategorize` counter to the progress dialogue's operation statistics, shown in the completion summary as "pages uncategorised".
+
+### Notes
+
+* Pages categorised through a template have no explicit tag to remove; these are logged as warnings and left unchanged.
+* The option is disabled automatically, and unticked if it was already ticked, whenever the target changes to something other than a single Category-namespace page — multi-target mode is enabled, the target is not a category, or Tengu is not in page mode — matching the reversible-availability pattern already used elsewhere in the Page deletion section (e.g. "Also delete the talk page").
+* Does not affect any other Page deletion option or the existing deletion workflow.
+
 ## 2.196.0
 
 ### Fixed
