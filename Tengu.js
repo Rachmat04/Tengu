@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.195.0
+ * Version 2.196.0
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -2330,6 +2330,7 @@ $(function () {
               }
 
               if (proceedWithBlock) {
+                let blockSucceededThisTarget = false;
                 const data = {
                   action: "block",
                   user: targetVal,
@@ -2369,6 +2370,7 @@ $(function () {
                   await apiPost(data);
                   addLog(`[Block] Successfully blocked user "${targetVal}"`);
                   stats.block++;
+                  blockSucceededThisTarget = true;
                 } catch (e) {
                   addLog(
                     `[Block] Failed to block "${targetVal}": ${formatApiError(e)}`,
@@ -2384,13 +2386,21 @@ $(function () {
                 // would misparse the "/" in the range as a subpage separator,
                 // and an IPv6 address's ":" characters risk being misread as
                 // a namespace prefix, producing an incorrect title either way.
-                if (targetIsRange && config.notifyBlock && stats.block > 0) {
+                if (
+                  targetIsRange &&
+                  config.notifyBlock &&
+                  blockSucceededThisTarget
+                ) {
                   addLog(
                     "[Notify] Skipped block notification: talk pages are not applicable to IP range targets (IPv4 or IPv6).",
                     "warn",
                   );
                 }
-                if (stats.block > 0 && config.notifyBlock && !targetIsRange) {
+                if (
+                  blockSucceededThisTarget &&
+                  config.notifyBlock &&
+                  !targetIsRange
+                ) {
                   const talkTitle = new mw.Title(
                     targetVal,
                     3,

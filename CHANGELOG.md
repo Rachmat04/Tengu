@@ -1,3 +1,13 @@
+## 2.196.0
+
+### Fixed
+
+* Fixed block notifications being sent to every subsequent target in a multi-target run once any earlier target's block succeeded, even when the block for that specific target had failed. The gating check used the run-wide `stats.block` counter (which is never reset per target) instead of tracking whether the current target's block actually succeeded, so a single successful block anywhere in the run could cause spurious notifications for later, failed blocks. A per-target `blockSucceededThisTarget` flag is now used instead.
+
+### Notes
+
+* This affects only multi-target block runs where at least one target succeeds and a later target fails. Single-target runs were unaffected, since `stats.block > 0` and "this target's block succeeded" were equivalent in that case.
+
 ## 2.195.0
 
 ### Added
