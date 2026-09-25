@@ -1,3 +1,16 @@
+## 2.193.0
+
+### Added
+
+* Added **Gender** and **Last edit** rows to the **Account info** section of the **Get info** panel (user mode). Gender is sourced from the existing local rights request (`usprop=gender`); last edit is a separate `list=usercontribs` request showing a relative time (e.g. "3 days ago") linked to the target's contributions page, alongside the absolute UTC timestamp.
+* Adapted from `User:PleaseStand/userinfo.js`, which displayed this information (along with account age and edit count, both of which Tengu's Account info section already showed) directly on user and user talk pages.
+
+### Notes
+
+* Gender is not shown for IP addresses, which have no registered gender preference.
+* If no edits are found for the target, the Last edit row reads "No edits found." instead of a blank or misleading value.
+* This is a display-only addition to the existing Get info panel; no other behaviour was changed.
+
 ## 2.192.0
 
 ### Added

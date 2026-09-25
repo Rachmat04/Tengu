@@ -268,6 +268,7 @@ This script is designed for MediaWiki user scripts and can be installed locally 
 - Original script: https://meta.wikimedia.org/wiki/User:WhitePhosphorus/all-in-one
 - Some adaptations from https://github.com/xiplus-mediawiki-programs/twinkle-global
 - Diff page "more information" feature (revision ID, size, ORES score) adapted from `User:BrandonXLF/MoreDiffInfo.js` by `User:BrandonXLF`
+- User info feature (gender, account age, edit count, last edit) adapted from `User:PleaseStand/userinfo.js`
 
 ---
 

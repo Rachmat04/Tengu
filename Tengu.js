@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.192.0
+ * Version 2.193.0
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -5507,6 +5507,41 @@ $(function () {
           registrationRow.appendChild(registrationBody);
           accountInfoCardBody.appendChild(registrationRow);
 
+          // Last edit row — shows how long ago the target last edited,
+          // with a link to their contributions. Adapted from
+          // User:PleaseStand/userinfo.js, which displayed this alongside
+          // account age and edit count.
+          const lastEditRow = document.createElement("div");
+          lastEditRow.className = "tng-user-rights-row";
+          const lastEditScope = document.createElement("div");
+          lastEditScope.className = "tng-user-rights-scope";
+          lastEditScope.textContent = "Last edit";
+          lastEditRow.appendChild(lastEditScope);
+          const lastEditBody = document.createElement("div");
+          lastEditBody.className = isTargetIP
+            ? "tng-info-loading"
+            : "tng-info-loading";
+          lastEditBody.textContent = "Loading...";
+          lastEditRow.appendChild(lastEditBody);
+          accountInfoCardBody.appendChild(lastEditRow);
+
+          // Gender row — registered accounts only, matching MediaWiki's own
+          // gender preference field. Not shown for IP addresses.
+          let genderBody = null;
+          if (!isTargetIP) {
+            const genderRow = document.createElement("div");
+            genderRow.className = "tng-user-rights-row";
+            const genderScope = document.createElement("div");
+            genderScope.className = "tng-user-rights-scope";
+            genderScope.textContent = "Gender";
+            genderRow.appendChild(genderScope);
+            genderBody = document.createElement("div");
+            genderBody.className = "tng-info-loading";
+            genderBody.textContent = "Loading...";
+            genderRow.appendChild(genderBody);
+            accountInfoCardBody.appendChild(genderRow);
+          }
+
           // Previous usernames row — registered accounts only. Not shown
           // for IP addresses or temporary accounts, since neither can hold
           // a rename history.
@@ -5652,16 +5687,16 @@ $(function () {
             }
           }
 
-          // Local rights request. Also requests editcount and registration
-          // date, which are exposed via the same usprop parameter, so no
-          // separate API call is needed for the account info row.
+          // Local rights request. Also requests editcount, registration
+          // date, and gender, which are exposed via the same usprop
+          // parameter, so no separate API call is needed for those rows.
           (async function () {
             try {
               const data = await apiGet({
                 action: "query",
                 list: "users",
                 ususers: username,
-                usprop: "groups|rights|editcount|registration",
+                usprop: "groups|rights|editcount|registration|gender",
               });
               const userEntry =
                 data.query && data.query.users && data.query.users[0];
@@ -5705,6 +5740,16 @@ $(function () {
                       ? " (" + fmtRelative(userEntry.registration) + ")"
                       : "")
                   : "Unknown (may predate registration logging)";
+
+                if (genderBody) {
+                  genderBody.className = "tng-user-rights-list";
+                  const genderSymbols = {
+                    male: "👦 Male",
+                    female: "👧 Female",
+                  };
+                  genderBody.textContent =
+                    genderSymbols[userEntry.gender] || "Unspecified";
+                }
               }
             } catch (err) {
               setError(
@@ -5715,6 +5760,50 @@ $(function () {
               localEditsBody.textContent = "Failed to load.";
               registrationBody.className = "tng-info-empty";
               registrationBody.textContent = "Failed to load.";
+              if (genderBody) {
+                genderBody.className = "tng-info-empty";
+                genderBody.textContent = "Failed to load.";
+              }
+            }
+          })();
+
+          // Last edit — a separate list=usercontribs request, since this is
+          // not exposed via list=users. Adapted from
+          // User:PleaseStand/userinfo.js.
+          (async function () {
+            try {
+              const data = await apiGet({
+                action: "query",
+                list: "usercontribs",
+                ucuser: username,
+                uclimit: 1,
+                ucprop: "timestamp|title",
+              });
+              const contribs = (data.query && data.query.usercontribs) || [];
+              if (!contribs.length) {
+                lastEditBody.className = "tng-info-empty";
+                lastEditBody.textContent = "No edits found.";
+                return;
+              }
+              const c = contribs[0];
+              lastEditBody.className = "tng-user-rights-list";
+              const relTime = fmtRelative(c.timestamp);
+              const contribsUrl = mw.util.getUrl(
+                "Special:Contributions/" + username,
+              );
+              const link = document.createElement("a");
+              link.href = contribsUrl;
+              link.target = "_blank";
+              link.rel = "noopener noreferrer";
+              link.textContent = relTime ? relTime + " ago" : "Unknown";
+              lastEditBody.textContent = "";
+              lastEditBody.appendChild(link);
+              lastEditBody.appendChild(
+                document.createTextNode(" (" + fmtTimestamp(c.timestamp) + ")"),
+              );
+            } catch (err) {
+              lastEditBody.className = "tng-info-empty";
+              lastEditBody.textContent = "Failed to load.";
             }
           })();
 
