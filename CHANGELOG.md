@@ -1,3 +1,10 @@
+## 2.193.1
+
+### Fixed
+
+* Fixed the **Last edit** row in the **Get info** panel showing a duplicated "ago" (e.g. "2 minutes ago ago"). `fmtRelative()` already returns the trailing "ago" wording, so the extra one appended when building this row has been removed.
+* Removed the link to the target's contributions page from this row, since it duplicated a link already available in the panel's own header actions; the row now shows plain text.
+
 ## 2.193.0
 
 ### Added
