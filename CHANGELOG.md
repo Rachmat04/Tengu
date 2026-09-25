@@ -1,3 +1,15 @@
+## 2.197.1
+
+### Fixed
+
+* Fixed the **"Remove this category from its member pages"** option (Page deletion section) detecting the Category namespace using a hardcoded assumption instead of the current wiki's actual namespace configuration. Availability is now determined by resolving the target's namespace ID (via `mw.Title`, which already parses localised namespace names and aliases) against the current wiki's actual Category namespace ID, fetched live from `siprop=namespaces` (falling back to 14 if this cannot be determined) via a new `getCategoryNamespaceId()` helper, rather than comparing against the hardcoded literal `14`.
+
+### Notes
+
+* This affects only the option's enabled/disabled state (`updatePagedelUncategorizeAvailability()`). The underlying member-fetching and category-tag-removal logic (`removeDeletedCategoryFromMembers()`), which already resolves namespace aliases via `getCategoryNamespaceAliases()`, is unchanged.
+* The single-target restriction (unavailable when "Process multiple targets" is ticked) and the page-mode-only restriction are both preserved unchanged.
+* The namespace check is now asynchronous, since it fetches the wiki's namespace ID; a token guard discards a stale result if the target field changes again before the check resolves.
+
 ## 2.197.0
 
 ### Added

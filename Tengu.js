@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.197.0
+ * Version 2.197.1
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -1068,6 +1068,34 @@ $(function () {
         // wikitext when moving the pages of a category. Follows the same
         // pattern as getFileNamespaceAliases(). Falls back to ["Category"]
         // if the request fails.
+        // Cache of this wiki's actual Category namespace ID, resolved from
+        // live siteinfo data rather than assumed to be the conventional 14,
+        // so category detection is driven by the current wiki's own
+        // MediaWiki namespace configuration. Falls back to 14 (the
+        // MediaWiki-wide default) if this cannot be determined.
+        let categoryNamespaceIdPromise = null;
+        function getCategoryNamespaceId() {
+          if (!categoryNamespaceIdPromise) {
+            categoryNamespaceIdPromise = apiGet({
+              action: "query",
+              meta: "siteinfo",
+              siprop: "namespaces",
+              formatversion: 2,
+            })
+              .then(function (data) {
+                const namespaces = (data.query && data.query.namespaces) || {};
+                const match = Object.keys(namespaces).find(function (key) {
+                  return namespaces[key].canonical === "Category";
+                });
+                return match ? namespaces[match].id : 14;
+              })
+              .catch(function () {
+                return 14;
+              });
+          }
+          return categoryNamespaceIdPromise;
+        }
+
         let categoryNamespaceAliasesPromise = null;
         function getCategoryNamespaceAliases() {
           if (!categoryNamespaceAliasesPromise) {
@@ -11659,17 +11687,39 @@ $(function () {
           // Category namespace. Unticks the checkbox whenever it becomes
           // unavailable, so a stale selection is never silently carried
           // over to an invalid target.
-          function updatePagedelUncategorizeAvailability() {
+          // Tracks the async result of the current target's namespace check,
+          // so a slow-resolving check for an earlier target cannot overwrite
+          // the UI state set by a faster-resolving check for a later one.
+          let uncategorizeCheckToken = 0;
+          async function updatePagedelUncategorizeAvailability() {
             const target = inputTarget.value.trim();
             const isSingleTarget = !chkMultiTarget.checked;
+            const myToken = ++uncategorizeCheckToken;
+
             let isCategory = false;
             if (target) {
               try {
-                isCategory = new mw.Title(target).getNamespaceId() === 14;
+                // Resolves the target's namespace ID via mw.Title, which
+                // parses the prefix against this wiki's own configured
+                // namespace names and aliases (wgNamespaceIds) — so a
+                // localised Category-namespace name (not just the English
+                // "Category:" prefix) is recognised correctly. The
+                // namespace ID being compared against is itself fetched
+                // from the current wiki's live siteinfo data, rather than
+                // assumed to be the conventional 14.
+                const targetNsId = new mw.Title(target).getNamespaceId();
+                const categoryNsId = await getCategoryNamespaceId();
+                isCategory = targetNsId === categoryNsId;
               } catch (e) {
                 // Title could not be parsed; treat as not a category.
               }
             }
+
+            // If the target field changed while the namespace ID lookup was
+            // in flight, this result is stale; let the newer check's result
+            // win instead.
+            if (myToken !== uncategorizeCheckToken) return;
+
             const available =
               tenguMode === "page" && isSingleTarget && isCategory;
             chkPagedelUncategorize.disabled = !available;
