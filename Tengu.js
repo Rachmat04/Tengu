@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.193.2
+ * Version 2.194.0
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -137,6 +137,16 @@ $(function () {
           overlayStack.push(overlay);
 
           // Register the Escape key listener once, the first time an overlay is created.
+          // Escape closes only the topmost overlay/dialogue, same as before.
+          //
+          // A separate fail-safe shortcut, Ctrl+Alt+Shift+Backspace, is also
+          // registered here. Unlike Escape, it force-closes every open Tengu
+          // overlay in one step, regardless of which dialogue (if any) is
+          // currently focused, and does not rely on any section-specific
+          // handler being responsive. This is intended only as an emergency
+          // exit if Tengu becomes unresponsive; it is not part of normal
+          // operation. The key combination was chosen because it is unlikely
+          // to collide with MediaWiki or browser shortcuts.
           if (!escListenerBound) {
             escListenerBound = true;
             document.addEventListener(
@@ -148,6 +158,32 @@ $(function () {
                   const top = overlayStack[overlayStack.length - 1];
                   if (top) {
                     top.closeHandler();
+                  }
+                  return;
+                }
+                // Fail-safe force-close: Ctrl+Alt+Shift+Backspace.
+                if (
+                  e.ctrlKey &&
+                  e.altKey &&
+                  e.shiftKey &&
+                  (e.key === "Backspace" || e.keyCode === 8)
+                ) {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  // Force-close every open overlay, topmost first, without
+                  // relying on each overlay's own closeHandler chain being
+                  // in a working state — remove directly from the DOM and
+                  // clear the stack.
+                  while (overlayStack.length) {
+                    const ov = overlayStack.pop();
+                    try {
+                      if (ov.closeHandler) ov.closeHandler();
+                      else ov.remove();
+                    } catch (err) {
+                      // If closeHandler itself is broken, fall back to a
+                      // direct DOM removal so the fail-safe still works.
+                      ov.remove();
+                    }
                   }
                 }
               },
@@ -217,9 +253,12 @@ $(function () {
           dialog.appendChild(body);
           dialog.appendChild(footer);
           overlay.appendChild(dialog);
-          overlay.addEventListener("click", (e) => {
-            if (e.target === overlay) overlay.closeHandler();
-          });
+          // Intentionally no click-outside-to-close handler: clicking
+          // anywhere outside the dialogue must not close or terminate
+          // Tengu, so in-progress configuration or a running task is never
+          // lost to an accidental outside click. Close via the ✕ button,
+          // Escape, or (if unresponsive) the Ctrl+Alt+Shift+Backspace
+          // fail-safe registered in createOverlay().
           return { overlay, dialog, body, footer };
         }
 

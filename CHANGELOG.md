@@ -1,3 +1,18 @@
+## 2.194.0
+
+### Changed
+
+* Tengu dialogues no longer close when the user clicks outside them. Previously, any click landing on the overlay background — easy to trigger by accident while configuring a task or during a running operation — immediately closed the dialogue and discarded its state. Closing is now only possible via the ✕ button or Escape, matching the documented normal-close behaviour.
+
+### Added
+
+* Added a fail-safe force-close shortcut, **Ctrl+Alt+Shift+Backspace**, registered alongside the existing Escape listener in `createOverlay()` (Section 02). Unlike Escape, which closes only the topmost dialogue via its own `closeHandler()`, the fail-safe force-closes every open Tengu overlay in one step and does not depend on any dialogue's own handler being responsive — each overlay is removed directly if its `closeHandler()` cannot be called. Intended only as an emergency exit if Tengu becomes unresponsive; not part of normal use.
+
+### Notes
+
+* No changes were made to how overlays are created, stacked, or themed, or to any section's form state, progress logging, or operation execution. Losing focus (blur) or clicking elsewhere on the page has no effect on an open Tengu dialogue or a running task; all selections, form values, progress information, and logs are preserved until the dialogue is closed intentionally.
+* This affects every Tengu dialogue (the main window, confirmation, progress, Get info, Export edits, pickers, and the inline quick-action dialogue), since all of them are built through the shared `createDialog()`/`createOverlay()` helpers.
+
 ## 2.193.2
 
 ### Changed
