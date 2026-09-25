@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.194.0
+ * Version 2.195.0
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -10618,15 +10618,14 @@ $(function () {
           const { row: rowMoveMode, field: fieldMoveMode } =
             makeRow("Move mode");
           const selMoveMode = makeSelect([
-            { value: "sandbox", label: "Move to user's sandbox" },
             { value: "movepage", label: "Move page" },
+            { value: "sandbox", label: "Move to user's sandbox" },
           ]);
           fieldMoveMode.appendChild(wrapSelect(selMoveMode));
           bodyMoveSandbox.appendChild(rowMoveMode);
 
           // --- Move page panel ---
           const divMovePagePanel = document.createElement("div");
-          divMovePagePanel.className = "tng-hidden";
           divMovePagePanel.style.cssText =
             "display:flex;flex-direction:column;gap:10px;";
 
@@ -10711,6 +10710,179 @@ $(function () {
             const nsName = selectedOpt ? selectedOpt.textContent : "";
             return nsName + ":" + pageName;
           }
+
+          // --- Revert last page move ---
+          // Looks up the most recent move that resulted in the current
+          // target's title, and pre-fills the destination (and a matching
+          // reason) to move the page back to its previous title. This is a
+          // convenience for reverting an undiscussed or vandalism move; it
+          // does not bypass MediaWiki permissions — the move below still
+          // only succeeds if the current user holds the required rights and
+          // the API allows it.
+          const { row: rowMovePageRevert, field: fieldMovePageRevert } =
+            makeRow("Revert a move");
+          const btnMovePageRevert = makeBtn(
+            "↩️ Use last move (revert)",
+            "quiet",
+          );
+          btnMovePageRevert.className += " tng-btn-sm";
+          btnMovePageRevert.title =
+            "Finds the most recent move that resulted in this page's current title, and pre-fills the destination and reason to move it back — for reverting a move made without discussion or consensus.";
+          fieldMovePageRevert.appendChild(btnMovePageRevert);
+          const divMovePageRevertStatus = document.createElement("div");
+          divMovePageRevertStatus.className = "tng-help";
+          fieldMovePageRevert.appendChild(divMovePageRevertStatus);
+          divMovePagePanel.appendChild(rowMovePageRevert);
+
+          btnMovePageRevert.addEventListener("click", async function () {
+            const target = inputTarget.value.trim();
+            if (!target) {
+              showNotification(
+                fieldTarget,
+                "Please enter a target page title first.",
+              );
+              inputTarget.focus();
+              return;
+            }
+            btnMovePageRevert.disabled = true;
+            divMovePageRevertStatus.textContent =
+              "Looking up the page's move history...";
+            try {
+              // Candidate previous titles: the target itself, and any
+              // redirects currently pointing to it (typically left behind
+              // by the move), mirroring the approach already used by the
+              // Move log section of getPageInfo().
+              const titlesToCheck = [target];
+              try {
+                const blData = await apiGet({
+                  action: "query",
+                  list: "backlinks",
+                  bltitle: target,
+                  blfilterredir: "redirects",
+                  bllimit: "max",
+                  formatversion: 2,
+                });
+                const redirectTitles = (
+                  (blData.query && blData.query.backlinks) ||
+                  []
+                ).map(function (b) {
+                  return b.title;
+                });
+                redirectTitles.forEach(function (t) {
+                  if (!titlesToCheck.includes(t)) titlesToCheck.push(t);
+                });
+              } catch (e) {
+                // Fall back to checking only the target's own move log.
+              }
+
+              let entries = [];
+              for (const t of titlesToCheck) {
+                try {
+                  const data = await apiGet({
+                    action: "query",
+                    list: "logevents",
+                    letype: "move",
+                    letitle: t,
+                    lelimit: 10,
+                    leprop: "title|timestamp|details",
+                    formatversion: 2,
+                  });
+                  entries = entries.concat(
+                    (data.query && data.query.logevents) || [],
+                  );
+                } catch (e) {
+                  // Skip this candidate title on failure.
+                }
+              }
+
+              // Only entries whose recorded destination matches the
+              // current target are actual moves to this page's title.
+              entries = entries.filter(function (e) {
+                return (
+                  e.params &&
+                  e.params.target_title === target &&
+                  e.title &&
+                  e.title !== target
+                );
+              });
+              entries.sort(function (a, b) {
+                return (b.timestamp || "").localeCompare(a.timestamp || "");
+              });
+
+              if (!entries.length) {
+                divMovePageRevertStatus.textContent = "";
+                showNotification(
+                  fieldMovePageDest,
+                  "No previous move to this title was found.",
+                );
+                return;
+              }
+
+              const lastMove = entries[0];
+              const previousTitle = lastMove.title;
+
+              try {
+                const prevTitleObj = new mw.Title(previousTitle);
+                selMovePageNs.value = String(prevTitleObj.getNamespaceId());
+                inputMovePageDest.value = prevTitleObj
+                  .getMain()
+                  .replace(/_/g, " ");
+              } catch (e) {
+                inputMovePageDest.value = previousTitle;
+              }
+              inputMovePageDest.dispatchEvent(new Event("input"));
+
+              // Pre-select the existing "revert undiscussed move" reason,
+              // which already exists in both languages in MOVE_REASONS.
+              const revertReasonValue = useIndonesian
+                ? "Batalkan pemindahan halaman yang dilakukan tanpa pembahasan atau konsensus yang diperlukan"
+                : "Revert a page move made without the required discussion or consensus";
+              let matchedRevertReason = false;
+              for (const opt of selMovePageReason.options) {
+                if (opt.value === revertReasonValue) {
+                  matchedRevertReason = true;
+                  break;
+                }
+              }
+              if (matchedRevertReason) {
+                selMovePageReason.value = revertReasonValue;
+                inputMovePageReason.value = "";
+              } else {
+                selMovePageReason.selectedIndex = 0;
+                inputMovePageReason.value = useIndonesian
+                  ? "Batalkan pemindahan halaman yang dilakukan tanpa pembahasan atau konsensus yang diperlukan"
+                  : "Revert a page move made without the required discussion or consensus";
+              }
+
+              // Enable the section and switch to the Move page sub-mode so
+              // the pre-filled destination is ready to use immediately.
+              if (!chkMoveSandbox.checked) {
+                chkMoveSandbox.checked = true;
+                chkMoveSandbox.dispatchEvent(new Event("change"));
+              }
+              if (selMoveMode.value !== "movepage") {
+                selMoveMode.value = "movepage";
+                selMoveMode.dispatchEvent(new Event("change"));
+              }
+
+              divMovePageRevertStatus.textContent =
+                "Filled in from the move recorded on " +
+                (lastMove.timestamp
+                  ? new Date(lastMove.timestamp)
+                      .toUTCString()
+                      .replace("GMT", "UTC")
+                  : "an earlier date") +
+                ".";
+            } catch (e) {
+              divMovePageRevertStatus.textContent = "";
+              showNotification(
+                fieldMovePageDest,
+                "Could not look up the previous move: " + formatApiError(e),
+              );
+            } finally {
+              btnMovePageRevert.disabled = false;
+            }
+          });
 
           const { row: rowMovePageReason, field: fieldMovePageReason } =
             makeRow("Reason");
@@ -10861,6 +11033,7 @@ $(function () {
 
           // --- Move to user's sandbox panel ---
           const divMoveSandboxPanel = document.createElement("div");
+          divMoveSandboxPanel.className = "tng-hidden";
           divMoveSandboxPanel.style.cssText =
             "display:flex;flex-direction:column;gap:10px;";
 

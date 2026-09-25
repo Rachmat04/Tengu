@@ -1,3 +1,18 @@
+## 2.195.0
+
+### Added
+
+* Added a **"↩️ Use last move (revert)"** button to the Move page sub-mode of the Move page section. It searches the page's move log (including any redirects left behind by the move) for the most recent move that resulted in the current target's title, then pre-fills the destination namespace/title with the previous title and selects the existing "Revert a page move made without the required discussion or consensus" reason (English and Indonesian). It also ticks the section's enable checkbox and switches to the Move page sub-mode automatically.
+
+### Changed
+
+* **Move page** is now the default and primary sub-mode of the Move page section, shown first in the **Move mode** dropdown and visible by default. **Move to user's sandbox** remains fully available as the secondary sub-mode, selectable from the same dropdown, with all existing functionality and settings unchanged.
+
+### Notes
+
+* The revert button only pre-fills the move form; it does not bypass MediaWiki permissions or restrictions — the move still only succeeds if the current user holds the required rights and the `action=move` API call is accepted.
+* If no matching prior move is found (e.g. the page has never been moved to its current title, or the log entry cannot be resolved), the destination fields are left unchanged and a message is shown instead.
+ 
 ## 2.194.0
 
 ### Changed
