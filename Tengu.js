@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.193.1
+ * Version 2.193.2
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -5789,7 +5789,8 @@ $(function () {
               lastEditBody.className = "tng-user-rights-list";
               const relTime = fmtRelative(c.timestamp);
               lastEditBody.textContent =
-                (relTime || "Unknown") + " (" + fmtTimestamp(c.timestamp) + ")";
+                fmtTimestamp(c.timestamp) +
+                (relTime ? " (" + relTime + ")" : "");
             } catch (err) {
               lastEditBody.className = "tng-info-empty";
               lastEditBody.textContent = "Failed to load.";

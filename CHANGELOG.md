@@ -1,3 +1,9 @@
+## 2.193.2
+
+### Changed
+
+* Reordered the **Last edit** row in the **Get info** panel to show the absolute UTC timestamp first, followed by the relative time in parentheses (e.g. "Fri, 25 Sep 2026 01:42:53 UTC (1 minute ago)"), matching the formatting already used elsewhere in this panel (Registration date, block/protection log entries).
+
 ## 2.193.1
 
 ### Fixed
