@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.200.0
+ * Version 2.201.0
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -3223,9 +3223,15 @@ $(function () {
                       .getTalkPage()
                       .getPrefixedText();
                     const talkExists = await pageExists(movePageTalkTitle);
+                    const movePageReasonNotice =
+                      config.movePageReason && config.movePageReason.trim()
+                        ? config.movePageReason
+                        : useIndonesian
+                          ? "(tidak ada alasan diberikan)"
+                          : "(no reason given)";
                     const notice = useIndonesian
-                      ? `== Pemberitahuan pemindahan halaman ==\nHalaman "${targetVal}" telah dipindahkan ke "${config.movePageDest}".\n\nPemberitahuan ini dikirimkan secara otomatis. Silakan sampaikan pertanyaan atau keberatan ke halaman pembicaraan saya. ~~~~`
-                      : `== Page move notice ==\nThe page "${targetVal}" has been moved to "${config.movePageDest}".\n\nThis notification was posted automatically. Please direct any questions or concerns to my user talk page. ~~~~`;
+                      ? `== Pemberitahuan pemindahan halaman ==\nHalaman "${targetVal}" telah dipindahkan ke "${config.movePageDest}" dengan alasan berikut: ${movePageReasonNotice}.\n\nPemberitahuan ini dikirimkan secara otomatis. Silakan sampaikan pertanyaan atau keberatan ke halaman pembicaraan saya. ~~~~`
+                      : `== Page move notice ==\nThe page "${targetVal}" has been moved to "${config.movePageDest}" due to the following reason: ${movePageReasonNotice}.\n\nThis notification was posted automatically. Please direct any questions or concerns to my user talk page. ~~~~`;
                     await apiPost({
                       action: "edit",
                       title: movePageTalkTitle,
@@ -3545,9 +3551,16 @@ $(function () {
                       3,
                     ).getPrefixedText();
                     const talkExists = await pageExists(sandboxUserTalkTitle);
+                    const moveSandboxReasonNotice =
+                      config.moveSandboxReason &&
+                      config.moveSandboxReason.trim()
+                        ? config.moveSandboxReason
+                        : useIndonesian
+                          ? "(tidak ada alasan diberikan)"
+                          : "(no reason given)";
                     const notice = useIndonesian
-                      ? `== Pemberitahuan pemindahan halaman ==\nHalo ${config.moveSandboxUser},\n\nHalaman "${targetVal}" telah dipindahkan ke bak pasir Anda di "${config.moveSandboxDest}".\n\nPemberitahuan ini dikirimkan secara otomatis. Silakan sampaikan pertanyaan atau keberatan ke halaman pembicaraan saya. ~~~~`
-                      : `== Page move notice ==\nDear ${config.moveSandboxUser},\n\nThe page "${targetVal}" has been moved to your sandbox at "${config.moveSandboxDest}".\n\nThis notification was posted automatically. Please direct any questions or concerns to my user talk page. ~~~~`;
+                      ? `== Pemberitahuan pemindahan halaman ==\nHalo ${config.moveSandboxUser},\n\nHalaman "${targetVal}" telah dipindahkan ke bak pasir Anda di "${config.moveSandboxDest}" dengan alasan berikut: ${moveSandboxReasonNotice}.\n\nPemberitahuan ini dikirimkan secara otomatis. Silakan sampaikan pertanyaan atau keberatan ke halaman pembicaraan saya. ~~~~`
+                      : `== Page move notice ==\nDear ${config.moveSandboxUser},\n\nThe page "${targetVal}" has been moved to your sandbox at "${config.moveSandboxDest}" due to the following reason: ${moveSandboxReasonNotice}.\n\nThis notification was posted automatically. Please direct any questions or concerns to my user talk page. ~~~~`;
                     await apiPost({
                       action: "edit",
                       title: sandboxUserTalkTitle,
@@ -8762,6 +8775,7 @@ $(function () {
               chkMultiTarget.checked,
             );
             updatePagedelUncategorizeAvailability();
+            applyMoveMultiTargetLock(chkMultiTarget.checked);
           });
 
           fieldMultiTarget.style.flexDirection = "column";
@@ -10985,22 +10999,6 @@ $(function () {
           fieldMoveMode.appendChild(wrapSelect(selMoveMode));
           bodyMoveSandbox.appendChild(rowMoveMode);
 
-          // Notification option — shared by both Move page sub-modes.
-          // Ticked by default every time the dialogue is opened. In Move
-          // page sub-mode, the notification is posted to the moved page's
-          // own talk page; in Move to user's sandbox sub-mode, it is posted
-          // to the destination user's talk page instead. Only sent once the
-          // relevant move has actually succeeded.
-          const { wrap: wrapNotifyMovePage, chk: chkNotifyMovePage } =
-            makeCheckbox("Send move notification to talk page", true);
-          wrapNotifyMovePage.title =
-            "When ticked, a notification is posted after a successful move: to the moved page's own talk page in Move page sub-mode, or to the destination user's talk page in Move to user's sandbox sub-mode. Not sent if the move fails.";
-          const checksMoveNotify = document.createElement("div");
-          checksMoveNotify.className = "tng-checks";
-          checksMoveNotify.style.paddingLeft = "0";
-          checksMoveNotify.appendChild(wrapNotifyMovePage);
-          bodyMoveSandbox.appendChild(checksMoveNotify);
-
           // --- Move page panel ---
           const divMovePagePanel = document.createElement("div");
           divMovePagePanel.style.cssText =
@@ -11601,6 +11599,76 @@ $(function () {
           divMoveSandboxPanel.appendChild(checksMoveSandbox);
 
           bodyMoveSandbox.appendChild(divMoveSandboxPanel);
+
+          // Notification option — shared by both Move page sub-modes.
+          // Placed at the bottom of the section, alongside the other move
+          // options, since it applies once the relevant move (whichever
+          // sub-mode is active) has actually succeeded. Ticked by default
+          // every time the dialogue is opened. In Move page sub-mode, the
+          // notification is posted to the moved page's own talk page; in
+          // Move to user's sandbox sub-mode, it is posted to the
+          // destination user's talk page instead.
+          const { wrap: wrapNotifyMovePage, chk: chkNotifyMovePage } =
+            makeCheckbox("Send move notification to talk page", true);
+          wrapNotifyMovePage.title =
+            "When ticked, a notification is posted after a successful move: to the moved page's own talk page in Move page sub-mode, or to the destination user's talk page in Move to user's sandbox sub-mode. Not sent if the move fails.";
+          const checksMoveNotify = document.createElement("div");
+          checksMoveNotify.className = "tng-checks";
+          checksMoveNotify.style.paddingLeft = "0";
+          checksMoveNotify.appendChild(wrapNotifyMovePage);
+          bodyMoveSandbox.appendChild(checksMoveNotify);
+
+          // Reversible lock: Move page and Move to user's sandbox only
+          // support a single target, so both operations are disabled
+          // whenever "Process multiple targets" is ticked, regardless of
+          // which sub-mode is active or any other lock already in effect.
+          // Tracked in its own set, separate from the page/user mode lock,
+          // so the two locks never overwrite each other's unlock condition.
+          const moveMultiTargetLocked = new Set();
+          function applyMoveMultiTargetLock(locked) {
+            const arrow = secMoveSandbox.querySelector(".tng-section-arrow");
+            const hdr = secMoveSandbox.querySelector(".tng-section-header");
+            const reason = "move operations only support a single target.";
+            if (locked) {
+              if (moveMultiTargetLocked.has(chkMoveSandbox)) return;
+              moveMultiTargetLocked.add(chkMoveSandbox);
+              chkMoveSandbox.checked = false;
+              chkMoveSandbox.disabled = true;
+              secMoveSandbox.classList.add("tng-disabled");
+              bodyMoveSandbox.classList.add("tng-hidden");
+              if (arrow) arrow.classList.remove("tng-arrow-up");
+              hdr.title = "Unavailable: " + reason;
+              if (!hdr.querySelector(".tng-movemulti-lock-badge")) {
+                const badge = document.createElement("span");
+                badge.className = "tng-rights-lock tng-movemulti-lock-badge";
+                badge.textContent = "🔒";
+                badge.title = "Unavailable: " + reason;
+                if (arrow) hdr.insertBefore(badge, arrow);
+                else hdr.appendChild(badge);
+              }
+            } else {
+              if (!moveMultiTargetLocked.has(chkMoveSandbox)) return;
+              moveMultiTargetLocked.delete(chkMoveSandbox);
+              const badge = hdr.querySelector(".tng-movemulti-lock-badge");
+              if (badge) badge.remove();
+              // If another lock (e.g. the page/user mode lock) still
+              // applies, leave the checkbox disabled and the section
+              // collapsed rather than re-enabling it here.
+              if (hdr.querySelector(".tng-rights-lock")) return;
+              chkMoveSandbox.disabled = false;
+              secMoveSandbox.classList.toggle(
+                "tng-disabled",
+                !chkMoveSandbox.checked,
+              );
+              if (arrow) {
+                arrow.classList.toggle(
+                  "tng-arrow-up",
+                  !bodyMoveSandbox.classList.contains("tng-hidden"),
+                );
+              }
+              hdr.title = "";
+            }
+          }
 
           selMoveMode.addEventListener("change", function () {
             const isSandbox = selMoveMode.value === "sandbox";

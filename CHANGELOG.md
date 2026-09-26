@@ -1,3 +1,14 @@
+## 2.201.0
+
+### Changed
+
+* Moved the **"Send move notification to talk page"** checkbox in the Move page section to the bottom of the section, alongside the other move-related options, rather than sitting above both sub-mode panels.
+* The move notification (both sub-modes) now includes the move reason, falling back to "(no reason given)"/"(tidak ada alasan diberikan)" when none was entered, in addition to the source and destination titles already shown.
+
+### Added
+
+* Move page and Move to user's sandbox are now disabled whenever **"Process multiple targets"** is ticked, since both operations only support a single target. The section is unticked, collapsed, and padlocked with an explanatory tooltip while multi-target mode is active, and automatically re-evaluated when the checkbox is ticked or unticked.
+
 ## 2.200.0
 
 ### Added
