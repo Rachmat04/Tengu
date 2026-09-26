@@ -1,3 +1,15 @@
+## 2.198.0
+
+### Added
+
+* Added case-conversion buttons (**Sentence case**, **lower case**, **UPPER CASE**, **Title Case**) below the destination title field in both Move page sub-modes (**Move page**'s Destination title, and **Move to user's sandbox**'s Subpage name). Clicking a button rewrites only the field's current value; it does not submit or execute the move, so the title can still be edited manually afterwards.
+* Added `applyCaseToTitleField()`, which detects and preserves any namespace prefix already typed in the field (e.g. `Category:`) via `mw.Title` — resolved against the current wiki's actual namespace configuration, not an assumed English name — and applies the case transform only to the title portion.
+
+### Notes
+
+* Buttons share a single wrapping row (`.tng-case-btn-group`) so they stay on one line when space allows and wrap cleanly otherwise, without causing horizontal scrolling.
+* This affects only the two destination-title-style fields named above; no other fields or settings are changed by these buttons.
+
 ## 2.197.1
 
 ### Fixed

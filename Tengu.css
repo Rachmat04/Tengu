@@ -1453,3 +1453,12 @@
   font-size: 0.9em;
   white-space: normal;
 }
+
+/* --- Case-conversion button row (Move page destination / subpage fields) --- */
+.tng-case-btn-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  width: 100%;
+  margin-top: 2px;
+}
