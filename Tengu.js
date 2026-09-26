@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.198.1
+ * Version 2.199.0
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -10376,7 +10376,11 @@ $(function () {
               false,
             );
             checksSRGReasonsLock.appendChild(wrapSRGReason);
-            srgReasonChecksLock.push({ chk: chkSRGReason, label: r.label });
+            srgReasonChecksLock.push({
+              chk: chkSRGReason,
+              label: r.label,
+              text: r.text || r.label,
+            });
           }
           bodySRG.appendChild(checksSRGReasonsLock);
 
@@ -13405,7 +13409,7 @@ $(function () {
                   return c.chk.checked;
                 })
                 .map(function (c) {
-                  return c.label;
+                  return c.text || c.label;
                 });
               const details = inputSRGDetails.value.trim();
               const pickedReasonsText = pickedReasons.length

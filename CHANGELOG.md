@@ -1,3 +1,13 @@
+## 2.199.0
+
+### Added
+
+* Added eight missing global-lock reasons to the Report to Steward requests/Global section's lock-reason checkboxes, aligned with Meta-Wiki's Global locks guidance: Spam-only account, Offensive username, Serious cross-wiki abuse, Global ban, Global ban evasion, Deceased user, Former WMF staff/contractor, and Vanished account.
+
+### Changed
+
+* Checkbox labels stay short; each lock reason now carries a separate, longer `text` value used only when assembling the actual report wording, falling back to the label when no `text` is set. The two lock reasons that already existed (Cross-wiki abuse, Compromised account) were not duplicated — they instead gained a matching longer `text` value.
+
 ## 2.198.1
 
 ### Fixed

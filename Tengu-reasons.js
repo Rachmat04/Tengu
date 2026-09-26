@@ -1564,12 +1564,76 @@ window.TenguReasons = {
           { id: "compromised", label: "Compromised IP address" },
         ],
         LOCK: [
-          { id: "crosswikiabuse", label: "Cross-wiki abuse" },
-          { id: "vandalismonly", label: "Vandalism-only account" },
-          { id: "spambot", label: "Spambot" },
-          { id: "lta", label: "Long-term abuse (LTA)" },
-          { id: "compromised", label: "Compromised account" },
-          { id: "username", label: "Inappropriate username" },
+          {
+            id: "crosswikiabuse",
+            label: "Cross-wiki abuse",
+            text: "Vandalism or abuse across multiple wikis.",
+          },
+          {
+            id: "vandalismonly",
+            label: "Vandalism-only account",
+            text: "Account used solely for vandalism.",
+          },
+          {
+            id: "spambot",
+            label: "Spambot",
+            text: "Automated spam account.",
+          },
+          {
+            id: "lta",
+            label: "Long-term abuse (LTA)",
+            text: "Long-term abuse.",
+          },
+          {
+            id: "compromised",
+            label: "Compromised account",
+            text: "Suspected compromised account.",
+          },
+          {
+            id: "username",
+            label: "Inappropriate username",
+            text: "Username violates the global username policy.",
+          },
+          {
+            id: "spamonly",
+            label: "Spam-only account",
+            text: "Used solely for spam.",
+          },
+          {
+            id: "offensiveusername",
+            label: "Offensive username",
+            text: "Offensive or abusive username; may qualify for locksuppression.",
+          },
+          {
+            id: "seriouscrosswikiabuse",
+            label: "Serious cross-wiki abuse",
+            text: "Serious violations across multiple wikis.",
+          },
+          {
+            id: "globalban",
+            label: "Global ban",
+            text: "Subject to a global ban.",
+          },
+          {
+            id: "globalbanevasion",
+            label: "Global ban evasion",
+            text: "Created to evade a global ban.",
+          },
+          {
+            id: "deceaseduser",
+            label: "Deceased user",
+            text: "Account owner is deceased.",
+          },
+          {
+            id: "formerwmfstaff",
+            label: "Former WMF staff/contractor",
+            text: "Former Wikimedia Foundation staff or contractor account.",
+          },
+          {
+            id: "vanishedaccount",
+            label: "Vanished account",
+            text: "Account has been vanished.",
+          },
         ],
       },
 
