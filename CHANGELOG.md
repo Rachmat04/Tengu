@@ -1,3 +1,18 @@
+## 2.200.0
+
+### Added
+
+* Added a **"Send move notification to talk page"** checkbox to the Move page section, ticked by default, shared by both sub-modes. Only sent after the relevant move has actually succeeded; never sent if the move fails.
+* In **Move page** sub-mode, the notification is posted to the moved page's own talk page (resolved via `mw.Title`, so localised namespace names are handled correctly) and names both the source and destination titles.
+* In **Move to user's sandbox** sub-mode, the notification is posted to the destination user's talk page (`User talk:` namespace, ID 3) and states that the page was moved to that user's sandbox.
+* Added `notifySummaryMovePage`, a bilingual (English/Indonesian) edit summary constant, and bilingual notice wording for both sub-modes, following the existing notification-wording pattern used elsewhere in Tengu.
+* Added a `sandboxMoveSucceeded` flag in the sandbox sub-mode branch, mirroring the existing `movePageMoveSucceeded` flag in the Move page sub-mode branch, so the notification is only dispatched after a confirmed successful move.
+
+### Notes
+
+* The checkbox resets to ticked every time the dialogue is (re)opened, since the whole interface is rebuilt from scratch on each open; no separate persistence was needed.
+* A failure to post the notification is logged as a warning and does not affect the reported success of the move itself, consistent with every other notification in Tengu.
+
 ## 2.199.0
 
 ### Added

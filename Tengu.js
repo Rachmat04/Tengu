@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.199.0
+ * Version 2.200.0
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -1761,6 +1761,10 @@ $(function () {
             (useIndonesian
               ? "Notifikasi: Pemberitahuan pemulihan halaman"
               : "Notification: Page restoration notice") + toolTag;
+          const notifySummaryMovePage =
+            (useIndonesian
+              ? "Notifikasi: Pemberitahuan pemindahan halaman"
+              : "Notification: Page move notice") + toolTag;
 
           // Builds the protections parameter for a page protection request, adding
           // upload= for File-namespace pages. Assumes upload-level
@@ -3205,6 +3209,40 @@ $(function () {
                 ) {
                   await moveCategoryMembers(targetVal, config.movePageDest);
                 }
+
+                // Post a move notification to the moved page's own talk
+                // page, naming the source and destination titles. Only sent
+                // once the main move has actually succeeded.
+                if (
+                  movePageMoveSucceeded &&
+                  config.notifyMovePage &&
+                  !isAborted
+                ) {
+                  try {
+                    const movePageTalkTitle = new mw.Title(config.movePageDest)
+                      .getTalkPage()
+                      .getPrefixedText();
+                    const talkExists = await pageExists(movePageTalkTitle);
+                    const notice = useIndonesian
+                      ? `== Pemberitahuan pemindahan halaman ==\nHalaman "${targetVal}" telah dipindahkan ke "${config.movePageDest}".\n\nPemberitahuan ini dikirimkan secara otomatis. Silakan sampaikan pertanyaan atau keberatan ke halaman pembicaraan saya. ~~~~`
+                      : `== Page move notice ==\nThe page "${targetVal}" has been moved to "${config.movePageDest}".\n\nThis notification was posted automatically. Please direct any questions or concerns to my user talk page. ~~~~`;
+                    await apiPost({
+                      action: "edit",
+                      title: movePageTalkTitle,
+                      appendtext: (talkExists ? "\n\n" : "") + notice,
+                      summary: notifySummaryMovePage,
+                      bot: true,
+                    });
+                    addLog(
+                      `[Notify] Move notification posted to: "${movePageTalkTitle}"`,
+                    );
+                  } catch (e) {
+                    addLog(
+                      `[Notify] Failed to post move notification: ${formatApiError(e)}`,
+                      "warn",
+                    );
+                  }
+                }
               } else {
                 const moveParams = {
                   action: "move",
@@ -3255,6 +3293,7 @@ $(function () {
                   }
                 }
 
+                let sandboxMoveSucceeded = false;
                 try {
                   await apiPost(moveParams);
                   addLog(
@@ -3262,6 +3301,7 @@ $(function () {
                   );
                   stats.move++;
                   updateStatusDisplay();
+                  sandboxMoveSucceeded = true;
                 } catch (e) {
                   addLog(
                     `[Move] Failed to move "${targetVal}" to "${config.moveSandboxDest}": ${formatApiError(e)}`,
@@ -3486,6 +3526,42 @@ $(function () {
                     addLog(
                       `[Move] Failed to fetch subpages for "${targetVal}": ${formatApiError(e)}`,
                       true,
+                    );
+                  }
+                }
+
+                // Post a move notification to the destination user's talk
+                // page, using ns 3 (User talk) so localised namespace names
+                // are resolved via mw.Title rather than an assumed English
+                // prefix. Only sent once the sandbox move has succeeded.
+                if (
+                  sandboxMoveSucceeded &&
+                  config.notifyMovePage &&
+                  !isAborted
+                ) {
+                  try {
+                    const sandboxUserTalkTitle = new mw.Title(
+                      config.moveSandboxUser,
+                      3,
+                    ).getPrefixedText();
+                    const talkExists = await pageExists(sandboxUserTalkTitle);
+                    const notice = useIndonesian
+                      ? `== Pemberitahuan pemindahan halaman ==\nHalo ${config.moveSandboxUser},\n\nHalaman "${targetVal}" telah dipindahkan ke bak pasir Anda di "${config.moveSandboxDest}".\n\nPemberitahuan ini dikirimkan secara otomatis. Silakan sampaikan pertanyaan atau keberatan ke halaman pembicaraan saya. ~~~~`
+                      : `== Page move notice ==\nDear ${config.moveSandboxUser},\n\nThe page "${targetVal}" has been moved to your sandbox at "${config.moveSandboxDest}".\n\nThis notification was posted automatically. Please direct any questions or concerns to my user talk page. ~~~~`;
+                    await apiPost({
+                      action: "edit",
+                      title: sandboxUserTalkTitle,
+                      appendtext: (talkExists ? "\n\n" : "") + notice,
+                      summary: notifySummaryMovePage,
+                      bot: true,
+                    });
+                    addLog(
+                      `[Notify] Move notification posted to: "${sandboxUserTalkTitle}"`,
+                    );
+                  } catch (e) {
+                    addLog(
+                      `[Notify] Failed to post move notification: ${formatApiError(e)}`,
+                      "warn",
                     );
                   }
                 }
@@ -10909,6 +10985,22 @@ $(function () {
           fieldMoveMode.appendChild(wrapSelect(selMoveMode));
           bodyMoveSandbox.appendChild(rowMoveMode);
 
+          // Notification option — shared by both Move page sub-modes.
+          // Ticked by default every time the dialogue is opened. In Move
+          // page sub-mode, the notification is posted to the moved page's
+          // own talk page; in Move to user's sandbox sub-mode, it is posted
+          // to the destination user's talk page instead. Only sent once the
+          // relevant move has actually succeeded.
+          const { wrap: wrapNotifyMovePage, chk: chkNotifyMovePage } =
+            makeCheckbox("Send move notification to talk page", true);
+          wrapNotifyMovePage.title =
+            "When ticked, a notification is posted after a successful move: to the moved page's own talk page in Move page sub-mode, or to the destination user's talk page in Move to user's sandbox sub-mode. Not sent if the move fails.";
+          const checksMoveNotify = document.createElement("div");
+          checksMoveNotify.className = "tng-checks";
+          checksMoveNotify.style.paddingLeft = "0";
+          checksMoveNotify.appendChild(wrapNotifyMovePage);
+          bodyMoveSandbox.appendChild(checksMoveNotify);
+
           // --- Move page panel ---
           const divMovePagePanel = document.createElement("div");
           divMovePagePanel.style.cssText =
@@ -13720,6 +13812,7 @@ $(function () {
                 chkMoveSandboxTalk.checked && !chkMoveSandboxTalk.disabled,
               moveSandboxSubpages: chkMoveSandboxSubpages.checked,
               moveSandboxDeleteDest: chkMoveSandboxDeleteDest.checked,
+              notifyMovePage: chkNotifyMovePage.checked,
               protect: chkProtect.checked,
               protectEdit: selProtectEdit.value,
               protectMove: selProtectMove.value,
