@@ -385,6 +385,9 @@
   .tng-checks {
     padding-left: 0;
   }
+  .tng-case-btn-group {
+    padding-left: 0;
+  }
   .tng-row label.tng-label {
     width: 100%;
     padding-top: 0;
@@ -1455,10 +1458,15 @@
 }
 
 /* --- Case-conversion button row (Move page destination / subpage fields) --- */
+/* padding-left matches the label column width (180px) plus the row gap
+   (10px), the same 190px offset already used by .tng-checks, so the
+   buttons align with the text field itself rather than with the label. */
 .tng-case-btn-group {
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
   width: 100%;
   margin-top: 2px;
+  padding-left: 190px;
+  box-sizing: border-box;
 }

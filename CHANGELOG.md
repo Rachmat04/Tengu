@@ -1,3 +1,13 @@
+## 2.198.1
+
+### Fixed
+
+* Fixed the case-conversion buttons below the **Destination title** field (Move page sub-mode) and the **Subpage name** field (Move to user's sandbox sub-mode) aligning with the row's label instead of the text field. `.tng-case-btn-group` now carries a 190px left padding — the same label-column offset already used by `.tng-checks` — so the buttons line up with the input controls above them rather than starting at the left edge of the label column.
+
+### Notes
+
+* CSS-only change. Button order, case-conversion logic, and all other Move page functionality are unchanged. The padding is reset to 0 on narrow viewports (≤480px), matching the existing `.tng-checks` responsive behaviour.
+
 ## 2.198.0
 
 ### Added
