@@ -1,3 +1,13 @@
+## 2.201.1
+
+### Changed
+
+* The **"Send move notification to talk page"** checkbox in the Move page section is now unticked by default (previously ticked), and is placed directly inside the same checkbox group as the other options for the active sub-mode (Move page or Move to user's sandbox), rather than sitting in its own separately spaced row below.
+
+### Notes
+
+* This is a UI-only change. The single checkbox element is moved between the Move page and Move to user's sandbox checkbox groups when the Move mode dropdown is switched, since only one sub-mode's group is visible at a time. Notification wording, dispatch conditions, and all other Move page functionality are unchanged.
+
 ## 2.201.0
 
 ### Changed

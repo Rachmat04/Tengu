@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.201.0
+ * Version 2.201.1
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -11344,6 +11344,22 @@ $(function () {
           wrapMovePageCategoryMembers.style.opacity = "0.5";
           wrapMovePageCategoryMembers.style.cursor = "not-allowed";
 
+          // Notification option — shared by both Move page sub-modes. Built
+          // here (before either sub-mode's checkbox group) so it can be
+          // appended directly alongside the other checkbox options in
+          // whichever group is currently active, rather than sitting in its
+          // own separately spaced row. Unticked by default every time the
+          // dialogue is opened. In Move page sub-mode, the notification is
+          // posted to the moved page's own talk page; in Move to user's
+          // sandbox sub-mode, it is posted to the destination user's talk
+          // page instead. The same checkbox element is moved between the two
+          // sub-modes' checkbox groups by the Move mode change handler below,
+          // since only one sub-mode's group is visible at a time.
+          const { wrap: wrapNotifyMovePage, chk: chkNotifyMovePage } =
+            makeCheckbox("Send move notification to talk page", false);
+          wrapNotifyMovePage.title =
+            "When ticked, a notification is posted after a successful move: to the moved page's own talk page in Move page sub-mode, or to the destination user's talk page in Move to user's sandbox sub-mode. Not sent if the move fails.";
+
           const checksMovePagePanel = document.createElement("div");
           checksMovePagePanel.className = "tng-checks";
           checksMovePagePanel.style.paddingLeft = "0";
@@ -11353,6 +11369,7 @@ $(function () {
           checksMovePagePanel.appendChild(wrapMovePageFixDoubleRedirects);
           checksMovePagePanel.appendChild(wrapMovePageDeleteDest);
           checksMovePagePanel.appendChild(wrapMovePageCategoryMembers);
+          checksMovePagePanel.appendChild(wrapNotifyMovePage);
           divMovePagePanel.appendChild(checksMovePagePanel);
 
           bodyMoveSandbox.appendChild(divMovePagePanel);
@@ -11600,24 +11617,6 @@ $(function () {
 
           bodyMoveSandbox.appendChild(divMoveSandboxPanel);
 
-          // Notification option — shared by both Move page sub-modes.
-          // Placed at the bottom of the section, alongside the other move
-          // options, since it applies once the relevant move (whichever
-          // sub-mode is active) has actually succeeded. Ticked by default
-          // every time the dialogue is opened. In Move page sub-mode, the
-          // notification is posted to the moved page's own talk page; in
-          // Move to user's sandbox sub-mode, it is posted to the
-          // destination user's talk page instead.
-          const { wrap: wrapNotifyMovePage, chk: chkNotifyMovePage } =
-            makeCheckbox("Send move notification to talk page", true);
-          wrapNotifyMovePage.title =
-            "When ticked, a notification is posted after a successful move: to the moved page's own talk page in Move page sub-mode, or to the destination user's talk page in Move to user's sandbox sub-mode. Not sent if the move fails.";
-          const checksMoveNotify = document.createElement("div");
-          checksMoveNotify.className = "tng-checks";
-          checksMoveNotify.style.paddingLeft = "0";
-          checksMoveNotify.appendChild(wrapNotifyMovePage);
-          bodyMoveSandbox.appendChild(checksMoveNotify);
-
           // Reversible lock: Move page and Move to user's sandbox only
           // support a single target, so both operations are disabled
           // whenever "Process multiple targets" is ticked, regardless of
@@ -11674,6 +11673,12 @@ $(function () {
             const isSandbox = selMoveMode.value === "sandbox";
             divMoveSandboxPanel.classList.toggle("tng-hidden", !isSandbox);
             divMovePagePanel.classList.toggle("tng-hidden", isSandbox);
+            // Move the shared notification checkbox into whichever sub-mode's
+            // checkbox group is now active, so it always appears as part of
+            // that group rather than needing a separate copy per sub-mode.
+            (isSandbox ? checksMoveSandbox : checksMovePagePanel).appendChild(
+              wrapNotifyMovePage,
+            );
           });
 
           body.appendChild(secMoveSandbox);
