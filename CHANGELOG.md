@@ -1,3 +1,9 @@
+## 2.201.2
+
+### Fixed
+
+* Fixed a duplicate padlock icon appearing on the Move page section header when User mode is active (where the section is already mode-locked) and **Process multiple targets** is also ticked. `applyMoveMultiTargetLock()` now checks whether the header already shows a padlock badge from another lock (e.g. the user/page mode lock) before adding its own, matching the existing check already used by `applyModeLock()`. On unlock, the multi-target badge is still removed correctly regardless of whether it was actually rendered.
+
 ## 2.201.1
 
 ### Changed

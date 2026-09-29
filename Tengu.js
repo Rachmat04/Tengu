@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.201.1
+ * Version 2.201.2
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -11636,15 +11636,17 @@ $(function () {
               secMoveSandbox.classList.add("tng-disabled");
               bodyMoveSandbox.classList.add("tng-hidden");
               if (arrow) arrow.classList.remove("tng-arrow-up");
+              // If another lock (e.g. the page/user mode lock) already shows
+              // a padlock badge on this header, leave it as-is rather than
+              // adding a second, duplicate badge alongside it.
+              if (hdr.querySelector(".tng-rights-lock")) return;
               hdr.title = "Unavailable: " + reason;
-              if (!hdr.querySelector(".tng-movemulti-lock-badge")) {
-                const badge = document.createElement("span");
-                badge.className = "tng-rights-lock tng-movemulti-lock-badge";
-                badge.textContent = "🔒";
-                badge.title = "Unavailable: " + reason;
-                if (arrow) hdr.insertBefore(badge, arrow);
-                else hdr.appendChild(badge);
-              }
+              const badge = document.createElement("span");
+              badge.className = "tng-rights-lock tng-movemulti-lock-badge";
+              badge.textContent = "🔒";
+              badge.title = "Unavailable: " + reason;
+              if (arrow) hdr.insertBefore(badge, arrow);
+              else hdr.appendChild(badge);
             } else {
               if (!moveMultiTargetLocked.has(chkMoveSandbox)) return;
               moveMultiTargetLocked.delete(chkMoveSandbox);
