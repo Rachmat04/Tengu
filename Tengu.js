@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.202.0
+ * Version 2.203.0
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -73,6 +73,7 @@ $(function () {
         const SRG_REPORT_REASONS = tenguReasonsObj.SRG_REPORT_REASONS;
         const LOCK_ACCOUNT_REASONS = tenguReasonsObj.LOCK_ACCOUNT_REASONS;
         const FIXREDIRECTS_REASONS = tenguReasonsObj.FIXREDIRECTS_REASONS;
+        const MERGE_REASONS = tenguReasonsObj.MERGE_REASONS;
 
         const tenguWarnObj = window.TenguWarn.get(useIndonesian);
         const WARN_MESSAGES = tenguWarnObj.WARN_MESSAGES;
@@ -2549,24 +2550,6 @@ $(function () {
                 );
                 stats.merge++;
                 updateStatusDisplay();
-
-                if (config.mergeUnwatch) {
-                  try {
-                    await wikidataApiPost({
-                      action: "watch",
-                      unwatch: 1,
-                      titles: config.mergeFrom,
-                    });
-                    addLog(
-                      `[Merge] Removed "${config.mergeFrom}" from watchlist`,
-                    );
-                  } catch (e) {
-                    addLog(
-                      `[Merge] Failed to unwatch "${config.mergeFrom}": ${formatApiError(e)}`,
-                      "warn",
-                    );
-                  }
-                }
 
                 if (config.mergeCreateRedirect) {
                   try {
@@ -9000,6 +8983,7 @@ $(function () {
             );
             updatePagedelUncategorizeAvailability();
             applyMoveMultiTargetLock(chkMultiTarget.checked);
+            updateMergeAvailability();
           });
 
           fieldMultiTarget.style.flexDirection = "column";
@@ -10373,13 +10357,15 @@ $(function () {
           );
 
           // ============================================================================
-          // Merge items section — merges one Wikidata item or lexeme into
-          // another. Available regardless of mode, since it operates on
-          // Wikidata entity IDs rather than the usual user/page target.
-          // Adapted from the standalone MediaWiki:Gadget-Merge.js script,
-          // reimplemented using Tengu's own components. Requests are sent
-          // to the Wikidata API via a foreign API connection, mirroring the
-          // pattern already used for Meta-Wiki reports.
+          // Merge items section — merges the target Wikidata item or lexeme
+          // (entered in the Target field above) into another. Only available
+          // in page mode, on wikidata.org, and with a single target (multi-
+          // target mode not ticked), since a merge always involves exactly
+          // one specific source entity. Adapted from the standalone
+          // MediaWiki:Gadget-Merge.js script, reimplemented using Tengu's
+          // own components. Requests are sent to the Wikidata API via a
+          // foreign API connection, mirroring the pattern already used for
+          // Meta-Wiki reports.
           // ============================================================================
           const {
             section: secMerge,
@@ -10390,14 +10376,8 @@ $(function () {
           const divMergeStatus = document.createElement("div");
           divMergeStatus.className = "tng-status-note tng-status-note-inactive";
           divMergeStatus.textContent =
-            "Merges one Wikidata item or lexeme into another via the Wikidata API. Enter both entity IDs below (e.g. Q123, L456).";
+            "Merges the target entity above into another Wikidata item or lexeme via the Wikidata API. Only available on Wikidata, in page mode, with a single target.";
           bodyMerge.appendChild(divMergeStatus);
-
-          const { row: rowMergeFrom, field: fieldMergeFrom } =
-            makeRow("Entity to merge");
-          const inputMergeFrom = makeInput("e.g. Q123 or L456");
-          fieldMergeFrom.appendChild(inputMergeFrom);
-          bodyMerge.appendChild(rowMergeFrom);
 
           const { row: rowMergeTo, field: fieldMergeTo } =
             makeRow("Merge with");
@@ -10415,27 +10395,95 @@ $(function () {
             makeCheckbox("Create a redirect after merging", true);
           wrapMergeRedirect.title =
             "When ticked, the merged-away item is cleared and redirected to the destination item. Not applicable to lexeme merges, which are redirected automatically as part of the merge itself.";
-          const { wrap: wrapMergeUnwatch, chk: chkMergeUnwatch } = makeCheckbox(
-            "Remove merged entity from your watchlist",
-            false,
-          );
           const checksMerge = document.createElement("div");
           checksMerge.className = "tng-checks";
           checksMerge.style.paddingLeft = "0";
           checksMerge.appendChild(wrapMergeLowest);
           checksMerge.appendChild(wrapMergeRedirect);
-          checksMerge.appendChild(wrapMergeUnwatch);
           bodyMerge.appendChild(checksMerge);
 
-          const { row: rowMergeSummary, field: fieldMergeSummary } =
-            makeRow("Summary");
-          const inputMergeSummary = makeInput(
-            "Appended to the auto-generated merge summary (optional)",
+          const { row: rowMergeReason, field: fieldMergeReason } =
+            makeRow("Reason");
+          const selMergeReason = makeSelect(MERGE_REASONS);
+          const { wrap: filteredWrapMergeReason } =
+            makeFilteredSelect(selMergeReason);
+          const inputMergeReason = makeInput(
+            "Additional details / customised reason",
           );
-          fieldMergeSummary.appendChild(inputMergeSummary);
-          bodyMerge.appendChild(rowMergeSummary);
+          const reasonWrapMerge = document.createElement("div");
+          reasonWrapMerge.className = "tng-reason-wrap";
+          reasonWrapMerge.appendChild(filteredWrapMergeReason);
+          reasonWrapMerge.appendChild(
+            wrapReasonInputWithLinkFix(inputMergeReason),
+          );
+          fieldMergeReason.appendChild(reasonWrapMerge);
+          bodyMerge.appendChild(rowMergeReason);
 
           body.appendChild(secMerge);
+
+          // Reversible lock for this section, driven by mode, multi-target
+          // state, and whether the current wiki is Wikidata. Tracked
+          // separately from the mode lock (applyModeLock) via its own set,
+          // mirroring the pattern used by applyUnblockStatusLock().
+          const mergeStatusLocked = new Set();
+          function updateMergeAvailability() {
+            const hdr = secMerge.querySelector(".tng-section-header");
+            const arrow = secMerge.querySelector(".tng-section-arrow");
+            const currentHost = (mw.config.get("wgServer") || "").replace(
+              /^(?:https?:)?\/\//,
+              "",
+            );
+            const isWikidata = currentHost === "www.wikidata.org";
+            let reason = null;
+            if (tenguMode !== "page") {
+              reason = "merge items is only available in page mode.";
+            } else if (chkMultiTarget.checked) {
+              reason = "merge items does not support multiple targets.";
+            } else if (!isWikidata) {
+              reason = "merge items is only available on Wikidata.";
+            }
+
+            if (reason) {
+              if (mergeStatusLocked.has(chkMerge)) {
+                hdr.title = "Unavailable: " + reason;
+                const existingBadge = hdr.querySelector(
+                  ".tng-merge-lock-badge",
+                );
+                if (existingBadge)
+                  existingBadge.title = "Unavailable: " + reason;
+                return;
+              }
+              mergeStatusLocked.add(chkMerge);
+              chkMerge.checked = false;
+              chkMerge.disabled = true;
+              secMerge.classList.add("tng-disabled");
+              bodyMerge.classList.add("tng-hidden");
+              if (arrow) arrow.classList.remove("tng-arrow-up");
+              hdr.title = "Unavailable: " + reason;
+              const badge = document.createElement("span");
+              badge.className = "tng-rights-lock tng-merge-lock-badge";
+              badge.textContent = "🔒";
+              badge.title = "Unavailable: " + reason;
+              if (arrow) hdr.insertBefore(badge, arrow);
+              else hdr.appendChild(badge);
+            } else {
+              if (!mergeStatusLocked.has(chkMerge)) return;
+              mergeStatusLocked.delete(chkMerge);
+              chkMerge.disabled = false;
+              secMerge.classList.toggle("tng-disabled", !chkMerge.checked);
+              if (arrow) {
+                arrow.classList.toggle(
+                  "tng-arrow-up",
+                  !bodyMerge.classList.contains("tng-hidden"),
+                );
+              }
+              hdr.title = "";
+              const badge = hdr.querySelector(".tng-merge-lock-badge");
+              if (badge) badge.remove();
+              updateStartBtn();
+            }
+          }
+          updateMergeAvailability();
 
           // ============================================================================
           // Warn section — user mode only
@@ -13454,6 +13502,7 @@ $(function () {
 
             updateUploadAvailability();
             updatePagedelTalkAvailability();
+            updateMergeAvailability();
             updateStartBtn();
             updateSectionStatus();
           }
@@ -13595,8 +13644,8 @@ $(function () {
               return;
             }
 
-            if (chkMerge.checked) {
-              const mergeFromRaw = inputMergeFrom.value.trim().toUpperCase();
+            if (chkMerge.checked && !chkMerge.disabled) {
+              const mergeFromRaw = targetVal.toUpperCase();
               const mergeToRaw = inputMergeTo.value.trim().toUpperCase();
               const isQPair =
                 /^Q\d+$/.test(mergeFromRaw) && /^Q\d+$/.test(mergeToRaw);
@@ -13604,10 +13653,10 @@ $(function () {
                 /^L\d+$/.test(mergeFromRaw) && /^L\d+$/.test(mergeToRaw);
               if (!isQPair && !isLPair) {
                 showNotification(
-                  fieldMergeFrom,
-                  "Enter two valid item IDs (Q123) or two lexeme IDs (L123).",
+                  fieldMergeTo,
+                  "The target must be a valid item ID (Q123), or both the target and this field must be lexeme IDs (L123).",
                 );
-                inputMergeFrom.focus();
+                inputMergeTo.focus();
                 return;
               }
               if (mergeFromRaw === mergeToRaw) {
@@ -13849,6 +13898,12 @@ $(function () {
                 selMoveSandboxReason.value
               );
             }
+            function buildMergeReason() {
+              const sel = selMergeReason.value;
+              const inp = inputMergeReason.value.trim();
+              if (sel && inp) return sel + ": " + inp;
+              return sel || inp;
+            }
 
             // Resolves which entity is the merge source and which is the
             // destination. When "Always merge into the older entity" is
@@ -13856,7 +13911,7 @@ $(function () {
             // regardless of which field it was typed into.
             function resolveMergeEntities() {
               if (!chkMerge.checked) return { from: "", to: "" };
-              let from = inputMergeFrom.value.trim().toUpperCase();
+              let from = targetVal.toUpperCase();
               let to = inputMergeTo.value.trim().toUpperCase();
               if (chkMergeLowest.checked) {
                 const fromNum = parseInt(from.replace(/^[QL]/, ""), 10);
@@ -14267,15 +14322,14 @@ $(function () {
               rdHides: rdHides,
               rdReason: buildRevdelReason() + suffix,
               os: chkOversight.checked,
-              mergeItems: chkMerge.checked,
+              mergeItems: chkMerge.checked && !chkMerge.disabled,
               mergeFrom: mergeEntities.from,
               mergeTo: mergeEntities.to,
               mergeAlwaysLowest: chkMergeLowest.checked,
               mergeCreateRedirect:
                 chkMergeRedirect.checked &&
                 mergeEntities.from.charAt(0) !== "L",
-              mergeUnwatch: chkMergeUnwatch.checked,
-              mergeSummary: inputMergeSummary.value.trim(),
+              mergeSummary: buildMergeReason(),
             };
 
             // Builds a list of every action that will run, based on the

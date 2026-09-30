@@ -1218,6 +1218,31 @@ window.TenguReasons = {
         },
       ],
 
+      // Quick-select reasons for the "Merge items" feature. English only,
+      // since this feature only operates on Wikidata, where edit summaries
+      // and reasons are conventionally given in English.
+      MERGE_REASONS: [
+        { value: "", label: "Other:" },
+        { value: "Duplicate item", label: "Duplicate item" },
+        { value: "Duplicate lexeme", label: "Duplicate lexeme" },
+        {
+          value: "Merging per a merge discussion",
+          label: "Merging per a merge discussion",
+        },
+        {
+          value: "Same real-world subject",
+          label: "Same real-world subject",
+        },
+        {
+          value: "Same lexical entry",
+          label: "Same lexical entry",
+        },
+        {
+          value: "Sitelink conflict resolved before merging",
+          label: "Sitelink conflict resolved before merging",
+        },
+      ],
+
       // Quick-select reasons for the "Lock account" feature (global lock via
       // CentralAuth).
       LOCK_ACCOUNT_REASONS: [

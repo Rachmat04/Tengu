@@ -1,3 +1,15 @@
+## 2.203.0
+
+### Changed
+
+* Removed the standalone "Entity to merge" field from the Merge items section; the entity to merge is now taken directly from the target field above, since it duplicated information already entered there.
+* Replaced the free-text "Summary" field in the Merge items section with a reason dropdown (`MERGE_REASONS`, added to `Tengu-reasons.js`), a custom-text field, and a ✨ "Fix links in reason" button, matching the reason-entry pattern used elsewhere in Tengu.
+* The Merge items section is now only available in page mode, only on wikidata.org, and only when "Process multiple targets" is not ticked, since a merge always involves exactly one specific source entity. Previously the section was shown regardless of mode or wiki.
+
+### Removed
+
+* Removed the "Remove merged entity from your watchlist" option and its associated `action=watch&unwatch=1` step from the merge workflow.
+
 ## 2.202.0
 
 ### Added
