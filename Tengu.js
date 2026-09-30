@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.201.2
+ * Version 2.202.0
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -1146,6 +1146,149 @@ $(function () {
           });
         }
 
+        // Loads mw.ForeignApi and returns an instance pointed at Wikidata,
+        // used by the Merge items feature so it works regardless of which
+        // wiki Tengu is currently open on. Mirrors getMetaForeignApi() above.
+        function getWikidataForeignApi() {
+          return new Promise((resolve, reject) => {
+            mw.loader.using(
+              "mediawiki.ForeignApi",
+              function () {
+                try {
+                  resolve(
+                    new mw.ForeignApi("https://www.wikidata.org/w/api.php"),
+                  );
+                } catch (e) {
+                  reject(e);
+                }
+              },
+              reject,
+            );
+          });
+        }
+
+        // Promisified GET/POST wrappers against the Wikidata API, following
+        // the same pattern as foreignApiGet(). postWithEditToken() handles
+        // the Wikibase edit token requirement automatically, matching how
+        // the other foreign-API call sites (Meta-Wiki reports) already work.
+        async function wikidataApiGet(params) {
+          const foreignApi = await getWikidataForeignApi();
+          return new Promise((resolve, reject) => {
+            foreignApi
+              .get(params)
+              .done(resolve)
+              .fail((code, err) =>
+                reject(
+                  code +
+                    (err && err.error && err.error.info
+                      ? ": " + err.error.info
+                      : ""),
+                ),
+              );
+          });
+        }
+        async function wikidataApiPost(params) {
+          const foreignApi = await getWikidataForeignApi();
+          return new Promise((resolve, reject) => {
+            foreignApi
+              .postWithEditToken(params)
+              .done(resolve)
+              .fail((code, err) =>
+                reject(
+                  code +
+                    (err && err.error && err.error.info
+                      ? ": " + err.error.info
+                      : ""),
+                ),
+              );
+          });
+        }
+
+        // Fetches full entity data for a list of Wikidata entity IDs
+        // (items or lexemes). Adapted from getItems() in the standalone
+        // Wikidata Merge.js gadget.
+        async function fetchWikidataEntities(ids) {
+          const data = await wikidataApiGet({
+            action: "wbgetentities",
+            ids: ids.join("|"),
+          });
+          return Object.keys(data.entities || {}).map(function (k) {
+            return data.entities[k];
+          });
+        }
+
+        // Detects sitelink conflicts between two Wikidata entities: cases
+        // where both entities link to a page on the same wiki but with a
+        // different title. Adapted from detectConflicts() in the standalone
+        // Wikidata Merge.js gadget. Returns a map of dbName -> conflicting
+        // entities, empty when there are no conflicts.
+        function detectWikidataMergeConflicts(items) {
+          const all = {};
+          const conflicts = {};
+          items.forEach(function (item) {
+            if (!item.sitelinks) return;
+            Object.keys(item.sitelinks).forEach(function (dbName) {
+              if (
+                all[dbName] &&
+                all[dbName].sitelinks[dbName].title !==
+                  item.sitelinks[dbName].title
+              ) {
+                if (!conflicts[dbName]) conflicts[dbName] = [all[dbName]];
+                conflicts[dbName].push(item);
+              }
+              all[dbName] = item;
+            });
+          });
+          return conflicts;
+        }
+
+        // Merges one Wikidata entity into another. Items (Q-prefixed) use
+        // wbmergeitems; lexemes (L-prefixed) use wblmergelexemes, which
+        // redirects the source lexeme directly as part of the merge itself,
+        // unlike items, which require a separate redirect step. Adapted from
+        // mergeApi() in the standalone Wikidata Merge.js gadget.
+        async function mergeWikidataEntities(fromId, toId, summaryText) {
+          const isLexeme = fromId.charAt(0).toUpperCase() === "L";
+          const params = isLexeme
+            ? {
+                action: "wblmergelexemes",
+                source: fromId,
+                target: toId,
+                tags: "gadget-merge",
+              }
+            : {
+                action: "wbmergeitems",
+                fromid: fromId,
+                toid: toId,
+                ignoreconflicts: "description",
+                tags: "gadget-merge",
+              };
+          params.summary = summaryText;
+          return wikidataApiPost(params);
+        }
+
+        // Creates a redirect from a (now-emptied) Wikidata item to another.
+        // The source item must be cleared first, since wbcreateredirect
+        // refuses to redirect an item that still holds data. Not used for
+        // lexemes, which are redirected automatically by wblmergelexemes.
+        // Adapted from createRedirect() in the standalone Wikidata Merge.js
+        // gadget.
+        async function createWikidataRedirect(fromId, toId) {
+          await wikidataApiPost({
+            action: "wbeditentity",
+            id: fromId,
+            clear: true,
+            summary: "Clearing item to prepare for redirect",
+            tags: "gadget-merge",
+            data: "{}",
+          });
+          return wikidataApiPost({
+            action: "wbcreateredirect",
+            from: fromId,
+            to: toId,
+          });
+        }
+
         // Derives an interwiki prefix (project + language, e.g. "w:id:" or
         // "wikt:ja:") for the current wiki from its hostname, used to build
         // interwiki links and {{LockHide}} project parameters in reports
@@ -1564,6 +1707,7 @@ $(function () {
             recat: 0,
             uncategorize: 0,
             report: 0,
+            merge: 0,
             error: 0,
           };
           const toolTag = " · [[w:id:Pengguna:Rachmat04/Tengu.js|⛩️]]";
@@ -1606,6 +1750,7 @@ $(function () {
             add(statsObj.protect, "page protected", "pages protected");
             add(statsObj.revdel, "revision hidden", "revisions hidden");
             add(statsObj.report, "report filed", "reports filed");
+            add(statsObj.merge, "item merged", "items merged");
             add(statsObj.lockAccount, "account locked", "accounts locked");
             add(statsObj.block, "account blocked", "accounts blocked");
             add(statsObj.unblock, "account unblocked", "accounts unblocked");
@@ -2367,6 +2512,85 @@ $(function () {
               searchFrom = before.length;
             }
             return result;
+          }
+
+          // --- Merge Wikidata items ---
+          // Single-shot operation, independent of config.targets: a merge
+          // always involves exactly two specific entity IDs (not the
+          // user/page target), so it runs once here rather than inside the
+          // per-target loop below.
+          if (config.mergeItems && !isAborted) {
+            addLog(
+              `[Merge] Processing merge of "${config.mergeFrom}" into "${config.mergeTo}"...`,
+            );
+            try {
+              const entities = await fetchWikidataEntities([
+                config.mergeFrom,
+                config.mergeTo,
+              ]);
+              const conflicts = detectWikidataMergeConflicts(entities);
+              if (Object.keys(conflicts).length) {
+                addLog(
+                  `[Merge] Aborted: sitelink conflicts detected between "${config.mergeFrom}" and "${config.mergeTo}" on ${Object.keys(conflicts).join(", ")} — resolve them manually before merging.`,
+                  true,
+                );
+              } else {
+                const mergeSummaryText = withToolTag(
+                  config.mergeSummary,
+                  toolTag,
+                );
+                await mergeWikidataEntities(
+                  config.mergeFrom,
+                  config.mergeTo,
+                  mergeSummaryText,
+                );
+                addLog(
+                  `[Merge] Successfully merged "${config.mergeFrom}" into "${config.mergeTo}"`,
+                );
+                stats.merge++;
+                updateStatusDisplay();
+
+                if (config.mergeUnwatch) {
+                  try {
+                    await wikidataApiPost({
+                      action: "watch",
+                      unwatch: 1,
+                      titles: config.mergeFrom,
+                    });
+                    addLog(
+                      `[Merge] Removed "${config.mergeFrom}" from watchlist`,
+                    );
+                  } catch (e) {
+                    addLog(
+                      `[Merge] Failed to unwatch "${config.mergeFrom}": ${formatApiError(e)}`,
+                      "warn",
+                    );
+                  }
+                }
+
+                if (config.mergeCreateRedirect) {
+                  try {
+                    await createWikidataRedirect(
+                      config.mergeFrom,
+                      config.mergeTo,
+                    );
+                    addLog(
+                      `[Merge] Created redirect: "${config.mergeFrom}" → "${config.mergeTo}"`,
+                    );
+                  } catch (e) {
+                    addLog(
+                      `[Merge] Failed to create redirect "${config.mergeFrom}" → "${config.mergeTo}": ${formatApiError(e)}`,
+                      true,
+                    );
+                  }
+                }
+              }
+            } catch (e) {
+              addLog(
+                `[Merge] Failed to merge "${config.mergeFrom}" into "${config.mergeTo}": ${formatApiError(e)}`,
+                true,
+              );
+            }
           }
 
           for (const targetVal of config.targets || [config.target]) {
@@ -10149,6 +10373,71 @@ $(function () {
           );
 
           // ============================================================================
+          // Merge items section — merges one Wikidata item or lexeme into
+          // another. Available regardless of mode, since it operates on
+          // Wikidata entity IDs rather than the usual user/page target.
+          // Adapted from the standalone MediaWiki:Gadget-Merge.js script,
+          // reimplemented using Tengu's own components. Requests are sent
+          // to the Wikidata API via a foreign API connection, mirroring the
+          // pattern already used for Meta-Wiki reports.
+          // ============================================================================
+          const {
+            section: secMerge,
+            sectionBody: bodyMerge,
+            enableChk: chkMerge,
+          } = makeSection("Merge items", "🔗", false);
+
+          const divMergeStatus = document.createElement("div");
+          divMergeStatus.className = "tng-status-note tng-status-note-inactive";
+          divMergeStatus.textContent =
+            "Merges one Wikidata item or lexeme into another via the Wikidata API. Enter both entity IDs below (e.g. Q123, L456).";
+          bodyMerge.appendChild(divMergeStatus);
+
+          const { row: rowMergeFrom, field: fieldMergeFrom } =
+            makeRow("Entity to merge");
+          const inputMergeFrom = makeInput("e.g. Q123 or L456");
+          fieldMergeFrom.appendChild(inputMergeFrom);
+          bodyMerge.appendChild(rowMergeFrom);
+
+          const { row: rowMergeTo, field: fieldMergeTo } =
+            makeRow("Merge with");
+          const inputMergeTo = makeInput("e.g. Q456 or L789");
+          fieldMergeTo.appendChild(inputMergeTo);
+          bodyMerge.appendChild(rowMergeTo);
+
+          const { wrap: wrapMergeLowest, chk: chkMergeLowest } = makeCheckbox(
+            "Always merge into the older (lower-numbered) entity",
+            true,
+          );
+          wrapMergeLowest.title =
+            "When ticked, the entity with the lower ID always becomes the merge destination, regardless of which field it was entered in.";
+          const { wrap: wrapMergeRedirect, chk: chkMergeRedirect } =
+            makeCheckbox("Create a redirect after merging", true);
+          wrapMergeRedirect.title =
+            "When ticked, the merged-away item is cleared and redirected to the destination item. Not applicable to lexeme merges, which are redirected automatically as part of the merge itself.";
+          const { wrap: wrapMergeUnwatch, chk: chkMergeUnwatch } = makeCheckbox(
+            "Remove merged entity from your watchlist",
+            false,
+          );
+          const checksMerge = document.createElement("div");
+          checksMerge.className = "tng-checks";
+          checksMerge.style.paddingLeft = "0";
+          checksMerge.appendChild(wrapMergeLowest);
+          checksMerge.appendChild(wrapMergeRedirect);
+          checksMerge.appendChild(wrapMergeUnwatch);
+          bodyMerge.appendChild(checksMerge);
+
+          const { row: rowMergeSummary, field: fieldMergeSummary } =
+            makeRow("Summary");
+          const inputMergeSummary = makeInput(
+            "Appended to the auto-generated merge summary (optional)",
+          );
+          fieldMergeSummary.appendChild(inputMergeSummary);
+          bodyMerge.appendChild(rowMergeSummary);
+
+          body.appendChild(secMerge);
+
+          // ============================================================================
           // Warn section — user mode only
           // Sends a templated warning message to the target user's talk page.
           // ============================================================================
@@ -13268,7 +13557,8 @@ $(function () {
               chkGS.checked ||
               chkSRG.checked ||
               chkLockAccount.checked ||
-              chkFixRedirects.checked
+              chkFixRedirects.checked ||
+              chkMerge.checked
             );
           }
 
@@ -13287,6 +13577,7 @@ $(function () {
           chkLockAccount.addEventListener("change", updateStartBtn);
           chkMoveSandbox.addEventListener("change", updateStartBtn);
           chkFixRedirects.addEventListener("change", updateStartBtn);
+          chkMerge.addEventListener("change", updateStartBtn);
 
           btnStart.addEventListener("click", function () {
             const targetVal = inputTarget.value.trim();
@@ -13302,6 +13593,31 @@ $(function () {
               );
               inputTarget.focus();
               return;
+            }
+
+            if (chkMerge.checked) {
+              const mergeFromRaw = inputMergeFrom.value.trim().toUpperCase();
+              const mergeToRaw = inputMergeTo.value.trim().toUpperCase();
+              const isQPair =
+                /^Q\d+$/.test(mergeFromRaw) && /^Q\d+$/.test(mergeToRaw);
+              const isLPair =
+                /^L\d+$/.test(mergeFromRaw) && /^L\d+$/.test(mergeToRaw);
+              if (!isQPair && !isLPair) {
+                showNotification(
+                  fieldMergeFrom,
+                  "Enter two valid item IDs (Q123) or two lexeme IDs (L123).",
+                );
+                inputMergeFrom.focus();
+                return;
+              }
+              if (mergeFromRaw === mergeToRaw) {
+                showNotification(
+                  fieldMergeTo,
+                  "The two entities to merge must be different.",
+                );
+                inputMergeTo.focus();
+                return;
+              }
             }
 
             if (chkBlock.checked && selBlockType.value === "partial") {
@@ -13533,6 +13849,27 @@ $(function () {
                 selMoveSandboxReason.value
               );
             }
+
+            // Resolves which entity is the merge source and which is the
+            // destination. When "Always merge into the older entity" is
+            // ticked, the lower-numbered ID always becomes the destination
+            // regardless of which field it was typed into.
+            function resolveMergeEntities() {
+              if (!chkMerge.checked) return { from: "", to: "" };
+              let from = inputMergeFrom.value.trim().toUpperCase();
+              let to = inputMergeTo.value.trim().toUpperCase();
+              if (chkMergeLowest.checked) {
+                const fromNum = parseInt(from.replace(/^[QL]/, ""), 10);
+                const toNum = parseInt(to.replace(/^[QL]/, ""), 10);
+                if (fromNum < toNum) {
+                  const tmp = from;
+                  from = to;
+                  to = tmp;
+                }
+              }
+              return { from, to };
+            }
+            const mergeEntities = resolveMergeEntities();
 
             // Extracts the reason text for a Global sysops/Requests report
             // from the selected reason checkboxes and the additional details
@@ -13930,6 +14267,15 @@ $(function () {
               rdHides: rdHides,
               rdReason: buildRevdelReason() + suffix,
               os: chkOversight.checked,
+              mergeItems: chkMerge.checked,
+              mergeFrom: mergeEntities.from,
+              mergeTo: mergeEntities.to,
+              mergeAlwaysLowest: chkMergeLowest.checked,
+              mergeCreateRedirect:
+                chkMergeRedirect.checked &&
+                mergeEntities.from.charAt(0) !== "L",
+              mergeUnwatch: chkMergeUnwatch.checked,
+              mergeSummary: inputMergeSummary.value.trim(),
             };
 
             // Builds a list of every action that will run, based on the
@@ -13960,6 +14306,7 @@ $(function () {
                 features.push("🔏 Protect against recreation");
               if (config.fixRedirects) features.push("🔀 Fix redirects");
               if (config.rd) features.push("👁️ Revision deletion");
+              if (config.mergeItems) features.push("🔗 Merge items");
               return features;
             }
 

@@ -1,3 +1,13 @@
+## 2.202.0
+
+### Added
+
+* Added a **Merge items** section, letting Tengu merge one Wikidata item or lexeme into another directly from the dialogue, independent of the current mode or target. Adapted from the standalone `MediaWiki:Gadget-Merge.js` script used on Wikidata, but implemented as a native Tengu section reusing existing components (status notes, checkboxes, reason/summary field) rather than embedding the original UI.
+* Requests are sent to the Wikidata API via a foreign API connection (`www.wikidata.org/w/api.php`), following the same pattern already used for Meta-Wiki reports (Report to Global sysops/Requests, Report to Steward requests/Global). Item merges use `wbmergeitems`; lexeme merges use `wblmergelexemes`.
+* Added options: "Always merge into the older (lower-numbered) entity" (ticked by default), "Create a redirect after merging" (ticked by default; not applicable to lexemes, which are redirected automatically as part of the merge), and "Remove merged entity from your watchlist".
+* Before merging, Tengu fetches both entities via `wbgetentities` and checks for sitelink conflicts (both entities linking to the same wiki with different titles); if a conflict is found, the merge is aborted and logged instead of being attempted.
+* Added a `merge` counter to the progress dialogue's operation statistics, shown in the completion summary as "items merged".
+
 ## 2.201.2
 
 ### Fixed
