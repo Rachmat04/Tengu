@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.204.0
+ * Version 2.205.0
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -11361,11 +11361,54 @@ $(function () {
           [selMovePageNs, inputMovePageDest].forEach(function (el) {
             el.addEventListener("input", btnCheckMovePageDest.resetCheck);
             el.addEventListener("change", btnCheckMovePageDest.resetCheck);
+            el.addEventListener("input", updateMovePageResetTitleAvailability);
+            el.addEventListener("change", updateMovePageResetTitleAvailability);
           });
           movePageDestGroup.appendChild(btnCheckMovePageDest);
           fieldMovePageDest.appendChild(movePageDestGroup);
+
+          // Reset title button — shares the same row as the case-conversion
+          // buttons. Resets the destination title (namespace and page name)
+          // to the target page's current title, and is disabled whenever
+          // the destination already matches the current title.
+          const caseButtonsRowMovePageDest =
+            makeCaseButtonsRow(inputMovePageDest);
+          const btnResetMovePageDestTitle = makeBtn("Reset title", "quiet");
+          btnResetMovePageDestTitle.type = "button";
+          btnResetMovePageDestTitle.className += " tng-btn-sm";
+          btnResetMovePageDestTitle.title =
+            "Reset the destination title to the page's current title.";
+          function updateMovePageResetTitleAvailability() {
+            const _target = inputTarget.value.trim();
+            const destTitle = buildMovePageDestTitle();
+            let same = false;
+            if (_target && destTitle) {
+              try {
+                same =
+                  new mw.Title(_target).getPrefixedText() ===
+                  new mw.Title(destTitle).getPrefixedText();
+              } catch (e) {
+                same = false;
+              }
+            }
+            btnResetMovePageDestTitle.disabled = same;
+          }
+          btnResetMovePageDestTitle.addEventListener("click", function () {
+            const _target = inputTarget.value.trim();
+            if (!_target) return;
+            try {
+              const _titleObj = new mw.Title(_target);
+              selMovePageNs.value = String(_titleObj.getNamespaceId());
+              inputMovePageDest.value = _titleObj.getMain().replace(/_/g, " ");
+            } catch (e) {
+              inputMovePageDest.value = _target;
+            }
+            inputMovePageDest.dispatchEvent(new Event("input"));
+          });
+          caseButtonsRowMovePageDest.appendChild(btnResetMovePageDestTitle);
+
           divMovePagePanel.appendChild(rowMovePageDest);
-          divMovePagePanel.appendChild(makeCaseButtonsRow(inputMovePageDest));
+          divMovePagePanel.appendChild(caseButtonsRowMovePageDest);
 
           namespacesPromise.then(function (list) {
             selMovePageNs.innerHTML = "";
@@ -11405,6 +11448,7 @@ $(function () {
             } catch (e) {
               // Title could not be parsed; leave the fields as-is
             }
+            updateMovePageResetTitleAvailability();
           }
 
           // Combines the selected namespace with the entered page title into

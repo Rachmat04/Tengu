@@ -1,3 +1,10 @@
+## 2.205.0
+
+### Added
+
+* Added a **Reset title** button to the Move page sub-mode of the Move page section, placed on the same row as the existing case-conversion buttons (Sentence case, lower case, UPPER CASE, Title Case). Resets the destination namespace and title back to the target page's current title.
+* The button is automatically disabled whenever the destination title already matches the target page's current title, and re-evaluated whenever the destination namespace, destination title, or target changes.
+
 ## 2.204.0
 
 ### Changed
