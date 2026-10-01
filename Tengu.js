@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.203.0
+ * Version 2.204.0
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -10419,8 +10419,6 @@ $(function () {
           fieldMergeReason.appendChild(reasonWrapMerge);
           bodyMerge.appendChild(rowMergeReason);
 
-          body.appendChild(secMerge);
-
           // Reversible lock for this section, driven by mode, multi-target
           // state, and whether the current wiki is Wikidata. Tracked
           // separately from the mode lock (applyModeLock) via its own set,
@@ -12021,6 +12019,7 @@ $(function () {
           });
 
           body.appendChild(secMoveSandbox);
+          body.appendChild(secMerge);
 
           // Evaluates whether the "Also move the talk page" checkbox should
           // be available for the current target. Disables it synchronously

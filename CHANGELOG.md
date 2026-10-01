@@ -1,3 +1,9 @@
+## 2.204.0
+
+### Changed
+
+* Moved the **Merge items** section so it now appears immediately after **Move page** and before **Page protection**, rather than between **Lock account** and **User warning**. No functional, styling, or behavioural changes were made; this is a section-ordering change only.
+
 ## 2.203.0
 
 ### Changed
