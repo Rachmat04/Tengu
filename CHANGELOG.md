@@ -1,3 +1,13 @@
+## 2.206.0
+
+### Changed
+
+* The `[⛩️ rollback]` inline action (history, contributions, and diff pages) now checks whether the current user holds the rollback right *before* the link is built, rather than only discovering this after the action is attempted. The link's label and appearance are unchanged either way, but its tooltip now states upfront whether it will perform native rollback or an equivalent undo. The underlying fallback to undo for users without rollback rights, added in v2.163.0, is unchanged; this is a detection and messaging improvement, not a new fallback mechanism.
+
+### Notes
+
+* This affects only the tooltip shown before the action is used. Confirmation dialogue, edit summary wording, status/log display, and error handling are all unchanged.
+
 ## 2.205.0
 
 ### Added

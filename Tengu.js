@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.205.0
+ * Version 2.206.0
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -872,6 +872,40 @@ $(function () {
                 ),
               );
           });
+
+        // Cached check for whether the current user holds the rollback
+        // right on this wiki, fetched once and reused for the rest of the
+        // session. Used by the inline "[⛩️ rollback]" action (Section 09b)
+        // to decide, ahead of time, whether the link will perform native
+        // rollback or fall back to an equivalent undo — so the tooltip can
+        // say so upfront, rather than the person only finding out after
+        // the action has run (the actual fallback, if this check is wrong
+        // for any reason, still happens inside runQuickRevert() itself).
+        let rollbackRightPromise = null;
+        function hasRollbackRight() {
+          if (!rollbackRightPromise) {
+            rollbackRightPromise = apiGet({
+              action: "query",
+              meta: "userinfo",
+              uiprop: "rights",
+            })
+              .then(function (data) {
+                const rights =
+                  (data.query &&
+                    data.query.userinfo &&
+                    data.query.userinfo.rights) ||
+                  [];
+                return rights.indexOf("rollback") !== -1;
+              })
+              .catch(function () {
+                // Assume no rollback right if the check fails; the
+                // existing permissiondenied fallback inside
+                // runQuickRevert() still applies either way.
+                return false;
+              });
+          }
+          return rollbackRightPromise;
+        }
 
         // Compares two revisions' content via their SHA-1 hashes, used by
         // runQuickRevert() (Section 09b) to confirm whether a rollback/undo
@@ -16577,6 +16611,7 @@ $(function () {
           pageTitle,
           targetUser,
           revId,
+          hasRollbackRightNow,
           isContribsPage,
         ) {
           const isRollback = kind === "rollback";
@@ -16586,13 +16621,19 @@ $(function () {
           link.className =
             "tng-inline-action tng-inline-action-" +
             (isRollback ? "rollback" : isSingleUndo ? "undo" : "restore");
+          // The label and appearance stay "[⛩️ rollback]" regardless of
+          // whether native rollback or an equivalent undo will actually be
+          // used; only the tooltip differs, so the link reads the same for
+          // everyone.
           link.textContent = isRollback
             ? "[⛩️ rollback]"
             : isSingleUndo
               ? "[⛩️ undo]"
               : "[⛩️ restore this revision]";
           link.title = isRollback
-            ? "Roll back this edit using Tengu (native rollback)"
+            ? hasRollbackRightNow
+              ? "Roll back this edit using Tengu (native rollback)"
+              : "Roll back this edit using Tengu (via undo — you do not have rollback rights on this wiki)"
             : isSingleUndo
               ? "Undo this edit using Tengu (undo). Does not require rollback rights."
               : "Undo edits after this revision using Tengu (undo)";
@@ -16715,7 +16756,10 @@ $(function () {
           if (!oldRevId && !newRevId) return;
 
           const pageTitle = mw.config.get("wgPageName").replace(/_/g, " ");
-          const currentRevId = await fetchCurrentRevisionId(pageTitle);
+          const [currentRevId, hasRB] = await Promise.all([
+            fetchCurrentRevisionId(pageTitle),
+            hasRollbackRight(),
+          ]);
 
           // Best-effort recovery of a side's revision author, purely for
           // the confirmation dialogue/edit summary; a null/hidden
@@ -16748,6 +16792,7 @@ $(function () {
                 pageTitle,
                 targetUser,
                 revId,
+                hasRB,
               ),
             );
             // "[⛩️ undo]" is only offered on the right-hand (current
@@ -16761,6 +16806,7 @@ $(function () {
                   pageTitle,
                   targetUser,
                   revId,
+                  hasRB,
                 ),
               );
             }
@@ -16915,6 +16961,11 @@ $(function () {
           }
           if (!isHistoryPage && !isContribsPage) return;
 
+          // Resolved once up front so every inline "[⛩️ rollback]" link
+          // built below can show the correct tooltip immediately, rather
+          // than only after the action has run.
+          const hasRB = await hasRollbackRight();
+
           // On history pages, list items reliably carry data-mw-revid. On
           // contributions pages this attribute is not present on the <li>
           // itself, so the rows are selected more broadly here and the revision ID is
@@ -17004,6 +17055,7 @@ $(function () {
                   pageTitle,
                   targetUser,
                   revId,
+                  hasRB,
                 ),
               );
               actionWrap.appendChild(document.createTextNode(" "));
@@ -17013,6 +17065,7 @@ $(function () {
                   pageTitle,
                   targetUser,
                   revId,
+                  hasRB,
                 ),
               );
               li.appendChild(document.createTextNode(" "));
@@ -17060,6 +17113,7 @@ $(function () {
                 pageTitle,
                 targetUser,
                 revId,
+                hasRB,
                 true,
               ),
             );
