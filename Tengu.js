@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.208.1
+ * Version 2.209.0
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -4720,9 +4720,11 @@ $(function () {
 
                 // Delete the associated talk page if the main page was deleted
                 // and the user opted into it via the checkbox
+                let talkTitleForPage = null;
+                let talkDeleted = false;
                 if (mainDeleted && config.massdelTalk) {
                   try {
-                    const talkTitle = new mw.Title(title)
+                    talkTitleForPage = new mw.Title(title)
                       .getTalkPage()
                       .getPrefixedText();
                     // Skip deleting the target user's own talk page when a block
@@ -4734,17 +4736,17 @@ $(function () {
                         : null;
                     if (
                       blockNotifyTalkTitle &&
-                      talkTitle === blockNotifyTalkTitle
+                      talkTitleForPage === blockNotifyTalkTitle
                     ) {
                       addLog(
-                        `[Delete] Skipped talk page deletion: "${talkTitle}" — block notification is present on this page.`,
+                        `[Delete] Skipped talk page deletion: "${talkTitleForPage}" — block notification is present on this page.`,
                         "warn",
                       );
                     } else {
                       // Check if talk page exists before attempting deletion
                       const pageInfo = await apiGet({
                         action: "query",
-                        titles: talkTitle,
+                        titles: talkTitleForPage,
                         formatversion: 2,
                       });
 
@@ -4755,7 +4757,7 @@ $(function () {
                       ) {
                         await apiPost({
                           action: "delete",
-                          title: talkTitle,
+                          title: talkTitleForPage,
                           reason:
                             (useIndonesian
                               ? "Halaman pembicaraan dari halaman yang dihapus: "
@@ -4764,15 +4766,71 @@ $(function () {
                             toolTag,
                         });
                         addLog(
-                          `[Delete] Deleted associated talk page: "${talkTitle}"`,
+                          `[Delete] Deleted associated talk page: "${talkTitleForPage}"`,
                         );
                         stats.delete++;
                         updateStatusDisplay();
+                        talkDeleted = true;
                       }
                     }
                   } catch (e) {
                     addLog(
                       `[Delete] Failed to delete talk page for "${title}": ${formatApiError(e)}`,
+                      true,
+                    );
+                  }
+                }
+
+                // Delete redirects to the deleted talk page, mirroring the
+                // handling of redirects to the main article page below. Only
+                // runs when the talk page was actually deleted above (i.e.
+                // "Also delete the talk page" was enabled, a talk page
+                // existed, and the deletion succeeded) and "Delete redirects
+                // to deleted page" is enabled. Uses the wiki's own localised
+                // talk-page title (already resolved via mw.Title above)
+                // rather than assuming an English "Talk:" prefix.
+                if (talkDeleted && config.massdelRedirects) {
+                  try {
+                    const talkRdData = await apiGet({
+                      action: "query",
+                      list: "backlinks",
+                      bltitle: talkTitleForPage,
+                      blfilterredir: "redirects",
+                      bllimit: "max",
+                      formatversion: 2,
+                    });
+                    const talkRedirectPages =
+                      (talkRdData.query && talkRdData.query.backlinks) || [];
+                    for (const rdPage of talkRedirectPages) {
+                      try {
+                        await apiPost({
+                          action: "delete",
+                          title: rdPage.title,
+                          reason:
+                            (useIndonesian
+                              ? "Pengalihan ke halaman pembicaraan yang dihapus: "
+                              : "Redirect to deleted talk page: ") +
+                            config.massdelReason +
+                            toolTag,
+                        });
+                        addLog(
+                          `[Delete] Deleted redirect to deleted talk page: "${rdPage.title}"`,
+                        );
+                        stats.delete++;
+                        updateStatusDisplay();
+                      } catch (e) {
+                        addLog(
+                          `[Delete] Failed to delete redirect "${rdPage.title}": ${formatApiError(e)}`,
+                          true,
+                        );
+                      }
+                      await new Promise((resolve) =>
+                        setTimeout(resolve, THROTTLE_MS),
+                      );
+                    }
+                  } catch (e) {
+                    addLog(
+                      `[Delete] Failed to fetch redirects for talk page "${talkTitleForPage}": ${formatApiError(e)}`,
                       true,
                     );
                   }
@@ -10978,7 +11036,7 @@ $(function () {
           const { wrap: wrapPagedelRedirects, chk: chkPagedelRedirects } =
             makeCheckbox("Delete redirects to deleted page", true);
           wrapPagedelRedirects.title =
-            "When ticked, all redirects pointing to each deleted page are also deleted, including subpages when 'Delete subpages of deleted page' is enabled. Redirects to a non-existent target serve no purpose and are removed automatically.";
+            "When ticked, all redirects pointing to each deleted page are also deleted, including subpages when 'Delete subpages of deleted page' is enabled, and redirects pointing to the deleted talk page when 'Also delete the talk page' is enabled. Redirects to a non-existent target serve no purpose and are removed automatically.";
           checksPagedel.appendChild(wrapPagedelRedirects);
 
           // 'Delete subpages of deleted page' option

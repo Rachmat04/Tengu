@@ -1,3 +1,9 @@
+## 2.209.0
+
+### Added
+
+* Redirects pointing to a deleted page's talk page are now also deleted when both "Also delete the talk page" and "Delete redirects to deleted page" are enabled in the Page deletion section. Previously, only redirects pointing to the main article page were cleaned up; redirects to the talk page were left behind even when the talk page itself was removed.
+
 ## 2.208.1
 
 ### Fixed
