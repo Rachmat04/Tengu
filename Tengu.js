@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.208.0
+ * Version 2.208.1
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -14047,11 +14047,13 @@ $(function () {
             // combined with a username-hide request.
             function buildSRGReportLine() {
               const isBlock = isSRGBlockTarget();
-              // Each reason's own trailing punctuation (if any) is stripped
-              // before joining, so combining reasons that already end in a
-              // full stop (e.g. the LOCK reason set's "text" values) never
-              // produces doubled punctuation such as "...wikis.. Spambot.".
-              // A single full stop is then appended once after joining.
+              // Each reason's own trailing punctuation (if any) is stripped,
+              // and the user's additional details are treated the same way,
+              // so every part joins cleanly with ". " and a single full stop
+              // is appended once at the end. Previously, pickedReasonsText
+              // already ended in a full stop before being joined to details
+              // with another ". " separator, producing doubled punctuation
+              // such as "...global ban.. Confirmed socks: ...".
               const pickedReasons = activeSRGReasonChecks()
                 .filter(function (c) {
                   return c.chk.checked;
@@ -14060,17 +14062,9 @@ $(function () {
                   return (c.text || c.label).trim().replace(/[.!?]+$/, "");
                 });
               const details = inputSRGDetails.value.trim();
-              const pickedReasonsText = pickedReasons.length
-                ? pickedReasons.join(". ") + "."
-                : "";
-              let reasonText = "";
-              if (pickedReasonsText && details) {
-                reasonText = pickedReasonsText + ". " + details;
-              } else if (pickedReasonsText) {
-                reasonText = pickedReasonsText;
-              } else if (details) {
-                reasonText = details;
-              }
+              const parts = pickedReasons.slice();
+              if (details) parts.push(details.replace(/[.!?]+$/, ""));
+              let reasonText = parts.join(". ");
               if (reasonText && !/[.!?]$/.test(reasonText)) {
                 reasonText += ".";
               }

@@ -1,3 +1,9 @@
+## 2.208.1
+
+### Fixed
+
+* Fixed doubled punctuation in reports submitted to Steward requests/Global. `buildSRGReportLine()` was stripping each selected reason's trailing punctuation, joining them with ". " and a final full stop, then joining that already-punctuated string to the additional details field with another ". " separator, producing a doubled full stop whenever both reasons and details were present. The user's additional details are now stripped of trailing punctuation the same way as predefined reasons, and the full stop is appended once after every part has been joined.
+
 ## 2.208.0
 
 ### Fixed
