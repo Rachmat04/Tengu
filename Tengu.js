@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.207.0
+ * Version 2.208.0
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -881,21 +881,40 @@ $(function () {
         // say so upfront, rather than the person only finding out after
         // the action has run (the actual fallback, if this check is wrong
         // for any reason, still happens inside runQuickRevert() itself).
+        // Shared, cached fetch of the current user's local rights and groups
+        // (action=query&meta=userinfo&uiprop=rights|groups), used by both
+        // hasRollbackRight() below and init()'s rightsPromise (Section 09).
+        // Previously each made its own separate API request for the same
+        // data; this cache ensures the request is only ever made once per
+        // session regardless of which caller needs it first.
+        let userRightsInfoPromise = null;
+        function getUserRightsInfo() {
+          if (!userRightsInfoPromise) {
+            userRightsInfoPromise = apiGet({
+              action: "query",
+              meta: "userinfo",
+              uiprop: "rights|groups",
+            })
+              .then(function (data) {
+                const ui = data && data.query && data.query.userinfo;
+                return {
+                  rights: (ui && ui.rights) || [],
+                  groups: (ui && ui.groups) || [],
+                };
+              })
+              .catch(function () {
+                return { rights: [], groups: [] };
+              });
+          }
+          return userRightsInfoPromise;
+        }
+
         let rollbackRightPromise = null;
         function hasRollbackRight() {
           if (!rollbackRightPromise) {
-            rollbackRightPromise = apiGet({
-              action: "query",
-              meta: "userinfo",
-              uiprop: "rights",
-            })
-              .then(function (data) {
-                const rights =
-                  (data.query &&
-                    data.query.userinfo &&
-                    data.query.userinfo.rights) ||
-                  [];
-                return rights.indexOf("rollback") !== -1;
+            rollbackRightPromise = getUserRightsInfo()
+              .then(function (info) {
+                return info.rights.indexOf("rollback") !== -1;
               })
               .catch(function () {
                 // Assume no rollback right if the check fails; the
@@ -8574,25 +8593,13 @@ $(function () {
 
           // Fetch the current user's rights and groups immediately so the result is
           // ready (or very close to ready) by the time the dialogue finishes building.
+          // Reuses the shared getUserRightsInfo() cache (Section 05): if
+          // hasRollbackRight() has already fetched this (e.g. for the inline
+          // rollback/undo actions on history/contributions/diff pages), this
+          // resolves instantly instead of making a second, identical
+          // action=query&meta=userinfo&uiprop=rights|groups request.
           const rightsApi = new mw.Api();
-          const rightsPromise = new Promise(function (resolve) {
-            rightsApi
-              .get({
-                action: "query",
-                meta: "userinfo",
-                uiprop: "rights|groups",
-              })
-              .done(function (data) {
-                const ui = data && data.query && data.query.userinfo;
-                resolve({
-                  rights: (ui && ui.rights) || [],
-                  groups: (ui && ui.groups) || [],
-                });
-              })
-              .fail(function () {
-                resolve({ rights: [], groups: [] });
-              });
-          });
+          const rightsPromise = getUserRightsInfo();
 
           // Fetch global user info (CentralAuth groups) in parallel.
           // Used to populate the global-rights row in the footer panel.

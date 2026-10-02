@@ -1,3 +1,9 @@
+## 2.208.0
+
+### Fixed
+
+* Removed a redundant rights check: `hasRollbackRight()` (used by the inline `[⛩️ rollback]`/`[⛩️ undo]`/`[⛩️ restore this revision]` actions) and `init()`'s `rightsPromise` (used by the main Tengu dialogue) each previously issued their own separate `action=query&meta=userinfo&uiprop=rights|groups` request for the same data. Both now share a single cached fetch (`getUserRightsInfo()`, Section 05), so the request is only ever made once per session regardless of which caller needs it first.
+
 ## 2.207.0
 
 ### Fixed
