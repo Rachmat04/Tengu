@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.206.0
+ * Version 2.207.0
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -14040,16 +14040,21 @@ $(function () {
             // combined with a username-hide request.
             function buildSRGReportLine() {
               const isBlock = isSRGBlockTarget();
+              // Each reason's own trailing punctuation (if any) is stripped
+              // before joining, so combining reasons that already end in a
+              // full stop (e.g. the LOCK reason set's "text" values) never
+              // produces doubled punctuation such as "...wikis.. Spambot.".
+              // A single full stop is then appended once after joining.
               const pickedReasons = activeSRGReasonChecks()
                 .filter(function (c) {
                   return c.chk.checked;
                 })
                 .map(function (c) {
-                  return c.text || c.label;
+                  return (c.text || c.label).trim().replace(/[.!?]+$/, "");
                 });
               const details = inputSRGDetails.value.trim();
               const pickedReasonsText = pickedReasons.length
-                ? pickedReasons.join(". ")
+                ? pickedReasons.join(". ") + "."
                 : "";
               let reasonText = "";
               if (pickedReasonsText && details) {

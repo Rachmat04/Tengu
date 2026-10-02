@@ -1,3 +1,9 @@
+## 2.207.0
+
+### Fixed
+
+* Fixed the reason text submitted to Steward requests/Global producing doubled punctuation (e.g. "...wikis.. Spambot.") when a selected reason's own label or text already ended with a full stop, question mark, or exclamation mark. `buildSRGReportLine()` now strips each selected reason's trailing punctuation before joining them with ". ", then appends a single full stop once, regardless of how many reasons are selected.
+
 ## 2.206.0
 
 ### Changed
