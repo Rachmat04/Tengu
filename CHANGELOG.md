@@ -1,3 +1,22 @@
+## 2.211.0
+
+### Changed
+
+* On wikidata.org, "Delete redirects to deleted page", "Delete subpages of deleted page", and "Remove links to deleted page or file" are now unavailable in the Page deletion section when the target is a Wikidata item (Q-prefixed) or lexeme (L-prefixed). The options update when the target changes, and the Start execution path ignores them for these targets. Other wikis and targets are unaffected.
+
+## 2.210.0
+
+### Added
+
+Added more Wikidata deletion reasons to the preset reason list:
+
+- Does not meet the notability policy
+- Deletion discussion (RfD): Does not meet the notability policy
+- Falls under one of the exclusion criteria
+- Violation of the living people policy
+- Recreation of an earlier deleted item
+- Empty item
+
 ## 2.209.0
 
 ### Added

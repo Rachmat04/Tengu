@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.210.0
+ * Version 2.211.0
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -12405,6 +12405,50 @@ $(function () {
           // Category namespace. Unticks the checkbox whenever it becomes
           // unavailable, so a stale selection is never silently carried
           // over to an invalid target.
+          // Wikidata: Item (Q) and Lexeme (L) targets cannot use the redirect,
+          // subpage, or delinking options in Page deletion. Only applies in page
+          // mode on wikidata.org; all other wikis and targets are unaffected.
+          const wikidataItemLockReason =
+            "not available for Wikidata items and lexemes.";
+          function isWikidataItemOrLexemeTarget() {
+            if (tenguMode !== "page") return false;
+            if (mw.config.get("wgServerName") !== "www.wikidata.org")
+              return false;
+            return /^[QL]\d+$/i.test(inputTarget.value.trim());
+          }
+          function updateWikidataItemPagedelLocks() {
+            const lock = isWikidataItemOrLexemeTarget();
+            [
+              [wrapPagedelRedirects, chkPagedelRedirects],
+              [wrapPagedelSubpages, chkPagedelSubpages],
+              [wrapPagedelUnlink, chkPagedelUnlink],
+            ].forEach(function (pair) {
+              const wrap = pair[0];
+              const chk = pair[1];
+              if (wrap.dataset.tngOrigTitle === undefined) {
+                wrap.dataset.tngOrigTitle = wrap.title;
+              }
+              if (chk.dataset.tngDefault === undefined) {
+                chk.dataset.tngDefault = String(chk.checked);
+              }
+              const wasLocked = wrap.dataset.tngWdLocked === "1";
+              if (lock) {
+                chk.checked = false;
+                chk.disabled = true;
+                wrap.style.opacity = "0.5";
+                wrap.style.cursor = "not-allowed";
+                wrap.title = "Not available: " + wikidataItemLockReason;
+              } else {
+                chk.disabled = false;
+                if (wasLocked) chk.checked = chk.dataset.tngDefault === "true";
+                wrap.style.opacity = "";
+                wrap.style.cursor = "";
+                wrap.title = wrap.dataset.tngOrigTitle;
+              }
+              wrap.dataset.tngWdLocked = lock ? "1" : "0";
+            });
+          }
+
           // Tracks the async result of the current target's namespace check,
           // so a slow-resolving check for an earlier target cannot overwrite
           // the UI state set by a faster-resolving check for a later one.
@@ -13644,6 +13688,7 @@ $(function () {
 
             updateUploadAvailability();
             updatePagedelTalkAvailability();
+            updateWikidataItemPagedelLocks();
             updateMergeAvailability();
             updateStartBtn();
             updateSectionStatus();
@@ -14365,9 +14410,12 @@ $(function () {
               notifyLockAccount: chkNotifyLockAccount.checked,
               massdel: chkPagedel.checked,
               massdelTalk: chkPagedelTalk.checked,
-              massdelRedirects: chkPagedelRedirects.checked,
-              massdelSubpages: chkPagedelSubpages.checked,
-              massdelUnlink: chkPagedelUnlink.checked,
+              massdelRedirects:
+                chkPagedelRedirects.checked && !chkPagedelRedirects.disabled,
+              massdelSubpages:
+                chkPagedelSubpages.checked && !chkPagedelSubpages.disabled,
+              massdelUnlink:
+                chkPagedelUnlink.checked && !chkPagedelUnlink.disabled,
               massdelUncategorize:
                 chkPagedelUncategorize.checked &&
                 !chkPagedelUncategorize.disabled,
@@ -15151,6 +15199,7 @@ $(function () {
             }
 
             // Trigger dynamic enforcement check when preset package changes checkboxes
+            updateWikidataItemPagedelLocks();
             updateStartBtn();
           }
 
@@ -16003,6 +16052,7 @@ $(function () {
             // Re-evaluate talk page deletion availability (handles both modes internally).
             updatePagedelTalkAvailability();
             updatePagedelUncategorizeAvailability();
+            updateWikidataItemPagedelLocks();
             updateUploadAvailability();
             updateSectionStatus();
           });
