@@ -38,7 +38,7 @@ Tengu automatically selects the most appropriate mode based on the page you open
 
 ### Block
 - Blocks users, IP addresses, or IP ranges (CIDR notation) with configurable expiry, reason, and flags (autoblock, account-creation block, talk-page block, email block, hard block, username hiding). Autoblock is not applicable to IP ranges and is omitted automatically.
-- When the target is an IP range, only the Block and Unblock sections are available in user mode; rollback, revision deletion, user warnings, account locking, and cross-wiki reporting all require a specific account or single IP. [Inference: range handling has not been independently confirmed against a live wiki.]
+- When the target is an IP range, only the Block and Unblock sections are available in user mode; rollback, revision deletion, user warnings, account locking, and cross-wiki reporting all require a specific account or single IP.
 - Pre-fills the block form with settings from any active block on the target.
 - Detects temporary accounts and sets a default 3-month expiry automatically.
 - Optionally clears the target's talk page before posting a block notification (indefinite blocks only).

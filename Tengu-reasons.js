@@ -877,6 +877,64 @@ window.TenguReasons = {
             },
           ],
         },
+        {
+          group: "Wikidata",
+          items: [
+            {
+              value: v(
+                "Duplicate item or lexeme that describes the same subject as another entity",
+                "Butir atau leksem duplikat yang menjelaskan subjek yang sama dengan entitas lain",
+              ),
+              label: "Duplicate item or lexeme",
+            },
+            {
+              value: v(
+                "Item or property that falls outside the scope of Wikidata as defined by its notability and inclusion policies",
+                "Butir atau properti yang berada di luar cakupan Wikidata sebagaimana ditetapkan oleh kebijakan kelayakan dan penyertaannya",
+              ),
+              label: "Out of project scope",
+            },
+            {
+              value: v(
+                "Item does not meet the Wikidata notability policy",
+                "Butir tidak memenuhi kebijakan kelayakan Wikidata",
+              ),
+              label: "Does not meet the notability policy",
+            },
+            {
+              value: v(
+                "Item does not meet the Wikidata [[Special:MyLanguage/Wikidata:Notability|notability policy]], as determined through a deletion discussion",
+                "Butir tidak memenuhi [[Special:MyLanguage/Wikidata:Notability|kebijakan kelayakan]] Wikidata, sebagaimana ditetapkan melalui diskusi penghapusan",
+              ),
+              label: "Deletion discussion: does not meet the notability policy",
+            },
+            {
+              value: v(
+                "Item falls under one of the Wikidata [[Special:MyLanguage/Wikidata:Notability/Exclusion criteria|notability exclusion criteria]]",
+                "Butir termasuk dalam salah satu [[Special:MyLanguage/Wikidata:Notability/Exclusion criteria|kriteria pengecualian kelayakan]] Wikidata",
+              ),
+              label: "Falls under one of the exclusion criteria",
+            },
+            {
+              value: v(
+                "Item violates the Wikidata [[Special:MyLanguage/Wikidata:Living people|living people policy]]",
+                "Butir melanggar kebijakan Wikidata tentang [[Special:MyLanguage/Wikidata:Living people|orang yang masih hidup]]",
+              ),
+              label: "Violation of living people policy",
+            },
+            {
+              value: v(
+                "Item was recreated after an earlier deletion",
+                "Butir dibuat ulang setelah penghapusan sebelumnya",
+              ),
+              label: "Recreation of earlier deleted item",
+            },
+            {
+              value: v("Item has no content", "Butir tidak memiliki konten"),
+              label: "Empty item",
+            },
+          ],
+        },
       ],
 
       PROTECTION_REASONS: [
