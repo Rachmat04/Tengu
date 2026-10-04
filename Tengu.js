@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.212.0
+ * Version 2.212.1
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -479,10 +479,17 @@ $(function () {
           });
 
           // Clicking anywhere outside the control closes the dropdown;
-          // clicks on a checkbox or its label keep it open.
-          document.addEventListener("click", function (e) {
+          // clicks on a checkbox or its label keep it open. The listener
+          // removes itself once the combobox is no longer in the document,
+          // so it does not accumulate across dialogue openings.
+          const onDocumentClick = function (e) {
+            if (!document.body.contains(wrap)) {
+              document.removeEventListener("click", onDocumentClick);
+              return;
+            }
             if (!wrap.contains(e.target)) toggleDropdown(false);
-          });
+          };
+          document.addEventListener("click", onDocumentClick);
 
           wrap.appendChild(input);
           wrap.appendChild(dropdown);
@@ -6166,9 +6173,7 @@ $(function () {
           lastEditScope.textContent = "Last edit";
           lastEditRow.appendChild(lastEditScope);
           const lastEditBody = document.createElement("div");
-          lastEditBody.className = isTargetIP
-            ? "tng-info-loading"
-            : "tng-info-loading";
+          lastEditBody.className = "tng-info-loading";
           lastEditBody.textContent = "Loading...";
           lastEditRow.appendChild(lastEditBody);
           accountInfoCardBody.appendChild(lastEditRow);

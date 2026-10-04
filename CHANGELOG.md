@@ -1,3 +1,13 @@
+## 2.212.1
+
+### Fixed
+
+* Fixed the document-level click listener added by `makeCheckboxCombobox()` never being removed. Each dialogue opening added another listener that kept references to detached elements. The listener now removes itself once its combobox leaves the document.
+
+### Changed
+
+* Removed a redundant ternary in the **Last edit** row setup in the **Get info** panel. Both branches assigned the same class, so behaviour is unchanged.
+
 ## 2.212.0
 
 ### Changed
