@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.212.1
+ * Version 2.213.0
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -9865,7 +9865,7 @@ $(function () {
             section: secRollback,
             sectionBody: bodyRollback,
             enableChk: chkRollback,
-          } = makeSection("Rollback", "🔙", false);
+          } = makeSection("Roll back edits", "🔙", false);
           const { wrap: wrapBot, chk: chkBot } = makeCheckbox(
             "Mark as bot edits",
             false,
@@ -9924,7 +9924,7 @@ $(function () {
             section: secBlock,
             sectionBody: bodyBlock,
             enableChk: chkBlock,
-          } = makeSection("Block", "⛔️", false);
+          } = makeSection("Block accounts", "⛔️", false);
 
           // Block status note — populated by updateSectionStatus() when the target changes
           const divBlockStatus = document.createElement("div");
@@ -10212,7 +10212,7 @@ $(function () {
             section: secUnblock,
             sectionBody: bodyUnblock,
             enableChk: chkUnblock,
-          } = makeSection("Unblock", "🔓", false);
+          } = makeSection("Unblock accounts", "🔓", false);
 
           const { row: rowUnblockReason, field: fieldUnblockReason } =
             makeRow("Reason");
@@ -10329,7 +10329,7 @@ $(function () {
             section: secLockAccount,
             sectionBody: bodyLockAccount,
             enableChk: chkLockAccount,
-          } = makeSection("Lock account", "🔧", false);
+          } = makeSection("Lock accounts", "🔧", false);
 
           const hdrLockAccount = secLockAccount.querySelector(
             ".tng-section-header",
@@ -10595,7 +10595,7 @@ $(function () {
             section: secWarn,
             sectionBody: bodyWarn,
             enableChk: chkWarn,
-          } = makeSection("User warning", "🔔", false);
+          } = makeSection("Warn users", "🔔", false);
 
           const { row: rowWarnMsg, field: fieldWarnMsg } = makeRow("Message");
           // Flatten the grouped WARN_MESSAGES structure into a single <select>
@@ -10984,7 +10984,7 @@ $(function () {
             section: secPagedel,
             sectionBody: bodyPagedel,
             enableChk: chkPagedel,
-          } = makeSection("Page deletion", "🗑️", false);
+          } = makeSection("Delete pages", "🗑️", false);
 
           // Page deletion status note — populated by updateSectionStatus() when the target changes
           const divPagedelStatus = document.createElement("div");
@@ -11238,7 +11238,7 @@ $(function () {
             section: secUndelete,
             sectionBody: bodyUndelete,
             enableChk: chkUndelete,
-          } = makeSection("Page undeletion", "📤", false);
+          } = makeSection("Undelete pages", "📤", false);
 
           const hdrUndelete = secUndelete.querySelector(".tng-section-header");
 
@@ -11364,7 +11364,7 @@ $(function () {
             section: secMoveSandbox,
             sectionBody: bodyMoveSandbox,
             enableChk: chkMoveSandbox,
-          } = makeSection("Move page", "✂️", false);
+          } = makeSection("Move pages", "✂️", false);
 
           // Creates a destination-page existence checker button (❓ / ❎ / ✅),
           // shared by the Move page and Move to user's sandbox sub-modes.
@@ -12512,7 +12512,7 @@ $(function () {
             section: secProtect,
             sectionBody: bodyProtect,
             enableChk: chkProtect,
-          } = makeSection("Page protection", "🛡️", false);
+          } = makeSection("Protect pages", "🛡️", false);
 
           // Page protection status note — populated by updateSectionStatus() when the target changes
           const divProtectStatus = document.createElement("div");
@@ -12829,7 +12829,7 @@ $(function () {
             section: secProtectRecreation,
             sectionBody: bodyProtectRecreation,
             enableChk: chkProtectRecreation,
-          } = makeSection("Protect against recreation", "🔏", false);
+          } = makeSection("Protect pages against recreation", "🔏", false);
 
           const hdrProtectRecreation = secProtectRecreation.querySelector(
             ".tng-section-header",
@@ -13088,7 +13088,7 @@ $(function () {
             section: secRevdel,
             sectionBody: bodyRevdel,
             enableChk: chkRevdel,
-          } = makeSection("Revision deletion", "👁️", false);
+          } = makeSection("Delete revisions", "👁️", false);
           const { wrap: wrapRdContent, chk: chkRdContent } = makeCheckbox(
             "Hide revision content",
             true,
@@ -14531,29 +14531,29 @@ $(function () {
             // the user can verify their selections before any action runs.
             function buildEnabledFeaturesList() {
               const features = [];
-              if (config.rollback) features.push("🔙 Rollback");
-              if (config.block) features.push("⛔️ Block");
-              if (config.unblock) features.push("🔓 Unblock");
-              if (config.warn) features.push("🔔 User warning");
+              if (config.rollback) features.push("🔙 Roll back edits");
+              if (config.block) features.push("⛔️ Block accounts");
+              if (config.unblock) features.push("🔓 Unblock accounts");
+              if (config.warn) features.push("🔔 Warn users");
               if (config.reportGS)
                 features.push("🚩 Report to Global sysops/Requests");
               if (config.reportSRG)
                 features.push("📌 Report to Steward requests/Global");
               if (config.lockAccount)
-                features.push("🔧 Lock account [EXPERIMENTAL]");
-              if (config.massdel) features.push("🗑️ Page deletion");
-              if (config.undelete) features.push("📤 Page undeletion");
+                features.push("🔧 Lock accounts [EXPERIMENTAL]");
+              if (config.massdel) features.push("🗑️ Delete pages");
+              if (config.undelete) features.push("📤 Undelete pages");
               if (config.moveSandbox)
                 features.push(
                   config.moveSandboxMode === "movepage"
-                    ? "✂️ Move page"
-                    : "✂️ Move to user's sandbox",
+                    ? "✂️ Move pages"
+                    : "✂️ Move pages to user's sandbox",
                 );
-              if (config.protect) features.push("🛡️ Page protection");
+              if (config.protect) features.push("🛡️ Protect pages");
               if (config.protectRecreation)
-                features.push("🔏 Protect against recreation");
+                features.push("🔏 Protect pages against recreation");
               if (config.fixRedirects) features.push("🔀 Fix redirects");
-              if (config.rd) features.push("👁️ Revision deletion");
+              if (config.rd) features.push("👁️ Delete revisions");
               if (config.mergeItems) features.push("🔗 Merge items");
               return features;
             }
@@ -16168,7 +16168,7 @@ $(function () {
               title:
                 "Confirm " +
                 (method === "rollback"
-                  ? "rollback"
+                  ? "roll back"
                   : method === "singleundo"
                     ? "undo"
                     : "restore"),

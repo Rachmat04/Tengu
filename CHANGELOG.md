@@ -1,3 +1,11 @@
+## 2.213.0
+
+### Changed
+
+* Renamed the main feature labels to verb-based names: Roll back edits, Block accounts, Unblock accounts, Lock accounts, Warn users, Delete pages, Undelete pages, Move pages, Protect pages, Protect pages against recreation, and Delete revisions. Merge items and Fix redirects are unchanged.
+* Applied the same names to the confirmation dialogue's feature list and to the inline rollback confirmation title.
+* Label text only. No behaviour, API calls, or stored configuration keys changed.
+
 ## 2.212.1
 
 ### Fixed
