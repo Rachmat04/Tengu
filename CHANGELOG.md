@@ -1,3 +1,9 @@
+## 2.212.0
+
+### Changed
+
+* Increased the height of the progress log window (`.tng-log-box`) from 160 px to 240 px, so more log entries are visible at once and the window no longer appears too small during long runs.
+
 ## 2.211.0
 
 ### Changed
