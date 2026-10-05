@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.215.6
+ * Version 2.215.7
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -2016,6 +2016,85 @@ $(function () {
           // applied.
           function isProtectionRemoved() {
             return config.protectEdit === "all" && config.protectMove === "all";
+          }
+
+          // Returns true when pending changes protection is actually being
+          // applied: the option is ticked and its level is not "none".
+          function isPendingChangesActive() {
+            return (
+              !!config.protectPendingChanges &&
+              config.protectPendingChangesLevel !== "none"
+            );
+          }
+
+          // Returns true when pending changes is the only protection applied
+          // (edit and move restrictions are both unrestricted).
+          function isPendingChangesOnly() {
+            return isProtectionRemoved() && isPendingChangesActive();
+          }
+
+          // Describes the pending changes level and expiry for notices.
+          function describePendingChanges() {
+            const level = config.protectPendingChangesLevel;
+            const indef = config.protectPendingChangesExpiry === "never";
+            const expiry = config.protectPendingChangesExpiry;
+            return {
+              indef: indef,
+              levelEn:
+                level === "sysop"
+                  ? "reviewers/administrators only"
+                  : "autoconfirmed users",
+              levelId:
+                level === "sysop"
+                  ? "hanya peninjau/pengurus"
+                  : "pengguna terkonfirmasi otomatis",
+              expiryEn: indef ? "indefinitely" : "for " + expiry,
+              expiryId: indef
+                ? "secara tidak terbatas"
+                : "selama " + translateDurationId(expiry),
+            };
+          }
+
+          // Builds a notice for runs where pending changes is the only
+          // protection applied, so the page is described as protected with
+          // pending changes rather than as no longer protected.
+          function buildPendingChangesOnlyNotice(titles, reasonNotice) {
+            const pc = describePendingChanges();
+            const listed = titles.map((t) => `"${t}"`).join(" and ");
+            const listedId = titles.map((t) => `"${t}"`).join(" dan ");
+            if (useIndonesian) {
+              const subject =
+                titles.length === 1
+                  ? `Halaman ${listedId}`
+                  : `Halaman-halaman berikut: ${listedId}`;
+              return `== Pemberitahuan perlindungan halaman ==\n${subject} telah diberi perlindungan perubahan tertunda (tingkat: ${pc.levelId}) ${pc.expiryId} dengan alasan berikut: ${reasonNotice}.\n\nPenyuntingan tetap terbuka bagi semua pengguna, tetapi sebagian suntingan mungkin perlu ditinjau sebelum ditampilkan kepada pembaca secara bawaan. ${pc.indef ? "Perlindungan ini tidak berakhir secara otomatis dan akan tetap berlaku kecuali diubah oleh pengurus." : "Perlindungan dijadwalkan berakhir pada waktunya, kecuali diubah oleh pengurus."}\n\nPemberitahuan ini dikirimkan secara otomatis. Silakan sampaikan pertanyaan atau keberatan ke halaman pembicaraan saya. ~~~~`;
+            }
+            const subject =
+              titles.length === 1
+                ? `The page ${listed} has`
+                : `The following pages have been given pending changes protection: ${listed}. They have`;
+            const subjectFull =
+              titles.length === 1
+                ? `${subject} been given pending changes protection (level: ${pc.levelEn}) ${pc.expiryEn} due to the following reason: ${reasonNotice}.`
+                : `${subject} this protection (level: ${pc.levelEn}) ${pc.expiryEn} due to the following reason: ${reasonNotice}.`;
+            return `== Page protection notice ==\n${subjectFull}\n\nEditing remains open to all users, but some edits may need to be reviewed before they are shown to readers by default. ${pc.indef ? "This protection does not expire automatically and will remain in effect unless modified by an administrator." : "The protection is scheduled to remain in effect until it expires, unless modified by an administrator."}\n\nThis notification was posted automatically. Please direct any questions or concerns to my user talk page. ~~~~`;
+          }
+
+          // Adds a pending changes sentence to a standard protection notice
+          // when pending changes protection is applied alongside edit/move
+          // restrictions. The sentence is inserted before the automatic-post
+          // line, so the notice keeps its original structure.
+          function appendPendingChangesNote(notice) {
+            const pc = describePendingChanges();
+            const marker = useIndonesian
+              ? "Pemberitahuan ini dikirimkan secara otomatis."
+              : "This notification was posted automatically.";
+            const sentence = useIndonesian
+              ? `Perlindungan perubahan tertunda (tingkat: ${pc.levelId}) juga diterapkan ${pc.expiryId}.\n\n`
+              : `Pending changes protection (level: ${pc.levelEn}) has also been applied ${pc.expiryEn}.\n\n`;
+            const idx = notice.indexOf(marker);
+            if (idx === -1) return notice;
+            return notice.slice(0, idx) + sentence + notice.slice(idx);
           }
 
           // Fixes double redirects pointing to oldTitle by updating them to
@@ -4539,8 +4618,14 @@ $(function () {
                       : useIndonesian
                         ? "(tidak ada alasan diberikan)"
                         : "(no reason given)";
-                  const isUnprotected = isProtectionRemoved();
-                  if (isUnprotected) {
+                  const isUnprotected =
+                    isProtectionRemoved() && !isPendingChangesActive();
+                  if (isPendingChangesOnly()) {
+                    notice = buildPendingChangesOnlyNotice(
+                      titles,
+                      protectReasonNotice,
+                    );
+                  } else if (isUnprotected) {
                     if (titles.length === 1) {
                       notice = useIndonesian
                         ? `== Pemberitahuan perlindungan halaman ==\nHalaman "${titles[0]}" tidak lagi dilindungi dengan alasan berikut: ${protectReasonNotice}.\n\nSemua pengguna kini dapat menyunting halaman ini tanpa pembatasan.\n\nPemberitahuan ini dikirimkan secara otomatis. Silakan sampaikan pertanyaan atau keberatan ke halaman pembicaraan saya. ~~~~`
@@ -4568,6 +4653,13 @@ $(function () {
                         ? `== Pemberitahuan perlindungan halaman ==\nHalaman-halaman berikut telah dilindungi secara tidak terbatas dengan alasan berikut: ${protectReasonNotice}.\n\n${listedId}\n\nSelama masa perlindungan, sebagian atau seluruh tindakan penyuntingan pada halaman-halaman ini mungkin dibatasi bergantung pada tingkat perlindungan yang diterapkan. Perlindungan ini tidak berakhir secara otomatis dan akan tetap berlaku kecuali diubah oleh pengurus.\n\nPemberitahuan ini dikirimkan secara otomatis. Silakan sampaikan pertanyaan atau keberatan ke halaman pembicaraan saya. ~~~~`
                         : `== Pemberitahuan perlindungan halaman ==\nHalaman-halaman berikut telah dilindungi selama ${translateDurationId(config.protectExpiry)} dengan alasan berikut: ${protectReasonNotice}.\n\n${listedId}\n\nSelama masa perlindungan, sebagian atau seluruh tindakan penyuntingan pada halaman-halaman ini mungkin dibatasi bergantung pada tingkat perlindungan yang diterapkan. Perlindungan dijadwalkan berakhir pada waktunya, kecuali diubah oleh pengurus.\n\nPemberitahuan ini dikirimkan secara otomatis. Silakan sampaikan pertanyaan atau keberatan ke halaman pembicaraan saya. ~~~~`
                       : `== Page protection notice ==\nThe following pages have been protected ${protectExpiryDisplay} due to the following reason: ${protectReasonNotice}.\n\n${listed}\n\nDuring the protection period, some or all editing actions on these pages may be restricted depending on the level of protection applied. ${protectExpiryText}\n\nThis notification was posted automatically. Please direct any questions or concerns to my user talk page. ~~~~`;
+                  }
+                  if (
+                    isPendingChangesActive() &&
+                    !isPendingChangesOnly() &&
+                    !isUnprotected
+                  ) {
+                    notice = appendPendingChangesNote(notice);
                   }
                   await apiPost({
                     action: "edit",

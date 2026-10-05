@@ -1,3 +1,15 @@
+## 2.215.7
+
+### Fixed
+
+* Fixed the page protection notification saying a page was "no longer protected" when pending changes protection was the only protection applied. `isProtectionRemoved()` only checked the edit and move restrictions, so a run with both set to "All users" and pending changes enabled was treated as an unprotection.
+* The notification now takes the pending changes setting into account. A page is only described as "no longer protected" when edit and move restrictions are unrestricted and no pending changes protection is applied.
+
+### Added
+
+* Added a dedicated notice (English and Indonesian) for runs where pending changes is the only protection. It states the pending changes level and its expiry, and says that editing remains open to all users.
+* When pending changes protection is applied together with edit or move restrictions, the standard notice now includes an extra sentence giving the pending changes level and expiry.
+
 ## 2.215.6
 
 ### Fixed
