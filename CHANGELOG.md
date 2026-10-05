@@ -1,3 +1,9 @@
+## 2.215.2
+
+### Changed
+
+* Reworked the **Page assessment** section (🏅) in the **Get info** panel (page mode). It now shows the overall page class first, with its badge when available, followed by one compact line per WikiProject: the WikiProject name, its class and badge, and its importance. An importance value of `???` is shown as "Unknown". Empty or missing fields are not rendered. The XTools failure fallback and retry control are unchanged.
+
 ## 2.215.1
 
 ### Added

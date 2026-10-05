@@ -7159,10 +7159,72 @@ $(function () {
             });
           }
 
-          // Renders the quality class and importance rating into the Page
-          // assessment section. Assumed response shape: an
-          // "assessments" object keyed by WikiProject code, each holding
-          // "class" and "importance".
+          // Returns a non-empty string from a value, or null. Used so empty
+          // or missing API fields are never rendered.
+          function nonEmptyString(v) {
+            return typeof v === "string" && v.trim() ? v.trim() : null;
+          }
+
+          // Builds one assessment line: an optional badge, a class label,
+          // and an optional importance label. The importance colour is applied
+          // to a small dot, not to the text, to keep the UI calm. A value of
+          // "???" is shown as "Unknown" rather than as a normal level.
+          function makeAssessmentLine(classObj, importanceObj) {
+            const line = document.createElement("div");
+            line.style.cssText =
+              "display:flex;align-items:center;flex-wrap:wrap;gap:6px;";
+
+            const classVal = nonEmptyString(classObj && classObj.value);
+            const badgeUrl = nonEmptyString(classObj && classObj.badge);
+            if (badgeUrl) {
+              const img = document.createElement("img");
+              img.src = badgeUrl;
+              img.alt = classVal || "";
+              img.height = 16;
+              img.style.cssText = "height:16px;width:auto;";
+              line.appendChild(img);
+            }
+            const classEl = document.createElement("span");
+            classEl.textContent = classVal || XTOOLS_FALLBACK_TEXT;
+            line.appendChild(classEl);
+
+            const impVal = nonEmptyString(importanceObj && importanceObj.value);
+            const impColor = nonEmptyString(
+              importanceObj && importanceObj.color,
+            );
+            if (impVal) {
+              const sep = document.createElement("span");
+              sep.className = "tng-help";
+              sep.style.margin = "0";
+              sep.textContent = "·";
+              line.appendChild(sep);
+
+              if (impColor) {
+                const dot = document.createElement("span");
+                dot.style.cssText =
+                  "display:inline-block;width:8px;height:8px;border-radius:50%;border:1px solid #a2a9b1;background:" +
+                  impColor +
+                  ";";
+                line.appendChild(dot);
+              }
+              const impEl = document.createElement("span");
+              impEl.textContent = impVal === "???" ? "Unknown" : impVal;
+              line.appendChild(impEl);
+            }
+            return line;
+          }
+
+          // Creates a small heading used inside the assessment section.
+          function makeAssessmentSubheading(text) {
+            const h = document.createElement("div");
+            h.className = "tng-user-rights-scope";
+            h.style.marginTop = "6px";
+            h.textContent = text;
+            return h;
+          }
+
+          // Renders the overall page assessment and the per-WikiProject
+          // assessments into the Page assessment section.
           function renderAssessmentEntry(container) {
             container.innerHTML = "";
             const loadingEl = document.createElement("div");
@@ -7179,38 +7241,87 @@ $(function () {
                 });
                 return;
               }
-              const byProject =
-                data.assessments && typeof data.assessments === "object"
-                  ? data.assessments
-                  : {};
-              const projectKeys = Object.keys(byProject);
-              if (!projectKeys.length) {
+
+              // The page is read from the response rather than assumed, so a
+              // page name that differs from the open title still resolves.
+              const pagesObj =
+                data.pages && typeof data.pages === "object" ? data.pages : {};
+              const pageKeys = Object.keys(pagesObj);
+              const pageData =
+                pageKeys.length &&
+                pagesObj[pageKeys[0]] &&
+                typeof pagesObj[pageKeys[0]] === "object"
+                  ? pagesObj[pageKeys[0]]
+                  : null;
+              if (!pageData) {
                 const emptyEl = document.createElement("div");
                 emptyEl.className = "tng-info-empty";
                 emptyEl.textContent = "No assessment available for this page.";
                 container.appendChild(emptyEl);
                 return;
               }
-              const rows = [];
-              projectKeys.forEach(function (key) {
-                const a =
-                  byProject[key] && typeof byProject[key] === "object"
-                    ? byProject[key]
-                    : {};
-                rows.push([
-                  "Quality class (" + key + ")",
-                  typeof a.class === "string" && a.class
-                    ? a.class
-                    : XTOOLS_FALLBACK_TEXT,
-                ]);
-                rows.push([
-                  "Importance (" + key + ")",
-                  typeof a.importance === "string" && a.importance
-                    ? a.importance
-                    : XTOOLS_FALLBACK_TEXT,
-                ]);
-              });
-              container.appendChild(makeEntry(rows));
+
+              const overall =
+                pageData.assessment && typeof pageData.assessment === "object"
+                  ? pageData.assessment
+                  : null;
+              const wikiprojects =
+                pageData.wikiprojects &&
+                typeof pageData.wikiprojects === "object"
+                  ? pageData.wikiprojects
+                  : {};
+              const projectKeys = Object.keys(wikiprojects);
+
+              if (!overall && !projectKeys.length) {
+                const emptyEl = document.createElement("div");
+                emptyEl.className = "tng-info-empty";
+                emptyEl.textContent = "No assessment available for this page.";
+                container.appendChild(emptyEl);
+                return;
+              }
+
+              // Overall assessment, shown first and most prominently.
+              if (overall) {
+                container.appendChild(makeAssessmentSubheading("Overall"));
+                const overallLine = makeAssessmentLine(overall, null);
+                overallLine.style.fontWeight = "700";
+                overallLine.style.marginTop = "2px";
+                container.appendChild(overallLine);
+              }
+
+              // WikiProject assessments, one compact line per project.
+              if (projectKeys.length) {
+                container.appendChild(makeAssessmentSubheading("WikiProjects"));
+                const listEl = document.createElement("div");
+                listEl.style.cssText =
+                  "display:flex;flex-direction:column;gap:4px;margin-top:2px;";
+                projectKeys.forEach(function (key) {
+                  const wp =
+                    wikiprojects[key] && typeof wikiprojects[key] === "object"
+                      ? wikiprojects[key]
+                      : {};
+                  const row = document.createElement("div");
+                  row.style.cssText =
+                    "display:flex;align-items:flex-start;flex-wrap:wrap;gap:6px;font-size:0.88em;";
+                  const nameEl = document.createElement("span");
+                  nameEl.style.cssText =
+                    "font-weight:600;min-width:9em;word-break:break-word;";
+                  nameEl.textContent = nonEmptyString(wp.wikiproject) || key;
+                  row.appendChild(nameEl);
+                  row.appendChild(
+                    makeAssessmentLine(
+                      wp.class && typeof wp.class === "object"
+                        ? wp.class
+                        : null,
+                      wp.importance && typeof wp.importance === "object"
+                        ? wp.importance
+                        : null,
+                    ),
+                  );
+                  listEl.appendChild(row);
+                });
+                container.appendChild(listEl);
+              }
             });
           }
 
