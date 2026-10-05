@@ -1,3 +1,14 @@
+## 2.214.0
+
+### Changed
+
+* Renamed the **Current revision** section in the **Get info** panel (page mode) to **Page info**.
+
+### Added
+
+* Added editor count, bot edit share, anonymous edit share, and watcher count to the **Page info** section, sourced from the XTools PageInfo JSON API and adapted from the XTools PageInfo gadget (GPL 3.0+).
+* XTools data is fetched in parallel with the MediaWiki requests. If the XTools request fails, the MediaWiki-derived entries still display and the XTools entries are omitted.
+
 ## 2.213.0
 
 ### Changed

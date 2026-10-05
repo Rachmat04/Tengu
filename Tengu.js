@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.213.0
+ * Version 2.214.0
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -7085,7 +7085,7 @@ $(function () {
             section: secCurrentRev,
             sectionBody: bodyCurrentRev,
             arrow: arrowCurrentRev,
-          } = makeDisplaySection("Current revision", "📊");
+          } = makeDisplaySection("Page info", "📊");
           const {
             section: secWhatLinksHere,
             sectionBody: bodyWhatLinksHere,
@@ -7112,12 +7112,33 @@ $(function () {
             arrow: arrowMoveLog,
           } = makeDisplaySection("Move log", "📑");
 
-          setLoading(bodyCurrentRev, "Loading current revision info...");
+          setLoading(bodyCurrentRev, "Loading page info...");
           setLoading(bodyWhatLinksHere, "Loading pages that link here...");
           setLoading(bodyAbuseLog, "Loading abuse filter log...");
           setLoading(bodyProtectLog, "Loading protection log...");
           setLoading(bodyDeleteLog, "Loading deletion log...");
           setLoading(bodyMoveLog, "Loading move log...");
+
+          // --- XTools supplementary figures ---
+          // Adapted from the XTools PageInfo gadget (GPL 3.0+). Fetched in
+          // parallel with the MediaWiki requests above; only the entries
+          // MediaWiki does not provide are added to the Page info section.
+          // A failure here leaves the MediaWiki-derived entries unaffected.
+          const xtoolsPromise = (async function () {
+            try {
+              const xtUrl =
+                "https://xtools.wmcloud.org/api/page/pageinfo/" +
+                mw.config.get("wgServerName") +
+                "/" +
+                encodeURIComponent(pageName.replace(/ /g, "_")) +
+                "?format=json";
+              const res = await fetch(xtUrl);
+              if (!res.ok) return null;
+              return await res.json();
+            } catch (e) {
+              return null;
+            }
+          })();
 
           body.appendChild(secCurrentRev);
           body.appendChild(secWhatLinksHere);
@@ -7208,44 +7229,72 @@ $(function () {
                 // Leave as "—" if this request fails; the rest of the panel is unaffected.
               }
 
+              const xt = await xtoolsPromise;
+
+              const fmtNum = function (n) {
+                return typeof n === "number" ? n.toLocaleString() : "—";
+              };
+              const fmtPct = function (n) {
+                return typeof n === "number" ? n.toFixed(1) + "%" : "—";
+              };
+              const sharePct = function (part, total) {
+                return typeof part === "number" &&
+                  typeof total === "number" &&
+                  total > 0
+                  ? (part / total) * 100
+                  : null;
+              };
+
+              const rows = [
+                [
+                  "Page size",
+                  infoPage.length !== undefined
+                    ? infoPage.length.toLocaleString() + " bytes"
+                    : "—",
+                ],
+                ["Last editor", (latestRev && latestRev.user) || "—"],
+                [
+                  "Last edited",
+                  latestRev
+                    ? fmtTimestamp(latestRev.timestamp) +
+                      (fmtRelative(latestRev.timestamp)
+                        ? " (" + fmtRelative(latestRev.timestamp) + ")"
+                        : "")
+                    : "—",
+                ],
+                ["Revision count", revCountLabel],
+              ];
+              if (xt) {
+                rows.push(["Editors", fmtNum(xt.editors)]);
+                rows.push([
+                  "Bot edits",
+                  fmtPct(sharePct(xt.bot_revisions, xt.revisions)),
+                ]);
+                rows.push([
+                  "Anonymous edits",
+                  fmtPct(sharePct(xt.anon_revisions, xt.revisions)),
+                ]);
+                rows.push(["Watchers", fmtNum(xt.watchers)]);
+              }
+              rows.push(["Created by", (firstRev && firstRev.user) || "—"]);
+              rows.push([
+                "Creation date",
+                firstRev
+                  ? fmtTimestamp(firstRev.timestamp) +
+                    (fmtRelative(firstRev.timestamp)
+                      ? " (" + fmtRelative(firstRev.timestamp) + ")"
+                      : "")
+                  : "—",
+              ]);
+
               bodyCurrentRev.classList.remove("tng-hidden");
               arrowCurrentRev.classList.add("tng-arrow-up");
               bodyCurrentRev.innerHTML = "";
-              bodyCurrentRev.appendChild(
-                makeEntry([
-                  [
-                    "Page size",
-                    infoPage.length !== undefined
-                      ? infoPage.length.toLocaleString() + " bytes"
-                      : "—",
-                  ],
-                  ["Last editor", (latestRev && latestRev.user) || "—"],
-                  [
-                    "Last edited",
-                    latestRev
-                      ? fmtTimestamp(latestRev.timestamp) +
-                        (fmtRelative(latestRev.timestamp)
-                          ? " (" + fmtRelative(latestRev.timestamp) + ")"
-                          : "")
-                      : "—",
-                  ],
-                  ["Revision count", revCountLabel],
-                  ["Created by", (firstRev && firstRev.user) || "—"],
-                  [
-                    "Creation date",
-                    firstRev
-                      ? fmtTimestamp(firstRev.timestamp) +
-                        (fmtRelative(firstRev.timestamp)
-                          ? " (" + fmtRelative(firstRev.timestamp) + ")"
-                          : "")
-                      : "—",
-                  ],
-                ]),
-              );
+              bodyCurrentRev.appendChild(makeEntry(rows));
             } catch (err) {
               setError(
                 bodyCurrentRev,
-                "Failed to load current revision info: " + formatApiError(err),
+                "Failed to load page info: " + formatApiError(err),
               );
             }
           })();
