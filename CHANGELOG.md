@@ -1,3 +1,20 @@
+## 2.216.0
+
+### Changed
+
+* Updated the **Protection log** section of the **Get info** panel (page mode) to show the expiry of each applied protection in a separate **Expiry** row. The **Levels** row now lists levels only (for example, `edit: sysop; move: sysop`).
+* Each **Expiry** entry shows the protection type, the length of the protection (log time to expiry), the expiry timestamp, and a relative time in parentheses, for example `edit: 1 month, until Fri, 25 Sep 2026 01:42:53 UTC (in 3 weeks)`. Indefinite protections read `indefinite`.
+* The **Expiry** row is omitted for entries without protection details, such as unprotect actions.
+
+### Added
+
+* Added `fmtProtectionDuration()` to `getPageInfo()`, which returns the time between two timestamps in plain text (seconds up to years).
+
+### Notes
+
+* Month and year lengths are rounded, using the same thresholds as `fmtRelative()`.
+* Display change only. No API calls were changed; `list=logevents` already returned `params.details` with `expiry`.
+
 ## 2.215.7
 
 ### Fixed

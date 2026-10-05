@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.215.7
+ * Version 2.216.0
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -7791,6 +7791,30 @@ $(function () {
             };
           }
 
+          // Returns the length of time between two timestamps as plain text
+          // (e.g. "3 days", "1 month"). Used by the Protection log to show how
+          // long a protection was applied for. Returns "" if either timestamp
+          // is invalid or the end is not after the start.
+          function fmtProtectionDuration(fromTs, toTs) {
+            const from = new Date(fromTs).getTime();
+            const to = new Date(toTs).getTime();
+            if (isNaN(from) || isNaN(to) || to <= from) return "";
+            const sec = Math.round((to - from) / 1000);
+            const unit = function (n, name) {
+              return n + " " + name + (n !== 1 ? "s" : "");
+            };
+            if (sec < 60) return unit(sec, "second");
+            const min = Math.round(sec / 60);
+            if (min < 60) return unit(min, "minute");
+            const hr = Math.round(min / 60);
+            if (hr < 24) return unit(hr, "hour");
+            const day = Math.round(hr / 24);
+            if (day < 7) return unit(day, "day");
+            if (day < 30) return unit(Math.round(day / 7), "week");
+            if (day < 365) return unit(Math.round(day / 30.4375), "month");
+            return unit(Math.round(day / 365.25), "year");
+          }
+
           // --- Protection log ---
           (async function () {
             try {
@@ -7812,36 +7836,47 @@ $(function () {
               arrowProtectLog.classList.add("tng-arrow-up");
               bodyProtectLog.innerHTML = "";
               for (const e of entries) {
-                // Flatten protection levels and expiries from e.params.details
-                const levels =
+                // Flatten protection levels from e.params.details
+                const protectDetails =
                   e.params && e.params.details && e.params.details.length
                     ? e.params.details
-                        .map(function (d) {
-                          if (d.expiry === "infinity") {
-                            return (
-                              d.type +
-                              ": " +
-                              (d.level || "all") +
-                              " (indefinite)"
-                            );
-                          }
-                          if (!d.expiry) {
-                            return d.type + ": " + (d.level || "all");
-                          }
-                          const abs = fmtTimestamp(d.expiry);
-                          const rel = fmtRelative(d.expiry);
-                          return (
-                            d.type +
-                            ": " +
-                            (d.level || "all") +
-                            " (expires " +
-                            abs +
-                            (rel ? " (" + rel + ")" : "") +
-                            ")"
-                          );
-                        })
-                        .join("; ")
-                    : "—";
+                    : null;
+                const levels = protectDetails
+                  ? protectDetails
+                      .map(function (d) {
+                        return d.type + ": " + (d.level || "all");
+                      })
+                      .join("; ")
+                  : "—";
+                // Expiry for each applied protection, with the length of the
+                // protection (log time to expiry). Omitted when the entry has
+                // no protection details (e.g. an unprotect action).
+                const expiryText = protectDetails
+                  ? protectDetails
+                      .map(function (d) {
+                        if (d.expiry === "infinity") {
+                          return d.type + ": indefinite";
+                        }
+                        if (!d.expiry) {
+                          return d.type + ": not specified";
+                        }
+                        const abs = fmtTimestamp(d.expiry);
+                        const rel = fmtRelative(d.expiry);
+                        const length = fmtProtectionDuration(
+                          e.timestamp,
+                          d.expiry,
+                        );
+                        return (
+                          d.type +
+                          ": " +
+                          (length ? length + ", " : "") +
+                          "until " +
+                          abs +
+                          (rel ? " (" + rel + ")" : "")
+                        );
+                      })
+                      .join("; ")
+                  : null;
                 const cascade = e.params && e.params.cascade ? "Yes" : "No";
                 const { label: protectActionLabel } =
                   classifyProtectLogEntry(e);
@@ -7857,6 +7892,7 @@ $(function () {
                     ["Action", protectActionLabel],
                     ["Performed by", e.user || "—"],
                     ["Levels", levels],
+                    ...(expiryText ? [["Expiry", expiryText]] : []),
                     ["Cascading", cascade],
                     ["Reason", e.comment || "(no reason given)"],
                   ]),
