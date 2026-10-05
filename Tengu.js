@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.215.1
+ * Version 2.215.3
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -6309,7 +6309,7 @@ $(function () {
                   "local",
                 );
 
-                localEditsBody.className = "tng-user-rights-list";
+                localEditsBody.className = "tng-info-value";
                 localEditsBody.textContent =
                   userEntry.editcount !== undefined
                     ? userEntry.editcount.toLocaleString()
@@ -6317,7 +6317,7 @@ $(function () {
 
                 // Accounts registered before registration logging
                 // was introduced on a given wiki may not have this field set.
-                registrationBody.className = "tng-user-rights-list";
+                registrationBody.className = "tng-info-value";
                 registrationBody.textContent = userEntry.registration
                   ? fmtTimestamp(userEntry.registration) +
                     (fmtRelative(userEntry.registration)
@@ -6326,7 +6326,7 @@ $(function () {
                   : "Unknown (may predate registration logging)";
 
                 if (genderBody) {
-                  genderBody.className = "tng-user-rights-list";
+                  genderBody.className = "tng-info-value";
                   const genderSymbols = {
                     male: "👦 Male",
                     female: "👧 Female",
@@ -6370,7 +6370,7 @@ $(function () {
                 return;
               }
               const c = contribs[0];
-              lastEditBody.className = "tng-user-rights-list";
+              lastEditBody.className = "tng-info-value";
               const relTime = fmtRelative(c.timestamp);
               lastEditBody.textContent =
                 fmtTimestamp(c.timestamp) +
@@ -6410,7 +6410,7 @@ $(function () {
                     rights,
                     "global",
                   );
-                  globalEditsBody.className = "tng-user-rights-list";
+                  globalEditsBody.className = "tng-info-value";
                   globalEditsBody.textContent =
                     gui.editcount !== undefined
                       ? gui.editcount.toLocaleString()
@@ -6521,7 +6521,7 @@ $(function () {
               } else if (chain.length) {
                 // chain is nearest-previous-first; reverse for chronological
                 // (oldest-first) display order.
-                previousNamesBody.className = "tng-user-rights-list";
+                previousNamesBody.className = "tng-info-value";
                 previousNamesBody.textContent = chain
                   .slice()
                   .reverse()
@@ -7171,6 +7171,7 @@ $(function () {
           // "???" is shown as "Unknown" rather than as a normal level.
           function makeAssessmentLine(classObj, importanceObj) {
             const line = document.createElement("div");
+            line.className = "tng-info-value";
             line.style.cssText =
               "display:flex;align-items:center;flex-wrap:wrap;gap:6px;";
 
@@ -7302,10 +7303,10 @@ $(function () {
                       : {};
                   const row = document.createElement("div");
                   row.style.cssText =
-                    "display:flex;align-items:flex-start;flex-wrap:wrap;gap:6px;font-size:0.88em;";
+                    "display:flex;align-items:center;flex-wrap:wrap;gap:6px;font-size:0.88em;";
                   const nameEl = document.createElement("span");
                   nameEl.style.cssText =
-                    "font-weight:600;min-width:9em;word-break:break-word;";
+                    "font-weight:600;word-break:break-word;";
                   nameEl.textContent = nonEmptyString(wp.wikiproject) || key;
                   row.appendChild(nameEl);
                   row.appendChild(

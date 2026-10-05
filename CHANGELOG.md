@@ -1,3 +1,10 @@
+## 2.215.3
+
+### Changed
+
+* Set the **Overall** value in the **Page assessment** section (🏅) to the API's `assessment.class` value. The value now uses the same font size as the WikiProject values, and the WikiProjects use a single-column layout with the name, class, and importance on one row.
+* Removed the background shading from values in the **Account info** section (user mode) and the **Page assessment** section. These values now use the same plain text style as the **Page info** rows.
+
 ## 2.215.2
 
 ### Changed

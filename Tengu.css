@@ -557,6 +557,16 @@
   margin-left: auto;
 }
 
+/* --- Info value text (Account info, Page assessment) --- */
+/* Plain text values with no background, matching the Page info rows. */
+.tng-info-value {
+  line-height: 1.6;
+  background: none;
+  border: none;
+  padding: 0;
+  color: inherit;
+}
+
 /* --- User info panel entries --- */
 .tng-info-entry {
   padding: 8px 10px;
@@ -578,7 +588,6 @@
 .tng-info-empty {
   color: #72777d;
   font-style: italic;
-  font-size: 0.88em;
   padding: 4px 0;
 }
 
