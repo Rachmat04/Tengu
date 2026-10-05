@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.215.5
+ * Version 2.215.6
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -7256,7 +7256,7 @@ $(function () {
 
           // Renders the overall page assessment and the per-WikiProject
           // assessments into the Page assessment section.
-          function renderAssessmentEntry(container) {
+          function renderAssessmentEntry(container, onEmpty) {
             container.innerHTML = "";
             const loadingEl = document.createElement("div");
             loadingEl.className = "tng-info-loading";
@@ -7268,7 +7268,7 @@ $(function () {
               container.innerHTML = "";
               if (!data) {
                 renderXtoolsFallback(container, function () {
-                  renderAssessmentEntry(container);
+                  renderAssessmentEntry(container, onEmpty);
                 });
                 return;
               }
@@ -7289,6 +7289,7 @@ $(function () {
                 emptyEl.className = "tng-info-empty";
                 emptyEl.textContent = "No assessment available for this page.";
                 container.appendChild(emptyEl);
+                onEmpty();
                 return;
               }
 
@@ -7312,6 +7313,7 @@ $(function () {
                 emptyEl.className = "tng-info-empty";
                 emptyEl.textContent = "No assessment available for this page.";
                 container.appendChild(emptyEl);
+                onEmpty();
                 return;
               }
 
@@ -7368,10 +7370,15 @@ $(function () {
           bodyAssessment.classList.remove("tng-hidden");
           arrowAssessment.classList.add("tng-arrow-up");
 
+          function collapseAssessmentSection() {
+            bodyAssessment.classList.add("tng-hidden");
+            arrowAssessment.classList.remove("tng-arrow-up");
+          }
+
           body.appendChild(secCurrentRev);
           body.appendChild(secAssessment);
           body.appendChild(secWhatLinksHere);
-          renderAssessmentEntry(bodyAssessment);
+          renderAssessmentEntry(bodyAssessment, collapseAssessmentSection);
           body.appendChild(secAbuseLog);
           body.appendChild(secProtectLog);
           body.appendChild(secDeleteLog);

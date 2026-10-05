@@ -1,3 +1,11 @@
+## 2.215.6
+
+### Fixed
+
+* Fixed the **Page assessment** section (🏅) remaining open when no assessment data is available. The section now remains collapsed while still displaying the **“No assessment available for this page.”** message.
+* Fixed the **Access rights** section in user mode not animating when opened or closed.
+* Matched the **Access rights** expand/collapse animation with the other collapsible sections.
+
 ## 2.215.5
 
 ### Changed

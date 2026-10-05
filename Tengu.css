@@ -615,6 +615,23 @@
   display: flex;
   flex-direction: column;
   gap: 10px;
+  max-height: 800px;
+  overflow: hidden;
+  opacity: 1;
+  transition:
+    max-height 0.3s cubic-bezier(0, 1, 0.5, 1),
+    padding-top 0.25s ease,
+    padding-bottom 0.25s ease,
+    opacity 0.25s ease;
+}
+
+.tng-user-rights-body.tng-hidden {
+  display: flex !important;
+  max-height: 0 !important;
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
+  opacity: 0;
+  overflow: hidden !important;
 }
 .tng-user-rights-row {
   display: flex;
