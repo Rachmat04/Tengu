@@ -651,6 +651,19 @@
   word-break: break-word;
 }
 
+/* --- Account info values inside a bordered info entry --- */
+/* Values reuse the list-value class, which carries its own box. Inside an
+   info entry they read as plain text, matching Page info rows. */
+.tng-info-entry .tng-user-rights-list {
+  font-size: inherit;
+  color: inherit;
+  padding: 0;
+  background: none;
+  border: none;
+  border-radius: 0;
+  line-height: inherit;
+}
+
 /* --- Collapsible section arrow --- */
 .tng-section-arrow {
   margin-left: auto;

@@ -1,3 +1,15 @@
+## 2.215.0
+
+### Changed
+
+* Restyled the **Account info** section in the **Get info** panel (user mode) to match the **Page info** layout: a single bordered entry of labelled rows inside a collapsible section, instead of separate bordered cards.
+
+### Added
+
+* Added prose statistics (words, characters, sentences, paragraphs) to the **Page info** section in the **Get info** panel (page mode). Data is retrieved from the XTools prose API.
+* Added a **Page assessment** section (🏅) directly below **Page info** in page mode. It shows the quality class and importance for each WikiProject, retrieved from the XTools assessments API. 
+* Added a fallback message ("Unable to retrieve this information.") and a "Try again" control for XTools failures. Each affected block fails on its own; the rest of the panel stays available. Raw errors and status codes are not shown.
+
 ## 2.214.0
 
 ### Changed

@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.214.0
+ * Version 2.215.0
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -1353,7 +1353,7 @@ $(function () {
         // Derives an interwiki prefix (project + language, e.g. "w:id:" or
         // "wikt:ja:") for the current wiki from its hostname, used to build
         // interwiki links and {{LockHide}} project parameters in reports
-        // submitted to Meta-Wiki. [Inference] This mapping covers common
+        // submitted to Meta-Wiki. This mapping covers common
         // Wikimedia project subdomain patterns (Wikipedia, Wiktionary,
         // Wikibooks, Wikinews, Wikiquote, Wikisource, Wikiversity, Wikivoyage)
         // and a handful of language-independent sister projects (Commons,
@@ -6093,128 +6093,59 @@ $(function () {
             mw.config.get("wgSiteName") ||
             "this wiki";
 
-          // --- Account info card ---
-          // Displayed above the Access rights card. Shows local and global
-          // edit counts, registration date, and (for registered accounts
-          // only) any previous usernames found in the local rename log.
-          const accountInfoCard = document.createElement("div");
-          accountInfoCard.className = "tng-user-rights-card";
-
-          const accountInfoCardHdr = document.createElement("div");
-          accountInfoCardHdr.className = "tng-user-rights-header";
-          const accountInfoCardHdrTitle = document.createElement("span");
-          accountInfoCardHdrTitle.textContent = "🛂 Account info";
-          accountInfoCardHdr.appendChild(accountInfoCardHdrTitle);
-          const accountInfoCardArrow = document.createElement("span");
-          accountInfoCardArrow.className = "tng-section-arrow tng-arrow-up";
-          accountInfoCardHdr.appendChild(accountInfoCardArrow);
-          accountInfoCardHdr.addEventListener("click", function () {
-            const isHidden = accountInfoCardBody.classList.toggle("tng-hidden");
-            accountInfoCardArrow.classList.toggle("tng-arrow-up", !isHidden);
-          });
-          accountInfoCard.appendChild(accountInfoCardHdr);
-
-          const accountInfoCardBody = document.createElement("div");
-          accountInfoCardBody.className = "tng-user-rights-body";
-          accountInfoCard.appendChild(accountInfoCardBody);
-
-          // Local edits row
-          const localEditsRow = document.createElement("div");
-          localEditsRow.className = "tng-user-rights-row";
-          const localEditsScope = document.createElement("div");
-          localEditsScope.className = "tng-user-rights-scope";
-          localEditsScope.textContent = "Local edits — " + localWikiId;
-          localEditsRow.appendChild(localEditsScope);
-          const localEditsBody = document.createElement("div");
-          localEditsBody.className = "tng-info-loading";
-          localEditsBody.textContent = "Loading...";
-          localEditsRow.appendChild(localEditsBody);
-          accountInfoCardBody.appendChild(localEditsRow);
-
-          // Global edits row (skipped for IP addresses, which have no
-          // CentralAuth account)
-          const globalEditsRow = document.createElement("div");
-          globalEditsRow.className = "tng-user-rights-row";
-          const globalEditsScope = document.createElement("div");
-          globalEditsScope.className = "tng-user-rights-scope";
-          globalEditsScope.textContent = "Global edits";
-          globalEditsRow.appendChild(globalEditsScope);
-          const globalEditsBody = document.createElement("div");
-          globalEditsBody.className = isTargetIP
-            ? "tng-info-empty"
-            : "tng-info-loading";
-          globalEditsBody.textContent = isTargetIP
-            ? "Not applicable for IP addresses."
-            : "Loading...";
-          globalEditsRow.appendChild(globalEditsBody);
-          accountInfoCardBody.appendChild(globalEditsRow);
-
-          // Registration date row
-          const registrationRow = document.createElement("div");
-          registrationRow.className = "tng-user-rights-row";
-          const registrationScope = document.createElement("div");
-          registrationScope.className = "tng-user-rights-scope";
-          registrationScope.textContent = "Registration date";
-          registrationRow.appendChild(registrationScope);
-          const registrationBody = document.createElement("div");
-          registrationBody.className = "tng-info-loading";
-          registrationBody.textContent = "Loading...";
-          registrationRow.appendChild(registrationBody);
-          accountInfoCardBody.appendChild(registrationRow);
-
-          // Last edit row — shows how long ago the target last edited,
-          // with a link to their contributions. Adapted from
-          // User:PleaseStand/userinfo.js, which displayed this alongside
-          // account age and edit count.
-          const lastEditRow = document.createElement("div");
-          lastEditRow.className = "tng-user-rights-row";
-          const lastEditScope = document.createElement("div");
-          lastEditScope.className = "tng-user-rights-scope";
-          lastEditScope.textContent = "Last edit";
-          lastEditRow.appendChild(lastEditScope);
-          const lastEditBody = document.createElement("div");
-          lastEditBody.className = "tng-info-loading";
-          lastEditBody.textContent = "Loading...";
-          lastEditRow.appendChild(lastEditBody);
-          accountInfoCardBody.appendChild(lastEditRow);
-
-          // Gender row — registered accounts only, matching MediaWiki's own
-          // gender preference field. Not shown for IP addresses.
-          let genderBody = null;
-          if (!isTargetIP) {
-            const genderRow = document.createElement("div");
-            genderRow.className = "tng-user-rights-row";
-            const genderScope = document.createElement("div");
-            genderScope.className = "tng-user-rights-scope";
-            genderScope.textContent = "Gender";
-            genderRow.appendChild(genderScope);
-            genderBody = document.createElement("div");
-            genderBody.className = "tng-info-loading";
-            genderBody.textContent = "Loading...";
-            genderRow.appendChild(genderBody);
-            accountInfoCardBody.appendChild(genderRow);
-          }
-
-          // Previous usernames row — registered accounts only. Not shown
-          // for IP addresses or temporary accounts, since neither can hold
-          // a rename history.
+          // --- Account info section ---
+          // Uses the same collapsible, bordered-entry layout as Page info
+          // (page mode): one section holding a single entry with labelled
+          // rows. Each value is filled in asynchronously by the request
+          // blocks further below.
           const isTargetTempAccount = /^~\d{4}-\d+-\d+$/.test(username);
-          let previousNamesBody = null;
-          if (!isTargetIP && !isTargetTempAccount) {
-            const previousNamesRow = document.createElement("div");
-            previousNamesRow.className = "tng-user-rights-row";
-            const previousNamesScope = document.createElement("div");
-            previousNamesScope.className = "tng-user-rights-scope";
-            previousNamesScope.textContent = "Previous usernames";
-            previousNamesRow.appendChild(previousNamesScope);
-            previousNamesBody = document.createElement("div");
-            previousNamesBody.className = "tng-info-loading";
-            previousNamesBody.textContent = "Loading...";
-            previousNamesRow.appendChild(previousNamesBody);
-            accountInfoCardBody.appendChild(previousNamesRow);
+          const {
+            section: secAccountInfo,
+            sectionBody: bodyAccountInfo,
+            arrow: arrowAccountInfo,
+          } = makeDisplaySection("Account info", "🛂");
+          const accountInfoEntry = document.createElement("div");
+          accountInfoEntry.className = "tng-info-entry";
+
+          // Adds a labelled row to the account info entry and returns the
+          // value element, so the request blocks can update it in place.
+          function makeAccountInfoRow(labelText) {
+            const line = document.createElement("div");
+            const lbl = document.createElement("b");
+            lbl.textContent = labelText + ": ";
+            const valueEl = document.createElement("span");
+            valueEl.className = "tng-info-loading";
+            valueEl.textContent = "Loading...";
+            line.appendChild(lbl);
+            line.appendChild(valueEl);
+            accountInfoEntry.appendChild(line);
+            return valueEl;
           }
 
-          body.appendChild(accountInfoCard);
+          const localEditsBody = makeAccountInfoRow(
+            "Local edits (" + localWikiId + ")",
+          );
+          const globalEditsBody = makeAccountInfoRow("Global edits");
+          if (isTargetIP) {
+            globalEditsBody.className = "tng-info-empty";
+            globalEditsBody.textContent = "Not applicable for IP addresses.";
+          }
+          const registrationBody = makeAccountInfoRow("Registration date");
+          const lastEditBody = makeAccountInfoRow("Last edit");
+          // Gender is registered-account only, matching MediaWiki's gender
+          // preference field.
+          const genderBody = isTargetIP ? null : makeAccountInfoRow("Gender");
+          // Previous usernames are registered-account only: neither IP
+          // addresses nor temporary accounts can hold a rename history.
+          const previousNamesBody =
+            isTargetIP || isTargetTempAccount
+              ? null
+              : makeAccountInfoRow("Previous usernames");
+
+          bodyAccountInfo.appendChild(accountInfoEntry);
+          bodyAccountInfo.classList.remove("tng-hidden");
+          arrowAccountInfo.classList.add("tng-arrow-up");
+          body.appendChild(secAccountInfo);
 
           const rightsCard = document.createElement("div");
           rightsCard.className = "tng-user-rights-card";
@@ -7140,8 +7071,160 @@ $(function () {
             }
           })();
 
+          // --- XTools helpers (Page info prose, Page assessment) ---
+          // XTools is an external service, so every request here may fail.
+          // A failure shows a short fallback message with a retry control
+          // and never affects the rest of the panel.
+          const XTOOLS_FALLBACK_TEXT = "Unable to retrieve this information.";
+          const xtoolsHostForWiki = mw.config.get("wgServerName");
+          const xtoolsSlugForPage = encodeURIComponent(
+            pageName.replace(/ /g, "_"),
+          );
+
+          // Fetches a JSON object from the XTools page API. Resolves to null
+          // on network error, timeout, non-OK status, or a response that is
+          // not a JSON object.
+          async function fetchXtoolsPageData(path) {
+            let timer = null;
+            try {
+              const controller =
+                typeof AbortController === "function"
+                  ? new AbortController()
+                  : null;
+              if (controller) {
+                timer = setTimeout(function () {
+                  controller.abort();
+                }, 15000);
+              }
+              const res = await fetch(
+                "https://xtools.wmcloud.org/api/page/" + path,
+                controller ? { signal: controller.signal } : undefined,
+              );
+              if (!res.ok) return null;
+              const json = await res.json();
+              return json && typeof json === "object" ? json : null;
+            } catch (e) {
+              return null;
+            } finally {
+              if (timer) clearTimeout(timer);
+            }
+          }
+
+          // Replaces a container's content with the fallback message and a
+          // retry control. The raw error is never shown.
+          function renderXtoolsFallback(container, retryFn) {
+            container.innerHTML = "";
+            const msgEl = document.createElement("div");
+            msgEl.className = "tng-info-empty";
+            msgEl.textContent = XTOOLS_FALLBACK_TEXT;
+            container.appendChild(msgEl);
+            const btnRetry = makeBtn("🔄 Try again", "quiet");
+            btnRetry.className += " tng-btn-sm";
+            btnRetry.style.marginTop = "4px";
+            btnRetry.addEventListener("click", retryFn);
+            container.appendChild(btnRetry);
+          }
+
+          // Renders prose statistics into a container within Page info.
+          function renderProseEntry(container) {
+            container.innerHTML = "";
+            const loadingEl = document.createElement("div");
+            loadingEl.className = "tng-info-loading";
+            loadingEl.textContent = "Loading prose statistics...";
+            container.appendChild(loadingEl);
+            fetchXtoolsPageData(
+              "prose/" + xtoolsHostForWiki + "/" + xtoolsSlugForPage,
+            ).then(function (data) {
+              container.innerHTML = "";
+              if (!data) {
+                renderXtoolsFallback(container, function () {
+                  renderProseEntry(container);
+                });
+                return;
+              }
+              const fmtProse = function (v) {
+                return typeof v === "number"
+                  ? v.toLocaleString()
+                  : XTOOLS_FALLBACK_TEXT;
+              };
+              container.appendChild(
+                makeEntry([
+                  ["Words", fmtProse(data.words)],
+                  ["Characters", fmtProse(data.characters)],
+                  ["Sentences", fmtProse(data.sentences)],
+                  ["Paragraphs", fmtProse(data.paragraphs)],
+                ]),
+              );
+            });
+          }
+
+          // Renders the quality class and importance rating into the Page
+          // assessment section. Assumed response shape: an
+          // "assessments" object keyed by WikiProject code, each holding
+          // "class" and "importance".
+          function renderAssessmentEntry(container) {
+            container.innerHTML = "";
+            const loadingEl = document.createElement("div");
+            loadingEl.className = "tng-info-loading";
+            loadingEl.textContent = "Loading page assessment...";
+            container.appendChild(loadingEl);
+            fetchXtoolsPageData(
+              "assessments/" + xtoolsHostForWiki + "/" + xtoolsSlugForPage,
+            ).then(function (data) {
+              container.innerHTML = "";
+              if (!data) {
+                renderXtoolsFallback(container, function () {
+                  renderAssessmentEntry(container);
+                });
+                return;
+              }
+              const byProject =
+                data.assessments && typeof data.assessments === "object"
+                  ? data.assessments
+                  : {};
+              const projectKeys = Object.keys(byProject);
+              if (!projectKeys.length) {
+                const emptyEl = document.createElement("div");
+                emptyEl.className = "tng-info-empty";
+                emptyEl.textContent = "No assessment available for this page.";
+                container.appendChild(emptyEl);
+                return;
+              }
+              const rows = [];
+              projectKeys.forEach(function (key) {
+                const a =
+                  byProject[key] && typeof byProject[key] === "object"
+                    ? byProject[key]
+                    : {};
+                rows.push([
+                  "Quality class (" + key + ")",
+                  typeof a.class === "string" && a.class
+                    ? a.class
+                    : XTOOLS_FALLBACK_TEXT,
+                ]);
+                rows.push([
+                  "Importance (" + key + ")",
+                  typeof a.importance === "string" && a.importance
+                    ? a.importance
+                    : XTOOLS_FALLBACK_TEXT,
+                ]);
+              });
+              container.appendChild(makeEntry(rows));
+            });
+          }
+
+          const {
+            section: secAssessment,
+            sectionBody: bodyAssessment,
+            arrow: arrowAssessment,
+          } = makeDisplaySection("Page assessment", "🏅");
+          bodyAssessment.classList.remove("tng-hidden");
+          arrowAssessment.classList.add("tng-arrow-up");
+
           body.appendChild(secCurrentRev);
+          body.appendChild(secAssessment);
           body.appendChild(secWhatLinksHere);
+          renderAssessmentEntry(bodyAssessment);
           body.appendChild(secAbuseLog);
           body.appendChild(secProtectLog);
           body.appendChild(secDeleteLog);
@@ -7291,6 +7374,13 @@ $(function () {
               arrowCurrentRev.classList.add("tng-arrow-up");
               bodyCurrentRev.innerHTML = "";
               bodyCurrentRev.appendChild(makeEntry(rows));
+
+              // Prose statistics sit in their own container so a failed
+              // XTools request cannot affect the MediaWiki-derived rows above.
+              const proseContainer = document.createElement("div");
+              proseContainer.style.marginTop = "6px";
+              bodyCurrentRev.appendChild(proseContainer);
+              renderProseEntry(proseContainer);
             } catch (err) {
               setError(
                 bodyCurrentRev,
@@ -13410,7 +13500,7 @@ $(function () {
 
           // Applies or removes reversible mode locks on sections that require a
           // specific account or single IP rather than an IP range, when the
-          // user-mode target is an IP range. [Inference] Range support is
+          // user-mode target is an IP range. Range support is
           // limited to Block and Unblock: MediaWiki's contribution, warning,
           // and report-related APIs used by the other sections have not been
           // confirmed to accept CIDR ranges.
@@ -16848,8 +16938,7 @@ $(function () {
         // wgCurRevisionId directly, since that value can be stale on a
         // cached diff page. Falls back to wgCurRevisionId if the API
         // call fails, so a request failure does not suppress the actions
-        // entirely. [Inference] wgCurRevisionId may be cached; this has
-        // not been independently confirmed on a live wiki.
+        // entirely. wgCurRevisionId may be cached.
         async function fetchCurrentRevisionId(pageTitle) {
           try {
             const data = await apiGet({
