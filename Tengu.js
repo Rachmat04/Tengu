@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.215.3
+ * Version 2.215.4
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -7182,7 +7182,7 @@ $(function () {
               img.src = badgeUrl;
               img.alt = classVal || "";
               img.height = 16;
-              img.style.cssText = "height:16px;width:auto;";
+              img.style.cssText = "height:16px;width:auto;margin-right:4px;";
               line.appendChild(img);
             }
             const classEl = document.createElement("span");
@@ -7263,9 +7263,13 @@ $(function () {
               }
 
               const overall =
-                pageData.assessment && typeof pageData.assessment === "object"
-                  ? pageData.assessment
-                  : null;
+              pageData.assessment && typeof pageData.assessment === "object"
+                ? {
+                    value: pageData.assessment.class,
+                    badge: pageData.assessment.badge,
+                    color: pageData.assessment.color,
+                  }
+                : null;
               const wikiprojects =
                 pageData.wikiprojects &&
                 typeof pageData.wikiprojects === "object"
@@ -7285,25 +7289,25 @@ $(function () {
               if (overall) {
                 container.appendChild(makeAssessmentSubheading("Overall"));
                 const overallLine = makeAssessmentLine(overall, null);
-                overallLine.style.fontWeight = "700";
-                overallLine.style.marginTop = "2px";
+                overallLine.style.cssText =
+                  "font-weight:700;font-size:0.88em;margin-top:2px;";
                 container.appendChild(overallLine);
               }
 
-              // WikiProject assessments, one compact line per project.
+              // WikiProject assessments, displayed as a compact bulleted list.
               if (projectKeys.length) {
                 container.appendChild(makeAssessmentSubheading("WikiProjects"));
-                const listEl = document.createElement("div");
+                const listEl = document.createElement("ul");
                 listEl.style.cssText =
-                  "display:flex;flex-direction:column;gap:4px;margin-top:2px;";
+                  "margin:2px 0 0;padding-left:20px;display:flex;flex-direction:column;gap:2px;";
                 projectKeys.forEach(function (key) {
                   const wp =
                     wikiprojects[key] && typeof wikiprojects[key] === "object"
                       ? wikiprojects[key]
                       : {};
-                  const row = document.createElement("div");
+                  const row = document.createElement("li");
                   row.style.cssText =
-                    "display:flex;align-items:center;flex-wrap:wrap;gap:6px;font-size:0.88em;";
+                    "padding-left:2px;font-size:0.88em;line-height:1.5;";
                   const nameEl = document.createElement("span");
                   nameEl.style.cssText =
                     "font-weight:600;word-break:break-word;";

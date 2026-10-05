@@ -1,3 +1,15 @@
+## 2.215.4
+
+### Changed
+
+* Updated the **Page assessment** section (🏅) to display WikiProjects as a compact bulleted list, while retaining the existing typography and spacing.
+* Standardised the **Overall** assessment value font size with the WikiProject values.
+* Added spacing between assessment badges and their corresponding class labels for clearer visual separation.
+
+### Fixed
+
+* Fixed the **Overall** assessment value not being detected from the XTools page assessment response, where the class is provided as `assessment.class` rather than `assessment.value`.
+
 ## 2.215.3
 
 ### Changed
