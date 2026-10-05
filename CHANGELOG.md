@@ -1,3 +1,13 @@
+## 2.215.1
+
+### Added
+
+* Added **Sections**, **References**, and **Unique references** rows to the prose statistics in the **Page info** section of the **Get info** panel (page mode). Values come from the same XTools prose API response as the existing prose statistics. 
+
+### Removed
+
+* Removed **Sentences** and **Paragraphs** rows from the proses statistics.
+
 ## 2.215.0
 
 ### Changed
