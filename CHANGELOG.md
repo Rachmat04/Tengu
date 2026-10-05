@@ -1,3 +1,13 @@
+## 2.215.5
+
+### Changed
+
+* Updated **Page info** to combine page, editing, creation, and content information into a single compact information box.
+* Grouped related information under clear headings for easier scanning.
+* Displayed information within each group as a compact bulleted list.
+* Added **Pageviews** and **Minor edits** from XTools to **Page info**.
+* Kept existing Page info entries from being duplicated when the same information is already available from another source.
+
 ## 2.215.4
 
 ### Changed

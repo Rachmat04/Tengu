@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.215.4
+ * Version 2.215.5
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -6948,6 +6948,35 @@ $(function () {
             return entry;
           }
 
+          function appendInfoGroup(pageInfoEntry, title, rows) {
+            if (pageInfoEntry.childElementCount) {
+              const spacer = document.createElement("div");
+              spacer.style.marginTop = "6px";
+              pageInfoEntry.appendChild(spacer);
+            }
+
+            const heading = document.createElement("div");
+            heading.style.fontWeight = "bold";
+            heading.style.marginBottom = "1px";
+            heading.textContent = title;
+            pageInfoEntry.appendChild(heading);
+
+            const list = document.createElement("ul");
+            list.style.margin = "0";
+            list.style.paddingLeft = "20px";
+
+            for (const [label, value] of rows) {
+              const item = document.createElement("li");
+              const b = document.createElement("b");
+              b.textContent = label + ": ";
+              item.appendChild(b);
+              item.appendChild(document.createTextNode(value || "—"));
+              list.appendChild(item);
+            }
+
+            pageInfoEntry.appendChild(list);
+          }
+
           // Determines the specific action recorded by a "delete"-type log
           // entry. MediaWiki's delete log (letype=delete) carries several
           // distinct sub-actions in the API's "action" field: "delete" (page
@@ -7125,37 +7154,38 @@ $(function () {
             container.appendChild(btnRetry);
           }
 
-          // Renders prose statistics into a container within Page info.
-          function renderProseEntry(container) {
-            container.innerHTML = "";
+          // Renders prose statistics into the existing Page info entry.
+          function renderProseEntry(entry) {
             const loadingEl = document.createElement("div");
             loadingEl.className = "tng-info-loading";
-            loadingEl.textContent = "Loading prose statistics...";
-            container.appendChild(loadingEl);
+            loadingEl.textContent = "Loading content statistics...";
+            entry.appendChild(loadingEl);
+
             fetchXtoolsPageData(
               "prose/" + xtoolsHostForWiki + "/" + xtoolsSlugForPage,
             ).then(function (data) {
-              container.innerHTML = "";
+              loadingEl.remove();
+
               if (!data) {
-                renderXtoolsFallback(container, function () {
-                  renderProseEntry(container);
+                renderXtoolsFallback(entry, function () {
+                  renderProseEntry(entry);
                 });
                 return;
               }
+
               const fmtProse = function (v) {
                 return typeof v === "number"
                   ? v.toLocaleString()
                   : XTOOLS_FALLBACK_TEXT;
               };
-              container.appendChild(
-                makeEntry([
-                  ["Words", fmtProse(data.words)],
-                  ["Characters", fmtProse(data.characters)],
-                  ["Sections", fmtProse(data.sections)],
-                  ["References", fmtProse(data.references)],
-                  ["Unique references", fmtProse(data.unique_references)],
-                ]),
-              );
+
+              appendInfoGroup(entry, "Content", [
+                ["Words", fmtProse(data.words)],
+                ["Characters", fmtProse(data.characters)],
+                ["Sections", fmtProse(data.sections)],
+                ["References", fmtProse(data.references)],
+                ["Unique references", fmtProse(data.unique_references)],
+              ]);
             });
           }
 
@@ -7263,13 +7293,13 @@ $(function () {
               }
 
               const overall =
-              pageData.assessment && typeof pageData.assessment === "object"
-                ? {
-                    value: pageData.assessment.class,
-                    badge: pageData.assessment.badge,
-                    color: pageData.assessment.color,
-                  }
-                : null;
+                pageData.assessment && typeof pageData.assessment === "object"
+                  ? {
+                      value: pageData.assessment.class,
+                      badge: pageData.assessment.badge,
+                      color: pageData.assessment.color,
+                    }
+                  : null;
               const wikiprojects =
                 pageData.wikiprojects &&
                 typeof pageData.wikiprojects === "object"
@@ -7445,13 +7475,22 @@ $(function () {
                   : null;
               };
 
-              const rows = [
+              const pageInfoEntry = makeEntry([]);
+
+              appendInfoGroup(pageInfoEntry, "Page", [
                 [
                   "Page size",
                   infoPage.length !== undefined
                     ? infoPage.length.toLocaleString() + " bytes"
                     : "—",
                 ],
+                ["Revision count", revCountLabel],
+                ["Watchers", xt ? fmtNum(xt.watchers) : "—"],
+                ["Pageviews", xt ? fmtNum(xt.pageviews) : "—"],
+              ]);
+
+              appendInfoGroup(pageInfoEntry, "Editing", [
+                ["Editors", xt ? fmtNum(xt.editors) : "—"],
                 ["Last editor", (latestRev && latestRev.user) || "—"],
                 [
                   "Last edited",
@@ -7462,42 +7501,39 @@ $(function () {
                         : "")
                     : "—",
                 ],
-                ["Revision count", revCountLabel],
-              ];
-              if (xt) {
-                rows.push(["Editors", fmtNum(xt.editors)]);
-                rows.push([
+                [
                   "Bot edits",
-                  fmtPct(sharePct(xt.bot_revisions, xt.revisions)),
-                ]);
-                rows.push([
+                  xt ? fmtPct(sharePct(xt.bot_revisions, xt.revisions)) : "—",
+                ],
+                [
                   "Anonymous edits",
-                  fmtPct(sharePct(xt.anon_revisions, xt.revisions)),
-                ]);
-                rows.push(["Watchers", fmtNum(xt.watchers)]);
-              }
-              rows.push(["Created by", (firstRev && firstRev.user) || "—"]);
-              rows.push([
-                "Creation date",
-                firstRev
-                  ? fmtTimestamp(firstRev.timestamp) +
-                    (fmtRelative(firstRev.timestamp)
-                      ? " (" + fmtRelative(firstRev.timestamp) + ")"
-                      : "")
-                  : "—",
+                  xt ? fmtPct(sharePct(xt.anon_revisions, xt.revisions)) : "—",
+                ],
+                [
+                  "Minor edits",
+                  xt ? fmtPct(sharePct(xt.minor_revisions, xt.revisions)) : "—",
+                ],
+              ]);
+
+              appendInfoGroup(pageInfoEntry, "Creation", [
+                ["Created by", (firstRev && firstRev.user) || "—"],
+                [
+                  "Creation date",
+                  firstRev
+                    ? fmtTimestamp(firstRev.timestamp) +
+                      (fmtRelative(firstRev.timestamp)
+                        ? " (" + fmtRelative(firstRev.timestamp) + ")"
+                        : "")
+                    : "—",
+                ],
               ]);
 
               bodyCurrentRev.classList.remove("tng-hidden");
               arrowCurrentRev.classList.add("tng-arrow-up");
               bodyCurrentRev.innerHTML = "";
-              bodyCurrentRev.appendChild(makeEntry(rows));
+              bodyCurrentRev.appendChild(pageInfoEntry);
 
-              // Prose statistics sit in their own container so a failed
-              // XTools request cannot affect the MediaWiki-derived rows above.
-              const proseContainer = document.createElement("div");
-              proseContainer.style.marginTop = "6px";
-              bodyCurrentRev.appendChild(proseContainer);
-              renderProseEntry(proseContainer);
+              renderProseEntry(pageInfoEntry);
             } catch (err) {
               setError(
                 bodyCurrentRev,
