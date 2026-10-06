@@ -1,3 +1,11 @@
+## 2.216.2
+
+### Changed
+
+* Made the **Page assessment** section (🏅) in the **Get info** panel (page mode) collapsed by default, matching the other sections. It now expands automatically only when assessment data is found.
+* The section stays collapsed when no assessment is available or when the XTools request fails; the "No assessment available for this page." and "Page assessment is unavailable." messages are still shown when it is opened.
+* Replaced `collapseAssessmentSection()` with `expandAssessmentSection()`. `renderAssessmentEntry()` now takes an `onContent` callback, called only when assessment data was rendered.
+
 ## 2.216.1
 
 ### Changed

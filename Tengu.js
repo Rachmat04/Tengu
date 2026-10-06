@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.216.1
+ * Version 2.216.2
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -7340,8 +7340,10 @@ $(function () {
           }
 
           // Renders the overall page assessment and the per-WikiProject
-          // assessments into the Page assessment section.
-          function renderAssessmentEntry(container, onEmpty) {
+          // assessments into the Page assessment section. onContent is called
+          // only when assessment data was rendered, so the caller can expand
+          // the section, matching the other Get info sections.
+          function renderAssessmentEntry(container, onContent) {
             container.innerHTML = "";
             const loadingEl = document.createElement("div");
             loadingEl.className = "tng-info-loading";
@@ -7375,7 +7377,6 @@ $(function () {
                 emptyEl.className = "tng-info-empty";
                 emptyEl.textContent = "No assessment available for this page.";
                 container.appendChild(emptyEl);
-                onEmpty();
                 return;
               }
 
@@ -7399,7 +7400,6 @@ $(function () {
                 emptyEl.className = "tng-info-empty";
                 emptyEl.textContent = "No assessment available for this page.";
                 container.appendChild(emptyEl);
-                onEmpty();
                 return;
               }
 
@@ -7445,6 +7445,9 @@ $(function () {
                 });
                 container.appendChild(listEl);
               }
+
+              // Assessment data was found: expand the section.
+              onContent();
             });
           }
 
@@ -7453,18 +7456,18 @@ $(function () {
             sectionBody: bodyAssessment,
             arrow: arrowAssessment,
           } = makeDisplaySection("Page assessment", "🏅");
-          bodyAssessment.classList.remove("tng-hidden");
-          arrowAssessment.classList.add("tng-arrow-up");
 
-          function collapseAssessmentSection() {
-            bodyAssessment.classList.add("tng-hidden");
-            arrowAssessment.classList.remove("tng-arrow-up");
+          // Collapsed by default (as set by makeDisplaySection()); expanded
+          // only when assessment data is found.
+          function expandAssessmentSection() {
+            bodyAssessment.classList.remove("tng-hidden");
+            arrowAssessment.classList.add("tng-arrow-up");
           }
 
           body.appendChild(secCurrentRev);
           body.appendChild(secAssessment);
           body.appendChild(secWhatLinksHere);
-          renderAssessmentEntry(bodyAssessment, collapseAssessmentSection);
+          renderAssessmentEntry(bodyAssessment, expandAssessmentSection);
           body.appendChild(secAbuseLog);
           body.appendChild(secProtectLog);
           body.appendChild(secDeleteLog);
