@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.216.0
+ * Version 2.216.1
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -7231,19 +7231,14 @@ $(function () {
             }
           }
 
-          // Replaces a container's content with the fallback message and a
-          // retry control. The raw error is never shown.
-          function renderXtoolsFallback(container, retryFn) {
+          // Replaces a container's content with an "unavailable" message.
+          // The raw error is never shown, and no retry control is offered.
+          function renderXtoolsFallback(container, message) {
             container.innerHTML = "";
             const msgEl = document.createElement("div");
             msgEl.className = "tng-info-empty";
-            msgEl.textContent = XTOOLS_FALLBACK_TEXT;
+            msgEl.textContent = message || XTOOLS_FALLBACK_TEXT;
             container.appendChild(msgEl);
-            const btnRetry = makeBtn("🔄 Try again", "quiet");
-            btnRetry.className += " tng-btn-sm";
-            btnRetry.style.marginTop = "4px";
-            btnRetry.addEventListener("click", retryFn);
-            container.appendChild(btnRetry);
           }
 
           // Renders prose statistics into the existing Page info entry.
@@ -7259,9 +7254,7 @@ $(function () {
               loadingEl.remove();
 
               if (!data) {
-                renderXtoolsFallback(entry, function () {
-                  renderProseEntry(entry);
-                });
+                renderXtoolsFallback(entry, "Page information is unavailable.");
                 return;
               }
 
@@ -7359,9 +7352,10 @@ $(function () {
             ).then(function (data) {
               container.innerHTML = "";
               if (!data) {
-                renderXtoolsFallback(container, function () {
-                  renderAssessmentEntry(container, onEmpty);
-                });
+                renderXtoolsFallback(
+                  container,
+                  "Page assessment is unavailable.",
+                );
                 return;
               }
 

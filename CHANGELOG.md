@@ -1,3 +1,10 @@
+## 2.216.1
+
+### Changed
+
+* Removed the **🔄 Try again** button from the **Page info** and **Page assessment** sections of the **Get info** panel (page mode). When the XTools request fails, the section now shows "Page information is unavailable." or "Page assessment is unavailable." instead.
+* `renderXtoolsFallback()` now takes a message instead of a retry function.
+
 ## 2.216.0
 
 ### Changed
