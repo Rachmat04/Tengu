@@ -1509,3 +1509,78 @@
   padding-left: 190px;
   box-sizing: border-box;
 }
+
+/* --- Multi-target card --- */
+/* Groups the "Process additional targets" checkbox, the live target count,
+     and the collapsible textarea panel. The accent edge turns blue while the
+     option is ticked. */
+.tng-multitarget-card {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  box-sizing: border-box;
+  padding: 8px 10px;
+  border: 1px solid #a2a9b1;
+  border-left: 3px solid #a2a9b1;
+  border-radius: 6px;
+  background: #f8f9fa;
+  transition:
+    border-color 0.25s ease,
+    background-color 0.25s ease;
+}
+.tng-multitarget-card.tng-multitarget-card--active {
+  border-left-color: #3366cc;
+}
+.tng-multitarget-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.tng-multitarget-header .tng-checkrow {
+  margin-right: 0;
+  margin-bottom: 0;
+}
+.tng-multitarget-count {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 9px;
+  border-radius: 3px;
+  font-size: 0.78em;
+  font-weight: 600;
+  white-space: nowrap;
+  border: 1px solid #a8c4e8;
+  background: #dce8f8;
+  color: #1a4a8a;
+}
+.tng-multitarget-card .tng-multitarget-panel.tng-collapse-panel--open {
+  margin-top: 8px;
+}
+.tng-multitarget-help {
+  padding: 5px 8px;
+  border: 1px solid #d4e0f5;
+  border-radius: 4px;
+  background: #eef3fb;
+  color: #54595d;
+  line-height: 1.45;
+}
+
+.tng-theme-dark .tng-multitarget-card {
+  background: #252525;
+  border-color: #3a3a3a;
+  border-left-color: #54595d;
+}
+.tng-theme-dark .tng-multitarget-card.tng-multitarget-card--active {
+  border-left-color: #6699ff;
+}
+.tng-theme-dark .tng-multitarget-count {
+  background: #1a3060;
+  color: #80aaff;
+  border-color: #2a5090;
+}
+.tng-theme-dark .tng-multitarget-help {
+  background: #1f2a3d;
+  border-color: #2a3f66;
+  color: #a2a9b1;
+}

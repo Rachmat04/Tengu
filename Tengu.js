@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.216.2
+ * Version 2.217.0
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -9498,26 +9498,77 @@ $(function () {
             " every selected target. Resume is not available for multi-target" +
             " runs.";
 
+          helpMultiTarget.classList.add("tng-multitarget-help");
+          helpMultiTarget.textContent = "ℹ️ " + helpMultiTarget.textContent;
+
           const divMultiTargetPanel = document.createElement("div");
           divMultiTargetPanel.className =
             "tng-multitarget-panel tng-collapse-panel";
           divMultiTargetPanel.appendChild(textareaMultiTarget);
           divMultiTargetPanel.appendChild(helpMultiTarget);
 
+          // Card header: the existing checkbox on the left and a live,
+          // display-only target counter on the right.
+          const badgeMultiTargetCount = document.createElement("span");
+          badgeMultiTargetCount.className = "tng-multitarget-count tng-hidden";
+          badgeMultiTargetCount.title =
+            "Number of targets that will be processed, including the primary target";
+
+          // Counts the primary target plus unique additional targets, using
+          // the same case-insensitive de-duplication as the Start handler.
+          function updateMultiTargetCount() {
+            badgeMultiTargetCount.classList.toggle(
+              "tng-hidden",
+              !chkMultiTarget.checked,
+            );
+            if (!chkMultiTarget.checked) return;
+            const primary = inputTarget.value.trim();
+            const seen = new Set([primary.toLowerCase()]);
+            let extra = 0;
+            textareaMultiTarget.value.split("\n").forEach(function (line) {
+              const t = line.trim();
+              if (!t) return;
+              const key = t.toLowerCase();
+              if (seen.has(key)) return;
+              seen.add(key);
+              extra++;
+            });
+            const total = (primary ? 1 : 0) + extra;
+            badgeMultiTargetCount.textContent =
+              "🎯 " + total + (total === 1 ? " target" : " targets");
+          }
+
+          const divMultiTargetHeader = document.createElement("div");
+          divMultiTargetHeader.className = "tng-multitarget-header";
+          divMultiTargetHeader.appendChild(wrapMultiTarget);
+          divMultiTargetHeader.appendChild(badgeMultiTargetCount);
+
+          const divMultiTargetCard = document.createElement("div");
+          divMultiTargetCard.className = "tng-multitarget-card";
+          divMultiTargetCard.appendChild(divMultiTargetHeader);
+          divMultiTargetCard.appendChild(divMultiTargetPanel);
+
           chkMultiTarget.addEventListener("change", function () {
             divMultiTargetPanel.classList.toggle(
               "tng-collapse-panel--open",
               chkMultiTarget.checked,
             );
+            divMultiTargetCard.classList.toggle(
+              "tng-multitarget-card--active",
+              chkMultiTarget.checked,
+            );
+            updateMultiTargetCount();
             updatePagedelUncategorizeAvailability();
             applyMoveMultiTargetLock(chkMultiTarget.checked);
             updateMergeAvailability();
           });
+          textareaMultiTarget.addEventListener("input", updateMultiTargetCount);
+          inputTarget.addEventListener("input", updateMultiTargetCount);
+          inputTarget.addEventListener("change", updateMultiTargetCount);
 
           fieldMultiTarget.style.flexDirection = "column";
           fieldMultiTarget.style.alignItems = "stretch";
-          fieldMultiTarget.appendChild(wrapMultiTarget);
-          fieldMultiTarget.appendChild(divMultiTargetPanel);
+          fieldMultiTarget.appendChild(divMultiTargetCard);
           topSection.appendChild(rowMultiTarget);
 
           const { row: rowEdits, field: fieldEdits } = makeRow("Edits");
@@ -13945,9 +13996,11 @@ $(function () {
             if (chkMultiTarget.checked) {
               chkMultiTarget.checked = false;
               textareaMultiTarget.value = "";
-              divMultiTargetPanel.classList.remove(
-                "tng-multitarget-panel--open",
+              divMultiTargetPanel.classList.remove("tng-collapse-panel--open");
+              divMultiTargetCard.classList.remove(
+                "tng-multitarget-card--active",
               );
+              updateMultiTargetCount();
             }
 
             // Package row: available in both modes. The preset list is

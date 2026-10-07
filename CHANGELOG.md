@@ -1,3 +1,18 @@
+## 2.217.0
+
+### Changed
+
+* Restyled the **Multi-target** row as a card. The **Process additional targets** checkbox, a live target counter, and the collapsible textarea now sit inside one bordered container with a left accent edge that turns blue while the option is ticked. The help text is shown as an information note.
+* Added dark mode styling for the new card, counter, and note.
+
+### Added
+
+* Added a display-only target counter (for example, "🎯 3 targets") beside the checkbox. It counts the primary target plus unique additional targets, using the same case-insensitive de-duplication as the **Start** handler, and updates as the textarea or target field changes.
+
+### Fixed
+
+* Fixed the additional-targets panel staying open after a mode switch unticked **Process additional targets**. `applyModeRestrictions()` removed the obsolete `tng-multitarget-panel--open` class instead of `tng-collapse-panel--open`.
+
 ## 2.216.2
 
 ### Changed
