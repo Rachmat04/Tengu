@@ -203,12 +203,22 @@
   display: flex;
   flex-direction: column;
   gap: 6px;
-  border: 1px solid #eaecf0;
-  border-radius: 4px;
-  padding: 8px;
+  border: 1px solid #a2a9b1;
+  border-left: 3px solid #a2a9b1;
+  border-radius: 6px;
+  padding: 8px 10px;
   margin-top: 6px;
   width: 100%;
   box-sizing: border-box;
+  background: #f8f9fa;
+  transition:
+    border-color 0.25s ease,
+    background-color 0.25s ease;
+}
+/* Active state, toggled by Tengu.js through the checkbox that enables the
+   group. Matches the accent edge on .tng-multitarget-card--active. */
+.tng-recreation-group.tng-card--active {
+  border-left-color: #3366cc;
 }
 .tng-row .tng-field {
   flex: 1;
@@ -909,7 +919,13 @@
   color: #a2a9b1;
 }
 .tng-theme-dark .tng-recreation-group {
+  background: #252525;
   border-color: #3a3a3a;
+  border-left-color: #54595d;
+}
+.tng-theme-dark .tng-recreation-group.tng-card--active,
+.tng-theme-dark .tng-recreation-group.tng-collapse-panel--open {
+  border-left-color: #6699ff;
 }
 .tng-theme-dark .tng-input,
 .tng-theme-dark .tng-select {
@@ -1333,10 +1349,16 @@
 .tng-multitarget-panel.tng-collapse-panel--open {
   margin-top: 4px;
 }
+/* A collapsed card has no border, so no sliver of the accent edge shows. */
+.tng-recreation-group.tng-collapse-panel {
+  border-width: 0;
+}
 .tng-recreation-group.tng-collapse-panel--open {
   margin-top: 6px;
   padding-top: 8px;
   padding-bottom: 8px;
+  border-width: 1px 1px 1px 3px;
+  border-left-color: #3366cc;
 }
 
 /* --- Multi-target panel (textarea + help text) --- */

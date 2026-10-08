@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.217.0
+ * Version 2.218.0
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -11699,6 +11699,7 @@ $(function () {
             rowRecreationLevel.style.opacity = enabled ? "" : "0.5";
             rowRecreationExpiry.style.opacity = enabled ? "" : "0.5";
             rowRecreationReason.style.opacity = enabled ? "" : "0.5";
+            wrapRecreationGroup.classList.toggle("tng-card--active", enabled);
           });
 
           checksPagedel.appendChild(wrapRecreationGroup);
@@ -13172,6 +13173,7 @@ $(function () {
 
           chkProtectPC.addEventListener("change", function () {
             const enabled = chkProtectPC.checked;
+            divProtectPCGroup.classList.toggle("tng-card--active", enabled);
             selProtectPCLevel.disabled = !enabled;
             rowProtectPCLevel.style.opacity = enabled ? "" : "0.5";
             selProtectPCExpiry.disabled = !enabled;
@@ -15594,6 +15596,7 @@ $(function () {
             rowRecreationLevel.style.opacity = "0.5";
             rowRecreationExpiry.style.opacity = "0.5";
             rowRecreationReason.style.opacity = "0.5";
+            wrapRecreationGroup.classList.remove("tng-card--active");
 
             // Apply fallback resets to page protection state variables
             const pt = pkg.pageprotection || {};
@@ -15653,6 +15656,7 @@ $(function () {
             inputProtectPCExpiry.disabled = true;
             rowProtectPCLevel.style.opacity = "0.5";
             rowProtectPCExpiry.style.opacity = "0.5";
+            divProtectPCGroup.classList.remove("tng-card--active");
 
             const rd = pkg.revisiondelete || {};
             if (!chkRevdel.disabled) {

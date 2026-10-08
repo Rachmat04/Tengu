@@ -1,3 +1,12 @@
+## 2.218.0
+
+### Changed
+
+* Restyled the grouped sub-panels to match the **Multi-target** card: a grey background, a rounded border, and a left accent edge. This applies to the partial block settings, the **Protect from recreation after deletion** group, the pending changes group, and the filter groups in **Export edits** and **Select specific edits/pages**.
+* The accent edge turns blue while a group is active: when **Partial block** is selected, or when the group's enabling checkbox is ticked.
+* A collapsed partial block panel now has no border, so no sliver of the accent edge shows.
+* Added dark mode styling for the new card background and accent edge.
+
 ## 2.217.0
 
 ### Changed
