@@ -1,3 +1,9 @@
+## 2.219.2
+
+### Changed
+
+* Removed the horizontal line that separated the **Account activity** block from the account rows in the **Account info** section of the **Get info** panel (user mode). The block now sits directly below the rows, under its own heading, with a small top margin.
+
 ## 2.219.1
 
 ### Changed

@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.219.1
+ * Version 2.219.2
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -6236,19 +6236,16 @@ $(function () {
 
           // --- Account activity ---
           // Compact summary of the target's logged actions, sourced from the
-          // XTools log_counts API and shown below the Account info rows,
-          // separated by a horizontal line. Only the most relevant categories
+          // XTools log_counts API and shown below the Account info rows
+          // under its own heading. Only the most relevant categories
           // are listed, and categories with a count of zero are omitted.
           // Skipped for IP addresses, which have no logged administrative
           // actions. For temporary accounts, and when multi-target mode is
           // active, a notice is shown instead of the counts.
           if (!isTargetIP) {
-            const activityDivider = document.createElement("hr");
-            activityDivider.className = "tng-user-rights-divider";
-            accountInfoEntry.appendChild(activityDivider);
-
             const activityHeading = document.createElement("div");
             activityHeading.style.fontWeight = "bold";
+            activityHeading.style.marginTop = "6px";
             activityHeading.textContent = "Account activity";
             accountInfoEntry.appendChild(activityHeading);
 
