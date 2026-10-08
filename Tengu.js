@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.218.0
+ * Version 2.219.0
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -6233,6 +6233,107 @@ $(function () {
             isTargetIP || isTargetTempAccount
               ? null
               : makeAccountInfoRow("Previous usernames");
+
+          // --- Account activity ---
+          // Compact summary of the target's logged actions, sourced from the
+          // XTools log_counts API and shown below the Account info rows,
+          // separated by a horizontal line. Only the most relevant categories
+          // are listed, and categories with a count of zero are omitted.
+          // Skipped for IP addresses, which have no logged administrative
+          // actions. [Unverified] XTools support for temporary accounts on
+          // this endpoint has not been confirmed.
+          if (!isTargetIP) {
+            const activityDivider = document.createElement("hr");
+            activityDivider.className = "tng-user-rights-divider";
+            accountInfoEntry.appendChild(activityDivider);
+
+            const activityHeading = document.createElement("div");
+            activityHeading.style.fontWeight = "bold";
+            activityHeading.textContent = "Account activity";
+            accountInfoEntry.appendChild(activityHeading);
+
+            const activityBody = document.createElement("div");
+            activityBody.className = "tng-info-loading";
+            activityBody.textContent = "Loading account activity...";
+            accountInfoEntry.appendChild(activityBody);
+
+            (async function () {
+              try {
+                const res = await fetch(
+                  "https://xtools.wmcloud.org/api/user/log_counts/" +
+                    mw.config.get("wgServerName") +
+                    "/" +
+                    encodeURIComponent(username.replace(/ /g, "_")),
+                );
+                if (!res.ok) throw new Error("HTTP " + res.status);
+                const json = await res.json();
+                const counts = (json && json.log_counts) || null;
+                if (!counts || typeof counts !== "object") {
+                  throw new Error("No log counts returned");
+                }
+
+                // Adds up the values of the given log keys. Missing or
+                // non-numeric values count as zero.
+                const sumKeys = function (keys) {
+                  return keys.reduce(function (total, key) {
+                    return (
+                      total +
+                      (typeof counts[key] === "number" ? counts[key] : 0)
+                    );
+                  }, 0);
+                };
+                // All review-* entries are combined into one total.
+                const reviewKeys = Object.keys(counts).filter(function (key) {
+                  return key.indexOf("review-") === 0;
+                });
+
+                const categories = [
+                  ["Pages created", sumKeys(["create-create"])],
+                  ["Pages deleted", sumKeys(["delete-delete"])],
+                  ["Pages restored", sumKeys(["delete-restore"])],
+                  ["Pages moved", sumKeys(["move-move", "move-move_redir"])],
+                  [
+                    "Pages protected",
+                    sumKeys(["protect-protect", "protect-modify"]),
+                  ],
+                  ["Pages unprotected", sumKeys(["protect-unprotect"])],
+                  [
+                    "Users blocked",
+                    sumKeys(["block-block", "block-reblock", "block-unblock"]),
+                  ],
+                  ["Rights changes", sumKeys(["rights-rights"])],
+                  ["Patrols", sumKeys(["patrol-patrol"])],
+                  ["Reviews", sumKeys(reviewKeys)],
+                ].filter(function (c) {
+                  return c[1] > 0;
+                });
+
+                if (!categories.length) {
+                  activityBody.className = "tng-info-empty";
+                  activityBody.textContent = "No logged actions found.";
+                  return;
+                }
+
+                const activityList = document.createElement("ul");
+                activityList.style.margin = "0";
+                activityList.style.paddingLeft = "20px";
+                categories.forEach(function (c) {
+                  const item = document.createElement("li");
+                  const b = document.createElement("b");
+                  b.textContent = c[0] + ": ";
+                  item.appendChild(b);
+                  item.appendChild(
+                    document.createTextNode(c[1].toLocaleString()),
+                  );
+                  activityList.appendChild(item);
+                });
+                activityBody.replaceWith(activityList);
+              } catch (err) {
+                activityBody.className = "tng-info-empty";
+                activityBody.textContent = "Account activity is unavailable.";
+              }
+            })();
+          }
 
           bodyAccountInfo.appendChild(accountInfoEntry);
           bodyAccountInfo.classList.remove("tng-hidden");

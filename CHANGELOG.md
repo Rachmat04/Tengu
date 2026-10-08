@@ -1,3 +1,17 @@
+## 2.219.0
+
+### Added
+
+* Added an **Account activity** block to the **Account info** section of the **Get info** panel (user mode), separated from the account rows by a horizontal line. It shows counts of logged actions, retrieved from the XTools `log_counts` API.
+* Listed categories: Pages created, Pages deleted, Pages restored, Pages moved, Pages protected, Pages unprotected, Users blocked, Rights changes, Patrols, and Reviews. Categories with a count of zero are omitted.
+* Combined counts: Pages moved (`move-move` + `move-move_redir`), Pages protected (`protect-protect` + `protect-modify`), Users blocked (`block-block` + `block-reblock` + `block-unblock`), and Reviews (all `review-*` entries).
+* Technical or less relevant log types (such as `abusefilter-*`, `growthexperiments-*`, `thanks-*`, and `upload-*`) are not displayed.
+
+### Notes
+
+* If the XTools request fails, the block shows "Account activity is unavailable." and the rest of the panel is unaffected. If every listed count is zero, it shows "No logged actions found."
+* The block is not shown for IP addresses.
+
 ## 2.218.0
 
 ### Changed

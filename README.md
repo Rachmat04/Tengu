@@ -142,7 +142,7 @@ Only available in page mode.
 
 ### Get info
 - Opens a read-only information panel for the current target.
-- **User mode** — shows the target's account info (local and global edit counts, registration date, previous usernames), access rights (local and global groups and rights), block log, rights changes, abuse filter log, and global lock/block status.
+- **User mode** — shows the target's account info (local and global edit counts, registration date, previous usernames, and a compact account activity summary of logged action counts from XTools), access rights (local and global groups and rights), block log, rights changes, abuse filter log, and global lock/block status.
 - **Page mode** — shows the page's current revision info (size, last editor, last edited, revision count, creator, creation date), what links here, abuse filter log, protection log, deletion log, and move log.
 - Sections that have entries expand automatically.
 
