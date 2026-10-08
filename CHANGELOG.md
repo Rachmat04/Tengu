@@ -1,3 +1,12 @@
+## 2.219.1
+
+### Changed
+
+* The **Account activity** block in the **Account info** section of the **Get info** panel (user mode) now shows a notice instead of counts when the target is a temporary account ("Account activity is not available for temporary accounts.").
+* The same applies when **Process additional targets** is ticked ("Account activity is not available when multiple targets are selected."), since the counts would reflect the primary target only.
+* `getUserInfo()` now takes a second parameter, `isMultiTarget`, passed from the **Get info** button.
+* No XTools request is made in either case.
+
 ## 2.219.0
 
 ### Added

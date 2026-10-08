@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.219.0
+ * Version 2.219.1
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -6055,7 +6055,7 @@ $(function () {
         // API request independently so a failure in one does not block the others.
         // See Section 08b (getPageInfo) for the equivalent panel in page mode.
         // ============================================================================
-        const getUserInfo = async function (username) {
+        const getUserInfo = async function (username, isMultiTarget) {
           const { overlay, body, footer } = createDialog({
             title: "User info: " + username,
             icon: "🔍",
@@ -6240,8 +6240,8 @@ $(function () {
           // separated by a horizontal line. Only the most relevant categories
           // are listed, and categories with a count of zero are omitted.
           // Skipped for IP addresses, which have no logged administrative
-          // actions. [Unverified] XTools support for temporary accounts on
-          // this endpoint has not been confirmed.
+          // actions. For temporary accounts, and when multi-target mode is
+          // active, a notice is shown instead of the counts.
           if (!isTargetIP) {
             const activityDivider = document.createElement("hr");
             activityDivider.className = "tng-user-rights-divider";
@@ -6258,6 +6258,13 @@ $(function () {
             accountInfoEntry.appendChild(activityBody);
 
             (async function () {
+              if (isTargetTempAccount || isMultiTarget) {
+                activityBody.className = "tng-info-empty";
+                activityBody.textContent = isTargetTempAccount
+                  ? "Account activity is not available for temporary accounts."
+                  : "Account activity is not available when multiple targets are selected.";
+                return;
+              }
               try {
                 const res = await fetch(
                   "https://xtools.wmcloud.org/api/user/log_counts/" +
@@ -9537,7 +9544,7 @@ $(function () {
             const target = inputTarget.value.trim();
             if (!target) return;
             if (tenguMode === "user") {
-              getUserInfo(target);
+              getUserInfo(target, chkMultiTarget.checked);
             } else {
               getPageInfo(target);
             }
