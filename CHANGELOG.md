@@ -1,3 +1,11 @@
+## 2.221.0
+
+### Changed
+
+* The **Move page** section (both sub-modes and all of its options) is now unavailable when the target is in the main namespace on Wikidata. The section is locked with a padlock and a tooltip stating the reason, and can still be expanded to view its disabled controls. It remains available in other supported namespaces and on other wikis.
+* Added `getMoveWikidataLockReason()` and `updateMoveWikidataLock()`. The lock is re-evaluated when the target changes and when the mode is switched.
+* The asynchronous page-exists check in `updateSectionStatus()` no longer unlocks the section for Wikidata main-namespace targets.
+
 ## 2.220.0
 
 ### Added

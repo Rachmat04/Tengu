@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.220.0
+ * Version 2.221.0
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -13911,6 +13911,56 @@ $(function () {
             if (!isFilePage) selProtectUpload.value = "all";
           }
 
+          // Wikidata's main namespace (namespace 0) holds Wikibase items.
+          // Wikibase entity namespaces are immovable in MediaWiki,
+          // so action=move is expected to fail there. This has not been
+          // verified against a live wiki. Every feature in the Move page
+          // section depends on action=move, so the whole section is locked
+          // for such targets. Returns the lock reason, or null when the
+          // section is available.
+          let moveWikidataLocked = false;
+          function getMoveWikidataLockReason() {
+            if (tenguMode !== "page") return null;
+            if (mw.config.get("wgServerName") !== "www.wikidata.org")
+              return null;
+            const title = inputTarget.value.trim();
+            if (!title) return null;
+            try {
+              if (new mw.Title(title).getNamespaceId() !== 0) return null;
+            } catch (e) {
+              return null;
+            }
+            return "pages in the main namespace on Wikidata cannot be moved.";
+          }
+
+          // Locks the Move page section for Wikidata main-namespace targets,
+          // and releases only the lock this function applied.
+          function updateMoveWikidataLock() {
+            if (tenguMode !== "page") return;
+            const reason = getMoveWikidataLockReason();
+            if (reason) {
+              applyModeLock(
+                secMoveSandbox,
+                bodyMoveSandbox,
+                chkMoveSandbox,
+                true,
+                reason,
+              );
+              moveWikidataLocked = true;
+            } else if (moveWikidataLocked) {
+              moveWikidataLocked = false;
+              // Leave the section locked if a special-page lock applies.
+              if (!isTargetSpecialPage()) {
+                applyModeLock(
+                  secMoveSandbox,
+                  bodyMoveSandbox,
+                  chkMoveSandbox,
+                  false,
+                );
+              }
+            }
+          }
+
           // Applies or removes reversible mode locks on page deletion, protection,
           // and page moves when the target is a special page. Delegates to
           // applyModeLock() so locks are cleared automatically when the target
@@ -14321,7 +14371,10 @@ $(function () {
             }
 
             // Apply or remove special page locks when switching to page mode
-            if (!isUserModeNow) applySpecialPageLocks(targetIsSpecial);
+            if (!isUserModeNow) {
+              applySpecialPageLocks(targetIsSpecial);
+              updateMoveWikidataLock();
+            }
             // Apply or remove range-target locks (Rollback, Warn, Revdel,
             // Lock account, GS/SRG reporting) when switching to user mode
             if (isUserModeNow) applyRangeTargetLocks(isTargetIPRange());
@@ -16573,12 +16626,15 @@ $(function () {
                     );
                   } else {
                     applyModeLock(secPagedel, bodyPagedel, chkPagedel, false);
-                    applyModeLock(
-                      secMoveSandbox,
-                      bodyMoveSandbox,
-                      chkMoveSandbox,
-                      false,
-                    );
+                    // Keep Move page locked for Wikidata main-namespace targets.
+                    if (!getMoveWikidataLockReason()) {
+                      applyModeLock(
+                        secMoveSandbox,
+                        bodyMoveSandbox,
+                        chkMoveSandbox,
+                        false,
+                      );
+                    }
                     applyModeLock(secProtect, bodyProtect, chkProtect, false);
                     applyModeLock(
                       secFixRedirects,
@@ -16675,6 +16731,7 @@ $(function () {
               const targetIsSpecial = isTargetSpecialPage();
               applySpecialPageLocks(targetIsSpecial);
               updateModeNotice(false, targetIsSpecial);
+              updateMoveWikidataLock();
             }
             // Auto-fill subpage name with the page title (without namespace),
             // and pre-fill the Move page destination with the full prefixed title.
