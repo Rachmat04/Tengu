@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.219.2
+ * Version 2.220.0
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -12594,9 +12594,60 @@ $(function () {
           );
           fieldMoveSandboxSubpage.appendChild(btnCheckMoveSandboxDest);
           divMoveSandboxPanel.appendChild(rowMoveSandboxSubpage);
-          divMoveSandboxPanel.appendChild(
-            makeCaseButtonsRow(inputMoveSandboxSubpage),
+
+          // Reset title button — shares the row with the case-conversion
+          // buttons, matching the Move page sub-mode. Resets the subpage name
+          // to the target page's current title (without namespace), and is
+          // disabled whenever the subpage name already matches it.
+          const caseButtonsRowMoveSandboxSubpage = makeCaseButtonsRow(
+            inputMoveSandboxSubpage,
           );
+          const btnResetMoveSandboxSubpage = makeBtn("Reset title", "quiet");
+          btnResetMoveSandboxSubpage.type = "button";
+          btnResetMoveSandboxSubpage.className += " tng-btn-sm";
+          btnResetMoveSandboxSubpage.title =
+            "Reset the subpage name to the page's current title.";
+          function updateMoveSandboxResetTitleAvailability() {
+            const _target = inputTarget.value.trim();
+            let same = false;
+            if (_target) {
+              try {
+                same =
+                  new mw.Title(_target).getMain().replace(/_/g, " ") ===
+                  inputMoveSandboxSubpage.value.trim();
+              } catch (e) {
+                same = false;
+              }
+            }
+            btnResetMoveSandboxSubpage.disabled = same;
+          }
+          btnResetMoveSandboxSubpage.addEventListener("click", function () {
+            const _target = inputTarget.value.trim();
+            if (!_target) return;
+            try {
+              inputMoveSandboxSubpage.value = new mw.Title(_target)
+                .getMain()
+                .replace(/_/g, " ");
+            } catch (e) {
+              inputMoveSandboxSubpage.value = _target;
+            }
+            inputMoveSandboxSubpage.dispatchEvent(new Event("input"));
+          });
+          [inputMoveSandboxSubpage, inputTarget].forEach(function (el) {
+            el.addEventListener(
+              "input",
+              updateMoveSandboxResetTitleAvailability,
+            );
+            el.addEventListener(
+              "change",
+              updateMoveSandboxResetTitleAvailability,
+            );
+          });
+          caseButtonsRowMoveSandboxSubpage.appendChild(
+            btnResetMoveSandboxSubpage,
+          );
+          divMoveSandboxPanel.appendChild(caseButtonsRowMoveSandboxSubpage);
+          updateMoveSandboxResetTitleAvailability();
 
           const helpMoveSandbox = document.createElement("div");
           helpMoveSandbox.className = "tng-help";

@@ -1,3 +1,10 @@
+## 2.220.0
+
+### Added
+
+* Added a **Reset title** button to the **Move to user's sandbox** sub-mode of the Move page section, on the same row as the case-conversion buttons, matching the **Move page** sub-mode. It resets the **Subpage name** field to the target page's current title (without the namespace prefix).
+* The button is disabled whenever the subpage name already matches the target page's current title, and is re-evaluated when the subpage name or the target changes.
+
 ## 2.219.2
 
 ### Changed
