@@ -1,3 +1,12 @@
+## 2.222.0
+
+### Changed
+
+* **Merge items** is now restricted to the main namespace on Wikidata. In any other namespace, on any other project, in user mode, or with **Process additional targets** ticked, the section is locked with a padlock and a tooltip stating the reason. The lock is re-evaluated whenever the target changes.
+* **Move pages** is now also locked for targets in the main namespace on Wikifunctions, using the same padlock and tooltip as the existing Wikidata lock. It stays available in other namespaces on Wikifunctions and on other wikis.
+* Added `isMergeTargetInMainNamespace()`. `getMoveWikidataLockReason()` now covers both Wikidata and Wikifunctions; its name is unchanged.
+* Updated the Merge items status note to mention the main namespace requirement.
+
 ## 2.221.0
 
 ### Changed

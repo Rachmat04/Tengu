@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.221.0
+ * Version 2.222.0
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -11060,7 +11060,7 @@ $(function () {
           const divMergeStatus = document.createElement("div");
           divMergeStatus.className = "tng-status-note tng-status-note-inactive";
           divMergeStatus.textContent =
-            "Merges the target entity above into another Wikidata item or lexeme via the Wikidata API. Only available on Wikidata, in page mode, with a single target.";
+            "Merges the target entity above into another Wikidata item or lexeme via the Wikidata API. Only available on Wikidata, in the main namespace, in page mode, with a single target.";
           bodyMerge.appendChild(divMergeStatus);
 
           const { row: rowMergeTo, field: fieldMergeTo } =
@@ -11108,6 +11108,20 @@ $(function () {
           // separately from the mode lock (applyModeLock) via its own set,
           // mirroring the pattern used by applyUnblockStatusLock().
           const mergeStatusLocked = new Set();
+
+          // Returns true when the current target is in the main namespace
+          // (ID 0). An empty or unparseable target is treated as allowed
+          // here, since the Start button validation already rejects it.
+          function isMergeTargetInMainNamespace() {
+            const mergeTitle = inputTarget.value.trim();
+            if (!mergeTitle) return true;
+            try {
+              return new mw.Title(mergeTitle).getNamespaceId() === 0;
+            } catch (e) {
+              return true;
+            }
+          }
+
           function updateMergeAvailability() {
             const hdr = secMerge.querySelector(".tng-section-header");
             const arrow = secMerge.querySelector(".tng-section-arrow");
@@ -11123,6 +11137,9 @@ $(function () {
               reason = "merge items does not support multiple targets.";
             } else if (!isWikidata) {
               reason = "merge items is only available on Wikidata.";
+            } else if (!isMergeTargetInMainNamespace()) {
+              reason =
+                "merge items is only available for pages in the main namespace.";
             }
 
             if (reason) {
@@ -13918,11 +13935,17 @@ $(function () {
           // section depends on action=move, so the whole section is locked
           // for such targets. Returns the lock reason, or null when the
           // section is available.
+          // The same lock now also covers the main namespace on
+          // Wikifunctions (www.wikifunctions.org), where Move pages is
+          // disabled. The function name is kept so existing call sites
+          // (updateMoveWikidataLock(), updateSectionStatus()) are unchanged.
           let moveWikidataLocked = false;
           function getMoveWikidataLockReason() {
             if (tenguMode !== "page") return null;
-            if (mw.config.get("wgServerName") !== "www.wikidata.org")
-              return null;
+            const moveHost = mw.config.get("wgServerName");
+            const isWikidataHost = moveHost === "www.wikidata.org";
+            const isWikifunctionsHost = moveHost === "www.wikifunctions.org";
+            if (!isWikidataHost && !isWikifunctionsHost) return null;
             const title = inputTarget.value.trim();
             if (!title) return null;
             try {
@@ -13930,7 +13953,9 @@ $(function () {
             } catch (e) {
               return null;
             }
-            return "pages in the main namespace on Wikidata cannot be moved.";
+            return isWikifunctionsHost
+              ? "Move pages is not available for the main namespace on Wikifunctions."
+              : "pages in the main namespace on Wikidata cannot be moved.";
           }
 
           // Locks the Move page section for Wikidata main-namespace targets,
@@ -16753,6 +16778,8 @@ $(function () {
             updatePagedelUncategorizeAvailability();
             updateWikidataItemPagedelLocks();
             updateUploadAvailability();
+            updateMergeAvailability();
+            updateStartBtn();
             updateSectionStatus();
           });
 
