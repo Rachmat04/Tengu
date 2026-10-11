@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.223.0
+ * Version 2.224.0
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -7346,6 +7346,14 @@ $(function () {
             container.appendChild(msgEl);
           }
 
+          // Link statistics (incoming, outgoing, external, and redirect
+          // counts) from the XTools links API. Started here so it runs in
+          // parallel with the MediaWiki requests below. Resolves to null on
+          // any failure, in which case the Links group is omitted.
+          const linksPromise = fetchXtoolsPageData(
+            "links/" + xtoolsHostForWiki + "/" + xtoolsSlugForPage,
+          );
+
           // Renders prose statistics into the existing Page info entry.
           function renderProseEntry(entry) {
             const loadingEl = document.createElement("div");
@@ -7661,6 +7669,7 @@ $(function () {
               }
 
               const xt = await xtoolsPromise;
+              const xtLinks = await linksPromise;
 
               const fmtNum = function (n) {
                 return typeof n === "number" ? n.toLocaleString() : "—";
@@ -7689,6 +7698,17 @@ $(function () {
                 ["Watchers", xt ? fmtNum(xt.watchers) : "—"],
                 ["Pageviews", xt ? fmtNum(xt.pageviews) : "—"],
               ]);
+
+              // Link counts from XTools. The group is omitted when the
+              // request failed, rather than showing four empty rows.
+              if (xtLinks) {
+                appendInfoGroup(pageInfoEntry, "Links", [
+                  ["Incoming links", fmtNum(xtLinks.links_in_count)],
+                  ["Outgoing links", fmtNum(xtLinks.links_out_count)],
+                  ["External links", fmtNum(xtLinks.links_ext_count)],
+                  ["Redirects to this page", fmtNum(xtLinks.redirects_count)],
+                ]);
+              }
 
               appendInfoGroup(pageInfoEntry, "Editing", [
                 ["Editors", xt ? fmtNum(xt.editors) : "—"],

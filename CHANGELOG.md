@@ -1,3 +1,14 @@
+## 2.224.0
+
+### Added
+
+* Added a **Links** group to the **Page info** section of the **Get info** panel (page mode), shown between the **Page** and **Editing** groups. It lists **Incoming links**, **Outgoing links**, **External links**, and **Redirects to this page**, retrieved from the XTools links API (`links_in_count`, `links_out_count`, `links_ext_count`, `redirects_count`).
+* The request starts alongside the existing XTools page info request, so it adds no waiting time before the section renders.
+
+### Changed
+
+* The Links group is omitted when the XTools request fails. The rest of **Page info** is unaffected.
+
 ## 2.223.0
 
 ### Changed
