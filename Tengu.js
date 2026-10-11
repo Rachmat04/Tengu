@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.222.0
+ * Version 2.223.0
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -7746,17 +7746,61 @@ $(function () {
           // --- What links here ---
           (async function () {
             try {
-              const data = await apiGet({
-                action: "query",
-                list: "backlinks",
-                bltitle: pageName,
-                bllimit: 100,
-                formatversion: 2,
+              // Links (including redirects) and transclusions are separate
+              // lists in the API, so both are fetched and merged by title.
+              // A failed transclusion request leaves the link list intact.
+              const [data, embedData] = await Promise.all([
+                apiGet({
+                  action: "query",
+                  list: "backlinks",
+                  bltitle: pageName,
+                  bllimit: 100,
+                  formatversion: 2,
+                }),
+                apiGet({
+                  action: "query",
+                  list: "embeddedin",
+                  eititle: pageName,
+                  eilimit: 100,
+                  formatversion: 2,
+                }).catch(function () {
+                  return null;
+                }),
+              ]);
+              const linkEntries = (data.query && data.query.backlinks) || [];
+              const embedEntries =
+                (embedData && embedData.query && embedData.query.embeddedin) ||
+                [];
+              const hasMore = !!(
+                data.continue ||
+                (embedData && embedData.continue)
+              );
+              const entryMap = new Map();
+              linkEntries.forEach(function (p) {
+                entryMap.set(p.title, {
+                  title: p.title,
+                  isRedirect: !!p.redirect,
+                  isTransclusion: false,
+                });
               });
-              const entries = (data.query && data.query.backlinks) || [];
-              const hasMore = !!data.continue;
+              embedEntries.forEach(function (p) {
+                const existing = entryMap.get(p.title);
+                if (existing) {
+                  existing.isTransclusion = true;
+                } else {
+                  entryMap.set(p.title, {
+                    title: p.title,
+                    isRedirect: !!p.redirect,
+                    isTransclusion: true,
+                  });
+                }
+              });
+              const entries = Array.from(entryMap.values());
               if (!entries.length) {
-                setEmpty(bodyWhatLinksHere, "No pages link to this page.");
+                setEmpty(
+                  bodyWhatLinksHere,
+                  "No pages link to or transclude this page.",
+                );
                 return;
               }
               // Auto-expand: entries found are likely of interest
@@ -7779,8 +7823,22 @@ $(function () {
                 linkEl.rel = "noopener noreferrer";
                 linkEl.textContent = page.title;
                 linkEl.style.cssText = "word-break:break-word;";
+                // Label shown only for redirects and transclusions; regular
+                // content pages get no label.
+                const typeLabels = [];
+                if (page.isRedirect) typeLabels.push("redirect");
+                if (page.isTransclusion) typeLabels.push("transclusion");
+                const nameWrap = document.createElement("span");
+                nameWrap.style.cssText = "word-break:break-word;";
+                nameWrap.appendChild(linkEl);
+                if (typeLabels.length) {
+                  const typeEl = document.createElement("span");
+                  typeEl.style.cssText = "color:#72777d;";
+                  typeEl.textContent = " (" + typeLabels.join(", ") + ")";
+                  nameWrap.appendChild(typeEl);
+                }
                 rowEl.appendChild(numEl);
-                rowEl.appendChild(linkEl);
+                rowEl.appendChild(nameWrap);
                 bodyWhatLinksHere.appendChild(rowEl);
               }
               if (hasMore) {
@@ -7789,7 +7847,7 @@ $(function () {
                 noteEl.className = "tng-help";
                 noteEl.style.marginTop = "6px";
                 const notePre = document.createTextNode(
-                  "Showing the first 100 results. Visit ",
+                  "Showing up to the first 100 links and 100 transclusions. Visit ",
                 );
                 const noteLink = document.createElement("a");
                 noteLink.href = mw.util.getUrl(wlhSpecialTitle);

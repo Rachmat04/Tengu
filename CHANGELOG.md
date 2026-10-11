@@ -1,3 +1,11 @@
+## 2.223.0
+
+### Changed
+
+* The **What links here** section of the **Get info** panel (page mode) now labels each entry that is a redirect or a transclusion, in parentheses after the page name (for example, `Template:Example (transclusion)` or `Example (redirect)`). Regular content pages have no label. A page that is both shows both labels (`redirect, transclusion`).
+* Transclusions are now listed, fetched via `list=embeddedin` alongside the existing `list=backlinks` request. Results are merged by title.
+* The "more results" note now refers to the first 100 links and 100 transclusions. The empty-state message now reads "No pages link to or transclude this page."
+
 ## 2.222.0
 
 ### Changed
