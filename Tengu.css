@@ -278,6 +278,12 @@
   border-color: #3366cc;
   box-shadow: 0 0 0 2px rgba(51, 102, 204, 0.18);
 }
+/* Monospace variant, used by the target user/page field so usernames,
+   IP addresses, and page titles are easier to read and compare. */
+.tng-input.tng-input-mono {
+  font-family: monospace;
+  font-size: 1em;
+}
 
 /* --- Custom select wrapper (positions chevron arrow) --- */
 .tng-select-wrap {
@@ -1219,29 +1225,6 @@
 }
 .tng-theme-dark .tng-combobox-input::placeholder {
   color: #a2a9b1;
-}
-
-/* Experimental feature badge (e.g. Lock account section header).
-   Amber colouring signals the feature has not yet been confirmed to
-   work as expected. */
-.tng-experimental-badge {
-  display: inline-flex;
-  align-items: center;
-  padding: 1px 7px;
-  border-radius: 3px;
-  font-size: 0.9em;
-  font-weight: 700;
-  white-space: nowrap;
-  border: 1px solid #f5c542;
-  background: #fef3cd;
-  color: #6b4c11;
-  margin-left: 6px;
-  vertical-align: middle;
-}
-.tng-theme-dark .tng-experimental-badge {
-  background: #3d2b00;
-  color: #ffe082;
-  border-color: #8a6900;
 }
 
 /* User-right badges (Recently active administrators & rights holders list).

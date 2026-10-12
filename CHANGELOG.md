@@ -1,3 +1,21 @@
+## 2.225.0
+
+### Removed
+
+* Removed the **Lock account** feature, including its section in the dialogue, the global lock request (`setglobalaccountstatus`), the steward-rights check that governed it, the optional lock notification, and the `lock` operation counter in the progress summary.
+* Removed `LOCK_ACCOUNT_REASONS` from `Tengu-reasons.js`.
+* Removed the `.tng-experimental-badge` styles from `Tengu.css`, since the Lock account section header was their only use.
+* Removed the Lock account section and the "account locking" mention from `README.md`.
+
+### Changed
+
+* The **Target user/page** field now uses a monospace font, through a new `.tng-input-mono` class in `Tengu.css`.
+
+### Notes
+
+* **Report to Steward requests/Global** and the global lock/block status display in **Get info** are unchanged.
+* The steward badge in the rights panel is unchanged. Only the stored `isSteward` value in `resolvedRights` was removed, as nothing else read it.
+
 ## 2.224.0
 
 ### Added
