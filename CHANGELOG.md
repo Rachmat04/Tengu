@@ -1,3 +1,9 @@
+## 2.225.1
+
+### Fixed
+
+* Fixed three `no-descending-specificity` lint errors in `Tengu.css`. The dark mode rules for `.tng-filtered-select-clear`, `.tng-filtered-select-clear:hover`, and `.tng-recreation-group.tng-collapse-panel--open` now come after their base rules, at the end of the file.
+
 ## 2.225.0
 
 ### Removed

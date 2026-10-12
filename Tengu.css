@@ -929,8 +929,7 @@
   border-color: #3a3a3a;
   border-left-color: #54595d;
 }
-.tng-theme-dark .tng-recreation-group.tng-card--active,
-.tng-theme-dark .tng-recreation-group.tng-collapse-panel--open {
+.tng-theme-dark .tng-recreation-group.tng-card--active {
   border-left-color: #6699ff;
 }
 .tng-theme-dark .tng-input,
@@ -998,15 +997,6 @@
 }
 .tng-theme-dark .tng-log-succ {
   color: #00af89;
-}
-
-/* Dark mode for in-field filter clear icon */
-.tng-theme-dark .tng-filtered-select-clear {
-  color: #a2a9b1;
-}
-.tng-theme-dark .tng-filtered-select-clear:hover {
-  background: #3a3a3a;
-  color: #eaecf0;
 }
 
 /* Dark mode for inline field error */
@@ -1588,4 +1578,18 @@
   background: #1f2a3d;
   border-color: #2a3f66;
   color: #a2a9b1;
+}
+
+/* --- Dark mode overrides that must follow their base rules --- */
+/* Placed at the end of the file so each selector comes after the
+   lower-specificity base rule it overrides (no-descending-specificity). */
+.tng-theme-dark .tng-filtered-select-clear {
+  color: #a2a9b1;
+}
+.tng-theme-dark .tng-filtered-select-clear:hover {
+  background: #3a3a3a;
+  color: #eaecf0;
+}
+.tng-theme-dark .tng-recreation-group.tng-collapse-panel--open {
+  border-left-color: #6699ff;
 }
