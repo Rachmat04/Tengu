@@ -607,6 +607,13 @@
   padding: 4px 0;
 }
 
+/* Muted "(current)" label shown after the latest username in the
+   Previous usernames row, so it reads as a label and not as part of the
+   account name. */
+.tng-info-current-label {
+  color: #72777d;
+}
+
 /* --- Target user rights card (user info dialogue) --- */
 .tng-user-rights-card {
   border: 1px solid #a2a9b1;
@@ -1592,4 +1599,7 @@
 }
 .tng-theme-dark .tng-recreation-group.tng-collapse-panel--open {
   border-left-color: #6699ff;
+}
+.tng-theme-dark .tng-info-current-label {
+  color: #8a8a8a;
 }

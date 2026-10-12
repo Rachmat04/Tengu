@@ -1,3 +1,15 @@
+## 2.226.0
+
+### Changed
+
+* The **Previous usernames** row in the **Account info** section of the **Get info** panel (user mode) now ends with the target's current username, followed by a muted **(current)** label, so the latest account name is clear (for example, `Example1 → Example2 → Example3 (current)`).
+* The label is a separate element with its own style, `.tng-info-current-label` (smaller, muted text), added to `Tengu.css` with a dark mode variant.
+
+### Notes
+
+* The current username is only added when a rename history is found. When no previous usernames exist, the row still reads "No previous usernames found."
+* Display change only. No API calls or rename-chain logic were changed.
+
 ## 2.225.1
 
 ### Fixed

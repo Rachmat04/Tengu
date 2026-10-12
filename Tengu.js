@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.225.1
+ * Version 2.226.0
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -6638,11 +6638,17 @@ $(function () {
               } else if (chain.length) {
                 // chain is nearest-previous-first; reverse for chronological
                 // (oldest-first) display order.
+                // The current username is appended at the end of the chain
+                // so the latest account name is clear, followed by a muted
+                // "(current)" label. The label is a separate element, so it
+                // is styled as a label rather than as part of the name.
                 previousNamesBody.className = "tng-info-value";
-                previousNamesBody.textContent = chain
-                  .slice()
-                  .reverse()
-                  .join(" → ");
+                previousNamesBody.textContent =
+                  chain.slice().reverse().concat(username).join(" → ") + " ";
+                const currentLabelEl = document.createElement("span");
+                currentLabelEl.className = "tng-info-current-label";
+                currentLabelEl.textContent = "(current)";
+                previousNamesBody.appendChild(currentLabelEl);
               } else {
                 previousNamesBody.className = "tng-info-empty";
                 previousNamesBody.textContent = "No previous usernames found.";
