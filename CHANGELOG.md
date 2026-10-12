@@ -1,3 +1,24 @@
+## 2.227.0
+
+### Added
+
+* Added an **emergency lockdown** control. Tengu reads `Pengguna:Rachmat04/Tengu-lockdown.js` on id.wikipedia.org through the API and looks for a `TENGU_LOCKDOWN = true;` or `TENGU_LOCKDOWN = false;` line. The file is read as plain text and is never executed.
+* While the lockdown is active, only the `Rachmat04` account can use Tengu. All other users see a dialogue stating that Tengu has been temporarily disabled by its maintainer.
+* Added `fetchLockdownState()`, `getLockdownState()`, `showLockdownDialog()`, and `ensureTenguAllowed()` in Section 05.
+* The check runs before `init()` (portlet link), at the start of `work()` (including resume), at the start of `runQuickRevert()`, and before inline links are added on history, contributions, and diff pages. The inline link insertion check is silent.
+
+### Changed
+
+* If the lockdown status cannot be verified (network error, timeout, missing page, or no valid flag line), Tengu is blocked for all users except `Rachmat04`, and a separate dialogue explains that the status could not be confirmed.
+* No changes when the lockdown is inactive.
+
+### Notes
+
+* The lockdown page must exist and contain a valid flag line. Otherwise Tengu is blocked for everyone except the maintainer.
+* Only the first matching flag line is read. Lines starting with `//` are ignored.
+* The request uses `api.php` with `origin=*`.
+* Users who can edit the lockdown page (interface administrators) can change the flag.
+
 ## 2.226.0
 
 ### Changed

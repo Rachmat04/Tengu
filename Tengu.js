@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.226.0
+ * Version 2.227.0
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -932,6 +932,128 @@ $(function () {
           return rollbackRightPromise;
         }
 
+        // ------------------------------------------------------------------
+        // Emergency lockdown
+        // A central switch the maintainer can flip without editing any
+        // user's user.js. Tengu reads a script page on-wiki as plain text
+        // (it is never executed) and looks for one line:
+        //   TENGU_LOCKDOWN = true;   (lockdown active)
+        //   TENGU_LOCKDOWN = false;  (lockdown inactive)
+        // While the lockdown is active, only the maintainer account can use
+        // Tengu. If the status cannot be verified (network error, missing
+        // page, or no valid flag line), Tengu fails closed for everyone
+        // except the maintainer.
+        // ------------------------------------------------------------------
+        const LOCKDOWN_MAINTAINER = "Rachmat04";
+        const LOCKDOWN_API = "https://id.wikipedia.org/w/api.php";
+        const LOCKDOWN_PAGE = "Pengguna:Rachmat04/Tengu-lockdown.js";
+
+        // Resolves to "allowed", "locked", or "unverified".
+        async function fetchLockdownState() {
+          if (mw.config.get("wgUserName") === LOCKDOWN_MAINTAINER) {
+            return "allowed";
+          }
+          let timer = null;
+          try {
+            const controller =
+              typeof AbortController === "function"
+                ? new AbortController()
+                : null;
+            if (controller) {
+              timer = setTimeout(function () {
+                controller.abort();
+              }, 10000);
+            }
+            const url =
+              LOCKDOWN_API +
+              "?action=query&prop=revisions&rvprop=content&rvslots=main" +
+              "&format=json&formatversion=2&origin=*&maxage=0&smaxage=0" +
+              "&titles=" +
+              encodeURIComponent(LOCKDOWN_PAGE);
+            const res = await fetch(
+              url,
+              Object.assign(
+                { cache: "no-store" },
+                controller ? { signal: controller.signal } : {},
+              ),
+            );
+            if (!res.ok) return "unverified";
+            const json = await res.json();
+            const page = json && json.query && json.query.pages;
+            const rev =
+              page &&
+              page[0] &&
+              !page[0].missing &&
+              page[0].revisions &&
+              page[0].revisions[0];
+            const content =
+              rev && rev.slots && rev.slots.main && rev.slots.main.content;
+            if (typeof content !== "string") return "unverified";
+            // Only the first matching line is read. Comment lines start with
+            // "//" and do not match.
+            const m = content.match(
+              /^[ \t]*(?:var[ \t]+)?TENGU_LOCKDOWN[ \t]*=[ \t]*(true|false)[ \t]*;?[ \t]*(?:\/\/.*)?$/m,
+            );
+            if (!m) return "unverified";
+            return m[1] === "true" ? "locked" : "allowed";
+          } catch (e) {
+            return "unverified";
+          } finally {
+            if (timer) clearTimeout(timer);
+          }
+        }
+
+        // Cached for the page session. Pass fresh = true to re-check.
+        let lockdownPromise = null;
+        function getLockdownState(fresh) {
+          if (fresh || !lockdownPromise) {
+            lockdownPromise = fetchLockdownState();
+          }
+          return lockdownPromise;
+        }
+
+        function showLockdownDialog(state) {
+          const isLocked = state === "locked";
+          const { overlay, body, footer } = createDialog({
+            title: isLocked
+              ? "Tengu is temporarily disabled"
+              : "Tengu is unavailable",
+            icon: "🔒",
+            child: true,
+          });
+          const p1 = document.createElement("p");
+          p1.style.margin = "0 0 8px 0";
+          const p2 = document.createElement("p");
+          p2.style.margin = "0";
+          if (isLocked) {
+            p1.innerHTML =
+              "<b>Tengu has been temporarily disabled by its maintainer.</b>";
+            p2.textContent =
+              "An emergency lockdown is active. Tengu cannot be used until the maintainer lifts it. Please try again later. No action was taken.";
+          } else {
+            p1.innerHTML =
+              "<b>Tengu could not confirm that its emergency lockdown is inactive.</b>";
+            p2.textContent =
+              "Tengu has been blocked as a precaution. Check your connection and try again. If this continues, contact Rachmat04. No action was taken.";
+          }
+          body.appendChild(p1);
+          body.appendChild(p2);
+          const btnClose = makeBtn("Close", "primary");
+          btnClose.addEventListener("click", function () {
+            overlay.closeHandler();
+          });
+          footer.appendChild(btnClose);
+        }
+
+        // Returns true when Tengu may run. Otherwise shows the lockdown
+        // dialogue and returns false.
+        async function ensureTenguAllowed(fresh) {
+          const state = await getLockdownState(fresh);
+          if (state === "allowed") return true;
+          showLockdownDialog(state);
+          return false;
+        }
+
         // Compares two revisions' content via their SHA-1 hashes, used by
         // runQuickRevert() (Section 09b) to confirm whether a rollback/undo
         // actually restored the target revision's exact content. Returns
@@ -1693,6 +1815,9 @@ $(function () {
         // Executes API orchestration loops for user blocks, rollbacks, deletions, and page undeletions whilst piping execution log messages.
         // ============================================================================
         const work = async function () {
+          // Emergency lockdown check, before any dialogue is built or any
+          // action runs.
+          if (!(await ensureTenguAllowed(true))) return;
           let isAborted = false;
 
           // Resume state — carries phase-completion flags, processed-item sets, and
@@ -16599,6 +16724,8 @@ $(function () {
           method,
           opts,
         ) {
+          // Emergency lockdown check, before the confirmation dialogue.
+          if (!(await ensureTenguAllowed(true))) return;
           const { linkEl, isContribsPage } = opts || {};
           // Only rollback on a contributions page skips the post-success
           // reload; undo and restore-this-revision keep the existing
@@ -17538,6 +17665,11 @@ $(function () {
           const isDiffPage =
             !isHistoryPage && !isContribsPage && !!diffOldRevId;
 
+          // Emergency lockdown check. Silent here (no dialogue), so the
+          // links are simply not added while Tengu is locked or unverified.
+          if (!isDiffPage && !isHistoryPage && !isContribsPage) return;
+          if ((await getLockdownState(false)) !== "allowed") return;
+
           if (isDiffPage) {
             await Promise.all([
               insertDiffRevisionActions(
@@ -17732,8 +17864,12 @@ $(function () {
           ),
         ).on("click", function (e) {
           e.preventDefault();
-          inited = false;
-          init();
+          // Emergency lockdown check, before the interface is initialised.
+          ensureTenguAllowed(true).then(function (allowed) {
+            if (!allowed) return;
+            inited = false;
+            init();
+          });
         });
       });
   });

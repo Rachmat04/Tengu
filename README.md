@@ -248,6 +248,16 @@ This script is designed for MediaWiki user scripts and can be installed locally 
 
 ---
 
+## Emergency lockdown
+
+The maintainer can lock Tengu for everyone except the `Rachmat04` account, without changing any user's `user.js`.
+
+- Tengu reads `Pengguna:Rachmat04/Tengu-lockdown.js` on id.wikipedia.org as plain text. The file is not executed.
+- The line `TENGU_LOCKDOWN = true;` activates the lockdown. `TENGU_LOCKDOWN = false;` deactivates it.
+- While the lockdown is active, other users see a dialogue stating that Tengu has been temporarily disabled by its maintainer.
+- If the status cannot be verified (network error, missing page, or no valid flag line), Tengu is blocked for everyone except the maintainer, and a separate dialogue explains why.
+- The check runs when Tengu is opened, when a run starts or resumes, and when an inline rollback, undo, or restore link is used.
+
 ## Notes
 
 - Some wikis may disable global scripts for security reasons.
