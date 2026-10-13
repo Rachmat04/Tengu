@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.227.0
+ * Version 2.228.0
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -6388,6 +6388,98 @@ $(function () {
           bodyAccountInfo.classList.remove("tng-hidden");
           arrowAccountInfo.classList.add("tng-arrow-up");
           body.appendChild(secAccountInfo);
+
+          // --- SUL info section ---
+          // Lists every wiki the account is attached to through Single User
+          // Login (SUL), using meta=globaluserinfo with guiprop=merged. The
+          // wiki where the account was created is read from the response's
+          // "home" field and marked with a subtle label. Collapsed by
+          // default; expands only when attached wikis are found.
+          const {
+            section: secSul,
+            sectionBody: bodySul,
+            arrow: arrowSul,
+          } = makeDisplaySection("SUL info", "🖥️");
+          body.appendChild(secSul);
+
+          (async function () {
+            if (isTargetIP) {
+              setEmpty(bodySul, "Not applicable for IP addresses.");
+              return;
+            }
+            if (isTargetTempAccount) {
+              setEmpty(
+                bodySul,
+                "SUL info is not available for temporary accounts.",
+              );
+              return;
+            }
+            setLoading(bodySul, "Loading SUL info...");
+            try {
+              const data = await apiGet({
+                action: "query",
+                meta: "globaluserinfo",
+                guiuser: username,
+                guiprop: "merged",
+              });
+              const gui = data.query && data.query.globaluserinfo;
+              if (!gui || gui.missing !== undefined) {
+                setEmpty(bodySul, "No global account found.");
+                return;
+              }
+              const merged = Array.isArray(gui.merged) ? gui.merged : [];
+              const wikis = merged.filter(function (m) {
+                return m && typeof m.wiki === "string" && m.wiki;
+              });
+              if (!wikis.length) {
+                setEmpty(bodySul, "No attached wikis found.");
+                return;
+              }
+              const homeWiki = typeof gui.home === "string" ? gui.home : null;
+              wikis.sort(function (a, b) {
+                return a.wiki.localeCompare(b.wiki);
+              });
+
+              const sulEntry = document.createElement("div");
+              sulEntry.className = "tng-info-entry";
+              const sulLine = document.createElement("div");
+              const sulLabel = document.createElement("b");
+              sulLabel.textContent = "Attached wikis (" + wikis.length + "): ";
+              sulLine.appendChild(sulLabel);
+
+              wikis.forEach(function (w, i) {
+                if (i > 0) sulLine.appendChild(document.createTextNode(", "));
+                if (typeof w.url === "string" && /^https?:\/\//i.test(w.url)) {
+                  const link = document.createElement("a");
+                  link.href = w.url;
+                  link.target = "_blank";
+                  link.rel = "noopener noreferrer";
+                  link.textContent = w.wiki;
+                  sulLine.appendChild(link);
+                } else {
+                  sulLine.appendChild(document.createTextNode(w.wiki));
+                }
+                if (homeWiki && w.wiki === homeWiki) {
+                  const homeLabel = document.createElement("span");
+                  homeLabel.className = "tng-sul-home-label";
+                  homeLabel.textContent = " (home wiki)";
+                  sulLine.appendChild(homeLabel);
+                }
+              });
+
+              sulEntry.appendChild(sulLine);
+              bodySul.innerHTML = "";
+              bodySul.appendChild(sulEntry);
+              // Auto-expand: attached wikis found
+              bodySul.classList.remove("tng-hidden");
+              arrowSul.classList.add("tng-arrow-up");
+            } catch (err) {
+              setError(
+                bodySul,
+                "Failed to load SUL info: " + formatApiError(err),
+              );
+            }
+          })();
 
           const rightsCard = document.createElement("div");
           rightsCard.className = "tng-user-rights-card";

@@ -1,3 +1,16 @@
+## 2.228.0
+
+### Added
+
+* Added a **SUL info** section (🖥️) to the **Get info** panel (user mode), directly below **Account info**. It lists every wiki the account is attached to through Single User Login, as a comma-separated list of short identifiers (for example, `idwiki`), retrieved with `meta=globaluserinfo&guiprop=merged`.
+* Each identifier links to its wiki and opens in a new tab. The wiki where the account was created is marked with a muted **(home wiki)** label, styled by the new `.tng-sul-home-label` class in `Tengu.css`, with a dark mode variant.
+* The section is collapsed by default and expands when attached wikis are found, matching the other Get info sections.
+
+### Notes
+
+* The section shows a notice for IP addresses and temporary accounts, and a short message when no global account or no attached wikis are found. A failed request shows an error in this section only; the rest of the panel is unaffected.
+* An identifier without a usable `url` value is shown as plain text. The home label is omitted when the response has no `home` value.
+
 ## 2.227.0
 
 ### Added

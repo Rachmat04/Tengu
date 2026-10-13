@@ -1603,3 +1603,14 @@
 .tng-theme-dark .tng-info-current-label {
   color: #8a8a8a;
 }
+
+/* Muted "(home wiki)" label shown after the wiki where the account was
+   created in the SUL info section, so it reads as a label and not as part
+   of the wiki identifier. */
+.tng-sul-home-label {
+  color: #72777d;
+  font-size: 0.9em;
+}
+.tng-theme-dark .tng-sul-home-label {
+  color: #8a8a8a;
+}
