@@ -1,3 +1,13 @@
+## 2.229.0
+
+### Added
+
+* Added a **Request permissions on Meta-Wiki** section (🙋), directly after **Delete revisions**. It is available in page mode only and is locked in user mode.
+* Added a **Permission type** dropdown (Administrator, Interface administrator, Bureaucrat, CheckUser, Oversight), a **Username** input, a **Discussion URL** input pre-filled with the current page URL, and a two-line **Remarks** text area. The discussion input and the remarks area each have a ✨ fix links button, run with the Meta-Wiki prefix option.
+* Added a read-only **Request preview**, updated as any field changes. The username is entered once and used in both the heading and the `user name` parameter. The project identifier comes from `wgDBname` (for example `idwiki`), and the domain from the hostname without `.org` (for example `id.wikipedia`).
+* Added `submitPermissionRequest()` in Section 05. It reads Meta-Wiki's Steward requests/Permissions, finds the matching subsection inside `== Requests ==`, inserts the request at the end of that subsection, and saves with `basetimestamp` so an edit conflict is reported. It checks for an existing request for the same username in that subsection, and an edit result other than `Success` is logged as a failure.
+* The confirmation dialogue now shows the exact request wikitext.
+
 ## 2.228.0
 
 ### Added

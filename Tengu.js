@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.228.0
+ * Version 2.229.0
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -1722,6 +1722,146 @@ $(function () {
           });
         }
 
+        // Permission types supported by the "Request permissions" feature,
+        // mapped to the subsection heading used on Meta-Wiki's Steward
+        // requests/Permissions page.
+        const PERM_REQUEST_TYPES = {
+          administrator: {
+            label: "Administrator",
+            heading: "Administrator access",
+          },
+          interfaceadmin: {
+            label: "Interface administrator",
+            heading: "Interface administrator access",
+          },
+          bureaucrat: {
+            label: "Bureaucrat",
+            heading: "Bureaucrat access",
+          },
+          checkuser: {
+            label: "CheckUser",
+            heading: "CheckUser access",
+          },
+          oversight: {
+            label: "Oversight",
+            heading: "Oversight access",
+          },
+        };
+        const PERM_PAGE_TITLE = "Steward requests/Permissions";
+
+        // Inserts a permission request at the end of the matching subsection
+        // (inside "== Requests ==") of Meta-Wiki's Steward requests/Permissions
+        // page, rather than appending it to the end of the page. The page is
+        // read first and the edit is sent with the revision timestamp as
+        // basetimestamp, so MediaWiki reports an edit conflict if the page
+        // changed in between. Throws on any failure, including an
+        // unsuccessful edit result, so a failure is never reported as success.
+        async function submitPermissionRequest(
+          typeKey,
+          username,
+          requestText,
+          summaryText,
+        ) {
+          const info = PERM_REQUEST_TYPES[typeKey];
+          if (!info) throw new Error("unknown permission type");
+
+          const data = await foreignApiGet({
+            action: "query",
+            prop: "revisions",
+            titles: PERM_PAGE_TITLE,
+            rvslots: "main",
+            rvprop: "content|timestamp",
+            formatversion: 2,
+          });
+          const page = data.query && data.query.pages && data.query.pages[0];
+          const rev = page && page.revisions && page.revisions[0];
+          const content =
+            rev && rev.slots && rev.slots.main && rev.slots.main.content;
+          if (typeof content !== "string" || !rev.timestamp) {
+            throw new Error("could not read " + PERM_PAGE_TITLE);
+          }
+
+          const reqMatch = /^==[ \t]*Requests[ \t]*==[ \t]*$/m.exec(content);
+          if (!reqMatch) {
+            throw new Error('the "Requests" section was not found');
+          }
+          const afterReq = reqMatch.index + reqMatch[0].length;
+          const escHeading = info.heading.replace(
+            /[.*+?^${}()|[\]\\]/g,
+            "\\$&",
+          );
+          const subRe = new RegExp(
+            "^===[ \\t]*" + escHeading + "[ \\t]*===[ \\t]*$",
+            "m",
+          );
+          const subMatch = subRe.exec(content.slice(afterReq));
+          if (!subMatch) {
+            throw new Error(
+              'the "' + info.heading + '" subsection was not found',
+            );
+          }
+          const subStart = afterReq + subMatch.index + subMatch[0].length;
+          // The subsection ends at the next level 2 or level 3 heading.
+          // Level 4 headings are individual requests and stay inside it.
+          const nextHeading = /^={2,3}[^=\n][^\n]*$/m.exec(
+            content.slice(subStart),
+          );
+          const subEnd = nextHeading
+            ? subStart + nextHeading.index
+            : content.length;
+
+          const escUser = username.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+          const dupRe = new RegExp(
+            "\\|\\s*user name\\s*=\\s*" + escUser + "\\s*(?:\\n|\\|)",
+            "i",
+          );
+          if (dupRe.test(content.slice(subStart, subEnd))) {
+            throw new Error(
+              'a request for "' +
+                username +
+                '" already appears under "' +
+                info.heading +
+                '"',
+            );
+          }
+
+          const before = content.slice(0, subEnd).replace(/\s+$/, "");
+          const after = content.slice(subEnd).replace(/^\s+/, "");
+          const newContent =
+            before + "\n\n" + requestText + (after ? "\n\n" + after : "\n");
+
+          const foreignApi = await getMetaForeignApi();
+          const result = await new Promise((resolve, reject) => {
+            foreignApi
+              .postWithEditToken({
+                action: "edit",
+                title: PERM_PAGE_TITLE,
+                text: newContent,
+                summary: summaryText,
+                basetimestamp: rev.timestamp,
+                nocreate: 1,
+              })
+              .done(resolve)
+              .fail((code, err) => {
+                if (code === "editconflict") {
+                  reject(
+                    "edit conflict: the page was changed by someone else while submitting. Please try again",
+                  );
+                  return;
+                }
+                reject(
+                  code +
+                    (err && err.error && err.error.info
+                      ? ": " + err.error.info
+                      : ""),
+                );
+              });
+          });
+          if (!result || !result.edit || result.edit.result !== "Success") {
+            throw new Error("the edit was not confirmed as successful");
+          }
+        }
+
         // Hostnames of wikis known to fall outside the scope of the global
         // sysops service. This is now the sole source of truth for global
         // sysops eligibility, read directly by globalSysopsScopePromise
@@ -2831,6 +2971,35 @@ $(function () {
             } catch (e) {
               addLog(
                 `[Merge] Failed to merge "${config.mergeFrom}" into "${config.mergeTo}": ${formatApiError(e)}`,
+                true,
+              );
+            }
+          }
+
+          // --- Request permissions on Meta-Wiki ---
+          // Single-shot operation, independent of config.targets: the request
+          // concerns the requested user entered in the section, not the page
+          // target. The duplicate check in submitPermissionRequest() stops a
+          // second filing if a resumed run reaches this step again.
+          if (config.permRequest && !isAborted) {
+            addLog(
+              `[Permissions] Submitting request for "${config.permUsername}" (${config.permTypeLabel}) to Steward requests/Permissions...`,
+            );
+            try {
+              await submitPermissionRequest(
+                config.permType,
+                config.permUsername,
+                config.permText,
+                withToolTag(config.permSummary, toolTag),
+              );
+              addLog(
+                `[Permissions] Request for "${config.permUsername}" submitted to Steward requests/Permissions`,
+              );
+              stats.report++;
+              updateStatusDisplay();
+            } catch (e) {
+              addLog(
+                `[Permissions] Failed to submit request for "${config.permUsername}": ${formatApiError(e)}`,
                 true,
               );
             }
@@ -13875,6 +14044,136 @@ $(function () {
           bodyRevdel.appendChild(rowRevdelReason);
           body.appendChild(secRevdel);
 
+          // ============================================================================
+          // Request permissions section — page mode only.
+          // Files a permission request on Meta-Wiki's Steward requests/Permissions
+          // page, inserted under the subsection matching the selected permission
+          // type. Locked in user mode via applyModeLock().
+          // ============================================================================
+          const {
+            section: secPerm,
+            sectionBody: bodyPerm,
+            enableChk: chkPerm,
+          } = makeSection("Request permissions on Meta-Wiki", "🙋", false);
+
+          const divPermStatus = document.createElement("div");
+          divPermStatus.className = "tng-status-note tng-status-note-inactive";
+          divPermStatus.textContent =
+            "Files a request on Meta-Wiki's Steward requests/Permissions page, under the subsection for the selected permission type. Your SUL session is used for the edit.";
+          bodyPerm.appendChild(divPermStatus);
+
+          const { row: rowPermType, field: fieldPermType } =
+            makeRow("Permission type");
+          const selPermType = makeSelect(
+            Object.keys(PERM_REQUEST_TYPES).map(function (key) {
+              return { value: key, label: PERM_REQUEST_TYPES[key].label };
+            }),
+          );
+          fieldPermType.appendChild(wrapSelect(selPermType));
+          bodyPerm.appendChild(rowPermType);
+
+          const { row: rowPermUser, field: fieldPermUser } =
+            makeRow("Username");
+          const inputPermUser = makeInput("Requested user's username");
+          fieldPermUser.appendChild(inputPermUser);
+          bodyPerm.appendChild(rowPermUser);
+
+          const { row: rowPermDiscussion, field: fieldPermDiscussion } =
+            makeRow("Discussion URL");
+          const inputPermDiscussion = makeInput("URL of the discussion");
+          inputPermDiscussion.value = window.location.href;
+          const wrapPermDiscussion = wrapReasonInputWithLinkFix(
+            inputPermDiscussion,
+            true,
+          );
+          fieldPermDiscussion.appendChild(wrapPermDiscussion);
+          bodyPerm.appendChild(rowPermDiscussion);
+
+          const { row: rowPermRemarks, field: fieldPermRemarks } =
+            makeRow("Remarks");
+          const inputPermRemarks = document.createElement("textarea");
+          inputPermRemarks.className = "tng-input";
+          inputPermRemarks.rows = 2;
+          inputPermRemarks.placeholder = "Additional remarks (optional)";
+          inputPermRemarks.style.cssText = "resize:vertical;";
+          const wrapPermRemarks = wrapReasonInputWithLinkFix(
+            inputPermRemarks,
+            true,
+          );
+          fieldPermRemarks.appendChild(wrapPermRemarks);
+          bodyPerm.appendChild(rowPermRemarks);
+
+          const { row: rowPermPreview, field: fieldPermPreview } =
+            makeRow("Request preview");
+          const textareaPermPreview = document.createElement("textarea");
+          textareaPermPreview.className = "tng-input";
+          textareaPermPreview.rows = 9;
+          textareaPermPreview.readOnly = true;
+          textareaPermPreview.style.cssText =
+            "resize:vertical;font-family:monospace;font-size:1em;";
+          fieldPermPreview.appendChild(textareaPermPreview);
+          bodyPerm.appendChild(rowPermPreview);
+
+          // Builds the request wikitext from the current field values. The
+          // username is read once, so the heading and the "user name"
+          // parameter always match.
+          // [Unverified] The domain is derived by removing ".org" from the
+          // current hostname (for example "id.wikipedia.org" becomes
+          // "id.wikipedia"). This matches the examples given, but has not been
+          // checked against hosts such as www.wikidata.org.
+          function buildPermRequestText() {
+            const user = inputPermUser.value.trim() || "(username)";
+            const url = inputPermDiscussion.value.trim().replace(/\|/g, "%7C");
+            const remarks = inputPermRemarks.value.trim();
+            const dbName = mw.config.get("wgDBname") || "";
+            const domain = (mw.config.get("wgServerName") || "").replace(
+              /\.org$/,
+              "",
+            );
+            return (
+              "==== " +
+              user +
+              "@" +
+              dbName +
+              " ====\n" +
+              "{{sr-request\n" +
+              " |status = <!-- Don't change this line -->\n" +
+              " |domain = " +
+              domain +
+              "\n" +
+              " |user name = " +
+              user +
+              "\n" +
+              " |discussion = " +
+              url +
+              "\n" +
+              "}}\n" +
+              (remarks ? remarks + " " : "") +
+              "~~~~"
+            );
+          }
+          function updatePermPreview() {
+            textareaPermPreview.value = buildPermRequestText();
+          }
+          [
+            selPermType,
+            inputPermUser,
+            inputPermDiscussion,
+            inputPermRemarks,
+          ].forEach(function (el) {
+            el.addEventListener("input", updatePermPreview);
+            el.addEventListener("change", updatePermPreview);
+          });
+          // The fix-links buttons change a field's value without firing an
+          // input event, so the preview is refreshed on their click too.
+          [wrapPermDiscussion, wrapPermRemarks].forEach(function (w) {
+            const btn = w.querySelector("button");
+            if (btn) btn.addEventListener("click", updatePermPreview);
+          });
+          updatePermPreview();
+
+          body.appendChild(secPerm);
+
           // Lock a section: uncheck and disable its toggle, collapse its body,
           // remove the chevron (section cannot be opened), and append a lock
           // indicator to the header so the restriction is visible.
@@ -14353,6 +14652,7 @@ $(function () {
                 true,
                 "Tengu is targeting a page, not a user.",
               );
+              applyModeLock(secPerm, bodyPerm, chkPerm, false);
               // Move to sandbox and Fix redirects are available in page mode; unlock them.
               applyModeLock(
                 secMoveSandbox,
@@ -14392,6 +14692,13 @@ $(function () {
               // with no replacement, leaving the Move page section incorrectly accessible
               // in user mode.
               applySpecialPageLocks(false);
+              applyModeLock(
+                secPerm,
+                bodyPerm,
+                chkPerm,
+                true,
+                "Request permissions is only available in page mode.",
+              );
               // Move to sandbox and Fix redirects are page-mode only; lock them when switching to user mode.
               applyModeLock(
                 secMoveSandbox,
@@ -14454,6 +14761,13 @@ $(function () {
 
           // Lock page-mode-only sections when starting in user mode.
           if (tenguMode === "user") {
+            applyModeLock(
+              secPerm,
+              bodyPerm,
+              chkPerm,
+              true,
+              "Request permissions is only available in page mode.",
+            );
             applyModeLock(
               secMoveSandbox,
               bodyMoveSandbox,
@@ -14544,7 +14858,8 @@ $(function () {
               chkGS.checked ||
               chkSRG.checked ||
               chkFixRedirects.checked ||
-              chkMerge.checked
+              chkMerge.checked ||
+              chkPerm.checked
             );
           }
 
@@ -14563,6 +14878,7 @@ $(function () {
           chkMoveSandbox.addEventListener("change", updateStartBtn);
           chkFixRedirects.addEventListener("change", updateStartBtn);
           chkMerge.addEventListener("change", updateStartBtn);
+          chkPerm.addEventListener("change", updateStartBtn);
 
           btnStart.addEventListener("click", function () {
             const targetVal = inputTarget.value.trim();
@@ -14601,6 +14917,25 @@ $(function () {
                   "The two entities to merge must be different.",
                 );
                 inputMergeTo.focus();
+                return;
+              }
+            }
+
+            if (chkPerm.checked && !chkPerm.disabled) {
+              if (!inputPermUser.value.trim()) {
+                showNotification(
+                  fieldPermUser,
+                  "Please enter the requested user's username.",
+                );
+                inputPermUser.focus();
+                return;
+              }
+              if (!inputPermDiscussion.value.trim()) {
+                showNotification(
+                  fieldPermDiscussion,
+                  "Please enter the discussion URL.",
+                );
+                inputPermDiscussion.focus();
                 return;
               }
             }
@@ -15247,6 +15582,19 @@ $(function () {
                 chkMergeRedirect.checked &&
                 mergeEntities.from.charAt(0) !== "L",
               mergeSummary: buildMergeReason(),
+              permRequest: chkPerm.checked && !chkPerm.disabled,
+              permType: selPermType.value,
+              permTypeLabel: PERM_REQUEST_TYPES[selPermType.value].label,
+              permUsername: inputPermUser.value.trim(),
+              permText: buildPermRequestText(),
+              permSummary:
+                "New request: " +
+                inputPermUser.value.trim() +
+                "@" +
+                (mw.config.get("wgDBname") || "") +
+                " (" +
+                PERM_REQUEST_TYPES[selPermType.value].heading +
+                ")",
             };
 
             // Builds a list of every action that will run, based on the
@@ -15275,6 +15623,8 @@ $(function () {
                 features.push("🔏 Protect pages against recreation");
               if (config.fixRedirects) features.push("🔀 Fix redirects");
               if (config.rd) features.push("👁️ Delete revisions");
+              if (config.permRequest)
+                features.push("🙋 Request permissions on Meta-Wiki");
               if (config.mergeItems) features.push("🔗 Merge items");
               return features;
             }
@@ -15385,6 +15735,22 @@ $(function () {
                 scopeNote.appendChild(scopeList);
                 confirmDlg.body.appendChild(scopeNote);
               }
+            }
+
+            // Show the exact request that will be submitted to Meta-Wiki.
+            if (config.permRequest) {
+              const permPreviewLbl = document.createElement("div");
+              permPreviewLbl.className = "tng-help";
+              permPreviewLbl.textContent =
+                "Request to be added under “" +
+                PERM_REQUEST_TYPES[config.permType].heading +
+                "” on Steward requests/Permissions:";
+              confirmDlg.body.appendChild(permPreviewLbl);
+              const permPreviewBox = document.createElement("div");
+              permPreviewBox.className = "tng-confirm-target-list";
+              permPreviewBox.style.whiteSpace = "pre-wrap";
+              permPreviewBox.textContent = config.permText;
+              confirmDlg.body.appendChild(permPreviewBox);
             }
 
             const btnCancelConfirm = makeBtn("Cancel", "quiet");

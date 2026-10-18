@@ -105,6 +105,15 @@ Only available in page mode.
 - Preset and free-text reasons.
 - Only available in user mode.
 
+### Request permissions on Meta-Wiki
+- Files a permission request on Meta-Wiki's Steward requests/Permissions page.
+- Permission types: Administrator, Interface administrator, Bureaucrat, CheckUser, and Oversight.
+- Fields: requested username (entered once), discussion URL (pre-filled with the current page URL), and remarks. The discussion and remarks fields each have a fix links button.
+- Shows a live preview of the request wikitext, and again in the confirmation dialogue.
+- Inserts the request at the end of the subsection that matches the permission type inside `== Requests ==`, not at the end of the page.
+- Reports an edit conflict, a missing subsection, or an existing request for the same username as a failure.
+- Only available in page mode.
+
 ### Report to Global sysops/Requests
 - Files a report on Meta-Wiki's Global sysops/Requests page.
 - **User mode** — reports an account, using `{{LockHide}}` with the reporting wiki's interwiki prefix. IP addresses use an interwiki-linked contributions page.
