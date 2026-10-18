@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.229.0
+ * Version 2.229.1
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -10056,6 +10056,7 @@ $(function () {
             updateMultiTargetCount();
             updatePagedelUncategorizeAvailability();
             applyMoveMultiTargetLock(chkMultiTarget.checked);
+            applyPermMultiTargetLock(chkMultiTarget.checked);
             updateMergeAvailability();
           });
           textareaMultiTarget.addEventListener("input", updateMultiTargetCount);
@@ -14174,6 +14175,54 @@ $(function () {
 
           body.appendChild(secPerm);
 
+          // Reversible lock: a permission request concerns one requested
+          // user, so the section is unavailable whenever "Process
+          // additional targets" is ticked. Tracked in its own set, separate
+          // from the page/user mode lock, so the two locks never overwrite
+          // each other's unlock condition. Mirrors applyMoveMultiTargetLock().
+          const permMultiTargetLocked = new Set();
+          function applyPermMultiTargetLock(locked) {
+            const arrow = secPerm.querySelector(".tng-section-arrow");
+            const hdr = secPerm.querySelector(".tng-section-header");
+            const reason = "permission requests only support a single target.";
+            if (locked) {
+              if (permMultiTargetLocked.has(chkPerm)) return;
+              permMultiTargetLocked.add(chkPerm);
+              chkPerm.checked = false;
+              chkPerm.disabled = true;
+              secPerm.classList.add("tng-disabled");
+              bodyPerm.classList.add("tng-hidden");
+              if (arrow) arrow.classList.remove("tng-arrow-up");
+              // If another lock (e.g. the user mode lock) already shows a
+              // padlock badge, leave it as-is rather than adding a second one.
+              if (hdr.querySelector(".tng-rights-lock")) return;
+              hdr.title = "Unavailable: " + reason;
+              const badge = document.createElement("span");
+              badge.className = "tng-rights-lock tng-permmulti-lock-badge";
+              badge.textContent = "🔒";
+              badge.title = "Unavailable: " + reason;
+              if (arrow) hdr.insertBefore(badge, arrow);
+              else hdr.appendChild(badge);
+            } else {
+              if (!permMultiTargetLocked.has(chkPerm)) return;
+              permMultiTargetLocked.delete(chkPerm);
+              const badge = hdr.querySelector(".tng-permmulti-lock-badge");
+              if (badge) badge.remove();
+              // If another lock still applies, keep the checkbox disabled.
+              if (hdr.querySelector(".tng-rights-lock")) return;
+              chkPerm.disabled = false;
+              secPerm.classList.toggle("tng-disabled", !chkPerm.checked);
+              if (arrow) {
+                arrow.classList.toggle(
+                  "tng-arrow-up",
+                  !bodyPerm.classList.contains("tng-hidden"),
+                );
+              }
+              hdr.title = "";
+              updateStartBtn();
+            }
+          }
+
           // Lock a section: uncheck and disable its toggle, collapse its body,
           // remove the chevron (section cannot be opened), and append a lock
           // indicator to the header so the restriction is visible.
@@ -14598,6 +14647,7 @@ $(function () {
                 "tng-multitarget-card--active",
               );
               updateMultiTargetCount();
+              applyPermMultiTargetLock(false);
             }
 
             // Package row: available in both modes. The preset list is

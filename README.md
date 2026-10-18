@@ -112,7 +112,7 @@ Only available in page mode.
 - Shows a live preview of the request wikitext, and again in the confirmation dialogue.
 - Inserts the request at the end of the subsection that matches the permission type inside `== Requests ==`, not at the end of the page.
 - Reports an edit conflict, a missing subsection, or an existing request for the same username as a failure.
-- Only available in page mode.
+- Only available in page mode, and only with a single target. The section is locked while **Process additional targets** is ticked.
 
 ### Report to Global sysops/Requests
 - Files a report on Meta-Wiki's Global sysops/Requests page.

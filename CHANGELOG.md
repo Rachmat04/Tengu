@@ -1,3 +1,11 @@
+## 2.229.1
+
+### Changed
+
+* The **Request permissions on Meta-Wiki** section is now unavailable when **Process additional targets** is ticked, since a permission request concerns one requested user. The section is unticked, collapsed, and padlocked with a tooltip stating the reason, and is re-evaluated when the checkbox is ticked or unticked.
+* Added `applyPermMultiTargetLock()`, which uses its own lock set and follows the pattern of `applyMoveMultiTargetLock()`, so it does not overwrite the user mode lock.
+* `applyModeRestrictions()` now releases this lock when a mode switch unticks **Process additional targets**.
+
 ## 2.229.0
 
 ### Added
