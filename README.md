@@ -111,7 +111,7 @@ Only available in page mode.
 - Fields: requested username (entered once), discussion URL (pre-filled with the current page URL), and remarks. The discussion and remarks fields each have a fix links button.
 - Shows a live preview of the request wikitext, and again in the confirmation dialogue.
 - Inserts the request at the end of the subsection that matches the permission type inside `== Requests ==`, not at the end of the page.
-- Reports an edit conflict, a missing subsection, or an existing request for the same username as a failure.
+- Reports an edit conflict, a missing subsection, or a possible duplicate as a failure. A request is flagged as a possible duplicate only when the username, the domain, and the permission type all match an existing request. The same username can have separate requests for different domains or permission types.
 - Only available in page mode, and only with a single target. The section is locked while **Process additional targets** is ticked.
 
 ### Report to Global sysops/Requests

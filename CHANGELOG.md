@@ -1,3 +1,18 @@
+## 2.230.0
+
+### Changed
+
+* Improved duplicate detection in **Request permissions on Meta-Wiki**. Previously, only the username was compared. A request is now flagged as a possible duplicate only when the username, the domain, and the permission type all match an existing request.
+* `submitPermissionRequest()` now takes the requested domain as a fifth parameter. It reads each `{{sr-request}}` in the matching subsection and compares its `user name` and `domain` values with the new request. The comparison ignores case, treats underscores as spaces, and ignores the protocol and a trailing `.org` in the domain.
+* The permission type is still compared through the subsection, since each type has its own heading. A request for the same user in a different subsection is allowed.
+* The failure message now states that the request is a possible duplicate. It names the domain and heading, shows the existing request's status and discussion link when present, and explains the rule.
+* Added `permDomain` to the `config` object. Updated the section's status note to describe the rule.
+
+### Notes
+
+* An existing request with no readable domain is still flagged, because it cannot be told apart from the new one. The message says the domain is not stated.
+* Entries that are not `{{sr-request}}` blocks are still checked by username alone, as before.
+
 ## 2.229.1
 
 ### Changed

@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.229.1
+ * Version 2.230.0
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -1761,6 +1761,7 @@ $(function () {
           username,
           requestText,
           summaryText,
+          domain,
         ) {
           const info = PERM_REQUEST_TYPES[typeKey];
           if (!info) throw new Error("unknown permission type");
@@ -1810,18 +1811,86 @@ $(function () {
             ? subStart + nextHeading.index
             : content.length;
 
+          // Duplicate check. The subsection already matches the requested
+          // permission type, so only requests under the same heading are
+          // compared. Within it, each existing {{sr-request}} is parsed and
+          // flagged only when its username and domain both match. The same
+          // username may have separate requests for other domains.
+          const subText = content.slice(subStart, subEnd);
+          const normUser = function (s) {
+            return String(s || "")
+              .replace(/_/g, " ")
+              .trim()
+              .toLowerCase();
+          };
+          const normDomain = function (s) {
+            return String(s || "")
+              .trim()
+              .toLowerCase()
+              .replace(/^https?:\/\//, "")
+              .replace(/\.org$/, "");
+          };
+          const readParam = function (block, name) {
+            const m = new RegExp(
+              "\\|\\s*" + name + "\\s*=([^\\n|]*)",
+              "i",
+            ).exec(block.replace(/<!--[\s\S]*?-->/g, ""));
+            return m ? m[1].trim() : "";
+          };
+          const wantUser = normUser(username);
+          const wantDomain = normDomain(domain);
+          const explainRule =
+            " Tengu only flags a request when the username, the domain, and the permission type all match; requests for a different domain or permission type are allowed.";
+
+          const blockRe = /\{\{\s*sr-request\b([\s\S]*?)\}\}/gi;
+          let blockMatch;
+          while ((blockMatch = blockRe.exec(subText)) !== null) {
+            const block = blockMatch[1];
+            if (normUser(readParam(block, "user name")) !== wantUser) continue;
+            const existingDomain = normDomain(readParam(block, "domain"));
+            // Different domain: a distinct request, so it is allowed.
+            if (existingDomain && wantDomain && existingDomain !== wantDomain) {
+              continue;
+            }
+            const existingStatus = readParam(block, "status");
+            const existingDiscussion = readParam(block, "discussion");
+            const details = [];
+            if (existingStatus) details.push("status: " + existingStatus);
+            if (existingDiscussion)
+              details.push("discussion: " + existingDiscussion);
+            throw new Error(
+              'possible duplicate: a request for "' +
+                username +
+                '" ' +
+                (existingDomain
+                  ? 'for the domain "' + existingDomain + '"'
+                  : "(the domain is not stated in the existing request)") +
+                ' already appears under "' +
+                info.heading +
+                '" on ' +
+                PERM_PAGE_TITLE +
+                (details.length ? " (" + details.join("; ") + ")" : "") +
+                "." +
+                explainRule,
+            );
+          }
+
+          // Existing behaviour, kept for entries that are not {{sr-request}}
+          // blocks: match on the username alone, since no domain can be read.
           const escUser = username.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-          const dupRe = new RegExp(
+          const legacyDupRe = new RegExp(
             "\\|\\s*user name\\s*=\\s*" + escUser + "\\s*(?:\\n|\\|)",
             "i",
           );
-          if (dupRe.test(content.slice(subStart, subEnd))) {
+          if (legacyDupRe.test(subText.replace(blockRe, ""))) {
             throw new Error(
-              'a request for "' +
+              'possible duplicate: a request for "' +
                 username +
                 '" already appears under "' +
                 info.heading +
-                '"',
+                '" on ' +
+                PERM_PAGE_TITLE +
+                ", but its domain could not be read, so it could not be compared with this request.",
             );
           }
 
@@ -2991,6 +3060,7 @@ $(function () {
                 config.permUsername,
                 config.permText,
                 withToolTag(config.permSummary, toolTag),
+                config.permDomain,
               );
               addLog(
                 `[Permissions] Request for "${config.permUsername}" submitted to Steward requests/Permissions`,
@@ -14060,7 +14130,7 @@ $(function () {
           const divPermStatus = document.createElement("div");
           divPermStatus.className = "tng-status-note tng-status-note-inactive";
           divPermStatus.textContent =
-            "Files a request on Meta-Wiki's Steward requests/Permissions page, under the subsection for the selected permission type. Your SUL session is used for the edit.";
+            "Files a request on Meta-Wiki's Steward requests/Permissions page, under the subsection for the selected permission type. Your SUL session is used for the edit. A request is flagged as a possible duplicate only when the username, the domain, and the permission type all match an existing request.";
           bodyPerm.appendChild(divPermStatus);
 
           const { row: rowPermType, field: fieldPermType } =
@@ -14118,7 +14188,7 @@ $(function () {
           // Builds the request wikitext from the current field values. The
           // username is read once, so the heading and the "user name"
           // parameter always match.
-          // [Unverified] The domain is derived by removing ".org" from the
+          // The domain is derived by removing ".org" from the
           // current hostname (for example "id.wikipedia.org" becomes
           // "id.wikipedia"). This matches the examples given, but has not been
           // checked against hosts such as www.wikidata.org.
@@ -15636,6 +15706,10 @@ $(function () {
               permType: selPermType.value,
               permTypeLabel: PERM_REQUEST_TYPES[selPermType.value].label,
               permUsername: inputPermUser.value.trim(),
+              permDomain: (mw.config.get("wgServerName") || "").replace(
+                /\.org$/,
+                "",
+              ),
               permText: buildPermRequestText(),
               permSummary:
                 "New request: " +
