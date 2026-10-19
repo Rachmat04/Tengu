@@ -1,3 +1,16 @@
+## 2.230.1
+
+### Fixed
+
+* Corrected the ✨ **Fix links in reason** button for bracketed wiki URLs that have a custom label, such as `[[https://gor.wikiquote.org/wiki/Title#Fragment|village pump]]`. The label was read as part of the fragment, so the target and label were repeated in the output. The label is now captured separately and kept as the displayed text.
+* The result for the example above, with the Meta-Wiki prefix option, is `[[q:gor:Title#Fragment|village pump]]`. Without that option, it is `[[Title#Fragment|village pump]]`.
+
+### Notes
+
+* URL-encoded characters in the title and fragment are still decoded, and underscores are still converted to spaces.
+* Links without a label behave as before.
+* Pattern 3 (`[[Title#A_B_C|label]]`, no URL) is not changed in this version.
+
 ## 2.230.0
 
 ### Changed

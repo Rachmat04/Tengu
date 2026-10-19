@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.230.0
+ * Version 2.230.1
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -556,12 +556,25 @@ $(function () {
             }
           }
 
-          function wrapLink(target, host) {
-            if (!forMeta) return "[[" + target + "]]";
+          // label is the original custom link label, if the source link had
+          // one. When present, it is kept as the displayed text and the
+          // target is not repeated as a second label.
+          function wrapLink(target, host, label) {
+            const hasLabel = label !== undefined && label !== "";
+            if (!forMeta) {
+              return hasLabel
+                ? "[[" + target + "|" + label + "]]"
+                : "[[" + target + "]]";
+            }
             const prefix = deriveInterwikiPrefix(host);
-            return prefix
-              ? "[[" + prefix + target + "|" + target + "]]"
-              : "[[" + target + "]]";
+            if (!prefix) {
+              return hasLabel
+                ? "[[" + target + "|" + label + "]]"
+                : "[[" + target + "]]";
+            }
+            return (
+              "[[" + prefix + target + "|" + (hasLabel ? label : target) + "]]"
+            );
           }
 
           // 1. Diff URLs: .../w/index.php?...diff=X...oldid=Y... (any order)
@@ -591,9 +604,13 @@ $(function () {
           );
 
           // 2. [[https://<wiki>/wiki/Title#Fragment]] -> [[Title#Fragment]]
+          //    [[https://<wiki>/wiki/Title#Fragment|label]] -> [[Title#Fragment|label]]
+          // The pipe is excluded from the host, title, and fragment, and the
+          // optional label is captured separately, so the label is not read
+          // as part of the fragment.
           result = result.replace(
-            /\[\[https?:\/\/([^/\]]+)\/wiki\/([^\]#]+)(?:#([^\]]+))?\]\]/gi,
-            function (match, host, title, fragment) {
+            /\[\[https?:\/\/([^/\]|]+)\/wiki\/([^\]#|]+)(?:#([^\]|]+))?(?:\|([^\]]*))?\]\]/gi,
+            function (match, host, title, fragment, label) {
               // Underscores in the article title are converted to spaces,
               // matching the human-readable page title, consistent with the
               // fragment underscore-to-space handling below.
@@ -603,7 +620,7 @@ $(function () {
                 const decodedFragment = safeDecode(fragment).replace(/_/g, " ");
                 target = decodedTitle + "#" + decodedFragment;
               }
-              return wrapLink(target, host);
+              return wrapLink(target, host, label);
             },
           );
 
