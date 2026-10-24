@@ -1,3 +1,16 @@
+## 2.232.0
+
+### Changed
+
+* The **Get info** panel now requests the maximum number of entries the API allows (`lelimit` and `afllimit` set to `"max"`) instead of 50. No pagination or "Load more" control was added.
+* User mode: **Block log**, **Move log**, **Rights changes**, and **Abuse filter log**.
+* Page mode: **Abuse filter log**, **Protection log**, **Deletion log**, and **Move log**. The Move log applies the new limit to the current title and to each redirect title checked.
+
+### Notes
+
+* The limit that `"max"` resolves to depends on the account: 500 for most users, and 5,000 for accounts with `apihighlimits`. Entries beyond that limit are not shown.
+* Error handling is unchanged. Each section still fails on its own with the existing message.
+
 ## 2.231.0
 
 ### Added

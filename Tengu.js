@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.231.0
+ * Version 2.232.0
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -7294,7 +7294,7 @@ $(function () {
                 list: "logevents",
                 letype: "block",
                 letitle: "User:" + username,
-                lelimit: 50,
+                lelimit: "max",
                 leprop: "user|timestamp|comment|details",
               });
               const entries = (data.query && data.query.logevents) || [];
@@ -7363,7 +7363,7 @@ $(function () {
                 list: "logevents",
                 letype: "move",
                 leuser: username,
-                lelimit: 50,
+                lelimit: "max",
                 leprop: "title|timestamp|comment|details",
               });
               const entries = (data.query && data.query.logevents) || [];
@@ -7415,7 +7415,7 @@ $(function () {
                 list: "logevents",
                 letype: "rights",
                 letitle: "User:" + username,
-                lelimit: 50,
+                lelimit: "max",
                 leprop: "user|timestamp|comment|details",
               });
               const entries = (data.query && data.query.logevents) || [];
@@ -7492,7 +7492,7 @@ $(function () {
                 action: "query",
                 list: "abuselog",
                 afluser: username,
-                afllimit: 50,
+                afllimit: "max",
                 aflprop: "ids|user|title|action|result|timestamp|filter",
               });
               const entries = (data.query && data.query.abuselog) || [];
@@ -8357,7 +8357,7 @@ $(function () {
                 action: "query",
                 list: "abuselog",
                 afltitle: pageName,
-                afllimit: 50,
+                afllimit: "max",
                 aflprop: "ids|user|title|action|result|timestamp|filter",
               });
               const entries = (data.query && data.query.abuselog) || [];
@@ -8465,7 +8465,7 @@ $(function () {
                 list: "logevents",
                 letype: "protect",
                 letitle: pageName,
-                lelimit: 50,
+                lelimit: "max",
                 leprop: "user|timestamp|comment|details|type",
               });
               const entries = (data.query && data.query.logevents) || [];
@@ -8649,7 +8649,7 @@ $(function () {
                 list: "logevents",
                 letype: "delete",
                 letitle: pageName,
-                lelimit: 50,
+                lelimit: "max",
                 leprop: "user|timestamp|comment|details|type",
               });
               const entries = (data.query && data.query.logevents) || [];
@@ -8742,7 +8742,7 @@ $(function () {
                     list: "logevents",
                     letype: "move",
                     letitle: t,
-                    lelimit: 50,
+                    lelimit: "max",
                     leprop: "user|timestamp|comment|details",
                   });
                   const found = (data.query && data.query.logevents) || [];
