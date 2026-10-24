@@ -1,3 +1,12 @@
+## 2.231.0
+
+### Added
+
+* Added a **Move log** section (📑) to the **Get info** panel (user mode), directly below **Block log**. It lists page moves performed by the target user, retrieved with `list=logevents&letype=move&leuser=`.
+* Each entry shows **Time** (absolute UTC with a relative time in parentheses), **Moved from**, **Moved to**, **Redirect suppressed**, and **Reason**, using the same entry layout as the other Get info sections.
+* The section loads independently, so a failure in it does not affect the other sections. Failures show "Failed to load move log: …" and an empty result shows "No move log entries found."
+* The section is collapsed by default and expands when entries are found, matching the other Get info sections.
+
 ## 2.230.1
 
 ### Fixed

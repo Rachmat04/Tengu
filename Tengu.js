@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.230.1
+ * Version 2.231.0
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -6462,6 +6462,11 @@ $(function () {
             arrow: arrowBlockLog,
           } = makeDisplaySection("Block log", "⛔️");
           const {
+            section: secMoveLog,
+            sectionBody: bodyMoveLog,
+            arrow: arrowMoveLog,
+          } = makeDisplaySection("Move log", "📑");
+          const {
             section: secRights,
             sectionBody: bodyRights,
             arrow: arrowRights,
@@ -6473,6 +6478,7 @@ $(function () {
           } = makeDisplaySection("Abuse filter log", "🛑");
 
           setLoading(bodyBlockLog, "Loading block log...");
+          setLoading(bodyMoveLog, "Loading move log...");
           setLoading(bodyRights, "Loading rights changes...");
           setLoading(bodyAbuseLog, "Loading abuse filter log...");
 
@@ -7241,6 +7247,7 @@ $(function () {
           })();
 
           body.appendChild(secBlockLog);
+          body.appendChild(secMoveLog);
           body.appendChild(secRights);
           body.appendChild(secAbuseLog);
 
@@ -7340,6 +7347,62 @@ $(function () {
               setError(
                 bodyBlockLog,
                 "Failed to load block log: " + formatApiError(err),
+              );
+            }
+          })();
+
+          // --- Move log ---
+          // Lists page moves performed by the target user (leuser), as
+          // opposed to the page-mode Move log, which lists moves of a
+          // specific page. Works for registered accounts, temporary
+          // accounts, and single IP addresses.
+          (async function () {
+            try {
+              const data = await apiGet({
+                action: "query",
+                list: "logevents",
+                letype: "move",
+                leuser: username,
+                lelimit: 50,
+                leprop: "title|timestamp|comment|details",
+              });
+              const entries = (data.query && data.query.logevents) || [];
+              if (!entries.length) {
+                setEmpty(bodyMoveLog, "No move log entries found.");
+                return;
+              }
+              // Auto-expand: entries found warrant attention
+              bodyMoveLog.classList.remove("tng-hidden");
+              arrowMoveLog.classList.add("tng-arrow-up");
+              bodyMoveLog.innerHTML = "";
+              for (const e of entries) {
+                const targetTitle = (e.params && e.params.target_title) || "—";
+                const suppressedRedirect =
+                  e.params && e.params.suppressredirect !== undefined
+                    ? e.params.suppressredirect
+                      ? "Yes (no redirect left)"
+                      : "No (redirect left)"
+                    : "—";
+                bodyMoveLog.appendChild(
+                  makeEntry([
+                    [
+                      "Time",
+                      fmtTimestamp(e.timestamp) +
+                        (fmtRelative(e.timestamp)
+                          ? " (" + fmtRelative(e.timestamp) + ")"
+                          : ""),
+                    ],
+                    ["Moved from", e.title || "—"],
+                    ["Moved to", targetTitle],
+                    ["Redirect suppressed", suppressedRedirect],
+                    ["Reason", e.comment || "(no reason given)"],
+                  ]),
+                );
+              }
+            } catch (err) {
+              setError(
+                bodyMoveLog,
+                "Failed to load move log: " + formatApiError(err),
               );
             }
           })();
