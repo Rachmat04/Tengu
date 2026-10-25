@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.232.0
+ * Version 2.233.0
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -6834,7 +6834,8 @@ $(function () {
           globalLockRow.appendChild(globalLockBadgesEl);
           rightsCardBody.appendChild(globalLockRow);
 
-          body.appendChild(rightsCard);
+          // Placed directly below Account info, ahead of SUL info.
+          body.insertBefore(rightsCard, secSul);
 
           // Helper: populates a badges container and a rights text block.
           // groups  — array of group names to render as badges.
@@ -8043,10 +8044,10 @@ $(function () {
           body.appendChild(secAssessment);
           body.appendChild(secWhatLinksHere);
           renderAssessmentEntry(bodyAssessment, expandAssessmentSection);
+          body.appendChild(secMoveLog);
           body.appendChild(secAbuseLog);
           body.appendChild(secProtectLog);
           body.appendChild(secDeleteLog);
-          body.appendChild(secMoveLog);
 
           const btnClose = makeBtn("Close", "quiet");
           btnClose.addEventListener("click", () => overlay.closeHandler());

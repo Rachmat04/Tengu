@@ -1,3 +1,11 @@
+## 2.233.0
+
+### Changed
+
+* Reordered the sections in the **Get info** panel.
+* User mode: **Access rights** now sits directly below **Account info**, ahead of **SUL info**. The order is now Account info, Access rights, SUL info, Block log, Move log, Rights changes, Abuse filter log.
+* Page mode: **Move log** now sits above **Abuse filter log**. The order is now Page info, Page assessment, What links here, Move log, Abuse filter log, Protection log, Deletion log.
+
 ## 2.232.0
 
 ### Changed
