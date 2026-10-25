@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.233.0
+ * Version 2.233.1
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -14275,7 +14275,14 @@ $(function () {
           // checked against hosts such as www.wikidata.org.
           function buildPermRequestText() {
             const user = inputPermUser.value.trim() || "(username)";
-            const url = inputPermDiscussion.value.trim().replace(/\|/g, "%7C");
+            // A pipe inside [[target|label]] is part of the link and must stay
+            // literal. A pipe anywhere else would split the template parameter,
+            // so only those pipes are encoded.
+            const url = inputPermDiscussion.value
+              .trim()
+              .replace(/\[\[[^\]]*\]\]|\|/g, function (m) {
+                return m === "|" ? "%7C" : m;
+              });
             const remarks = inputPermRemarks.value.trim();
             const dbName = mw.config.get("wgDBname") || "";
             const domain = (mw.config.get("wgServerName") || "").replace(

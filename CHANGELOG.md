@@ -1,3 +1,16 @@
+## 2.233.1
+
+### Fixed
+
+* Corrected the pipe character being encoded as `%7C` inside wikilinks in the **Discussion URL** field of **Request permissions on Meta-Wiki**. `buildPermRequestText()` replaced every `|` with `%7C`, so a link such as `[[q:gor:Title|Title]]` produced by ✨ **Fix links in reason** was broken in the **Request preview**, in the confirmation dialogue, and in the request submitted to Meta-Wiki. The text field itself was not affected.
+* Only pipes outside `[[...]]` are now encoded, since a bare pipe would split the `discussion` template parameter. The preview, the confirmation dialogue and the submitted request all use the same text from `buildPermRequestText()`, so they now match the text field.
+
+### Notes
+
+* No change was made to `correctReasonLinks()`. Its output for the example URL already matches the expected wikitext.
+* Bare URLs that contain a pipe are still encoded as `%7C`.
+* A `[[` with no closing `]]` is not treated as a link, so a pipe after it is still encoded.
+
 ## 2.233.0
 
 ### Changed
