@@ -1604,13 +1604,23 @@
   color: #8a8a8a;
 }
 
-/* Muted "(home wiki)" label shown after the wiki where the account was
-   created in the SUL info section, so it reads as a label and not as part
-   of the wiki identifier. */
-.tng-sul-home-label {
-  color: #72777d;
-  font-size: 0.9em;
+/* Compact 🏠 badge shown after the wiki where the account was created in
+   the SUL info section. Uses the same blue accent as the multi-target
+   counter, so it stands out among the listed wikis. */
+.tng-sul-home-badge {
+  display: inline-flex;
+  align-items: center;
+  margin-left: 4px;
+  padding: 0 4px;
+  border: 1px solid #a8c4e8;
+  border-radius: 3px;
+  background: #dce8f8;
+  font-size: 0.85em;
+  line-height: 1.4;
+  vertical-align: baseline;
+  cursor: help;
 }
-.tng-theme-dark .tng-sul-home-label {
-  color: #8a8a8a;
+.tng-theme-dark .tng-sul-home-badge {
+  background: #1a3060;
+  border-color: #2a5090;
 }

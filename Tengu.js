@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.233.1
+ * Version 2.234.0
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -6698,6 +6698,10 @@ $(function () {
                 return;
               }
               const homeWiki = typeof gui.home === "string" ? gui.home : null;
+              // Global account name, used as the fallback username when a
+              // merged entry carries no username of its own.
+              const globalName =
+                typeof gui.name === "string" && gui.name ? gui.name : username;
               wikis.sort(function (a, b) {
                 return a.wiki.localeCompare(b.wiki);
               });
@@ -6712,8 +6716,18 @@ $(function () {
               wikis.forEach(function (w, i) {
                 if (i > 0) sulLine.appendChild(document.createTextNode(", "));
                 if (typeof w.url === "string" && /^https?:\/\//i.test(w.url)) {
+                  // Link to the user page on that wiki, not the wiki's main
+                  // page. The username is percent-encoded, with spaces
+                  // converted to underscores.
+                  const wikiUserName =
+                    typeof w.username === "string" && w.username
+                      ? w.username
+                      : globalName;
                   const link = document.createElement("a");
-                  link.href = w.url;
+                  link.href =
+                    w.url.replace(/\/+$/, "") +
+                    "/wiki/User:" +
+                    encodeURIComponent(wikiUserName.replace(/ /g, "_"));
                   link.target = "_blank";
                   link.rel = "noopener noreferrer";
                   link.textContent = w.wiki;
@@ -6722,10 +6736,13 @@ $(function () {
                   sulLine.appendChild(document.createTextNode(w.wiki));
                 }
                 if (homeWiki && w.wiki === homeWiki) {
-                  const homeLabel = document.createElement("span");
-                  homeLabel.className = "tng-sul-home-label";
-                  homeLabel.textContent = " (home wiki)";
-                  sulLine.appendChild(homeLabel);
+                  // Separate element after the link, so the badge is not
+                  // part of the clickable link text.
+                  const homeBadge = document.createElement("span");
+                  homeBadge.className = "tng-sul-home-badge";
+                  homeBadge.textContent = "🏠";
+                  homeBadge.title = "Home wiki (where the account was created)";
+                  sulLine.appendChild(homeBadge);
                 }
               });
 

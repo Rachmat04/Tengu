@@ -1,3 +1,16 @@
+## 2.234.0
+
+### Changed
+
+* Each wiki identifier in the **SUL info** section of the **Get info** panel (user mode) now links to the target's user page on that wiki (`/wiki/User:[username]`) instead of the wiki's main page. The username is percent-encoded, with spaces converted to underscores. Links still open in a new tab.
+* Replaced the muted **(home wiki)** label with a 🏠 badge. The badge has a blue background and border, a tooltip ("Home wiki (where the account was created)"), and a dark mode variant.
+
+### Notes
+
+* The badge is a separate element after the link, so it is not part of the clickable text.
+* The merged `globaluserinfo` response may carry no per-wiki username. The link uses a `username` value from the entry if present, and otherwise the global account name (`gui.name`).
+* `.tng-sul-home-label` was removed from `Tengu.css` and replaced by `.tng-sul-home-badge`.
+
 ## 2.233.1
 
 ### Fixed
