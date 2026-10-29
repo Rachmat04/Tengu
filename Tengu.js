@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.234.0
+ * Version 2.235.0
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -6714,7 +6714,7 @@ $(function () {
               sulLine.appendChild(sulLabel);
 
               wikis.forEach(function (w, i) {
-                if (i > 0) sulLine.appendChild(document.createTextNode(", "));
+                if (i > 0) sulLine.appendChild(document.createTextNode(" · "));
                 if (typeof w.url === "string" && /^https?:\/\//i.test(w.url)) {
                   // Link to the user page on that wiki, not the wiki's main
                   // page. The username is percent-encoded, with spaces
@@ -12155,19 +12155,27 @@ $(function () {
           wrapRecreationGroup.className = "tng-recreation-group";
           wrapRecreationGroup.appendChild(wrapPagedelProtectRecreation);
 
+          // Collapsible container for the options. Collapsed by default and
+          // opened only when the checkbox is ticked.
+          const divRecreationOptions = document.createElement("div");
+          divRecreationOptions.className = "tng-collapse-panel";
+          divRecreationOptions.style.cssText =
+            "display:flex;flex-direction:column;gap:6px;";
+          wrapRecreationGroup.appendChild(divRecreationOptions);
+
           const { row: rowRecreationLevel, field: fieldRecreationLevel } =
             makeRow("Protection level");
           fieldRecreationLevel.appendChild(
             wrapSelect(selPagedelProtectRecreationLevel, "1"),
           );
           rowRecreationLevel.style.opacity = "0.5";
-          wrapRecreationGroup.appendChild(rowRecreationLevel);
+          divRecreationOptions.appendChild(rowRecreationLevel);
 
           const { row: rowRecreationExpiry, field: fieldRecreationExpiry } =
             makeRow("Expiry");
           fieldRecreationExpiry.appendChild(recreationExpiryGroup);
           rowRecreationExpiry.style.opacity = "0.5";
-          wrapRecreationGroup.appendChild(rowRecreationExpiry);
+          divRecreationOptions.appendChild(rowRecreationExpiry);
 
           // Reason for protecting the deleted page against recreation
           const { row: rowRecreationReason, field: fieldRecreationReason } =
@@ -12225,7 +12233,7 @@ $(function () {
           );
           fieldRecreationReason.appendChild(reasonWrapPagedelProtectRecreation);
           rowRecreationReason.style.opacity = "0.5";
-          wrapRecreationGroup.appendChild(rowRecreationReason);
+          divRecreationOptions.appendChild(rowRecreationReason);
 
           chkPagedelProtectRecreation.addEventListener("change", function () {
             const enabled = chkPagedelProtectRecreation.checked;
@@ -12238,6 +12246,10 @@ $(function () {
             rowRecreationExpiry.style.opacity = enabled ? "" : "0.5";
             rowRecreationReason.style.opacity = enabled ? "" : "0.5";
             wrapRecreationGroup.classList.toggle("tng-card--active", enabled);
+            divRecreationOptions.classList.toggle(
+              "tng-collapse-panel--open",
+              enabled,
+            );
           });
 
           checksPagedel.appendChild(wrapRecreationGroup);
@@ -13756,13 +13768,24 @@ $(function () {
           const divProtectPCGroup = document.createElement("div");
           divProtectPCGroup.className = "tng-recreation-group";
           divProtectPCGroup.appendChild(wrapProtectPC);
-          divProtectPCGroup.appendChild(rowProtectPCLevel);
-          divProtectPCGroup.appendChild(rowProtectPCExpiry);
+          // Collapsible container for the options. Collapsed by default and
+          // opened only when the checkbox is ticked.
+          const divProtectPCOptions = document.createElement("div");
+          divProtectPCOptions.className = "tng-collapse-panel";
+          divProtectPCOptions.style.cssText =
+            "display:flex;flex-direction:column;gap:6px;";
+          divProtectPCOptions.appendChild(rowProtectPCLevel);
+          divProtectPCOptions.appendChild(rowProtectPCExpiry);
+          divProtectPCGroup.appendChild(divProtectPCOptions);
           bodyProtect.appendChild(divProtectPCGroup);
 
           chkProtectPC.addEventListener("change", function () {
             const enabled = chkProtectPC.checked;
             divProtectPCGroup.classList.toggle("tng-card--active", enabled);
+            divProtectPCOptions.classList.toggle(
+              "tng-collapse-panel--open",
+              enabled,
+            );
             selProtectPCLevel.disabled = !enabled;
             rowProtectPCLevel.style.opacity = enabled ? "" : "0.5";
             selProtectPCExpiry.disabled = !enabled;
@@ -16416,6 +16439,7 @@ $(function () {
             rowRecreationExpiry.style.opacity = "0.5";
             rowRecreationReason.style.opacity = "0.5";
             wrapRecreationGroup.classList.remove("tng-card--active");
+            divRecreationOptions.classList.remove("tng-collapse-panel--open");
 
             // Apply fallback resets to page protection state variables
             const pt = pkg.pageprotection || {};
@@ -16476,6 +16500,7 @@ $(function () {
             rowProtectPCLevel.style.opacity = "0.5";
             rowProtectPCExpiry.style.opacity = "0.5";
             divProtectPCGroup.classList.remove("tng-card--active");
+            divProtectPCOptions.classList.remove("tng-collapse-panel--open");
 
             const rd = pkg.revisiondelete || {};
             if (!chkRevdel.disabled) {

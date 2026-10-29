@@ -1,3 +1,17 @@
+## 2.235.0
+
+### Changed
+
+* The wiki entries in the **SUL info** section of the **Get info** panel (user mode) are now separated by middle dots (·) instead of commas. Links, wiki identifiers, and the 🏠 home wiki badge are unchanged.
+* The options under **Protect from recreation after deletion** (Page deletion) are now collapsed by default and expand only when the checkbox is ticked.
+* The options under **Also enable pending changes protection** (Protect pages) are now collapsed by default and expand only when the checkbox is ticked.
+
+### Notes
+
+* Both groups use the existing `.tng-collapse-panel` animation. Package switching now also collapses both groups when it resets their checkboxes.
+* Added a rule in `Tengu.css` that removes the extra gap left by a collapsed panel inside `.tng-recreation-group`.
+* Level, expiry, and reason controls, their disabled states, and the pending changes availability check are unchanged.
+
 ## 2.234.0
 
 ### Changed
