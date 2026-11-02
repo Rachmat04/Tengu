@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.235.0
+ * Version 2.236.0
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -965,11 +965,10 @@ $(function () {
         const LOCKDOWN_API = "https://id.wikipedia.org/w/api.php";
         const LOCKDOWN_PAGE = "Pengguna:Rachmat04/Tengu-lockdown.js";
 
-        // Resolves to "allowed", "locked", or "unverified".
-        async function fetchLockdownState() {
-          if (mw.config.get("wgUserName") === LOCKDOWN_MAINTAINER) {
-            return "allowed";
-          }
+        // Reads the lockdown flag from the on-wiki page. Resolves to
+        // "allowed", "locked", or "unverified". The maintainer check is
+        // applied separately in fetchLockdownState() below.
+        async function fetchLockdownFlag() {
           let timer = null;
           try {
             const controller =
@@ -1020,6 +1019,24 @@ $(function () {
           }
         }
 
+        // Resolves to "allowed", "locked", "unverified", or
+        // "maintainer-active". The last value means the lockdown is active
+        // but the current user is the maintainer, who may still use Tengu.
+        // Regular users never receive it. A maintainer whose status cannot
+        // be verified keeps the previous behaviour ("allowed").
+        async function fetchLockdownState() {
+          const flag = await fetchLockdownFlag();
+          if (mw.config.get("wgUserName") === LOCKDOWN_MAINTAINER) {
+            return flag === "locked" ? "maintainer-active" : "allowed";
+          }
+          return flag;
+        }
+
+        // True when the given state lets the current user use Tengu.
+        function lockdownPermits(state) {
+          return state === "allowed" || state === "maintainer-active";
+        }
+
         // Cached for the page session. Pass fresh = true to re-check.
         let lockdownPromise = null;
         function getLockdownState(fresh) {
@@ -1066,7 +1083,7 @@ $(function () {
         // dialogue and returns false.
         async function ensureTenguAllowed(fresh) {
           const state = await getLockdownState(fresh);
-          if (state === "allowed") return true;
+          if (lockdownPermits(state)) return true;
           showLockdownDialog(state);
           return false;
         }
@@ -6894,7 +6911,7 @@ $(function () {
                 action: "query",
                 list: "users",
                 ususers: username,
-                usprop: "groups|rights|editcount|registration|gender",
+                usprop: "groups|rights|editcount|registration|gender|blockinfo",
               });
               const userEntry =
                 data.query && data.query.users && data.query.users[0];
@@ -6922,6 +6939,24 @@ $(function () {
                   rights,
                   "local",
                 );
+
+                // Active local block. blockedby is only returned by the API
+                // for a block that is currently in force, so expired blocks
+                // are never shown.
+                if (userEntry.blockedby) {
+                  const blockBadge = document.createElement("span");
+                  blockBadge.className = "tng-rights-badge tng-rights-lack";
+                  blockBadge.textContent =
+                    userEntry.blockpartial !== undefined
+                      ? "Blocked (partial)"
+                      : "Blocked";
+                  localBadgesEl.appendChild(blockBadge);
+                  appendReasonLine(
+                    localRow,
+                    "Block",
+                    userEntry.blockreason || "(no reason given)",
+                  );
+                }
 
                 localEditsBody.className = "tng-info-value";
                 localEditsBody.textContent =
@@ -7153,6 +7188,52 @@ $(function () {
             })();
           }
 
+          // Adds a visible "<label> reason: <text>" line to a rights row.
+          function appendReasonLine(container, label, reason) {
+            const el = document.createElement("div");
+            el.className = "tng-user-rights-list";
+            const b = document.createElement("b");
+            b.textContent = label + " reason: ";
+            el.appendChild(b);
+            el.appendChild(document.createTextNode(reason));
+            container.appendChild(el);
+          }
+
+          // Looks up the reason for the current global lock from Meta-Wiki's
+          // globalauth log. globaluserinfo reports that an account is locked
+          // but not why. The newest log entry that changes the lock status is
+          // used. It counts only if it added the lock, so the reason of an
+          // earlier, since-removed lock is never shown. Returns null when no
+          // reason can be found.
+          // The log title ("User:<name>@global") and the
+          // params.added / params.removed fields follow the CentralAuth log
+          // format as I understand it.
+          async function fetchGlobalLockReason(name) {
+            const data = await foreignApiGet({
+              action: "query",
+              list: "logevents",
+              letype: "globalauth",
+              letitle: "User:" + name + "@global",
+              lelimit: 50,
+              leprop: "user|timestamp|comment|details",
+              formatversion: 2,
+            });
+            const entries = (data.query && data.query.logevents) || [];
+            const toArr = function (v) {
+              if (Array.isArray(v)) return v;
+              return typeof v === "string" && v ? v.split(/[,\s]+/) : [];
+            };
+            for (const e of entries) {
+              const p = e.params || {};
+              if (toArr(p.added).indexOf("locked") !== -1) {
+                if (e.commenthidden) return "(reason hidden)";
+                return e.comment || "(no reason given)";
+              }
+              if (toArr(p.removed).indexOf("locked") !== -1) return null;
+            }
+            return null;
+          }
+
           // --- Global lock / block status ---
           (async function () {
             // Shared expiry formatter for both IP and registered account paths
@@ -7188,6 +7269,11 @@ $(function () {
                     " · Reason: " +
                     (b.reason || "(no reason given)");
                   globalLockBadgesEl.appendChild(badge);
+                  appendReasonLine(
+                    globalLockRow,
+                    "Global block",
+                    b.reason || "(no reason given)",
+                  );
                 } else {
                   const badge = document.createElement("span");
                   badge.className = "tng-rights-badge tng-rights-have";
@@ -7230,6 +7316,21 @@ $(function () {
                     badge.className = "tng-rights-badge tng-rights-lack";
                     badge.textContent = "Globally locked";
                     globalLockBadgesEl.appendChild(badge);
+                    fetchGlobalLockReason(username)
+                      .then(function (reason) {
+                        appendReasonLine(
+                          globalLockRow,
+                          "Lock",
+                          reason || "(reason unavailable)",
+                        );
+                      })
+                      .catch(function () {
+                        appendReasonLine(
+                          globalLockRow,
+                          "Lock",
+                          "(reason unavailable)",
+                        );
+                      });
                   }
                   if (isGlobalBlocked) {
                     const b = blocks[0];
@@ -7244,6 +7345,11 @@ $(function () {
                       " · Reason: " +
                       (b.reason || "(no reason given)");
                     globalLockBadgesEl.appendChild(badge);
+                    appendReasonLine(
+                      globalLockRow,
+                      "Global block",
+                      b.reason || "(no reason given)",
+                    );
                   }
                   if (!isLocked && !isGlobalBlocked) {
                     const badge = document.createElement("span");
@@ -10999,6 +11105,24 @@ $(function () {
             rowEdits.style.opacity = "0.5";
             rowEdits.title = "Not applicable in page mode";
           }
+          // Maintainer-only notice. Shown at the top of the dialogue while
+          // the emergency lockdown is active. The state is re-read each time
+          // Tengu opens, so the notice disappears once the lockdown is
+          // lifted. Regular users never see it: the state is only
+          // "maintainer-active" for the maintainer account.
+          const divLockdownBanner = document.createElement("div");
+          divLockdownBanner.className =
+            "tng-status-note tng-status-note-active tng-hidden";
+          divLockdownBanner.innerHTML =
+            "🔒 <b>Emergency lockdown is active.</b> Other users cannot use Tengu. You can, as the maintainer. Set <code>TENGU_LOCKDOWN = false;</code> on the lockdown page to lift it.";
+          body.appendChild(divLockdownBanner);
+          getLockdownState(false).then(function (state) {
+            divLockdownBanner.classList.toggle(
+              "tng-hidden",
+              state !== "maintainer-active",
+            );
+          });
+
           body.appendChild(topSection);
 
           const {
@@ -18380,7 +18504,7 @@ $(function () {
           // Emergency lockdown check. Silent here (no dialogue), so the
           // links are simply not added while Tengu is locked or unverified.
           if (!isDiffPage && !isHistoryPage && !isContribsPage) return;
-          if ((await getLockdownState(false)) !== "allowed") return;
+          if (!lockdownPermits(await getLockdownState(false))) return;
 
           if (isDiffPage) {
             await Promise.all([
@@ -18566,18 +18690,39 @@ $(function () {
         // [Section 10] Portlet link
         // Registers the execution menu item anchor inside the site actions portal drop list.
         // ============================================================================
-        $(
-          mw.util.addPortletLink(
-            "p-cactions",
-            "#",
-            "⛩️ Tengu",
-            "ca-tengu",
-            "Open Tengu, your all-in-one moderation tools",
-          ),
-        ).on("click", function (e) {
+        const tenguPortletItem = mw.util.addPortletLink(
+          "p-cactions",
+          "#",
+          "⛩️ Tengu",
+          "ca-tengu",
+          "Open Tengu, your all-in-one moderation tools",
+        );
+
+        // Marks the portlet link for the maintainer while the lockdown is
+        // active, so it is visible on every page without opening Tengu.
+        function updateLockdownPortletBadge(state) {
+          const a = tenguPortletItem && tenguPortletItem.querySelector("a");
+          if (!a) return;
+          if (state === "maintainer-active") {
+            a.textContent = "⛩️ Tengu 🔒";
+            a.title =
+              "Open Tengu. Emergency lockdown is active: only you can use Tengu.";
+          } else {
+            a.textContent = "⛩️ Tengu";
+            a.title = "Open Tengu, your all-in-one moderation tools";
+          }
+        }
+        if (mw.config.get("wgUserName") === LOCKDOWN_MAINTAINER) {
+          getLockdownState(false).then(updateLockdownPortletBadge);
+        }
+
+        $(tenguPortletItem).on("click", function (e) {
           e.preventDefault();
           // Emergency lockdown check, before the interface is initialised.
           ensureTenguAllowed(true).then(function (allowed) {
+            if (mw.config.get("wgUserName") === LOCKDOWN_MAINTAINER) {
+              getLockdownState(false).then(updateLockdownPortletBadge);
+            }
             if (!allowed) return;
             inited = false;
             init();

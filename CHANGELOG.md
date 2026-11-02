@@ -1,3 +1,24 @@
+## 2.236.0
+
+### Added
+
+* Added a maintainer-only notice for the **emergency lockdown**. While the lockdown is active, the maintainer (`Rachmat04`) sees an amber notice at the top of the Tengu dialogue and a 🔒 marker on the "⛩️ Tengu" portlet link. Both disappear once the lockdown is lifted.
+* The **Access rights** card in **Get info** (user mode) now shows the reason for an active local block, global block, or global lock, next to the matching status badge.
+
+### Changed
+
+* Added a `"maintainer-active"` lockdown state. `fetchLockdownState()` now wraps the new `fetchLockdownFlag()`, and `lockdownPermits()` decides whether a state allows use. The maintainer now reads the flag instead of skipping the check.
+* Block reasons come from `usprop=blockinfo`. Global block reasons come from `list=globalblocks`. Global lock reasons come from Meta-Wiki's `globalauth` log through `foreignApiGet()`.
+* An empty reason reads "(no reason given)". A reason that cannot be retrieved reads "(reason unavailable)".
+
+### Notes
+
+* Regular users never receive the `"maintainer-active"` state, so they see no maintenance information. They still see the existing lockdown dialogue.
+* The notice reflects the state read when Tengu opens or the page loads. It does not poll.
+* Local blocks and global locks are shown only for registered accounts. Local blocks on IP addresses are not shown.
+* Block reasons come only from blocks currently in force. For locks, only the newest lock-status change is used, and only if it added the lock.
+* The globalauth log title and the `params.added` / `params.removed` fields are assumed from the CentralAuth log format.
+
 ## 2.235.0
 
 ### Changed

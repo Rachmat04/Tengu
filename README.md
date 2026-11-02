@@ -146,7 +146,7 @@ Only available in page mode.
 
 ### Get info
 - Opens a read-only information panel for the current target.
-- **User mode** — shows the target's account info (local and global edit counts, registration date, previous usernames, and a compact account activity summary of logged action counts from XTools, not shown for temporary accounts or in multi-target mode), SUL info (attached wikis and home wiki), access rights (local and global groups and rights), block log, page move log, rights changes, abuse filter log, and global lock/block status.
+- **User mode** — shows the target's account info (local and global edit counts, registration date, previous usernames, and a compact account activity summary of logged action counts from XTools, not shown for temporary accounts or in multi-target mode), SUL info (attached wikis and home wiki), access rights (local and global groups and rights, plus the reason for any active block, global block, or global lock), block log, page move log, rights changes, abuse filter log, and global lock/block status.
 - **Page mode** — shows the page's current revision info (size, last editor, last edited, revision count, creator, creation date), link counts (incoming, outgoing, external, and redirects), what links here (redirects and transclusions are labelled), abuse filter log, protection log, deletion log, and move log.
 - Sections that have entries expand automatically.
 
@@ -264,6 +264,7 @@ The maintainer can lock Tengu for everyone except the `Rachmat04` account, witho
 - Tengu reads `Pengguna:Rachmat04/Tengu-lockdown.js` on id.wikipedia.org as plain text. The file is not executed.
 - The line `TENGU_LOCKDOWN = true;` activates the lockdown. `TENGU_LOCKDOWN = false;` deactivates it.
 - While the lockdown is active, other users see a dialogue stating that Tengu has been temporarily disabled by its maintainer.
+- While the lockdown is active, the maintainer sees a notice at the top of the Tengu dialogue and a 🔒 marker on the portlet link. Both disappear when the lockdown is lifted. Other users do not see them.
 - If the status cannot be verified (network error, missing page, or no valid flag line), Tengu is blocked for everyone except the maintainer, and a separate dialogue explains why.
 - The check runs when Tengu is opened, when a run starts or resumes, and when an inline rollback, undo, or restore link is used.
 
