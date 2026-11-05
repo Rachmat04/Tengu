@@ -1,3 +1,16 @@
+## 2.236.1
+
+### Fixed
+
+* Fixed page titles that differ only in capitalisation (for example, "Universitas taman siswa palembang" and "Universitas Taman Siswa Palembang") being treated as duplicates in multi-target mode. The Start handler removed the second title as a duplicate, so only the page in the **Target page** field was processed.
+* In page mode, duplicate detection now uses `mw.Title#getPrefixedText()` through the new `multiTargetKey()` helper. Spaces and underscores stay equivalent, and the wiki's own first-letter rule applies, but other capitalisation is preserved.
+* The live target counter now uses the same key, so it matches the number of targets that will run.
+
+### Notes
+
+* User mode keeps its case-insensitive duplicate check. Single-target runs and the per-target processing in `work()` are unchanged.
+* `work()` already compares page titles case-sensitively (`Set` and `includes` checks), so no change was needed there.
+
 ## 2.236.0
 
 ### Added

@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.236.0
+ * Version 2.236.1
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -10284,8 +10284,25 @@ $(function () {
           badgeMultiTargetCount.title =
             "Number of targets that will be processed, including the primary target";
 
+          // Returns the key used to detect duplicate targets. In page mode,
+          // titles are normalised with mw.Title, so spaces and underscores
+          // are equivalent (and the wiki's first-letter rule applies), but
+          // capitalisation elsewhere in the title is kept: "Foo bar" and
+          // "Foo Bar" are distinct pages. In user mode, the comparison
+          // remains case-insensitive, as before.
+          function multiTargetKey(t) {
+            if (tenguMode === "page") {
+              try {
+                return new mw.Title(t).getPrefixedText();
+              } catch (e) {
+                return t.replace(/_/g, " ").trim();
+              }
+            }
+            return t.toLowerCase();
+          }
+
           // Counts the primary target plus unique additional targets, using
-          // the same case-insensitive de-duplication as the Start handler.
+          // the same de-duplication as the Start handler.
           function updateMultiTargetCount() {
             badgeMultiTargetCount.classList.toggle(
               "tng-hidden",
@@ -10293,12 +10310,12 @@ $(function () {
             );
             if (!chkMultiTarget.checked) return;
             const primary = inputTarget.value.trim();
-            const seen = new Set([primary.toLowerCase()]);
+            const seen = new Set([multiTargetKey(primary)]);
             let extra = 0;
             textareaMultiTarget.value.split("\n").forEach(function (line) {
               const t = line.trim();
               if (!t) return;
-              const key = t.toLowerCase();
+              const key = multiTargetKey(t);
               if (seen.has(key)) return;
               seen.add(key);
               extra++;
@@ -15750,11 +15767,13 @@ $(function () {
 
             // Build the ordered target list. Additional targets from the
             // textarea are appended after the primary target; duplicates
-            // (case-insensitive, both against the primary target and against
-            // each other) are removed while preserving order.
+            // (both against the primary target and against each other) are
+            // removed while preserving order. Comparison uses
+            // multiTargetKey(), so page titles that differ only in
+            // capitalisation are kept as separate targets.
             const additionalTargets = chkMultiTarget.checked
               ? (function () {
-                  const seen = new Set([targetVal.toLowerCase()]);
+                  const seen = new Set([multiTargetKey(targetVal)]);
                   return textareaMultiTarget.value
                     .split("\n")
                     .map(function (s) {
@@ -15762,7 +15781,7 @@ $(function () {
                     })
                     .filter(Boolean)
                     .filter(function (t) {
-                      const key = t.toLowerCase();
+                      const key = multiTargetKey(t);
                       if (seen.has(key)) return false;
                       seen.add(key);
                       return true;
