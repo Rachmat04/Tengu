@@ -1,3 +1,15 @@
+## 2.236.2
+
+### Fixed
+
+* Fixed the **Move page** sub-mode of **Move pages** not logging subpages moved with **Also move all subpages**. The `action=move` response (`move.subpages` and `move["subpages-talk"]`) was ignored. Each subpage is now logged and counted only if its entry has no error. A failed subpage is logged as an error.
+* Fixed talk subpages not being moved in the **Move page** sub-mode. The separate talk-page move now also sends `movesubpages` when **Also move all subpages** is ticked.
+* Fixed the **Move to user's sandbox** sub-mode moving the talk page and subpages even when the main page move had failed. Both now run only after the main move succeeds.
+
+### Added
+
+* When **Suppress redirect** is not ticked, Tengu now checks the old title of each moved subpage and logs a warning if no redirect exists there. It also warns if the API does not report a redirect for the main page.
+
 ## 2.236.1
 
 ### Fixed

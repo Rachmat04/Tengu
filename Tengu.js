@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.236.1
+ * Version 2.236.2
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -2583,6 +2583,78 @@ $(function () {
             }
           }
 
+          // Logs the per-subpage results returned by action=move when
+          // movesubpages is used. The API returns move.subpages (and
+          // move["subpages-talk"] when talk pages are moved) as entries of
+          // { from, to } on success or { from, error } on failure. Only
+          // entries without an error are counted as moved. When redirects
+          // are not suppressed, the old titles of moved subpages are then
+          // checked, and a warning is logged for any title that has no
+          // redirect. Never throws, so a logging problem cannot make a
+          // successful move look failed.
+          async function logMoveSubpageResults(moveResult, noRedirect) {
+            try {
+              const mv = moveResult && moveResult.move;
+              if (!mv) return;
+              const groups = [
+                { list: mv.subpages, label: "subpage" },
+                { list: mv["subpages-talk"], label: "subpage talk page" },
+              ];
+              const movedFrom = [];
+              for (const g of groups) {
+                if (!Array.isArray(g.list)) continue;
+                for (const sp of g.list) {
+                  if (sp && sp.error) {
+                    const info =
+                      sp.error.info || sp.error.code || String(sp.error);
+                    addLog(
+                      `[Move] Failed to move ${g.label} "${sp.from || "?"}": ${info}`,
+                      true,
+                    );
+                  } else if (sp && sp.from && sp.to) {
+                    addLog(
+                      `[Move] Moved ${g.label} "${sp.from}" to "${sp.to}"`,
+                    );
+                    stats.move++;
+                    movedFrom.push(sp.from);
+                  }
+                }
+              }
+              updateStatusDisplay();
+              if (noRedirect || !movedFrom.length) return;
+
+              // Check that a redirect now exists at each old title.
+              for (let i = 0; i < movedFrom.length; i += 50) {
+                const chunk = movedFrom.slice(i, i + 50);
+                const data = await apiGet({
+                  action: "query",
+                  titles: chunk.join("|"),
+                  prop: "info",
+                  formatversion: 2,
+                });
+                const pages = (data.query && data.query.pages) || [];
+                for (const p of pages) {
+                  if (p.missing) {
+                    addLog(
+                      `[Move] No redirect was left at "${p.title}" although redirect suppression was not selected`,
+                      "warn",
+                    );
+                  } else if (!p.redirect) {
+                    addLog(
+                      `[Move] "${p.title}" exists but is not a redirect`,
+                      "warn",
+                    );
+                  }
+                }
+              }
+            } catch (e) {
+              addLog(
+                `[Move] Could not verify subpage moves: ${formatApiError(e)}`,
+                "warn",
+              );
+            }
+          }
+
           // Moves the members of a category to another category by rewriting
           // the explicit category tag in each member's wikitext, so the source
           // category is left empty. Members are collected first and edited
@@ -3703,13 +3775,34 @@ $(function () {
 
                 let movePageMoveSucceeded = false;
                 try {
-                  await apiPost(moveParams);
+                  const movePageMoveResult = await apiPost(moveParams);
                   addLog(
                     `[Move] Moved "${targetVal}" to "${config.movePageDest}"`,
                   );
                   stats.move++;
                   updateStatusDisplay();
                   movePageMoveSucceeded = true;
+
+                  // redirectcreated is expected in the response
+                  // when a redirect was left at the old title.
+                  const mpMove = movePageMoveResult && movePageMoveResult.move;
+                  if (
+                    mpMove &&
+                    !config.movePageNoRedirect &&
+                    (mpMove.redirectcreated === undefined ||
+                      mpMove.redirectcreated === false)
+                  ) {
+                    addLog(
+                      `[Move] No redirect was reported as created at "${targetVal}" although redirect suppression was not selected`,
+                      "warn",
+                    );
+                  }
+                  if (config.movePageSubpages) {
+                    await logMoveSubpageResults(
+                      movePageMoveResult,
+                      config.movePageNoRedirect,
+                    );
+                  }
                 } catch (e) {
                   addLog(
                     `[Move] Failed to move "${targetVal}" to "${config.movePageDest}": ${formatApiError(e)}`,
@@ -3805,12 +3898,20 @@ $(function () {
                         };
                         if (config.movePageNoRedirect)
                           talkMoveParams.noredirect = 1;
-                        await apiPost(talkMoveParams);
+                        if (config.movePageSubpages)
+                          talkMoveParams.movesubpages = 1;
+                        const talkMoveResult = await apiPost(talkMoveParams);
                         addLog(
                           `[Move] Moved talk page "${sourceTalkTitle}" to "${destTalkTitle}"`,
                         );
                         stats.move++;
                         updateStatusDisplay();
+                        if (config.movePageSubpages) {
+                          await logMoveSubpageResults(
+                            talkMoveResult,
+                            config.movePageNoRedirect,
+                          );
+                        }
 
                         // Fix double redirects pointing to the talk page's old
                         // title, mirroring the equivalent fix already applied
@@ -3979,8 +4080,13 @@ $(function () {
                   );
                 }
 
-                // Move the associated talk page if the option was selected.
-                if (config.moveSandboxTalk && !isAborted) {
+                // Move the associated talk page if the option was selected,
+                // and only if the main page move succeeded.
+                if (
+                  sandboxMoveSucceeded &&
+                  config.moveSandboxTalk &&
+                  !isAborted
+                ) {
                   try {
                     const sourceTitleObj = new mw.Title(targetVal);
                     if (sourceTitleObj.isTalkPage()) {
@@ -4075,8 +4181,13 @@ $(function () {
                   }
                 }
 
-                // Move all subpages if the option was selected.
-                if (config.moveSandboxSubpages && !isAborted) {
+                // Move all subpages if the option was selected, and only if
+                // the main page move succeeded.
+                if (
+                  sandboxMoveSucceeded &&
+                  config.moveSandboxSubpages &&
+                  !isAborted
+                ) {
                   try {
                     const sourceTitleObj = new mw.Title(targetVal);
                     if (sourceTitleObj.isTalkPage()) {
