@@ -1252,7 +1252,7 @@ window.TenguWarn = {
                 ? "== Pemberitahuan terakhir: penambahan URL mentah =="
                 : "== Pemberitahuan: penambahan URL mentah ==";
               const bodyEn =
-                `Your recent edits appear to have added one or more bare URLs — that is, raw web addresses without a formatted citation — to an article. Bare URLs are difficult for readers to evaluate and do not display useful bibliographic information. Please format all references using a citation template such as {{|tlx|cite web}} or {{tlx|cite news}}. See [[WP:CITE]] for guidance on citing sources correctly.` +
+                `Your recent edits appear to have added one or more bare URLs — that is, raw web addresses without a formatted citation — to an article. Bare URLs are difficult for readers to evaluate and do not display useful bibliographic information. Please format all references using a citation template such as {{tlx|cite web}} or {{tlx|cite news}}. See [[WP:CITE]] for guidance on citing sources correctly.` +
                 (isFinal ? finalSentence(false) : "") +
                 `\n\nIf you believe this notice has been issued in error, please leave a message on my talk page. ` +
                 `~`.repeat(4);

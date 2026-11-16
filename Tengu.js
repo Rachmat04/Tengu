@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.236.2
+ * Version 2.236.3
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -3334,6 +3334,11 @@ $(function () {
                   user: targetVal,
                   expiry: config.blockDur,
                   reason: withToolTag(config.blockReason, toolTag),
+                  // Overwrites an existing block on the target. Without this
+                  // parameter, the API is expected to reject a block on an
+                  // already-blocked target (alreadyblocked), which would make
+                  // the pre-filled "modify an active block" flow fail.
+                  reblock: 1,
                 };
                 // If hardblock is checked, we do NOT want anononly=1 (registered users should be blocked too)
                 if (isTargetIP) {
