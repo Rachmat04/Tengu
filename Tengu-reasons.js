@@ -1625,7 +1625,7 @@ window.TenguReasons = {
           {
             id: "crosswikiabuse",
             label: "Cross-wiki abuse",
-            text: "Vandalism or abuse across multiple wikis",
+            text: "Vandalism or other abuse across multiple wikis",
           },
           {
             id: "vandalismonly",
@@ -1633,9 +1633,9 @@ window.TenguReasons = {
             text: "Account used solely for vandalism",
           },
           {
-            id: "spambot",
-            label: "Spambot",
-            text: "Automated spam account",
+            id: "spamonly",
+            label: "Spam-only account or spambot",
+            text: "Account used solely for spam, or an automated spam account",
           },
           {
             id: "lta",
@@ -1653,29 +1653,14 @@ window.TenguReasons = {
             text: "Username violates the global username policy",
           },
           {
-            id: "spamonly",
-            label: "Spam-only account",
-            text: "Used solely for spam",
-          },
-          {
             id: "offensiveusername",
             label: "Offensive username",
             text: "Offensive or abusive username; may qualify for locksuppression",
           },
           {
-            id: "seriouscrosswikiabuse",
-            label: "Serious cross-wiki abuse",
-            text: "Serious violations across multiple wikis",
-          },
-          {
             id: "globalban",
-            label: "Global ban",
-            text: "Subject to a global ban",
-          },
-          {
-            id: "globalbanevasion",
-            label: "Global ban evasion",
-            text: "Created to evade a global ban",
+            label: "Global ban or ban evasion",
+            text: "Subject to a global ban, or created to evade one",
           },
           {
             id: "deceaseduser",

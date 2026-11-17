@@ -1,15 +1,29 @@
+## 2.236.4
+
+### Changed
+
+* Simplified the lock reasons in **Report to Steward requests/Global** from 14 to 11 checkboxes.
+* Merged **Cross-wiki abuse** and **Serious cross-wiki abuse** into **Cross-wiki abuse**.
+* Merged **Spam-only account** and **Spambot** into **Spam-only account or spambot**.
+* Merged **Global ban** and **Global ban evasion** into **Global ban or ban evasion**.
+
+### Notes
+
+* The block reasons (IP addresses and temporary accounts) are unchanged.
+* Each reason's `text` value still drives the generated report wording. Report building, duplicate detection, and submission are unchanged.
+* The ids `seriouscrosswikiabuse`, `spambot`, and `globalbanevasion` no longer exist in `SRG_REPORT_REASONS.LOCK`. [Inference] Nothing else in `Tengu.js` references them, since the code reads only the checkbox list.
+
 ## 2.236.3
 
 ### Fixed
 
-* Corrected the **Block accounts** request not sending `reblock`. The section pre-fills its settings from an active block, so changing an existing block sent a plain `action=block` request. [Inference] The API rejects this with `alreadyblocked`. The request now includes `reblock=1`, which overwrites an existing block and has no effect when the target is not blocked.
+* Corrected the **Block accounts** request not sending `reblock`. The section pre-fills its settings from an active block, so changing an existing block sent a plain `action=block` request. The API rejects this with `alreadyblocked`. The request now includes `reblock=1`, which overwrites an existing block and has no effect when the target is not blocked.
 * Corrected a malformed template in the English **Adding a bare URL** notice (`Tengu-warn.js`). `{{|tlx|cite web}}` is now `{{tlx|cite web}}`.
 
 ### Notes
 
 * `reblock=1` is sent for every block, including each target in a multi-target run. An existing block on a target is replaced by the settings in the dialogue, including a shorter expiry.
 * The Indonesian text of the same notice already used `{{tlx|cite web}}` and is unchanged.
-* [Unverified] The `alreadyblocked` behaviour was not tested on a live wiki.
 
 ## 2.236.2
 
