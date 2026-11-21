@@ -1,3 +1,21 @@
+## 2.237.0
+
+### Added
+
+* Added resume support for multi-target runs. After an abort, the **Resume operations** button now appears for runs with **Process additional targets** ticked, as it already did for single-target runs.
+* Resume skips targets that already finished and continues the interrupted target from its next unprocessed step, using the existing per-target phase flags, processed-item sets, and contribution caches.
+* Added `completedTargets` and `activeTarget` to the resume state (`rs`). The consolidated page-mode deletion notification map (`multiTargetCreatorMap`) is now carried across an abort, so creators of pages deleted before the abort are still included in the final notification.
+* A resumed target logs "Continuing this target from where it stopped...".
+
+### Changed
+
+* Updated the tooltip and help text of **Process additional targets** to describe resume.
+
+### Notes
+
+* A target counts as finished only if its loop iteration ended without an abort. A target aborted part-way through is resumed, not repeated from the start.
+* The completion summary counts only the resumed run, as it already did for single-target runs.
+
 ## 2.236.4
 
 ### Changed

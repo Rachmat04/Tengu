@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.236.4
+ * Version 2.237.0
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -2069,13 +2069,17 @@ $(function () {
           // from the aborted run are reused so already-completed work is skipped.
           const isMultiTarget =
             Array.isArray(config.targets) && config.targets.length > 1;
-          // Resume is only supported for single-target runs.
-          const isResume = !isMultiTarget && !!resumeState;
+          // Resume is supported for both single-target and multi-target runs.
+          const isResume = !!resumeState;
           // Accumulates creator → deleted page titles across all targets when
           // multi-target page mode is active, so a creator who had multiple
           // target pages deleted receives one consolidated notification instead
-          // of one notification per page.
-          const multiTargetCreatorMap = new Map();
+          // of one notification per page. On resume, the map from the aborted
+          // run is reused so earlier targets' deletions are still included.
+          const multiTargetCreatorMap =
+            isResume && resumeState.multiTargetCreatorMap
+              ? resumeState.multiTargetCreatorMap
+              : new Map();
           const rs = isResume
             ? resumeState
             : {
@@ -2109,12 +2113,18 @@ $(function () {
                 creationCache: null,
                 pagesToProtectCache: null,
                 pagesToProtectAfterDelCache: null,
+                // Multi-target progress: targets fully processed, and the
+                // target that was in progress when the run was aborted.
+                completedTargets: new Set(),
+                activeTarget: null,
                 // Accumulated results carried across abort/resume cycles
                 deletedTitles: [],
                 rollbackNotifiedTitles: [],
                 creatorMap: new Map(),
                 notifyQueue: new Map(),
               };
+          // Keep a reference to the shared creator map so it survives an abort.
+          rs.multiTargetCreatorMap = multiTargetCreatorMap;
           // Consume the global resumeState so it is not inadvertently reused.
           // A new value is stored only if this run is aborted part-way through.
           resumeState = null;
@@ -3184,11 +3194,25 @@ $(function () {
           for (const targetVal of config.targets || [config.target]) {
             if (isAborted) break;
 
+            // On resume, targets that already finished are skipped.
+            if (isMultiTarget && rs.completedTargets.has(targetVal)) continue;
+
+            // True when this target was in progress at the time of the abort.
+            // Its phase flags, caches, and processed-item sets are kept, so
+            // it continues from its next unprocessed step.
+            const resumingActiveTarget =
+              isMultiTarget && rs.activeTarget === targetVal;
             if (isMultiTarget) {
               // Prefix every log entry in this iteration with the target name
               // so per-target actions are identifiable without a separator element.
               currentTargetLabel = targetVal;
+              rs.activeTarget = targetVal;
+              if (resumingActiveTarget) {
+                addLog("▶️ Continuing this target from where it stopped...");
+              }
+            }
 
+            if (isMultiTarget && !resumingActiveTarget) {
               // Reset all per-target phase flags and tracking collections so
               // each target is processed as an independent unit within this run.
               rs.warnDone = false;
@@ -6343,6 +6367,12 @@ $(function () {
               }
               if (!isAborted) rs.fixRedirectsDone = true;
             }
+
+            // Mark this target as complete so a resumed run skips it.
+            if (isMultiTarget && !isAborted) {
+              rs.completedTargets.add(targetVal);
+              rs.activeTarget = null;
+            }
           }
 
           // Clear the per-target log prefix now that the target loop has finished.
@@ -6415,19 +6445,15 @@ $(function () {
 
           if (isAborted) {
             addLog("⏹️ Operations aborted by user");
-            // Resume is only supported for single-target runs. Multi-target
-            // runs would require per-target phase tracking to resume correctly.
-            if (!isMultiTarget) {
-              resumeState = rs;
-            }
+            // Resume state is kept for single-target and multi-target runs.
+            resumeState = rs;
           } else {
             addLog("✅ All operations have been completed successfully");
           }
           btnClose.disabled = false;
 
           // Insert "Resume" button when the run was aborted part-way through.
-          // Not offered for multi-target runs.
-          if (isAborted && !isMultiTarget) {
+          if (isAborted) {
             const btnResume = makeBtn("Resume operations", "primary");
             btnResume.title =
               "Continue the task from where it was interrupted, skipping already-completed steps";
@@ -10362,8 +10388,8 @@ $(function () {
             " pasted one per line. The primary target above is always included." +
             " Status checks and section status notes reflect the primary target" +
             " only. Reports to Global sysops/Requests and Steward requests/Global" +
-            " include every selected target. Resume is not available for" +
-            " multi-target runs.";
+            " include every selected target. If a multi-target run is aborted," +
+            " it can be resumed; finished targets are skipped.";
 
           const textareaMultiTarget = document.createElement("textarea");
           textareaMultiTarget.className = "tng-input";
@@ -10381,8 +10407,8 @@ $(function () {
             "The primary target above is always processed first. Status checks" +
             " and section status notes reflect the primary target only. Reports" +
             " to Global sysops/Requests and Steward requests/Global include" +
-            " every selected target. Resume is not available for multi-target" +
-            " runs.";
+            " every selected target. An aborted multi-target run can be" +
+            " resumed; finished targets are skipped.";
 
           helpMultiTarget.classList.add("tng-multitarget-help");
           helpMultiTarget.textContent = "ℹ️ " + helpMultiTarget.textContent;
