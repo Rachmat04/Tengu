@@ -1,3 +1,11 @@
+## 2.238.0
+
+### Changed
+
+* Moved the **Recently active admins & rights holders** dialogue (👮) out of `Tengu.js` into a new module, `Tengu-admins.js`. This is the first step in splitting `Tengu.js` into smaller modules.
+* The module exposes `window.TenguActiveAdmins.create(deps)`, which returns the function that opens the dialogue. `Tengu.js` passes in `createDialog`, `makeBtn`, `apiGet`, `foreignApiGet`, and `formatApiError`, so the module does not depend on any other `Tengu.js` internals.
+* `Tengu.js` now loads `Tengu-admins.js` after `Tengu-packages.js`. Section 08d is replaced by a single call to the factory.
+
 ## 2.237.0
 
 ### Added
