@@ -1,10 +1,23 @@
 /**
  * ============================================================================
- * Tengu-picker.js
- * Select specific edits/pages picker dialogue (user mode) for Tengu.
- * Loaded by [[Pengguna:Rachmat04/Tengu.js]].
+ * Tengu — 天狗
+ * All-in-one wiki moderation tool — Select specific edits/pages picker module
+ * ============================================================================
+ * PURPOSE:
+ * Provides the "Select specific edits/pages" picker dialogue (user mode). It
+ * fetches the target user's full contribution history, groups it into edited
+ * pages and created pages, and lets the user choose items with namespace
+ * filtering, sorting, and bulk selection controls.
+ * Consumed by Tengu.js; exposes window.TenguPicker.create(deps).
  *
- * Exposes window.TenguPicker.create(deps), which returns openEditsPicker().
+ * The module depends only on the helpers passed in by Tengu.js:
+ * createDialog(opts), makeBtn(label, variant), makeRow(labelText),
+ * makeCheckbox(labelText, checked), makeCheckboxCombobox(items, placeholder),
+ * apiGet(params) and formatApiError(err). create(deps) returns the async
+ * function openEditsPicker(pickerTarget, initialSelection, onConfirm).
+ *
+ * REPOSITORY:
+ * https://github.com/Rachmat04/Tengu
  * ============================================================================
  */
 // <nowiki>

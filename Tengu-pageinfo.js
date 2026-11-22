@@ -1,12 +1,25 @@
 /**
  * ============================================================================
- * Tengu-pageinfo.js
- * Page-mode "Get info" dialogue module for Tengu (天狗)
+ * Tengu — 天狗
+ * All-in-one wiki moderation tool — Page info module
  * ============================================================================
- * Fetches and displays Page info (MediaWiki + XTools), Page assessment,
- * What links here (backlinks + transclusions), Move log, Abuse filter log,
- * Protection log, and Deletion log entries for a target page in a read-only
- * dialogue panel.
+ * PURPOSE:
+ * Provides the page-mode "Get info" dialogue. It fetches and displays Page
+ * info (MediaWiki and XTools), Page assessment, What links here (backlinks
+ * and transclusions), Move log, Abuse filter log, Protection log, and
+ * Deletion log entries for a target page in a read-only dialogue panel.
+ * Consumed by Tengu.js; exposes window.TenguPageInfo.create(deps).
+ *
+ * The module depends only on the MediaWiki globals (mw) and the helpers
+ * passed in by Tengu.js: createDialog(opts), makeDisplaySection(title, icon),
+ * makeBtn(label, variant), apiGet(params) and formatApiError(err).
+ * create(deps) returns the async function getPageInfo(pageName).
+ *
+ * The page info statistics are adapted from the XTools PageInfo gadget
+ * (GPL 3.0+); see the README credits and CHANGELOG.md v2.214.0.
+ *
+ * REPOSITORY:
+ * https://github.com/Rachmat04/Tengu
  * ============================================================================
  */
 // <nowiki>

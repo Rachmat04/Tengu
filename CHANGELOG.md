@@ -1,3 +1,11 @@
+## 2.245.0
+
+### Changed
+
+* Modularisation: Extracted the case-conversion helpers (`applyCaseToTitleField`, `toSentenceCase`, `toTitleCase`, and `makeCaseButtonsRow`) out of `Tengu.js` into a standalone module at `Pengguna:Rachmat04/Tengu-case.js` (`window.TenguCase.create`). The module depends only on `mw` and the `makeBtn` helper.
+* Loader & initialisation: Updated `Tengu.js` to load `Tengu-case.js` after `Tengu-picker.js` and to obtain `makeCaseButtonsRow` from the factory in [Section 08c]. The name is unchanged, so the call sites in the Move pages section are unchanged.
+* Headers: Rewrote the header comments of `Tengu-picker.js`, `Tengu-pageinfo.js`, and `Tengu-userinfo.js` to match the other modules (title block, purpose, consumer and exposed interface, dependencies, attribution, repository). Their code is unchanged.
+
 ## 2.244.0
 
 ### Changed

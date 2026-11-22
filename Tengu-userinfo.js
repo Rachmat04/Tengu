@@ -1,7 +1,28 @@
 /**
  * ============================================================================
- * Tengu-userinfo.js
- * User info dialogue module for Tengu (天狗)
+ * Tengu — 天狗
+ * All-in-one wiki moderation tool — User info module
+ * ============================================================================
+ * PURPOSE:
+ * Provides the user-mode "Get info" dialogue. It fetches and displays Account
+ * info (local and global edit counts, registration date, gender, last edit,
+ * previous usernames, and XTools account activity), SUL info, access rights
+ * with block and global lock/block status, and the block, move, rights, and
+ * abuse filter logs for a target user in a read-only dialogue panel. Each
+ * section loads independently, so a failure in one does not affect the others.
+ * Consumed by Tengu.js; exposes window.TenguUserInfo.create(deps).
+ *
+ * The module depends only on the MediaWiki globals (mw) and the helpers
+ * passed in by Tengu.js: createDialog(opts), makeDisplaySection(title, icon),
+ * makeBtn(label, variant), apiGet(params), foreignApiGet(params) and
+ * formatApiError(err). create(deps) returns the async function
+ * getUserInfo(username, isMultiTarget).
+ *
+ * The account info feature (gender, account age, edit count, last edit) is
+ * adapted from User:PleaseStand/userinfo.js; see the README credits.
+ *
+ * REPOSITORY:
+ * https://github.com/Rachmat04/Tengu
  * ============================================================================
  */
 // <nowiki>

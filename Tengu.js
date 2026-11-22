@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.244.0
+ * Version 2.245.0
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -66,6 +66,11 @@ $(function () {
       .then(function () {
         return mw.loader.getScript(
           "https://id.wikipedia.org/w/index.php?title=Pengguna:Rachmat04/Tengu-picker.js&action=raw&ctype=text/javascript",
+        );
+      })
+      .then(function () {
+        return mw.loader.getScript(
+          "https://id.wikipedia.org/w/index.php?title=Pengguna:Rachmat04/Tengu-case.js&action=raw&ctype=text/javascript",
         );
       })
       .then(function () {
@@ -6437,79 +6442,23 @@ $(function () {
 
         // ============================================================================
         // [Section 08c] Export edits (user mode) and title-case helpers
-        // The Export edits dialogue lives in [[Tengu-export.js]]; this section
-        // creates it from the shared helpers. It also holds the case-conversion
-        // helpers used by the Move pages section.
+        // The Export edits dialogue lives in [[Tengu-export.js]] and the
+        // case-conversion helpers used by the Move pages section live in
+        // [[Tengu-case.js]]; this section creates both from the shared helpers.
         // ============================================================================
-        // Applies a case transform to only the title portion of a page-title
-        // input field, leaving any namespace prefix (as typed) unchanged.
-        // The namespace is detected via mw.Title, which parses the prefix
-        // against this wiki's own configured namespace names and aliases,
-        // rather than assuming an English namespace name such as "Category:".
-        function applyCaseToTitleField(inputEl, transformFn) {
-          const val = inputEl.value.trim();
-          if (!val) return;
-          let nsPrefix = "";
-          let mainText = val;
-          try {
-            const titleObj = new mw.Title(val);
-            if (titleObj.getNamespaceId() !== 0) {
-              nsPrefix = titleObj.getNamespacePrefix();
-              mainText = titleObj.getMainText();
-            }
-          } catch (e) {
-            // Could not be parsed as a title; treat the whole value as the title.
-          }
-          inputEl.value = nsPrefix + transformFn(mainText);
-          inputEl.dispatchEvent(new Event("input"));
-        }
-
-        function toSentenceCase(s) {
-          if (!s) return s;
-          const lower = s.toLowerCase();
-          return lower.charAt(0).toUpperCase() + lower.slice(1);
-        }
-
-        function toTitleCase(s) {
-          if (!s) return s;
-          return s.toLowerCase().replace(/(^|\s)\S/g, function (c) {
-            return c.toUpperCase();
-          });
-        }
-
-        // Builds a row of case-conversion buttons ("Sentence case", "lower
-        // case", "UPPER CASE", "Title Case") that modify inputEl's value
-        // directly when clicked, without submitting or executing the move.
-        function makeCaseButtonsRow(inputEl) {
-          const wrap = document.createElement("div");
-          wrap.className = "tng-case-btn-group";
-          const buttons = [
-            { label: "Sentence case", fn: toSentenceCase },
-            { label: "lower case", fn: (s) => s.toLowerCase() },
-            { label: "UPPER CASE", fn: (s) => s.toUpperCase() },
-            { label: "Title Case", fn: toTitleCase },
-          ];
-          buttons.forEach(function (b) {
-            const btn = makeBtn(b.label, "quiet");
-            btn.type = "button";
-            btn.className += " tng-btn-sm";
-            btn.title =
-              "Convert only the page title (not the namespace) to " +
-              b.label.toLowerCase() +
-              ".";
-            btn.addEventListener("click", function () {
-              applyCaseToTitleField(inputEl, b.fn);
-            });
-            wrap.appendChild(btn);
-          });
-          return wrap;
-        }
+        // The case-conversion helpers (applyCaseToTitleField(),
+        // toSentenceCase(), toTitleCase(), and makeCaseButtonsRow()) were
+        // MOVED to [[Tengu-case.js]]. The module receives makeBtn and returns
+        // makeCaseButtonsRow, which keeps its name, so the two call sites in
+        // the Move pages section of init() are unchanged.
+        const { makeCaseButtonsRow } = window.TenguCase.create({
+          makeBtn: makeBtn,
+        });
 
         // The Export edits dialogue itself was MOVED to [[Tengu-export.js]].
         // The module receives the shared helpers below and returns the
         // function that opens the dialogue. It is called by the 📥 button
-        // in init(). The case-conversion helpers above stay here because
-        // the Move pages section uses them.
+        // in init().
         const openExportEditsDialog = window.TenguExportEdits.create({
           createDialog: createDialog,
           makeBtn: makeBtn,
