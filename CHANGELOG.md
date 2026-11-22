@@ -1,3 +1,9 @@
+## 2.242.0
+
+### Changed
+
+* Extracted the user-mode Get info dialogue (getUserInfo) from [Section 08] of `Tengu.js` into a standalone module (`Tengu-userinfo.js`, exposed as `window.TenguUserInfo.create`), reducing core script size while preserving all account info, access rights, SUL, and log-fetching functionality.
+
 ## 2.241.0
 
 ### Changed
