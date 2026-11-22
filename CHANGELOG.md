@@ -1,3 +1,11 @@
+## 2.240.0
+
+### Changed
+
+* Moved the Wikidata helpers used by **Merge items** out of `Tengu.js` into a new module, `Tengu-merge.js`. This is the third step in splitting `Tengu.js` into smaller modules.
+* The module exposes `window.TenguMerge.create()`, which returns `fetchWikidataEntities()`, `detectWikidataMergeConflicts()`, `mergeWikidataEntities()`, and `createWikidataRedirect()`. It also holds the Wikidata foreign API wrappers they use (`getWikidataForeignApi()`, `wikidataApiGet()`, `wikidataApiPost()`).
+* `Tengu.js` now loads `Tengu-merge.js` after `Tengu-export.js`. The helper block in Section 05 is replaced by one destructuring call to the factory, which keeps the original names, so the call sites in `work()` are unchanged.
+
 ## 2.239.0
 
 ### Changed

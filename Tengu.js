@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.239.0
+ * Version 2.240.0
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -41,6 +41,11 @@ $(function () {
       .then(function () {
         return mw.loader.getScript(
           "https://id.wikipedia.org/w/index.php?title=Pengguna:Rachmat04/Tengu-export.js&action=raw&ctype=text/javascript",
+        );
+      })
+      .then(function () {
+        return mw.loader.getScript(
+          "https://id.wikipedia.org/w/index.php?title=Pengguna:Rachmat04/Tengu-merge.js&action=raw&ctype=text/javascript",
         );
       })
       .then(function () {
@@ -1372,148 +1377,16 @@ $(function () {
           });
         }
 
-        // Loads mw.ForeignApi and returns an instance pointed at Wikidata,
-        // used by the Merge items feature so it works regardless of which
-        // wiki Tengu is currently open on. Mirrors getMetaForeignApi() above.
-        function getWikidataForeignApi() {
-          return new Promise((resolve, reject) => {
-            mw.loader.using(
-              "mediawiki.ForeignApi",
-              function () {
-                try {
-                  resolve(
-                    new mw.ForeignApi("https://www.wikidata.org/w/api.php"),
-                  );
-                } catch (e) {
-                  reject(e);
-                }
-              },
-              reject,
-            );
-          });
-        }
-
-        // Promisified GET/POST wrappers against the Wikidata API, following
-        // the same pattern as foreignApiGet(). postWithEditToken() handles
-        // the Wikibase edit token requirement automatically, matching how
-        // the other foreign-API call sites (Meta-Wiki reports) already work.
-        async function wikidataApiGet(params) {
-          const foreignApi = await getWikidataForeignApi();
-          return new Promise((resolve, reject) => {
-            foreignApi
-              .get(params)
-              .done(resolve)
-              .fail((code, err) =>
-                reject(
-                  code +
-                    (err && err.error && err.error.info
-                      ? ": " + err.error.info
-                      : ""),
-                ),
-              );
-          });
-        }
-        async function wikidataApiPost(params) {
-          const foreignApi = await getWikidataForeignApi();
-          return new Promise((resolve, reject) => {
-            foreignApi
-              .postWithEditToken(params)
-              .done(resolve)
-              .fail((code, err) =>
-                reject(
-                  code +
-                    (err && err.error && err.error.info
-                      ? ": " + err.error.info
-                      : ""),
-                ),
-              );
-          });
-        }
-
-        // Fetches full entity data for a list of Wikidata entity IDs
-        // (items or lexemes). Adapted from getItems() in the standalone
-        // Wikidata Merge.js gadget.
-        async function fetchWikidataEntities(ids) {
-          const data = await wikidataApiGet({
-            action: "wbgetentities",
-            ids: ids.join("|"),
-          });
-          return Object.keys(data.entities || {}).map(function (k) {
-            return data.entities[k];
-          });
-        }
-
-        // Detects sitelink conflicts between two Wikidata entities: cases
-        // where both entities link to a page on the same wiki but with a
-        // different title. Adapted from detectConflicts() in the standalone
-        // Wikidata Merge.js gadget. Returns a map of dbName -> conflicting
-        // entities, empty when there are no conflicts.
-        function detectWikidataMergeConflicts(items) {
-          const all = {};
-          const conflicts = {};
-          items.forEach(function (item) {
-            if (!item.sitelinks) return;
-            Object.keys(item.sitelinks).forEach(function (dbName) {
-              if (
-                all[dbName] &&
-                all[dbName].sitelinks[dbName].title !==
-                  item.sitelinks[dbName].title
-              ) {
-                if (!conflicts[dbName]) conflicts[dbName] = [all[dbName]];
-                conflicts[dbName].push(item);
-              }
-              all[dbName] = item;
-            });
-          });
-          return conflicts;
-        }
-
-        // Merges one Wikidata entity into another. Items (Q-prefixed) use
-        // wbmergeitems; lexemes (L-prefixed) use wblmergelexemes, which
-        // redirects the source lexeme directly as part of the merge itself,
-        // unlike items, which require a separate redirect step. Adapted from
-        // mergeApi() in the standalone Wikidata Merge.js gadget.
-        async function mergeWikidataEntities(fromId, toId, summaryText) {
-          const isLexeme = fromId.charAt(0).toUpperCase() === "L";
-          const params = isLexeme
-            ? {
-                action: "wblmergelexemes",
-                source: fromId,
-                target: toId,
-                tags: "gadget-merge",
-              }
-            : {
-                action: "wbmergeitems",
-                fromid: fromId,
-                toid: toId,
-                ignoreconflicts: "description",
-                tags: "gadget-merge",
-              };
-          params.summary = summaryText;
-          return wikidataApiPost(params);
-        }
-
-        // Creates a redirect from a (now-emptied) Wikidata item to another.
-        // The source item must be cleared first, since wbcreateredirect
-        // refuses to redirect an item that still holds data. Not used for
-        // lexemes, which are redirected automatically by wblmergelexemes.
-        // Adapted from createRedirect() in the standalone Wikidata Merge.js
-        // gadget.
-        async function createWikidataRedirect(fromId, toId) {
-          await wikidataApiPost({
-            action: "wbeditentity",
-            id: fromId,
-            clear: true,
-            summary: "Clearing item to prepare for redirect",
-            tags: "gadget-merge",
-            data: "{}",
-          });
-          return wikidataApiPost({
-            action: "wbcreateredirect",
-            from: fromId,
-            to: toId,
-          });
-        }
+        // Wikidata helpers for the Merge items section. MOVED to
+        // [[Tengu-merge.js]]. The module has no dependencies on Tengu.js, so
+        // the factory takes no arguments. The helper names are unchanged, so
+        // the call sites in work() are unchanged.
+        const {
+          fetchWikidataEntities,
+          detectWikidataMergeConflicts,
+          mergeWikidataEntities,
+          createWikidataRedirect,
+        } = window.TenguMerge.create();
 
         // Derives an interwiki prefix (project + language, e.g. "w:id:" or
         // "wikt:ja:") for the current wiki from its hostname, used to build
