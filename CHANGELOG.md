@@ -1,3 +1,16 @@
+## 2.241.0
+
+### Changed
+
+* Moved the diff page "more information" feature out of `Tengu.js` into a new module, `Tengu-diffinfo.js`. This is the fourth step in splitting `Tengu.js` into smaller modules.
+* The module exposes `window.TenguDiffInfo.create(deps)`, which returns the function that adds the revision ID, size, and ORES score lines below each side's title box on diff pages. `Tengu.js` passes in `apiGet`, so the module does not depend on any other `Tengu.js` internals.
+* `Tengu.js` now loads `Tengu-diffinfo.js` after `Tengu-merge.js`. The function in Section 09b is replaced by a single call to the factory, which keeps the name `fetchAndShowDiffInfo`, so the call site in `insertInlineRevisionActions()` is unchanged.
+
+### Notes
+
+* No behaviour, text, or styling changes. `Tengu.css` is unchanged; `.tng-diffinfo-line` stays there.
+* `insertDiffRevisionActions()` and the other inline revision actions stay in `Tengu.js`, as they use the confirmation and progress dialogues.
+
 ## 2.240.0
 
 ### Changed
