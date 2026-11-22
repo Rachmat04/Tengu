@@ -1,3 +1,10 @@
+## 2.243.0
+
+### Changed
+
+* Extracted the page-mode **Get info** dialogue (`getPageInfo`) from [Section 08b] of `Tengu.js` into a standalone module (`Tengu-pageinfo.js`, exposed as `window.TenguPageInfo.create(deps)`). This is the sixth step in splitting `Tengu.js` into smaller modules.
+* `Tengu.js` now loads `Tengu-pageinfo.js` after `Tengu-userinfo.js` and passes `createDialog`, `makeDisplaySection`, `makeBtn`, `apiGet`, and `formatApiError` into the factory, keeping the original `getPageInfo` name so the call site in `init()` is unchanged.
+
 ## 2.242.0
 
 ### Changed
