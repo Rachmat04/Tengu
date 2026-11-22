@@ -1,3 +1,16 @@
+## 2.239.0
+
+### Changed
+
+* Moved the **Export edits** dialogue (📥) out of `Tengu.js` into a new module, `Tengu-export.js`. This is the second step in splitting `Tengu.js` into smaller modules.
+* The module exposes `window.TenguExportEdits.create(deps)`, which returns the function that opens the dialogue. `Tengu.js` passes in `createDialog`, `makeBtn`, `makeRow`, `makeCheckboxCombobox`, `showNotification`, `clearInputError`, `apiGet`, and `formatApiError`, so the module does not depend on any other `Tengu.js` internals.
+* `Tengu.js` now loads `Tengu-export.js` after `Tengu-admins.js`. The function in Section 08c is replaced by a single call to the factory, which keeps the name `openExportEditsDialog`, so the call site in `init()` is unchanged.
+
+### Notes
+
+* No behaviour, text, or styling changes. `Tengu.css` is unchanged; the Export edits classes stay there.
+* `applyCaseToTitleField()`, `toSentenceCase()`, `toTitleCase()`, and `makeCaseButtonsRow()` stay in `Tengu.js`, as the Move pages section uses them.
+
 ## 2.238.0
 
 ### Changed
