@@ -1,3 +1,10 @@
+## 2.244.0
+
+### Changed
+
+* Modularisation: Extracted the "Select edits/pages" picker dialogue (`openEditsPicker`) out of `Tengu.js` into a standalone module at `Pengguna:Rachmat04/Tengu-picker.js` (`window.TenguPicker.create`).
+* Loader & initialization: Updated `Tengu.js` to load `Tengu-picker.js` in the startup script chain and initialise `openEditsPicker` in [Section 08e], delegating the `btnPickEdits` click handler to the new module via callback.
+
 ## 2.243.0
 
 ### Changed
@@ -9,7 +16,7 @@
 
 ### Changed
 
-* Extracted the user-mode Get info dialogue (getUserInfo) from [Section 08] of `Tengu.js` into a standalone module (`Tengu-userinfo.js`, exposed as `window.TenguUserInfo.create`), reducing core script size while preserving all account info, access rights, SUL, and log-fetching functionality.
+* Extracted the user-mode Get info dialogue (`getUserInfo`) from [Section 08] of `Tengu.js` into a standalone module (`Tengu-userinfo.js`, exposed as `window.TenguUserInfo.create`), reducing core script size while preserving all account info, access rights, SUL, and log-fetching functionality.
 
 ## 2.241.0
 
