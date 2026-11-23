@@ -1,3 +1,15 @@
+## 2.246.0
+
+### Changed
+
+* Modularisation: Extracted the emergency lockdown control (`fetchLockdownFlag`, `fetchLockdownState`, `lockdownPermits`, `getLockdownState`, `showLockdownDialog`, `ensureTenguAllowed`, and the `LOCKDOWN_*` constants) out of `Tengu.js` into a standalone module at `Pengguna:Rachmat04/Tengu-emergency.js` (`window.TenguEmergency.create`). The module depends only on `mw` and the `createDialog` and `makeBtn` helpers.
+* Loader & initialisation: Updated `Tengu.js` to load `Tengu-emergency.js` after `Tengu-case.js` and to obtain `LOCKDOWN_MAINTAINER`, `getLockdownState`, `lockdownPermits`, and `ensureTenguAllowed` from the factory in [Section 05]. The names are unchanged, so all call sites are unchanged.
+
+### Notes
+
+* The module is named `Tengu-emergency.js` so it does not clash with the existing flag page `Pengguna:Rachmat04/Tengu-lockdown.js`, which is still read as plain text and is not changed.
+* If `Tengu-emergency.js` fails to load, the loader chain stops and Tengu does not start.
+
 ## 2.245.0
 
 ### Changed
