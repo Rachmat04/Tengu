@@ -1,3 +1,10 @@
+## 2.248.0
+
+### Changed
+
+* Modularisation: Extracted the Meta-Wiki report helpers (`submitGlobalSysopsReport`, `submitSRGReport`, `submitPermissionRequest`, the `PERM_REQUEST_TYPES` table, and `foreignApiGet`, together with the private `getMetaForeignApi`) out of `Tengu.js` into a standalone module at `Pengguna:Rachmat04/Tengu-reports.js` (`window.TenguReports.create`). The module has no dependencies on `Tengu.js` internals and uses only `mw.loader` and `mw.ForeignApi`.
+* Loader & initialisation: Updated `Tengu.js` to load `Tengu-reports.js` after `Tengu-linkfix.js` and to obtain the five names from the factory in [Section 05], at the position where `getMetaForeignApi()` was. The names are unchanged, so every call site (`work()`, `init()`, and the `getUserInfo` and `getActiveAdmins` factories that receive `foreignApiGet`) is unchanged.
+
 ## 2.247.0
 
 ### Changed
