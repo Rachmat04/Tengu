@@ -1,3 +1,10 @@
+## 2.247.0
+
+### Changed
+
+* Modularisation: Extracted the ✨ **Fix links in reason** helpers (`correctReasonLinks`, `makeLinkFixButton`, `wrapReasonInputWithLinkFix`) and `deriveInterwikiPrefix` out of `Tengu.js` into a standalone module at `Pengguna:Rachmat04/Tengu-linkfix.js` (`window.TenguLinkFix.create`). The module has no dependencies on `Tengu.js` internals and uses only the DOM.
+* Loader & initialisation: Updated `Tengu.js` to load `Tengu-linkfix.js` after `Tengu-emergency.js` and to obtain the four helpers from the factory in [Section 04]. The names are unchanged, so every call site is unchanged. `getInterwikiPrefix()` stays in `Tengu.js` and calls `deriveInterwikiPrefix()` from the module.
+
 ## 2.246.0
 
 ### Changed

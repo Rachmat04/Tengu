@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.246.0
+ * Version 2.247.0
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -76,6 +76,11 @@ $(function () {
       .then(function () {
         return mw.loader.getScript(
           "https://id.wikipedia.org/w/index.php?title=Pengguna:Rachmat04/Tengu-emergency.js&action=raw&ctype=text/javascript",
+        );
+      })
+      .then(function () {
+        return mw.loader.getScript(
+          "https://id.wikipedia.org/w/index.php?title=Pengguna:Rachmat04/Tengu-linkfix.js&action=raw&ctype=text/javascript",
         );
       })
       .then(function () {
@@ -563,161 +568,17 @@ $(function () {
           return inp;
         }
 
-        // Rewrites recognised wiki-links and diff URLs within a reason
-        // string into a clickable-safe wikitext form. Only the recognised
-        // link patterns are touched; everything else in the string is left
-        // exactly as entered.
-        //
-        // Patterns handled:
-        //   1. Diff URLs (index.php?...diff=X&oldid=Y, any parameter order,
-        //      numeric IDs or "cur"/"prev") -> [[Special:Diff/oldid/diff]]
-        //   2. [[https://<wiki>/wiki/Title#Fragment]] -> [[Title#Fragment]]
-        //      (fragment underscores converted to spaces; title preserved
-        //      as-is other than percent-decoding)
-        //   3. [[Title#A_B_C]] (already bracketed, no URL) -> [[Title#A B C]]
-        //      (fragment underscores converted to spaces only)
-        //
-        // A bare, unbracketed article URL (e.g. "https://.../wiki/Title#X")
-        // is left unchanged, since it is not a wiki-link and cannot be
-        // "corrected" without changing what the person typed.
-        // forMeta: when true, recognised links are prefixed with the source
-        // wiki's interwiki project/language (e.g. "w:id:", "s:en:"), derived
-        // from the hostname embedded in the original URL — not the wiki
-        // Tengu currently happens to be open on. Used for the Report to
-        // Global sysops/Requests and Report to Steward requests/Global
-        // sections, whose reason text is submitted to Meta-Wiki, so a plain
-        // local link would not resolve to the intended page there. An
-        // explicit pipe label (the bare title/Special:Diff string) is added
-        // alongside the prefix so the displayed text stays readable.
-        function correctReasonLinks(text, forMeta) {
-          if (!text) return text;
-          let result = text;
-
-          function safeDecode(s) {
-            try {
-              return decodeURIComponent(s);
-            } catch (e) {
-              return s;
-            }
-          }
-
-          // label is the original custom link label, if the source link had
-          // one. When present, it is kept as the displayed text and the
-          // target is not repeated as a second label.
-          function wrapLink(target, host, label) {
-            const hasLabel = label !== undefined && label !== "";
-            if (!forMeta) {
-              return hasLabel
-                ? "[[" + target + "|" + label + "]]"
-                : "[[" + target + "]]";
-            }
-            const prefix = deriveInterwikiPrefix(host);
-            if (!prefix) {
-              return hasLabel
-                ? "[[" + target + "|" + label + "]]"
-                : "[[" + target + "]]";
-            }
-            return (
-              "[[" + prefix + target + "|" + (hasLabel ? label : target) + "]]"
-            );
-          }
-
-          // 1. Diff URLs: .../w/index.php?...diff=X...oldid=Y... (any order)
-          result = result.replace(
-            /https?:\/\/([^/\s\]]+)\/w\/index\.php\?[^\s\]]*/gi,
-            function (match, host) {
-              const qIndex = match.indexOf("?");
-              if (qIndex === -1) return match;
-              const params = {};
-              match
-                .slice(qIndex + 1)
-                .split("&")
-                .forEach(function (pair) {
-                  const eq = pair.indexOf("=");
-                  if (eq === -1) return;
-                  params[pair.slice(0, eq)] = pair.slice(eq + 1);
-                });
-              if (
-                !Object.prototype.hasOwnProperty.call(params, "diff") ||
-                !Object.prototype.hasOwnProperty.call(params, "oldid")
-              ) {
-                return match;
-              }
-              const target = "Special:Diff/" + params.oldid + "/" + params.diff;
-              return wrapLink(target, host);
-            },
-          );
-
-          // 2. [[https://<wiki>/wiki/Title#Fragment]] -> [[Title#Fragment]]
-          //    [[https://<wiki>/wiki/Title#Fragment|label]] -> [[Title#Fragment|label]]
-          // The pipe is excluded from the host, title, and fragment, and the
-          // optional label is captured separately, so the label is not read
-          // as part of the fragment.
-          result = result.replace(
-            /\[\[https?:\/\/([^/\]|]+)\/wiki\/([^\]#|]+)(?:#([^\]|]+))?(?:\|([^\]]*))?\]\]/gi,
-            function (match, host, title, fragment, label) {
-              // Underscores in the article title are converted to spaces,
-              // matching the human-readable page title, consistent with the
-              // fragment underscore-to-space handling below.
-              const decodedTitle = safeDecode(title).replace(/_/g, " ");
-              let target = decodedTitle;
-              if (fragment) {
-                const decodedFragment = safeDecode(fragment).replace(/_/g, " ");
-                target = decodedTitle + "#" + decodedFragment;
-              }
-              return wrapLink(target, host, label);
-            },
-          );
-
-          // 3. [[Title#A_B_C]] (already bracketed, no URL) -> [[Title#A B C]]
-          // No hostname is present in this pattern, so no project/language
-          // prefix can be derived; it is left as a plain local link
-          // regardless of forMeta.
-          result = result.replace(
-            /\[\[([^\]|#]+)#([^\]|]+)\]\]/g,
-            function (match, title, fragment) {
-              if (/^https?:\/\//i.test(title)) return match; // Already handled above
-              return "[[" + title + "#" + fragment.replace(/_/g, " ") + "]]";
-            },
-          );
-
-          return result;
-        }
-
-        // Creates the ✨ "Fix links in reason" button for a given reason
-        // input. Clicking it rewrites only recognised links within the
-        // input's current value via correctReasonLinks(); a short scale
-        // animation gives visual feedback that something happened.
-        function makeLinkFixButton(inputEl, forMeta) {
-          const btn = document.createElement("button");
-          btn.type = "button";
-          btn.className = "tng-btn tng-btn-quiet tng-btn-sm tng-linkfix-btn";
-          btn.textContent = "✨";
-          btn.title = "Fix links in reason";
-          btn.addEventListener("click", function () {
-            inputEl.value = correctReasonLinks(inputEl.value, forMeta);
-            btn.classList.remove("tng-linkfix-pulse");
-            void btn.offsetWidth; // Force reflow so repeated clicks re-trigger the animation
-            btn.classList.add("tng-linkfix-pulse");
-          });
-          btn.addEventListener("animationend", function () {
-            btn.classList.remove("tng-linkfix-pulse");
-          });
-          return btn;
-        }
-
-        // Wraps a reason input and its link-fix button on a single row,
-        // placed immediately to the right of the field. Pass forMeta=true
-        // for fields whose text is submitted to Meta-Wiki (GS/SRG reports),
-        // so corrected links receive the source wiki's interwiki prefix.
-        function wrapReasonInputWithLinkFix(inputEl, forMeta) {
-          const row = document.createElement("div");
-          row.className = "tng-linkfix-row";
-          inputEl.style.flex = "1";
-          row.appendChild(inputEl);
-          row.appendChild(makeLinkFixButton(inputEl, forMeta));
-          return row;
-        }
+        // The ✨ "Fix links in reason" helpers (correctReasonLinks(),
+        // makeLinkFixButton(), wrapReasonInputWithLinkFix()) and
+        // deriveInterwikiPrefix() were MOVED to [[Tengu-linkfix.js]]. The
+        // module has no dependencies on Tengu.js, so the factory takes no
+        // arguments. The names are unchanged, so every call site is unchanged.
+        const {
+          deriveInterwikiPrefix,
+          correctReasonLinks,
+          makeLinkFixButton,
+          wrapReasonInputWithLinkFix,
+        } = window.TenguLinkFix.create();
         function makeCheckbox(labelText, checked) {
           const wrap = document.createElement("label");
           wrap.className = "tng-checkrow";
@@ -1304,47 +1165,8 @@ $(function () {
         // independently confirmed against every Wikimedia project's actual
         // interwiki table. Returns an empty string if no mapping is found,
         // in which case callers fall back to a plain, non-prefixed link.
-        // Derives an interwiki prefix (project + language, e.g. "w:id:" or
-        // "s:en:") from an arbitrary wiki server hostname. Shared by
-        // getInterwikiPrefix() (current wiki) and correctReasonLinks()
-        // (a source URL embedded in a reason field, which may point to a
-        // different wiki/project than the one Tengu is currently open on).
-        function deriveInterwikiPrefix(server) {
-          server = (server || "").replace(/^(?:https?:)?\/\//, "");
-          const SISTER_PROJECT_PREFIXES = {
-            wikipedia: "w",
-            wiktionary: "wikt",
-            wikibooks: "b",
-            wikinews: "n",
-            wikiquote: "q",
-            wikisource: "s",
-            wikiversity: "v",
-            wikivoyage: "voy",
-          };
-          const NO_LANG_HOSTS = {
-            "commons.wikimedia.org": "c:",
-            "www.wikidata.org": "d:",
-            "meta.wikimedia.org": "m:",
-            "species.wikimedia.org": "species:",
-            "incubator.wikimedia.org": "incubator:",
-            "www.wikifunctions.org": "f:",
-            "www.mediawiki.org": "mw:",
-            "foundation.wikimedia.org": "foundation:",
-            "outreach.wikimedia.org": "outreach:",
-            "wikimania.wikimedia.org": "wikimania:",
-            "wikitech.wikimedia.org": "wikitech:",
-          };
-          if (NO_LANG_HOSTS[server]) return NO_LANG_HOSTS[server];
-
-          const hostParts = server.split(".");
-          if (hostParts.length >= 3 && SISTER_PROJECT_PREFIXES[hostParts[1]]) {
-            return (
-              SISTER_PROJECT_PREFIXES[hostParts[1]] + ":" + hostParts[0] + ":"
-            );
-          }
-          return "";
-        }
-
+        // deriveInterwikiPrefix(server) is now provided by
+        // [[Tengu-linkfix.js]] (see Section 04).
         function getInterwikiPrefix() {
           return deriveInterwikiPrefix(mw.config.get("wgServer"));
         }
