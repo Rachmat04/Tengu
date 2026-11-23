@@ -1,3 +1,10 @@
+## 2.249.0
+
+### Changed
+
+* Modularisation: Extracted the cached site information lookups (`getRedirectMagicWords`, `getFileNamespaceAliases`, `getCategoryNamespaceId`, and `getCategoryNamespaceAliases`) out of `Tengu.js` into a standalone module at `Pengguna:Rachmat04/Tengu-siteinfo.js` (`window.TenguSiteInfo.create`). The module depends only on the `apiGet` helper.
+* Loader & initialisation: Updated `Tengu.js` to load `Tengu-siteinfo.js` after `Tengu-reports.js` and to obtain the four functions from the factory in [Section 05], at the position where the caches were. The names are unchanged, so every call site in `work()` is unchanged.
+
 ## 2.248.0
 
 ### Changed
