@@ -1,3 +1,10 @@
+## 2.250.0
+
+### Changed
+
+* Modularisation: Extracted the list of wikis outside the scope of the global sysops service (`GS_INELIGIBLE_HOSTS`) out of `Tengu.js` into a standalone module at `Pengguna:Rachmat04/Tengu-gshosts.js` (`window.TenguGSHosts.get`). The module has no dependencies and returns a new `Set` on each call.
+* Loader & initialisation: Updated `Tengu.js` to load `Tengu-gshosts.js` after `Tengu-siteinfo.js` and to obtain the list in [Section 05], at the position where the list was. The name is unchanged, so `globalSysopsScopePromise` in `init()` is unchanged.
+
 ## 2.249.0
 
 ### Changed

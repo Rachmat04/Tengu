@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.249.0
+ * Version 2.250.0
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -91,6 +91,11 @@ $(function () {
       .then(function () {
         return mw.loader.getScript(
           "https://id.wikipedia.org/w/index.php?title=Pengguna:Rachmat04/Tengu-siteinfo.js&action=raw&ctype=text/javascript",
+        );
+      })
+      .then(function () {
+        return mw.loader.getScript(
+          "https://id.wikipedia.org/w/index.php?title=Pengguna:Rachmat04/Tengu-gshosts.js&action=raw&ctype=text/javascript",
         );
       })
       .then(function () {
@@ -1059,77 +1064,10 @@ $(function () {
         // so it was removed in favour of relying on this list alone. Keep
         // this list accurate and up to date, since there is no longer an
         // API-based fallback to catch omissions.
-        const GS_INELIGIBLE_HOSTS = new Set([
-          "an.wikipedia.org",
-          "ar.wikipedia.org",
-          "bg.wikipedia.org",
-          "bn.wikipedia.org",
-          "ca.wikipedia.org",
-          "cs.wikipedia.org",
-          "cy.wikipedia.org",
-          "da.wikipedia.org",
-          "de.wikipedia.org",
-          "el.wikipedia.org",
-          "en.wikipedia.org",
-          "eo.wikipedia.org",
-          "es.wikipedia.org",
-          "et.wikipedia.org",
-          "eu.wikipedia.org",
-          "fa.wikipedia.org",
-          "fi.wikipedia.org",
-          "fr.wikipedia.org",
-          "he.wikipedia.org",
-          "hr.wikipedia.org",
-          "hu.wikipedia.org",
-          "id.wikipedia.org",
-          "is.wikipedia.org",
-          "it.wikipedia.org",
-          "ja.wikipedia.org",
-          "ka.wikipedia.org",
-          "ko.wikipedia.org",
-          "lv.wikipedia.org",
-          "mk.wikipedia.org",
-          "ml.wikipedia.org",
-          "mr.wikipedia.org",
-          "nl.wikipedia.org",
-          "nn.wikipedia.org",
-          "no.wikipedia.org",
-          "pl.wikipedia.org",
-          "pt.wikipedia.org",
-          "ro.wikipedia.org",
-          "ru.wikipedia.org",
-          "simple.wikipedia.org",
-          "sk.wikipedia.org",
-          "sl.wikipedia.org",
-          "sv.wikipedia.org",
-          "ta.wikipedia.org",
-          "te.wikipedia.org",
-          "th.wikipedia.org",
-          "tr.wikipedia.org",
-          "ur.wikipedia.org",
-          "zh.wikipedia.org",
-          "zh-yue.wikipedia.org",
-          "cs.wiktionary.org",
-          "de.wiktionary.org",
-          "en.wiktionary.org",
-          "fr.wiktionary.org",
-          "nl.wiktionary.org",
-          "pl.wiktionary.org",
-          "de.wikisource.org",
-          "en.wikisource.org",
-          "fr.wikisource.org",
-          "he.wikisource.org",
-          "pl.wikisource.org",
-          "wikisource.org",
-          "de.wikivoyage.org",
-          "commons.wikimedia.org",
-          "www.wikidata.org",
-          "meta.wikimedia.org",
-          "login.wikimedia.org",
-          "pl.wikimedia.org",
-          "se.wikimedia.org",
-          "test.wikipedia.org",
-        ]);
+        // The list itself was MOVED to [[Tengu-gshosts.js]]. The module has no
+        // dependencies, so the factory takes no arguments. The name is
+        // unchanged, so globalSysopsScopePromise (Section 09) is unchanged.
+        const GS_INELIGIBLE_HOSTS = window.TenguGSHosts.get();
 
         // ============================================================================
         // [Section 06] Dropdown list reasons
