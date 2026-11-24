@@ -1,3 +1,10 @@
+## 2.254.0
+
+### Changed
+
+* Modularisation: Extracted the revert helpers (`buildQuickRevertSummaryText`, `revisionsContentIdentical`, `fetchCurrentRevisionId`, and `findRollbackFallbackRevisions`) out of `Tengu.js` into a standalone module at `Pengguna:Rachmat04/Tengu-revert.js` (`window.TenguRevert.create`). The module depends only on `mw.config` and the `apiGet` helper and `useIndonesian` flag passed in by `Tengu.js`.
+* Loader & initialisation: Updated `Tengu.js` to load `Tengu-revert.js` after `Tengu-dialog.js` and to obtain the four functions from the factory in [Section 05], at the position where the first two were defined. The names are unchanged, so every call site in `work()` and [Section 09b] is unchanged.
+
 ## 2.253.1
 
 ### Fixed
