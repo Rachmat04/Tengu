@@ -1,3 +1,10 @@
+## 2.251.0
+
+### Changed
+
+* Modularisation: Extracted the DOM and formatting helpers (`makeRow`, `makeSelect`, `wrapSelect`, `makeFilteredSelect`, `makeCheckboxCombobox`, `makeInput`, `makeCheckbox`, `makeBtn`, `makeSection`, `showNotification`, `clearInputError`, `formatApiError`, `withToolTag`, `translateDurationId`, and `makeDisplaySection`) out of `Tengu.js` into a standalone module at `Pengguna:Rachmat04/Tengu-dom.js` (`window.TenguDOM.create`). The module has no dependencies on `Tengu.js` internals and uses only browser DOM APIs and styles from `Tengu.css`.
+* Loader & initialisation: Updated `Tengu.js` to load `Tengu-dom.js` after `Tengu-gshosts.js` and to obtain the helpers from the factory in [Section 04]. The names are unchanged, so every call site is unchanged.
+
 ## 2.250.0
 
 ### Changed
