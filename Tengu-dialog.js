@@ -1,13 +1,13 @@
 /**
  * ============================================================================
- * Tengu-dialog.js — Overlay stack, theme state, and dialogue builder for Tengu
- * Version 2.253.0
+ * Tengu — 天狗
+ * All-in-one wiki moderation tool — Dialogue module
  * ============================================================================
  * PURPOSE:
  * Provides the modal overlay stack, light/dark theme management, keyboard
  * close/fail-safe listeners, and dialogue frame builder used across Tengu.
  *
- * CONSUMER & EXPOSED INTERFACE:
+ * CONSUMER AND EXPOSED INTERFACE:
  * Loaded by [[Pengguna:Rachmat04/Tengu.js]] before initialisation. Exposes
  * window.TenguDialog.create(), returning { getTheme, setTheme,
  * createOverlay, createDialog }.

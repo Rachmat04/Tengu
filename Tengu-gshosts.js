@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * All-in-one wiki moderation tool — Global sysops host list
+ * All-in-one wiki moderation tool — Global sysops hosts module
  * ============================================================================
  * PURPOSE:
  * Provides the list of wikis known to fall outside the scope of the global
@@ -9,10 +9,14 @@
  * sysops/Requests" section is available on the current wiki. This list is the
  * only source of global sysops eligibility, so it must be kept accurate and up
  * to date; there is no API-based fallback.
- * Consumed by Tengu.js; exposes window.TenguGSHosts.get().
  *
- * The module has no dependencies. get() returns a new Set of hostnames, so a
- * caller cannot change the list used by another caller.
+ * CONSUMER AND EXPOSED INTERFACE:
+ * Loaded by [[Pengguna:Rachmat04/Tengu.js]]. Exposes
+ * window.TenguGSHosts.get(), which returns a new Set of hostnames on each
+ * call, so a caller cannot change the list used by another caller.
+ *
+ * DEPENDENCIES:
+ * None.
  *
  * REPOSITORY:
  * https://github.com/Rachmat04/Tengu

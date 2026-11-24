@@ -8,13 +8,17 @@
  * fetches the target user's full contribution history, groups it into edited
  * pages and created pages, and lets the user choose items with namespace
  * filtering, sorting, and bulk selection controls.
- * Consumed by Tengu.js; exposes window.TenguPicker.create(deps).
  *
- * The module depends only on the helpers passed in by Tengu.js:
+ * CONSUMER AND EXPOSED INTERFACE:
+ * Loaded by [[Pengguna:Rachmat04/Tengu.js]]. Exposes
+ * window.TenguPicker.create(deps), which returns the async function
+ * openEditsPicker(pickerTarget, initialSelection, onConfirm).
+ *
+ * DEPENDENCIES:
+ * MediaWiki globals (mw) and the helpers passed in by Tengu.js:
  * createDialog(opts), makeBtn(label, variant), makeRow(labelText),
  * makeCheckbox(labelText, checked), makeCheckboxCombobox(items, placeholder),
- * apiGet(params) and formatApiError(err). create(deps) returns the async
- * function openEditsPicker(pickerTarget, initialSelection, onConfirm).
+ * apiGet(params) and formatApiError(err).
  *
  * REPOSITORY:
  * https://github.com/Rachmat04/Tengu

@@ -6,13 +6,20 @@
  * PURPOSE:
  * Provides the "Recently active admins & rights holders" dialogue. It lists
  * administrators and other advanced rights holders who were active within the
- * last 24 hours, sorted by most recent activity first.
- * Consumed by Tengu.js; exposes window.TenguActiveAdmins.create(deps).
+ * last 24 hours, sorted by most recent activity first. Recent changes and log
+ * events are each fetched in a single bulk query rather than one query per
+ * user, so a user's most recent action could be missed if it falls outside the
+ * latest 500 entries returned by either query on a very active wiki.
  *
- * Recent changes and log events are each fetched in a single bulk query rather
- * than one query per user, so a user's most recent action could be missed if it
- * falls outside the latest 500 entries returned by either query on a very
- * active wiki.
+ * CONSUMER AND EXPOSED INTERFACE:
+ * Loaded by [[Pengguna:Rachmat04/Tengu.js]]. Exposes
+ * window.TenguActiveAdmins.create(deps), which returns the async function
+ * getActiveAdmins().
+ *
+ * DEPENDENCIES:
+ * MediaWiki globals (mw) and the helpers passed in by Tengu.js:
+ * createDialog(opts), makeBtn(label, variant), apiGet(params),
+ * foreignApiGet(params) and formatApiError(err).
  *
  * REPOSITORY:
  * https://github.com/Rachmat04/Tengu

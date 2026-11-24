@@ -1,3 +1,15 @@
+## 2.253.1
+
+### Fixed
+
+* Removed the unused `correctReasonLinks` and `makeLinkFixButton` bindings from the `Tengu-linkfix.js` destructuring in [Section 04] of `Tengu.js`. Both are used only inside the module, so `Tengu.js` no longer needs them (`no-unused-vars`).
+* Removed the unused `api` binding from the `Tengu-api.js` destructuring in [Section 05] of `Tengu.js`. `Tengu.js` uses only `apiGet`, `apiPost`, `apiRollback`, and `pageExists`.
+
+### Changed
+
+* Standardised the header comments of all `Tengu-*.js` modules and `Tengu.js` to one structure: title, purpose, consumer and exposed interface, dependencies, attribution (where applicable), and repository. Attribution notices are kept.
+* Removed the version line from the `Tengu-dialog.js` header. The version is kept in `Tengu.js` only.
+
 ## 2.253.0
 
 ### Changed

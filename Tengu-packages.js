@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * All-in-one wiki moderation tool — Predefined packages
+ * All-in-one wiki moderation tool — Packages module
  * ============================================================================
  * PURPOSE:
  * This file contains the default package, the native preset packages used
@@ -12,6 +12,14 @@
  * Package reason values must match the option values defined in
  * Tengu-reasons.js exactly, since they are matched against that list when a
  * package is applied (see v2.9.0 in CHANGELOG.md).
+ *
+ * CONSUMER AND EXPOSED INTERFACE:
+ * Loaded by [[Pengguna:Rachmat04/Tengu.js]]. Exposes
+ * window.TenguPackages.get(useIndonesian), which returns an object containing
+ * DEFAULT_PACKAGE, NATIVE_PRESETS and PAGE_NATIVE_PRESETS.
+ *
+ * DEPENDENCIES:
+ * None. Reason values must match those in Tengu-reasons.js.
  *
  * REPOSITORY:
  * https://github.com/Rachmat04/Tengu

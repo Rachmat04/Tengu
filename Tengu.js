@@ -1,12 +1,26 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.253.0
- * All-in-one wiki moderation tool
+ * All-in-one wiki moderation tool — Main script
+ * Version 2.253.1
  * ============================================================================
  * PURPOSE:
  * An all-in-one moderation script for MediaWiki that streamlines user blocking,
  * rollbacks, page deletions, page undeletions, page protections, and revision deletions from a single interface.
+ *
+ * CONSUMER AND EXPOSED INTERFACE:
+ * Loaded by users through mw.loader.load() (see README.md). Exposes no
+ * global interface. Loads Tengu.css and the Tengu-*.js modules in sequence,
+ * then registers the "⛩️ Tengu" portlet link.
+ *
+ * DEPENDENCIES:
+ * MediaWiki ResourceLoader modules "mediawiki.util" and "mediawiki.api", and
+ * the Tengu modules listed in the loader chain below.
+ *
+ * ATTRIBUTION:
+ * Based on User:WhitePhosphorus/all-in-one
+ * (https://meta.wikimedia.org/wiki/User:WhitePhosphorus/all-in-one). See
+ * README.md for further credits.
  *
  * REPOSITORY:
  * https://github.com/Rachmat04/Tengu
@@ -210,25 +224,24 @@ $(function () {
           makeDisplaySection,
         } = window.TenguDOM.create();
 
-        // The ✨ "Fix links in reason" helpers (correctReasonLinks(),
-        // makeLinkFixButton(), wrapReasonInputWithLinkFix()) and
-        // deriveInterwikiPrefix() were MOVED to [[Tengu-linkfix.js]]. The
-        // module has no dependencies on Tengu.js, so the factory takes no
-        // arguments. The names are unchanged, so every call site is unchanged.
-        const {
-          deriveInterwikiPrefix,
-          correctReasonLinks,
-          makeLinkFixButton,
-          wrapReasonInputWithLinkFix,
-        } = window.TenguLinkFix.create();
+        // The ✨ "Fix links in reason" helpers were MOVED to
+        // [[Tengu-linkfix.js]]. The module has no dependencies on Tengu.js, so
+        // the factory takes no arguments. Only deriveInterwikiPrefix() and
+        // wrapReasonInputWithLinkFix() are used here. correctReasonLinks() and
+        // makeLinkFixButton() are used only inside the module, so they are not
+        // destructured.
+        const { deriveInterwikiPrefix, wrapReasonInputWithLinkFix } =
+          window.TenguLinkFix.create();
 
         // ============================================================================
         // [Section 05] Shared API instance and promisified wrappers
         // MOVED to [[Tengu-api.js]]. The module has no dependencies on Tengu.js
         // internals, so the factory takes no arguments. The names are unchanged,
-        // so every call site is unchanged.
+        // so every call site is unchanged. The module also returns the shared
+        // mw.Api instance (api), which Tengu.js does not use, so it is not
+        // destructured.
         // ============================================================================
-        const { api, apiGet, apiPost, apiRollback, pageExists } =
+        const { apiGet, apiPost, apiRollback, pageExists } =
           window.TenguAPI.create();
 
         // Cached check for whether the current user holds the rollback

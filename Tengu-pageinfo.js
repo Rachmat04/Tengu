@@ -8,13 +8,18 @@
  * info (MediaWiki and XTools), Page assessment, What links here (backlinks
  * and transclusions), Move log, Abuse filter log, Protection log, and
  * Deletion log entries for a target page in a read-only dialogue panel.
- * Consumed by Tengu.js; exposes window.TenguPageInfo.create(deps).
  *
- * The module depends only on the MediaWiki globals (mw) and the helpers
+ * CONSUMER AND EXPOSED INTERFACE:
+ * Loaded by [[Pengguna:Rachmat04/Tengu.js]]. Exposes
+ * window.TenguPageInfo.create(deps), which returns the async function
+ * getPageInfo(pageName).
+ *
+ * DEPENDENCIES:
+ * MediaWiki globals (mw), the XTools API (through fetch), and the helpers
  * passed in by Tengu.js: createDialog(opts), makeDisplaySection(title, icon),
  * makeBtn(label, variant), apiGet(params) and formatApiError(err).
- * create(deps) returns the async function getPageInfo(pageName).
  *
+ * ATTRIBUTION:
  * The page info statistics are adapted from the XTools PageInfo gadget
  * (GPL 3.0+); see the README credits and CHANGELOG.md v2.214.0.
  *

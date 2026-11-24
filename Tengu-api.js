@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Shared MediaWiki API wrappers and page-existence helper
+ * All-in-one wiki moderation tool — API helpers module
  * ============================================================================
  * PURPOSE:
  * Provides a shared mw.Api instance, promisified request wrappers (apiGet,

@@ -7,13 +7,18 @@
  * Provides the Wikidata API helpers used by the "Merge items" section:
  * fetching entities, detecting sitelink conflicts, merging items or lexemes,
  * and creating a redirect after an item merge.
- * Consumed by Tengu.js; exposes window.TenguMerge.create().
- *
- * The module has no dependencies on Tengu.js internals. It only uses the
- * MediaWiki globals (mw.loader, mw.ForeignApi).
- *
  * The Merge items section itself (its interface and its call sites in work())
  * stays in Tengu.js.
+ *
+ * CONSUMER AND EXPOSED INTERFACE:
+ * Loaded by [[Pengguna:Rachmat04/Tengu.js]]. Exposes
+ * window.TenguMerge.create(), which returns an object containing
+ * fetchWikidataEntities, detectWikidataMergeConflicts, mergeWikidataEntities
+ * and createWikidataRedirect.
+ *
+ * DEPENDENCIES:
+ * MediaWiki globals (mw.loader, mw.ForeignApi). No dependencies on Tengu.js
+ * internals.
  *
  * REPOSITORY:
  * https://github.com/Rachmat04/Tengu

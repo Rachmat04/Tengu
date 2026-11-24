@@ -8,12 +8,15 @@
  * when editing wikitext: the redirect magic word aliases, the File namespace
  * aliases, the Category namespace ID, and the Category namespace aliases.
  * Each value is fetched once per page session and then reused.
- * Consumed by Tengu.js; exposes window.TenguSiteInfo.create(deps).
  *
- * The module depends only on the apiGet helper passed in by Tengu.js:
- * apiGet(params). create(deps) returns getRedirectMagicWords(),
- * getFileNamespaceAliases(), getCategoryNamespaceId() and
- * getCategoryNamespaceAliases().
+ * CONSUMER AND EXPOSED INTERFACE:
+ * Loaded by [[Pengguna:Rachmat04/Tengu.js]]. Exposes
+ * window.TenguSiteInfo.create(deps), which returns an object containing
+ * getRedirectMagicWords(), getFileNamespaceAliases(),
+ * getCategoryNamespaceId() and getCategoryNamespaceAliases().
+ *
+ * DEPENDENCIES:
+ * The apiGet(params) helper passed in by Tengu.js.
  *
  * REPOSITORY:
  * https://github.com/Rachmat04/Tengu

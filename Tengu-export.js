@@ -8,7 +8,17 @@
  * user's full contribution history, collects the unique pages they edited,
  * and shows them as a filterable, sortable list that can be copied as a
  * wikitext numbered list.
- * Consumed by Tengu.js; exposes window.TenguExportEdits.create(deps).
+ *
+ * CONSUMER AND EXPOSED INTERFACE:
+ * Loaded by [[Pengguna:Rachmat04/Tengu.js]]. Exposes
+ * window.TenguExportEdits.create(deps), which returns the async function
+ * openExportEditsDialog(username).
+ *
+ * DEPENDENCIES:
+ * MediaWiki globals (mw) and the helpers passed in by Tengu.js:
+ * createDialog(opts), makeBtn(label, variant), makeRow(labelText),
+ * makeCheckboxCombobox(items, placeholder), showNotification(parent, msg),
+ * clearInputError(input), apiGet(params) and formatApiError(err).
  *
  * REPOSITORY:
  * https://github.com/Rachmat04/Tengu

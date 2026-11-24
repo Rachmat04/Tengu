@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * All-in-one wiki moderation tool — Pre-populated reason sets
+ * All-in-one wiki moderation tool — Reason sets module
  * ============================================================================
  * PURPOSE:
  * This file contains pre-populated reason sets for rollbacks, page deletions, page undeletions, block actions, and revision deletions,
@@ -10,6 +10,15 @@
  * The reason values are localised: Indonesian is used on wikis whose content language
  * is listed in INDONESIAN_LANGS (as determined by Tengu.js), and English otherwise.
  * Labels (dropdown display text) are always in English, consistent with the rest of the UI.
+ *
+ * CONSUMER AND EXPOSED INTERFACE:
+ * Loaded by [[Pengguna:Rachmat04/Tengu.js]]. Exposes
+ * window.TenguReasons.get(useIndonesian), which returns an object containing
+ * the reason sets (for example ROLLBACK_REASONS, BLOCK_REASONS and
+ * PAGE_DELETE_REASONS).
+ *
+ * DEPENDENCIES:
+ * None.
  *
  * REPOSITORY:
  * https://github.com/Rachmat04/Tengu

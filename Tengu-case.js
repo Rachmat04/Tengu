@@ -9,12 +9,16 @@
  * Move pages section. A button rewrites only the title portion of the field,
  * leaving any namespace prefix as typed, and does not submit or execute the
  * move.
- * Consumed by Tengu.js; exposes window.TenguCase.create(deps).
+ * The .tng-case-btn-group style stays in Tengu.css.
  *
- * The module depends only on the MediaWiki globals (mw) and the makeBtn
- * helper passed in by Tengu.js: makeBtn(label, variant). create(deps) returns
- * an object containing makeCaseButtonsRow(inputEl). The .tng-case-btn-group
- * style stays in Tengu.css.
+ * CONSUMER AND EXPOSED INTERFACE:
+ * Loaded by [[Pengguna:Rachmat04/Tengu.js]]. Exposes
+ * window.TenguCase.create(deps), which returns an object containing
+ * makeCaseButtonsRow(inputEl).
+ *
+ * DEPENDENCIES:
+ * MediaWiki globals (mw) and the makeBtn(label, variant) helper passed in by
+ * Tengu.js.
  *
  * REPOSITORY:
  * https://github.com/Rachmat04/Tengu

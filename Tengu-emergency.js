@@ -11,15 +11,18 @@
  * While the lockdown is active, only the maintainer account can use Tengu. If
  * the status cannot be verified (network error, missing page, or no valid flag
  * line), Tengu is blocked for everyone except the maintainer.
- * Consumed by Tengu.js; exposes window.TenguEmergency.create(deps).
- *
- * The module depends only on the MediaWiki globals (mw) and the helpers passed
- * in by Tengu.js: createDialog(opts) and makeBtn(label, variant). create(deps)
- * returns an object containing LOCKDOWN_MAINTAINER, getLockdownState(fresh),
- * lockdownPermits(state) and ensureTenguAllowed(fresh).
- *
  * The lockdown flag page (Pengguna:Rachmat04/Tengu-lockdown.js) is separate
  * from this module and is not changed.
+ *
+ * CONSUMER AND EXPOSED INTERFACE:
+ * Loaded by [[Pengguna:Rachmat04/Tengu.js]]. Exposes
+ * window.TenguEmergency.create(deps), which returns an object containing
+ * LOCKDOWN_MAINTAINER, getLockdownState(fresh), lockdownPermits(state) and
+ * ensureTenguAllowed(fresh).
+ *
+ * DEPENDENCIES:
+ * MediaWiki globals (mw) and the helpers passed in by Tengu.js:
+ * createDialog(opts) and makeBtn(label, variant).
  *
  * REPOSITORY:
  * https://github.com/Rachmat04/Tengu

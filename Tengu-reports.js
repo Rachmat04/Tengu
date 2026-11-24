@@ -8,13 +8,18 @@
  * Global sysops/Requests, Steward requests/Global, and Steward
  * requests/Permissions. Also provides foreignApiGet(), a GET wrapper for the
  * Meta-Wiki API that is shared with other modules through Tengu.js.
- * Consumed by Tengu.js; exposes window.TenguReports.create().
- *
- * The module has no dependencies on Tengu.js internals. It only uses the
- * MediaWiki globals (mw.loader, mw.ForeignApi).
- *
  * The report sections themselves (their interface, validation and call sites
  * in work()) stay in Tengu.js.
+ *
+ * CONSUMER AND EXPOSED INTERFACE:
+ * Loaded by [[Pengguna:Rachmat04/Tengu.js]]. Exposes
+ * window.TenguReports.create(), which returns an object containing
+ * PERM_REQUEST_TYPES, foreignApiGet, submitGlobalSysopsReport,
+ * submitSRGReport and submitPermissionRequest.
+ *
+ * DEPENDENCIES:
+ * MediaWiki globals (mw.loader, mw.ForeignApi). No dependencies on Tengu.js
+ * internals.
  *
  * REPOSITORY:
  * https://github.com/Rachmat04/Tengu

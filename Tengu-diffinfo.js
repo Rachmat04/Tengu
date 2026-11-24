@@ -7,14 +7,20 @@
  * Provides the "more information" line added below each side's title box on
  * diff pages: revision ID, size (with the size change and elapsed time on the
  * newer side), and ORES score where available.
- * Consumed by Tengu.js; exposes window.TenguDiffInfo.create(deps).
+ * The .tng-diffinfo-line style stays in Tengu.css.
  *
+ * CONSUMER AND EXPOSED INTERFACE:
+ * Loaded by [[Pengguna:Rachmat04/Tengu.js]]. Exposes
+ * window.TenguDiffInfo.create(deps), which returns the async function
+ * fetchAndShowDiffInfo(oldRevIdRaw, newRevIdRaw).
+ *
+ * DEPENDENCIES:
+ * Browser DOM APIs and the apiGet(params) helper passed in by Tengu.js.
+ *
+ * ATTRIBUTION:
  * Adapted from User:BrandonXLF/MoreDiffInfo.js (see README credits). The ORES
  * status icons and the help-page link of the original are not included, and
  * separators use Tengu's middle-dot convention.
- *
- * The module depends only on the MediaWiki globals (mw) and the apiGet helper
- * passed in by Tengu.js. The .tng-diffinfo-line style stays in Tengu.css.
  *
  * REPOSITORY:
  * https://github.com/Rachmat04/Tengu

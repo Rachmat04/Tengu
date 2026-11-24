@@ -8,15 +8,18 @@
  * rewrites recognised wiki URLs and diff URLs inside a reason string into
  * wikilinks, and optionally adds an interwiki prefix for text that is
  * submitted to Meta-Wiki.
- * Consumed by Tengu.js; exposes window.TenguLinkFix.create().
+ * The .tng-linkfix-row, .tng-linkfix-btn and tng-linkfix-pulse styles stay in
+ * Tengu.css.
  *
- * The module has no dependencies on Tengu.js internals. It uses only the DOM.
- * It returns deriveInterwikiPrefix(server), correctReasonLinks(text, forMeta),
+ * CONSUMER AND EXPOSED INTERFACE:
+ * Loaded by [[Pengguna:Rachmat04/Tengu.js]]. Exposes
+ * window.TenguLinkFix.create(), which returns an object containing
+ * deriveInterwikiPrefix(server), correctReasonLinks(text, forMeta),
  * makeLinkFixButton(inputEl, forMeta) and
  * wrapReasonInputWithLinkFix(inputEl, forMeta).
  *
- * The .tng-linkfix-row, .tng-linkfix-btn and tng-linkfix-pulse styles stay in
- * Tengu.css.
+ * DEPENDENCIES:
+ * Browser DOM APIs. No dependencies on Tengu.js internals.
  *
  * REPOSITORY:
  * https://github.com/Rachmat04/Tengu

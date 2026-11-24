@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * DOM and formatting helpers module
+ * All-in-one wiki moderation tool — DOM and formatting helpers module
  * ============================================================================
  * PURPOSE:
  * Provides standardised DOM element builders (form rows, inputs, selects,
@@ -9,7 +9,7 @@
  * collapsible sections), inline field validation helpers, and text/error
  * formatting utilities for Tengu.js.
  *
- * CONSUMER & EXPOSED INTERFACE:
+ * CONSUMER AND EXPOSED INTERFACE:
  * Loaded by [[Pengguna:Rachmat04/Tengu.js]] and exposed as
  * window.TenguDOM.create(), returning:
  *   - makeRow(labelText)

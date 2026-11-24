@@ -1,11 +1,18 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * All-in-one wiki moderation tool — User warning message definitions
+ * All-in-one wiki moderation tool — Warning messages module
  * ============================================================================
  * PURPOSE:
  * Provides warning message templates posted to a user's talk page.
- * Consumed by Tengu.js; exposes window.TenguWarn.get(useIndonesian).
+ *
+ * CONSUMER AND EXPOSED INTERFACE:
+ * Loaded by [[Pengguna:Rachmat04/Tengu.js]]. Exposes
+ * window.TenguWarn.get(useIndonesian), which returns an object containing the
+ * WARN_MESSAGES array.
+ *
+ * DEPENDENCIES:
+ * MediaWiki globals (mw.config), used by the wiki-language templates.
  *
  * REPOSITORY:
  * https://github.com/Rachmat04/Tengu

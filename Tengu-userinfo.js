@@ -10,14 +10,19 @@
  * with block and global lock/block status, and the block, move, rights, and
  * abuse filter logs for a target user in a read-only dialogue panel. Each
  * section loads independently, so a failure in one does not affect the others.
- * Consumed by Tengu.js; exposes window.TenguUserInfo.create(deps).
  *
- * The module depends only on the MediaWiki globals (mw) and the helpers
- * passed in by Tengu.js: createDialog(opts), makeDisplaySection(title, icon),
- * makeBtn(label, variant), apiGet(params), foreignApiGet(params) and
- * formatApiError(err). create(deps) returns the async function
+ * CONSUMER AND EXPOSED INTERFACE:
+ * Loaded by [[Pengguna:Rachmat04/Tengu.js]]. Exposes
+ * window.TenguUserInfo.create(deps), which returns the async function
  * getUserInfo(username, isMultiTarget).
  *
+ * DEPENDENCIES:
+ * MediaWiki globals (mw), the XTools API (through fetch), and the helpers
+ * passed in by Tengu.js: createDialog(opts), makeDisplaySection(title, icon),
+ * makeBtn(label, variant), apiGet(params), foreignApiGet(params) and
+ * formatApiError(err).
+ *
+ * ATTRIBUTION:
  * The account info feature (gender, account age, edit count, last edit) is
  * adapted from User:PleaseStand/userinfo.js; see the README credits.
  *
