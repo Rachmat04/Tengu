@@ -1,3 +1,10 @@
+## 2.252.0
+
+### Changed
+
+* Modularisation: Extracted the shared MediaWiki API instance, promisified wrappers (`api`, `apiGet`, `apiPost`, `apiRollback`), and `pageExists()` out of `Tengu.js` into a standalone module at `Pengguna:Rachmat04/Tengu-api.js` (`window.TenguAPI.create`). The module has no dependencies on `Tengu.js` internals and uses only `mw.Api`.
+* Loader & initialisation: Updated `Tengu.js` to load `Tengu-api.js` after `Tengu-dom.js` and to obtain the helpers from the factory in [Section 05]. The names are unchanged, so every call site is unchanged.
+
 ## 2.251.0
 
 ### Changed

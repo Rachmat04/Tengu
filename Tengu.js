@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.251.0
+ * Version 2.252.0
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -101,6 +101,11 @@ $(function () {
       .then(function () {
         return mw.loader.getScript(
           "https://id.wikipedia.org/w/index.php?title=Pengguna:Rachmat04/Tengu-dom.js&action=raw&ctype=text/javascript",
+        );
+      })
+      .then(function () {
+        return mw.loader.getScript(
+          "https://id.wikipedia.org/w/index.php?title=Pengguna:Rachmat04/Tengu-api.js&action=raw&ctype=text/javascript",
         );
       })
       .then(function () {
@@ -370,56 +375,12 @@ $(function () {
 
         // ============================================================================
         // [Section 05] Shared API instance and promisified wrappers
-        // A single mw.Api instance is shared across work() and getUserInfo().
-        // Promisified wrappers convert jQuery Deferred objects to standard ES6 promises,
-        // defined once here rather than duplicated inside each function.
+        // MOVED to [[Tengu-api.js]]. The module has no dependencies on Tengu.js
+        // internals, so the factory takes no arguments. The names are unchanged,
+        // so every call site is unchanged.
         // ============================================================================
-        const api = new mw.Api();
-
-        const apiGet = (params) =>
-          new Promise((resolve, reject) => {
-            api
-              .get(params)
-              .done(resolve)
-              .fail((code, err) =>
-                reject(
-                  code +
-                    (err && err.error && err.error.info
-                      ? ": " + err.error.info
-                      : ""),
-                ),
-              );
-          });
-
-        const apiPost = (params) =>
-          new Promise((resolve, reject) => {
-            api
-              .postWithEditToken(params)
-              .done(resolve)
-              .fail((code, err) =>
-                reject(
-                  code +
-                    (err && err.error && err.error.info
-                      ? ": " + err.error.info
-                      : ""),
-                ),
-              );
-          });
-
-        const apiRollback = (title, user, params) =>
-          new Promise((resolve, reject) => {
-            api
-              .rollback(title, user, params)
-              .done(resolve)
-              .fail((code, err) =>
-                reject(
-                  code +
-                    (err && err.error && err.error.info
-                      ? ": " + err.error.info
-                      : ""),
-                ),
-              );
-          });
+        const { api, apiGet, apiPost, apiRollback, pageExists } =
+          window.TenguAPI.create();
 
         // Cached check for whether the current user holds the rollback
         // right on this wiki, fetched once and reused for the rest of the
@@ -579,26 +540,8 @@ $(function () {
             : `${verbEn} [[Special:Diff/${diffLinkTarget}|edit]] by ${targetUser}`;
         }
 
-        // Checks whether a page currently exists. Used before posting a
-        // notification to a talk page: an existing page may already contain
-        // earlier discussion, so two blank lines keep the new notice visually
-        // separated from it, but a page that does not exist yet should not
-        // start with leading blank lines.
-        const pageExists = async (title) => {
-          try {
-            const data = await apiGet({
-              action: "query",
-              titles: title,
-              formatversion: 2,
-            });
-            const page = data.query && data.query.pages && data.query.pages[0];
-            return !!(page && !page.missing);
-          } catch (e) {
-            // If the check fails, assume the page exists so the existing
-            // separator behaviour is kept rather than risking a malformed post.
-            return true;
-          }
-        };
+        // pageExists() was MOVED to [[Tengu-api.js]] (see the destructuring
+        // call at the top of this section).
 
         // Cached site information lookups (redirect magic words, File
         // namespace aliases, Category namespace ID and aliases). MOVED to
