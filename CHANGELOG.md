@@ -1,3 +1,10 @@
+## 2.253.0
+
+### Changed
+
+* Modularisation: Extracted the overlay stack, theme persistence, keyboard close/fail-safe listeners, and modal dialogue builder (`getTheme`, `setTheme`, `createOverlay`, `createDialog`) out of `Tengu.js` into a standalone module at `Pengguna:Rachmat04/Tengu-dialog.js` (`window.TenguDialog.create`). The module has no dependencies on `Tengu.js` internals and uses only `mw.html.escape` and browser DOM/Storage APIs.
+* Loader & initialisation: Updated `Tengu.js` to load `Tengu-dialog.js` after `Tengu-api.js` and to obtain the helpers from the factory in [Section 02 & 03]. Added `overlay.detach()` for detaching the progress dialogue without firing `onClose` on resume, and updated the theme toggle button in `init()` to read state via `getTheme()`.
+
 ## 2.252.0
 
 ### Changed

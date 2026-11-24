@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Tengu — 天狗
- * Version 2.252.0
+ * Version 2.253.0
  * All-in-one wiki moderation tool
  * ============================================================================
  * PURPOSE:
@@ -109,6 +109,11 @@ $(function () {
         );
       })
       .then(function () {
+        return mw.loader.getScript(
+          "https://id.wikipedia.org/w/index.php?title=Pengguna:Rachmat04/Tengu-dialog.js&action=raw&ctype=text/javascript",
+        );
+      })
+      .then(function () {
         const INDONESIAN_LANGS = new Set([
           "id",
           "ace",
@@ -162,27 +167,9 @@ $(function () {
         // ============================================================================
         let config = {};
         let inited = false;
-        let escListenerBound = false; // Escape key listener registered once on first overlay
         // Stores progress state when the user aborts a run so work() can resume
         // from where it stopped without repeating completed steps.
         let resumeState = null;
-
-        // Light/dark theme. Defaults to a saved preference if one exists,
-        // otherwise falls back to the browser's prefers-color-scheme setting.
-        let theme = "light";
-        try {
-          const storedTheme = localStorage.getItem("tengu-theme");
-          if (storedTheme === "dark" || storedTheme === "light") {
-            theme = storedTheme;
-          } else if (
-            window.matchMedia &&
-            window.matchMedia("(prefers-color-scheme: dark)").matches
-          ) {
-            theme = "dark";
-          }
-        } catch (e) {
-          // Storage unavailable; keep the "light" default.
-        }
 
         // ============================================================================
         // [Section 01] Stylesheet
@@ -191,151 +178,13 @@ $(function () {
         // ============================================================================
 
         // ============================================================================
-        // [Section 02] Overlay stack
-        // Tracks active overlays. The global Escape key listener is registered once,
-        // lazily, the first time an overlay is created — not at script load time.
+        // [Section 02 & 03] Overlay stack, theme state, and dialogue builder
+        // MOVED to [[Tengu-dialog.js]]. The module has no dependencies on Tengu.js
+        // internals, so the factory takes no arguments. The helper names are
+        // unchanged, so every call site is unchanged.
         // ============================================================================
-        const overlayStack = [];
-
-        function createOverlay() {
-          const overlay = document.createElement("div");
-          overlay.className =
-            "tng-overlay" + (theme === "dark" ? " tng-theme-dark" : "");
-          document.body.appendChild(overlay);
-
-          overlay.closeHandler = function () {
-            overlay.remove();
-            const idx = overlayStack.indexOf(overlay);
-            if (idx > -1) overlayStack.splice(idx, 1);
-          };
-
-          overlayStack.push(overlay);
-
-          // Register the Escape key listener once, the first time an overlay is created.
-          // Escape closes only the topmost overlay/dialogue, same as before.
-          //
-          // A separate fail-safe shortcut, Ctrl+Alt+Shift+Backspace, is also
-          // registered here. Unlike Escape, it force-closes every open Tengu
-          // overlay in one step, regardless of which dialogue (if any) is
-          // currently focused, and does not rely on any section-specific
-          // handler being responsive. This is intended only as an emergency
-          // exit if Tengu becomes unresponsive; it is not part of normal
-          // operation. The key combination was chosen because it is unlikely
-          // to collide with MediaWiki or browser shortcuts.
-          if (!escListenerBound) {
-            escListenerBound = true;
-            document.addEventListener(
-              "keydown",
-              function (e) {
-                if (e.key === "Escape" || e.keyCode === 27) {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  const top = overlayStack[overlayStack.length - 1];
-                  if (top) {
-                    top.closeHandler();
-                  }
-                  return;
-                }
-                // Fail-safe force-close: Ctrl+Alt+Shift+Backspace.
-                if (
-                  e.ctrlKey &&
-                  e.altKey &&
-                  e.shiftKey &&
-                  (e.key === "Backspace" || e.keyCode === 8)
-                ) {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  // Force-close every open overlay, topmost first, without
-                  // relying on each overlay's own closeHandler chain being
-                  // in a working state — remove directly from the DOM and
-                  // clear the stack.
-                  while (overlayStack.length) {
-                    const ov = overlayStack.pop();
-                    try {
-                      if (ov.closeHandler) ov.closeHandler();
-                      else ov.remove();
-                    } catch (err) {
-                      // If closeHandler itself is broken, fall back to a
-                      // direct DOM removal so the fail-safe still works.
-                      ov.remove();
-                    }
-                  }
-                }
-              },
-              true,
-            );
-          }
-
-          return overlay;
-        }
-
-        // Updates the active theme, persists the choice, and immediately
-        // re-themes every currently open dialogue (overlayStack may hold
-        // more than one if a confirmation or info dialogue is stacked above
-        // the main one).
-        function setTheme(newTheme) {
-          theme = newTheme === "dark" ? "dark" : "light";
-          try {
-            localStorage.setItem("tengu-theme", theme);
-          } catch (e) {
-            // Storage unavailable (e.g. private browsing); the choice still
-            // applies for the rest of this session, just not persisted.
-          }
-          for (const ov of overlayStack) {
-            ov.classList.add("tng-theme-transitioning");
-            ov.classList.toggle("tng-theme-dark", theme === "dark");
-            setTimeout(function () {
-              ov.classList.remove("tng-theme-transitioning");
-            }, 300);
-          }
-        }
-
-        // ============================================================================
-        // [Section 03] Dialogue builder
-        // Utility functions to create layout layers and build primary dialogue modal frames.
-        // ============================================================================
-        function createDialog(opts) {
-          const overlay = createOverlay();
-          if (opts && opts.onClose) {
-            const orig = overlay.closeHandler;
-            overlay.closeHandler = function () {
-              orig();
-              opts.onClose();
-            };
-          }
-          const dialog = document.createElement("div");
-          dialog.className =
-            "tng-dialog" + (opts && opts.child ? " tng-dialog-child" : "");
-          const header = document.createElement("div");
-          header.className = "tng-dialog-header";
-          const headerLeft = document.createElement("div");
-          headerLeft.className = "tng-dialog-header-left";
-          headerLeft.innerHTML =
-            (opts && opts.icon ? opts.icon + " " : "⛩️ ") +
-            mw.html.escape((opts && opts.title) || "Tengu");
-          const closeBtn = document.createElement("button");
-          closeBtn.className = "tng-dialog-close";
-          closeBtn.textContent = "✕";
-          closeBtn.title = "Close";
-          closeBtn.addEventListener("click", () => overlay.closeHandler());
-          header.appendChild(headerLeft);
-          header.appendChild(closeBtn);
-          const body = document.createElement("div");
-          body.className = "tng-dialog-body";
-          const footer = document.createElement("div");
-          footer.className = "tng-dialog-footer";
-          dialog.appendChild(header);
-          dialog.appendChild(body);
-          dialog.appendChild(footer);
-          overlay.appendChild(dialog);
-          // Intentionally no click-outside-to-close handler: clicking
-          // anywhere outside the dialogue must not close or terminate
-          // Tengu, so in-progress configuration or a running task is never
-          // lost to an accidental outside click. Close via the ✕ button,
-          // Escape, or (if unresponsive) the Ctrl+Alt+Shift+Backspace
-          // fail-safe registered in createOverlay().
-          return { overlay, dialog, body, footer };
-        }
+        const { getTheme, setTheme, createDialog } =
+          window.TenguDialog.create();
 
         // ============================================================================
         // [Section 04] DOM helpers
@@ -5029,9 +4878,7 @@ $(function () {
             btnResume.addEventListener("click", function () {
               // Remove the progress overlay without triggering the onClose page-reload
               // handler, so the new work() run can open its own fresh overlay.
-              overlay.remove();
-              const idx = overlayStack.indexOf(overlay);
-              if (idx > -1) overlayStack.splice(idx, 1);
+              overlay.detach();
               work();
             });
             footer.insertBefore(btnResume, btnClose);
@@ -5510,7 +5357,7 @@ $(function () {
           const btnThemeToggle = makeBtn("🌙", "quiet");
           btnThemeToggle.className += " tng-btn-sm tng-theme-toggle-btn";
           function updateThemeToggleBtn() {
-            if (theme === "dark") {
+            if (getTheme() === "dark") {
               btnThemeToggle.textContent = "☀️";
               btnThemeToggle.title = "Switch to light mode";
             } else {
@@ -5520,7 +5367,7 @@ $(function () {
           }
           updateThemeToggleBtn();
           btnThemeToggle.addEventListener("click", function () {
-            setTheme(theme === "dark" ? "light" : "dark");
+            setTheme(getTheme() === "dark" ? "light" : "dark");
             updateThemeToggleBtn();
           });
           fieldMode.appendChild(btnThemeToggle);
