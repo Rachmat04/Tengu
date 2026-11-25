@@ -2,7 +2,7 @@
  * ============================================================================
  * Tengu — 天狗
  * All-in-one wiki moderation tool — Main script
- * Version 2.264.0
+ * Version 2.265.0
  * ============================================================================
  * PURPOSE:
  * An all-in-one moderation script for MediaWiki that streamlines user blocking,
@@ -180,6 +180,11 @@ $(function () {
       .then(function () {
         return mw.loader.getScript(
           "https://id.wikipedia.org/w/index.php?title=Pengguna:Rachmat04/Tengu-unblock.js&action=raw&ctype=text/javascript",
+        );
+      })
+      .then(function () {
+        return mw.loader.getScript(
+          "https://id.wikipedia.org/w/index.php?title=Pengguna:Rachmat04/Tengu-undelete.js&action=raw&ctype=text/javascript",
         );
       })
       .then(function () {
@@ -479,6 +484,19 @@ $(function () {
           },
         );
 
+        // Page undeletion execution and creator talk-page notification helper.
+        // MOVED to [[Tengu-undelete.js]]. The module receives the shared helpers
+        // below and returns the core function wrapped inside work().
+        const { undeleteTarget: undeleteTargetCore } =
+          window.TenguUndelete.create({
+            apiGet: apiGet,
+            apiPost: apiPost,
+            pageExists: pageExists,
+            withToolTag: withToolTag,
+            formatApiError: formatApiError,
+            useIndonesian: useIndonesian,
+          });
+
         // The Meta-Wiki report helpers (submitGlobalSysopsReport(),
         // foreignApiGet(), submitSRGReport(), PERM_REQUEST_TYPES and
         // submitPermissionRequest()) were MOVED to [[Tengu-reports.js]]
@@ -738,10 +756,6 @@ $(function () {
             (useIndonesian
               ? "Notifikasi: Pemberitahuan pembatalan suntingan"
               : "Notification: Edit reversion notice") + toolTag;
-          const notifySummaryUndelete =
-            (useIndonesian
-              ? "Notifikasi: Pemberitahuan pemulihan halaman"
-              : "Notification: Page restoration notice") + toolTag;
           const notifySummaryMovePage =
             (useIndonesian
               ? "Notifikasi: Pemberitahuan pemindahan halaman"
@@ -864,6 +878,19 @@ $(function () {
               addLog: addLog,
               onUnblocked: function () {
                 stats.unblock++;
+              },
+              toolTag: toolTag,
+            });
+          }
+
+          // Page undeletion helper (undeleteTargetCore) was MOVED to
+          // [[Tengu-undelete.js]] (see the destructuring call in Section 05).
+          function undeleteTarget(targetVal) {
+            return undeleteTargetCore(targetVal, config, {
+              addLog: addLog,
+              onUndeleted: function () {
+                stats.undelete++;
+                updateStatusDisplay();
               },
               toolTag: toolTag,
             });
@@ -1383,86 +1410,7 @@ $(function () {
               config.mode === "page" &&
               !isAborted
             ) {
-              try {
-                await apiPost({
-                  action: "undelete",
-                  title: targetVal,
-                  reason: withToolTag(config.undeleteReason, toolTag),
-                });
-                addLog(`[Undelete] Successfully restored page: "${targetVal}"`);
-                stats.undelete++;
-                updateStatusDisplay();
-
-                if (config.notifyUndelete) {
-                  try {
-                    const creatorData = await apiGet({
-                      action: "query",
-                      prop: "revisions",
-                      titles: targetVal,
-                      rvdir: "newer",
-                      rvlimit: 1,
-                      rvprop: "user",
-                      formatversion: 2,
-                    });
-                    const cp =
-                      creatorData.query &&
-                      creatorData.query.pages &&
-                      creatorData.query.pages[0];
-                    const pageCreator =
-                      (cp &&
-                        !cp.missing &&
-                        cp.revisions &&
-                        cp.revisions[0] &&
-                        cp.revisions[0].user) ||
-                      null;
-                    const currentUser = mw.config.get("wgUserName") || "";
-                    if (
-                      pageCreator &&
-                      pageCreator.toLowerCase() !== currentUser.toLowerCase()
-                    ) {
-                      const talkTitle = new mw.Title(
-                        pageCreator,
-                        3,
-                      ).getPrefixedText();
-                      const undeleteReasonNotice =
-                        config.undeleteReason && config.undeleteReason.trim()
-                          ? config.undeleteReason
-                          : useIndonesian
-                            ? "(tidak ada alasan diberikan)"
-                            : "(no reason given)";
-                      const talkExists = await pageExists(talkTitle);
-                      const notice = useIndonesian
-                        ? `== Pemberitahuan pemulihan halaman ==\nHalo ${pageCreator},\n\nHalaman "${targetVal}" yang Anda buat telah dipulihkan dengan alasan berikut: ${undeleteReasonNotice}.\n\nPemberitahuan ini dikirimkan secara otomatis. Silakan sampaikan pertanyaan atau keberatan ke halaman pembicaraan saya. ~~~~`
-                        : `== Page restoration notice ==\nDear ${pageCreator},\n\nThe page "${targetVal}" you created has been restored due to the following reason: ${undeleteReasonNotice}.\n\nThis notification was posted automatically. Please direct any questions or concerns to my user talk page. ~~~~`;
-                      await apiPost({
-                        action: "edit",
-                        title: talkTitle,
-                        appendtext: (talkExists ? "\n\n" : "") + notice,
-                        summary: notifySummaryUndelete,
-                        bot: true,
-                      });
-                      addLog(
-                        `[Notify] Undeletion notification posted to: "${talkTitle}"`,
-                      );
-                    } else if (pageCreator) {
-                      addLog(
-                        `[Notify] Skipped undeletion notification: page was created and restored by the same user`,
-                        "warn",
-                      );
-                    }
-                  } catch (e) {
-                    addLog(
-                      `[Notify] Failed to post undeletion notification: ${formatApiError(e)}`,
-                      "warn",
-                    );
-                  }
-                }
-              } catch (e) {
-                addLog(
-                  `[Undelete] Failed to restore "${targetVal}": ${formatApiError(e)}`,
-                  true,
-                );
-              }
+              await undeleteTarget(targetVal);
               rs.undeleteDone = true;
             }
 
