@@ -1,3 +1,10 @@
+## 2.262.0
+
+### Changed
+
+* Modularisation: Extracted the completion summary builder (`buildCompletionSummary`) out of `work()` in `Tengu.js` into a standalone module at `Pengguna:Rachmat04/Tengu-summary.js` (`window.TenguSummary.create`). The module is pure and has no dependencies.
+* Loader & initialisation: Updated `Tengu.js` to load `Tengu-summary.js` after `Tengu-protect.js` and to obtain the function from the factory in [Section 05]. The name is unchanged, so the call at the end of `work()` is unchanged.
+
 ## 2.261.0
 
 ### Changed

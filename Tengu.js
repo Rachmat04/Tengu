@@ -2,7 +2,7 @@
  * ============================================================================
  * Tengu — 天狗
  * All-in-one wiki moderation tool — Main script
- * Version 2.261.0
+ * Version 2.262.0
  * ============================================================================
  * PURPOSE:
  * An all-in-one moderation script for MediaWiki that streamlines user blocking,
@@ -165,6 +165,11 @@ $(function () {
       .then(function () {
         return mw.loader.getScript(
           "https://id.wikipedia.org/w/index.php?title=Pengguna:Rachmat04/Tengu-protect.js&action=raw&ctype=text/javascript",
+        );
+      })
+      .then(function () {
+        return mw.loader.getScript(
+          "https://id.wikipedia.org/w/index.php?title=Pengguna:Rachmat04/Tengu-summary.js&action=raw&ctype=text/javascript",
         );
       })
       .then(function () {
@@ -390,6 +395,12 @@ $(function () {
           useIndonesian: useIndonesian,
         });
 
+        // Completion summary builder. buildCompletionSummary() was MOVED to
+        // [[Tengu-summary.js]]. The module is pure and has no dependencies, so
+        // the factory takes no arguments. The name is unchanged, so the call
+        // at the end of work() is unchanged.
+        const { buildCompletionSummary } = window.TenguSummary.create();
+
         // Pure wikitext helpers. removeBalancedFileEmbeds() was MOVED to
         // [[Tengu-wikitext.js]]. The module has no dependencies, so the
         // factory takes no arguments. The name is unchanged, so the call in
@@ -563,59 +574,8 @@ $(function () {
           // can be adjusted in one place.
           const THROTTLE_MS = 50;
 
-          // Builds a concise, natural-language summary of completed actions,
-          // including only the operations that actually occurred (non-zero
-          // counts). Used once at the end of a run, replacing the previous
-          // running summary line shown throughout processing.
-          const buildCompletionSummary = function (
-            statsObj,
-            aborted,
-            revertMethodTxt,
-          ) {
-            const parts = [];
-            const add = function (count, singular, plural) {
-              if (count > 0)
-                parts.push(count + " " + (count === 1 ? singular : plural));
-            };
-            add(
-              statsObj.rollback,
-              "edit " + revertMethodTxt,
-              "edits " + revertMethodTxt,
-            );
-            add(statsObj.delete, "page deleted", "pages deleted");
-            add(statsObj.undelete, "page undeleted", "pages undeleted");
-            add(statsObj.move, "page moved", "pages moved");
-            add(statsObj.unlink, "link removed", "links removed");
-            add(statsObj.redirfix, "redirect fixed", "redirects fixed");
-            add(statsObj.recat, "page recategorised", "pages recategorised");
-            add(
-              statsObj.uncategorize,
-              "page uncategorised",
-              "pages uncategorised",
-            );
-            add(statsObj.protect, "page protected", "pages protected");
-            add(statsObj.revdel, "revision hidden", "revisions hidden");
-            add(statsObj.report, "report filed", "reports filed");
-            add(statsObj.merge, "item merged", "items merged");
-            add(statsObj.block, "account blocked", "accounts blocked");
-            add(statsObj.unblock, "account unblocked", "accounts unblocked");
-            add(statsObj.error, "error", "errors");
-
-            if (!parts.length) {
-              return aborted
-                ? "Aborted: no operations completed."
-                : "Completed: no operations performed.";
-            }
-            const joined =
-              parts.length === 1
-                ? parts[0]
-                : parts.length === 2
-                  ? parts[0] + " and " + parts[1]
-                  : parts.slice(0, -1).join(", ") +
-                    ", and " +
-                    parts[parts.length - 1];
-            return (aborted ? "Aborted: " : "Completed: ") + joined + ".";
-          };
+          // buildCompletionSummary() was MOVED to [[Tengu-summary.js]] (see
+          // the destructuring call in Section 05).
 
           // Build progress UI
           const { overlay, body, footer } = createDialog({
