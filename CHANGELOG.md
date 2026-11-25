@@ -1,3 +1,10 @@
+## 2.260.0
+
+### Changed
+
+* Modularisation: Extracted the subpage move result logger and redirect verifier (`logMoveSubpageResults`) out of `work()` in `Tengu.js` into a standalone module at `Pengguna:Rachmat04/Tengu-subpages.js` (`window.TenguSubpages.create`). The module depends only on the `apiGet` and `formatApiError` helpers passed in by `Tengu.js`.
+* Loader & initialisation: Updated `Tengu.js` to load `Tengu-subpages.js` after `Tengu-redirects.js` and to obtain the function from the factory in [Section 05], wrapped inside `work()` with the per-run logging and statistics callbacks so existing call sites are unchanged.
+
 ## 2.259.0
 
 ### Changed

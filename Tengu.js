@@ -2,7 +2,7 @@
  * ============================================================================
  * Tengu — 天狗
  * All-in-one wiki moderation tool — Main script
- * Version 2.259.0
+ * Version 2.260.0
  * ============================================================================
  * PURPOSE:
  * An all-in-one moderation script for MediaWiki that streamlines user blocking,
@@ -155,6 +155,11 @@ $(function () {
       .then(function () {
         return mw.loader.getScript(
           "https://id.wikipedia.org/w/index.php?title=Pengguna:Rachmat04/Tengu-redirects.js&action=raw&ctype=text/javascript",
+        );
+      })
+      .then(function () {
+        return mw.loader.getScript(
+          "https://id.wikipedia.org/w/index.php?title=Pengguna:Rachmat04/Tengu-subpages.js&action=raw&ctype=text/javascript",
         );
       })
       .then(function () {
@@ -353,6 +358,15 @@ $(function () {
             getRedirectMagicWords: getRedirectMagicWords,
             formatApiError: formatApiError,
             useIndonesian: useIndonesian,
+          });
+
+        // Subpage move result logging and redirect verification helper. MOVED to
+        // [[Tengu-subpages.js]]. The module receives the shared helpers below
+        // and returns the core function wrapped inside work().
+        const { logMoveSubpageResults: logMoveSubpageResultsCore } =
+          window.TenguSubpages.create({
+            apiGet: apiGet,
+            formatApiError: formatApiError,
           });
 
         // Pure wikitext helpers. removeBalancedFileEmbeds() was MOVED to
@@ -868,76 +882,17 @@ $(function () {
             );
           }
 
-          // Logs the per-subpage results returned by action=move when
-          // movesubpages is used. The API returns move.subpages (and
-          // move["subpages-talk"] when talk pages are moved) as entries of
-          // { from, to } on success or { from, error } on failure. Only
-          // entries without an error are counted as moved. When redirects
-          // are not suppressed, the old titles of moved subpages are then
-          // checked, and a warning is logged for any title that has no
-          // redirect. Never throws, so a logging problem cannot make a
-          // successful move look failed.
-          async function logMoveSubpageResults(moveResult, noRedirect) {
-            try {
-              const mv = moveResult && moveResult.move;
-              if (!mv) return;
-              const groups = [
-                { list: mv.subpages, label: "subpage" },
-                { list: mv["subpages-talk"], label: "subpage talk page" },
-              ];
-              const movedFrom = [];
-              for (const g of groups) {
-                if (!Array.isArray(g.list)) continue;
-                for (const sp of g.list) {
-                  if (sp && sp.error) {
-                    const info =
-                      sp.error.info || sp.error.code || String(sp.error);
-                    addLog(
-                      `[Move] Failed to move ${g.label} "${sp.from || "?"}": ${info}`,
-                      true,
-                    );
-                  } else if (sp && sp.from && sp.to) {
-                    addLog(
-                      `[Move] Moved ${g.label} "${sp.from}" to "${sp.to}"`,
-                    );
-                    stats.move++;
-                    movedFrom.push(sp.from);
-                  }
-                }
-              }
-              updateStatusDisplay();
-              if (noRedirect || !movedFrom.length) return;
-
-              // Check that a redirect now exists at each old title.
-              for (let i = 0; i < movedFrom.length; i += 50) {
-                const chunk = movedFrom.slice(i, i + 50);
-                const data = await apiGet({
-                  action: "query",
-                  titles: chunk.join("|"),
-                  prop: "info",
-                  formatversion: 2,
-                });
-                const pages = (data.query && data.query.pages) || [];
-                for (const p of pages) {
-                  if (p.missing) {
-                    addLog(
-                      `[Move] No redirect was left at "${p.title}" although redirect suppression was not selected`,
-                      "warn",
-                    );
-                  } else if (!p.redirect) {
-                    addLog(
-                      `[Move] "${p.title}" exists but is not a redirect`,
-                      "warn",
-                    );
-                  }
-                }
-              }
-            } catch (e) {
-              addLog(
-                `[Move] Could not verify subpage moves: ${formatApiError(e)}`,
-                "warn",
-              );
-            }
+          // Subpage move result logger and redirect verifier
+          // (logMoveSubpageResultsCore) was MOVED to [[Tengu-subpages.js]]
+          // (see the destructuring call in Section 05).
+          function logMoveSubpageResults(moveResult, noRedirect) {
+            return logMoveSubpageResultsCore(moveResult, noRedirect, {
+              addLog: addLog,
+              onSubpageMoved: function () {
+                stats.move++;
+                updateStatusDisplay();
+              },
+            });
           }
 
           // Category member helpers (moveCategoryMembersCore and
