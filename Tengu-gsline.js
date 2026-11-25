@@ -16,9 +16,6 @@
  * MediaWiki ResourceLoader module "mediawiki.util" (mw.util.isIPAddress) and
  * the getInterwikiPrefix helper passed in by Tengu.js.
  *
- * ATTRIBUTION:
- * Based on User:WhitePhosphorus/all-in-one (https://meta.wikimedia.org/wiki/User:WhitePhosphorus/all-in-one).
- *
  * REPOSITORY:
  * https://github.com/Rachmat04/Tengu
  * ============================================================================

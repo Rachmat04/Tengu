@@ -1,3 +1,10 @@
+## 2.264.0
+
+### Changed
+
+* Modularisation: Extracted the account unblock execution and talk-page notification logic (`unblockTarget`) out of `work()` in `Tengu.js` into a standalone module at `Pengguna:Rachmat04/Tengu-unblock.js` (`window.TenguUnblock.create`). The module depends only on `mw.Title` and the `apiPost`, `pageExists`, `withToolTag`, `formatApiError`, and `useIndonesian` helpers passed in by `Tengu.js`.
+* Loader & initialisation: Updated `Tengu.js` to load `Tengu-unblock.js` after `Tengu-gsline.js` and to obtain the function from the factory in [Section 05], wrapped inside `work()` with `config` and the per-run logging and statistics callbacks so the call site in the targets loop is unchanged.
+
 ## 2.263.0
 
 ### Changed

@@ -2,7 +2,7 @@
  * ============================================================================
  * Tengu — 天狗
  * All-in-one wiki moderation tool — Main script
- * Version 2.263.0
+ * Version 2.264.0
  * ============================================================================
  * PURPOSE:
  * An all-in-one moderation script for MediaWiki that streamlines user blocking,
@@ -175,6 +175,11 @@ $(function () {
       .then(function () {
         return mw.loader.getScript(
           "https://id.wikipedia.org/w/index.php?title=Pengguna:Rachmat04/Tengu-gsline.js&action=raw&ctype=text/javascript",
+        );
+      })
+      .then(function () {
+        return mw.loader.getScript(
+          "https://id.wikipedia.org/w/index.php?title=Pengguna:Rachmat04/Tengu-unblock.js&action=raw&ctype=text/javascript",
         );
       })
       .then(function () {
@@ -460,6 +465,19 @@ $(function () {
           window.TenguGSLine.create({
             getInterwikiPrefix: getInterwikiPrefix,
           });
+
+        // Account unblock execution and talk-page notification helper. MOVED
+        // to [[Tengu-unblock.js]]. The module receives the shared helpers below
+        // and returns the core function wrapped inside work().
+        const { unblockTarget: unblockTargetCore } = window.TenguUnblock.create(
+          {
+            apiPost: apiPost,
+            pageExists: pageExists,
+            withToolTag: withToolTag,
+            formatApiError: formatApiError,
+            useIndonesian: useIndonesian,
+          },
+        );
 
         // The Meta-Wiki report helpers (submitGlobalSysopsReport(),
         // foreignApiGet(), submitSRGReport(), PERM_REQUEST_TYPES and
@@ -837,6 +855,18 @@ $(function () {
           // (see the destructuring call in Section 05).
           function buildGSLineForTarget(target) {
             return buildGSLineForTargetCore(target, config);
+          }
+
+          // Account unblock helper (unblockTargetCore) was MOVED to
+          // [[Tengu-unblock.js]] (see the destructuring call in Section 05).
+          function unblockTarget(targetVal) {
+            return unblockTargetCore(targetVal, config, {
+              addLog: addLog,
+              onUnblocked: function () {
+                stats.unblock++;
+              },
+              toolTag: toolTag,
+            });
           }
 
           // removeBalancedFileEmbeds() was MOVED to [[Tengu-wikitext.js]] (see
@@ -1233,50 +1263,7 @@ $(function () {
               config.mode === "user" &&
               !isAborted
             ) {
-              try {
-                await apiPost({
-                  action: "unblock",
-                  user: targetVal,
-                  reason: withToolTag(config.unblockReason, toolTag),
-                });
-                addLog(`[Unblock] Successfully unblocked "${targetVal}"`);
-                stats.unblock++;
-
-                if (config.notifyUnblock) {
-                  const talkTitle = new mw.Title(
-                    targetVal,
-                    3,
-                  ).getPrefixedText();
-                  const notifySummaryUnblock =
-                    (useIndonesian
-                      ? "Notifikasi: Pemberitahuan pencabutan pemblokiran"
-                      : "Notification: Account unblock notice") + toolTag;
-                  const notice = useIndonesian
-                    ? `== Pemberitahuan pencabutan pemblokiran ==\nHalo ${targetVal},\n\nPemblokiran pada akun "${targetVal}" telah dicabut dengan alasan berikut: ${config.unblockReason}.\n\nPemberitahuan ini dikirimkan secara otomatis. Silakan sampaikan pertanyaan atau keberatan ke halaman pembicaraan saya. ~~~~`
-                    : `== Account unblock notice ==\nDear ${targetVal},\n\nThe block on the account "${targetVal}" has been lifted due to the following reason: ${config.unblockReason}.\n\nThis notification was posted automatically. Please direct any questions or concerns to my user talk page. ~~~~`;
-                  try {
-                    const talkExists = await pageExists(talkTitle);
-                    await apiPost({
-                      action: "edit",
-                      title: talkTitle,
-                      appendtext: (talkExists ? "\n\n" : "") + notice,
-                      summary: notifySummaryUnblock,
-                      bot: true,
-                    });
-                    addLog(`[Notify] Notification posted to: "${talkTitle}"`);
-                  } catch (e) {
-                    addLog(
-                      `[Notify] Failed to post unblock notification to "${talkTitle}": ${formatApiError(e)}`,
-                      "warn",
-                    );
-                  }
-                }
-              } catch (e) {
-                addLog(
-                  `[Unblock] Failed to unblock "${targetVal}": ${formatApiError(e)}`,
-                  true,
-                );
-              }
+              await unblockTarget(targetVal);
               rs.unblockDone = true;
             }
 
