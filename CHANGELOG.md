@@ -1,3 +1,10 @@
+## 2.258.0
+
+### Changed
+
+* Modularisation: Extracted the category member operations (`moveCategoryMembers` and `removeDeletedCategoryFromMembers`) out of `work()` in `Tengu.js` into a standalone module at `Pengguna:Rachmat04/Tengu-category.js` (`window.TenguCategory.create`). The module depends only on `mw.Title` and the `apiGet`, `apiPost`, `getCategoryNamespaceAliases`, `formatApiError`, and `useIndonesian` helpers passed in by `Tengu.js`.
+* Loader & initialisation: Updated `Tengu.js` to load `Tengu-category.js` after `Tengu-rights.js` and to obtain both functions from the factory in [Section 05], wrapped inside `work()` with the per-run logging, abort, and statistics callbacks so existing call sites are unchanged.
+
 ## 2.257.0
 
 ### Changed
