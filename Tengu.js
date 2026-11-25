@@ -2,7 +2,7 @@
  * ============================================================================
  * Tengu — 天狗
  * All-in-one wiki moderation tool — Main script
- * Version 2.258.0
+ * Version 2.259.0
  * ============================================================================
  * PURPOSE:
  * An all-in-one moderation script for MediaWiki that streamlines user blocking,
@@ -150,6 +150,11 @@ $(function () {
       .then(function () {
         return mw.loader.getScript(
           "https://id.wikipedia.org/w/index.php?title=Pengguna:Rachmat04/Tengu-category.js&action=raw&ctype=text/javascript",
+        );
+      })
+      .then(function () {
+        return mw.loader.getScript(
+          "https://id.wikipedia.org/w/index.php?title=Pengguna:Rachmat04/Tengu-redirects.js&action=raw&ctype=text/javascript",
         );
       })
       .then(function () {
@@ -337,6 +342,18 @@ $(function () {
           formatApiError: formatApiError,
           useIndonesian: useIndonesian,
         });
+
+        // Double-redirect helper for moved pages and talk pages. MOVED to
+        // [[Tengu-redirects.js]]. The module receives the shared helpers below
+        // and returns the core function wrapped inside work().
+        const { fixDoubleRedirectsForMove: fixDoubleRedirectsForMoveCore } =
+          window.TenguRedirects.create({
+            apiGet: apiGet,
+            apiPost: apiPost,
+            getRedirectMagicWords: getRedirectMagicWords,
+            formatApiError: formatApiError,
+            useIndonesian: useIndonesian,
+          });
 
         // Pure wikitext helpers. removeBalancedFileEmbeds() was MOVED to
         // [[Tengu-wikitext.js]]. The module has no dependencies, so the
@@ -829,126 +846,26 @@ $(function () {
             return notice.slice(0, idx) + sentence + notice.slice(idx);
           }
 
-          // Fixes double redirects pointing to oldTitle by updating them to
-          // point directly to newTitle. Shared by the main page and its
-          // associated talk page in the Move page sub-mode of the Move page
-          // section, since a redirect left behind at either title can leave
-          // a double redirect. labelSuffix (e.g. " (talk page)") is appended
-          // to log messages so it is clear which page a fixed redirect
-          // relates to; pass "" for the main page.
-          async function fixDoubleRedirectsForMove(
-            oldTitle,
-            newTitle,
-            labelSuffix,
-          ) {
-            try {
-              const drData = await apiGet({
-                action: "query",
-                list: "backlinks",
-                bltitle: oldTitle,
-                blfilterredir: "redirects",
-                bllimit: "max",
-                formatversion: 2,
-              });
-              const redirectPages =
-                (drData.query && drData.query.backlinks) || [];
-              if (!redirectPages.length) {
-                addLog(
-                  `[Move] No double redirects found pointing to${labelSuffix}: "${oldTitle}"`,
-                );
-                return;
-              }
-              // Detect the local wiki's redirect magic word(s) (e.g.
-              // "#REDIRECT", "#ALIH") rather than assuming English.
-              const redirectAliases = await getRedirectMagicWords();
-              const redirectAliasPattern = redirectAliases
-                .map(function (a) {
-                  return a.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-                })
-                .join("|");
-              for (const rdPage of redirectPages) {
-                if (isAborted) break;
-                try {
-                  const revData = await apiGet({
-                    action: "query",
-                    prop: "revisions",
-                    titles: rdPage.title,
-                    rvprop: "content",
-                    rvslots: "main",
-                    formatversion: 2,
-                  });
-                  const page =
-                    revData.query &&
-                    revData.query.pages &&
-                    revData.query.pages[0];
-                  const slot =
-                    page &&
-                    page.revisions &&
-                    page.revisions[0] &&
-                    page.revisions[0].slots &&
-                    page.revisions[0].slots.main;
-                  if (!slot) continue;
-                  const wikitext = slot.content;
-
-                  // Matches "#REDIRECT [[Old title]]", optionally followed
-                  // by a section anchor (#Section) or a piped display text,
-                  // and rewrites only the title portion, preserving whatever
-                  // follows it.
-                  const escapedOld = oldTitle
-                    .replace(/[.*+?^${}()|[\]\\]/g, "\\$&")
-                    .replace(/[ _]/g, "[ _]");
-                  const redirRe = new RegExp(
-                    "((?:" +
-                      redirectAliasPattern +
-                      ")\\s*\\[\\[)\\s*" +
-                      escapedOld +
-                      "\\s*(\\]\\]|\\||#)",
-                    "i",
-                  );
-                  if (!redirRe.test(wikitext)) continue;
-                  const newWikitext = wikitext.replace(
-                    redirRe,
-                    function (match, prefix, tail) {
-                      return prefix + newTitle + tail;
-                    },
-                  );
-                  if (newWikitext === wikitext) continue;
-
-                  await apiPost({
-                    action: "edit",
-                    title: rdPage.title,
-                    text: newWikitext,
-                    summary:
-                      (useIndonesian
-                        ? "Memperbaiki pengalihan ganda setelah pemindahan halaman: "
-                        : "Fixing double redirect following page move: ") +
-                      oldTitle +
-                      " → " +
-                      newTitle +
-                      toolTag,
-                    bot: true,
-                  });
-                  addLog(
-                    `[Move] Fixed double redirect${labelSuffix}: "${rdPage.title}" now points directly to "${newTitle}"`,
-                  );
+          // Double-redirect helper (fixDoubleRedirectsForMoveCore) was MOVED to
+          // [[Tengu-redirects.js]] (see the destructuring call in Section 05).
+          function fixDoubleRedirectsForMove(oldTitle, newTitle, labelSuffix) {
+            return fixDoubleRedirectsForMoveCore(
+              oldTitle,
+              newTitle,
+              labelSuffix,
+              {
+                addLog: addLog,
+                onRedirectFixed: function () {
                   stats.redirfix++;
                   updateStatusDisplay();
-                } catch (e) {
-                  addLog(
-                    `[Move] Failed to fix double redirect${labelSuffix} at "${rdPage.title}": ${formatApiError(e)}`,
-                    true,
-                  );
-                }
-                await new Promise((resolve) =>
-                  setTimeout(resolve, THROTTLE_MS),
-                );
-              }
-            } catch (e) {
-              addLog(
-                `[Move] Failed to fetch redirects pointing to${labelSuffix} "${oldTitle}": ${formatApiError(e)}`,
-                true,
-              );
-            }
+                },
+                isAborted: function () {
+                  return isAborted;
+                },
+                toolTag: toolTag,
+                throttleMs: THROTTLE_MS,
+              },
+            );
           }
 
           // Logs the per-subpage results returned by action=move when

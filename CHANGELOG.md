@@ -1,3 +1,10 @@
+## 2.259.0
+
+### Changed
+
+* Modularisation: Extracted the double-redirect fixing helper (`fixDoubleRedirectsForMove`) out of `work()` in `Tengu.js` into a standalone module at `Pengguna:Rachmat04/Tengu-redirects.js` (`window.TenguRedirects.create`). The module depends only on the `apiGet`, `apiPost`, `getRedirectMagicWords`, `formatApiError`, and `useIndonesian` helpers passed in by `Tengu.js`.
+* Loader & initialisation: Updated `Tengu.js` to load `Tengu-redirects.js` after `Tengu-category.js` and to obtain the function from the factory in [Section 05], wrapped inside `work()` with the per-run logging, abort, and statistics callbacks so existing call sites are unchanged.
+
 ## 2.258.0
 
 ### Changed
