@@ -1,3 +1,10 @@
+## 2.256.0
+
+### Changed
+
+* Modularisation: Extracted the destination-page existence checker (`makeDestChecker`) out of `init()` in `Tengu.js` into a standalone module at `Pengguna:Rachmat04/Tengu-destcheck.js` (`window.TenguDestCheck.create`). The module depends only on the `makeBtn`, `apiGet`, and `formatApiError` helpers passed in by `Tengu.js`.
+* Loader & initialisation: Updated `Tengu.js` to load `Tengu-destcheck.js` after `Tengu-wikitext.js` and to obtain `makeDestChecker` from the factory in [Section 08c], before `init()` runs. The name is unchanged, so both call sites in the Move pages section are unchanged.
+
 ## 2.255.0
 
 ### Changed

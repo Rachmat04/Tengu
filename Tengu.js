@@ -2,7 +2,7 @@
  * ============================================================================
  * Tengu — 天狗
  * All-in-one wiki moderation tool — Main script
- * Version 2.255.0
+ * Version 2.256.0
  * ============================================================================
  * PURPOSE:
  * An all-in-one moderation script for MediaWiki that streamlines user blocking,
@@ -135,6 +135,11 @@ $(function () {
       .then(function () {
         return mw.loader.getScript(
           "https://id.wikipedia.org/w/index.php?title=Pengguna:Rachmat04/Tengu-wikitext.js&action=raw&ctype=text/javascript",
+        );
+      })
+      .then(function () {
+        return mw.loader.getScript(
+          "https://id.wikipedia.org/w/index.php?title=Pengguna:Rachmat04/Tengu-destcheck.js&action=raw&ctype=text/javascript",
         );
       })
       .then(function () {
@@ -4840,6 +4845,17 @@ $(function () {
           makeBtn: makeBtn,
         });
 
+        // The destination-page existence checker button (❓ / ❌ / ✔️) used
+        // by the Move pages section was MOVED to [[Tengu-destcheck.js]]. The
+        // module receives the shared helpers below and returns
+        // makeDestChecker, which keeps its name, so the two call sites in
+        // init() are unchanged.
+        const { makeDestChecker } = window.TenguDestCheck.create({
+          makeBtn: makeBtn,
+          apiGet: apiGet,
+          formatApiError: formatApiError,
+        });
+
         // The Export edits dialogue itself was MOVED to [[Tengu-export.js]].
         // The module receives the shared helpers below and returns the
         // function that opens the dialogue. It is called by the 📥 button
@@ -7079,67 +7095,8 @@ $(function () {
             enableChk: chkMoveSandbox,
           } = makeSection("Move pages", "✂️", false);
 
-          // Creates a destination-page existence checker button (❓ / ❎ / ✅),
-          // shared by the Move page and Move to user's sandbox sub-modes.
-          // Clicking it checks whether the page returned by getDestTitle()
-          // currently exists. The result (❎ exists / ✅ does not exist) is
-          // kept until any of watchEls changes, at which point the button
-          // resets to ❓, since the previous check no longer applies to the
-          // (now different) destination title.
-          function makeDestChecker(getDestTitle) {
-            const btn = makeBtn("❓", "quiet");
-            btn.type = "button";
-            btn.className += " tng-btn-sm tng-destcheck-btn";
-            btn.title = "Check whether the destination page already exists";
-
-            function reset() {
-              btn.textContent = "❓";
-              btn.classList.remove(
-                "tng-destcheck-exists",
-                "tng-destcheck-notexists",
-              );
-              btn.title = "Check whether the destination page already exists";
-            }
-
-            btn.addEventListener("click", async function () {
-              const title = getDestTitle();
-              if (!title) return;
-              btn.disabled = true;
-              try {
-                const data = await apiGet({
-                  action: "query",
-                  titles: title,
-                  formatversion: 2,
-                });
-                const page =
-                  data.query && data.query.pages && data.query.pages[0];
-                const exists = !!(page && !page.missing);
-                btn.classList.remove(
-                  "tng-destcheck-exists",
-                  "tng-destcheck-notexists",
-                );
-                if (exists) {
-                  btn.textContent = "❌";
-                  btn.classList.add("tng-destcheck-exists");
-                  btn.title = "Destination page already exists";
-                } else {
-                  btn.textContent = "✔️";
-                  btn.classList.add("tng-destcheck-notexists");
-                  btn.title = "Destination page does not exist";
-                }
-              } catch (e) {
-                // Do not report existence either way when the check itself failed.
-                reset();
-                btn.title =
-                  "Could not check destination page: " + formatApiError(e);
-              } finally {
-                btn.disabled = false;
-              }
-            });
-
-            btn.resetCheck = reset;
-            return btn;
-          }
+          // makeDestChecker() was MOVED to [[Tengu-destcheck.js]] (see the
+          // destructuring call in Section 08c).
 
           // --- Move mode selector ---
           const { row: rowMoveMode, field: fieldMoveMode } =
