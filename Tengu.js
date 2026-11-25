@@ -2,7 +2,7 @@
  * ============================================================================
  * Tengu — 天狗
  * All-in-one wiki moderation tool — Main script
- * Version 2.256.0
+ * Version 2.257.0
  * ============================================================================
  * PURPOSE:
  * An all-in-one moderation script for MediaWiki that streamlines user blocking,
@@ -143,6 +143,11 @@ $(function () {
         );
       })
       .then(function () {
+        return mw.loader.getScript(
+          "https://id.wikipedia.org/w/index.php?title=Pengguna:Rachmat04/Tengu-rights.js&action=raw&ctype=text/javascript",
+        );
+      })
+      .then(function () {
         const INDONESIAN_LANGS = new Set([
           "id",
           "ace",
@@ -259,58 +264,13 @@ $(function () {
         const { apiGet, apiPost, apiRollback, pageExists } =
           window.TenguAPI.create();
 
-        // Cached check for whether the current user holds the rollback
-        // right on this wiki, fetched once and reused for the rest of the
-        // session. Used by the inline "[⛩️ rollback]" action (Section 09b)
-        // to decide, ahead of time, whether the link will perform native
-        // rollback or fall back to an equivalent undo — so the tooltip can
-        // say so upfront, rather than the person only finding out after
-        // the action has run (the actual fallback, if this check is wrong
-        // for any reason, still happens inside runQuickRevert() itself).
-        // Shared, cached fetch of the current user's local rights and groups
-        // (action=query&meta=userinfo&uiprop=rights|groups), used by both
-        // hasRollbackRight() below and init()'s rightsPromise (Section 09).
-        // Previously each made its own separate API request for the same
-        // data; this cache ensures the request is only ever made once per
-        // session regardless of which caller needs it first.
-        let userRightsInfoPromise = null;
-        function getUserRightsInfo() {
-          if (!userRightsInfoPromise) {
-            userRightsInfoPromise = apiGet({
-              action: "query",
-              meta: "userinfo",
-              uiprop: "rights|groups",
-            })
-              .then(function (data) {
-                const ui = data && data.query && data.query.userinfo;
-                return {
-                  rights: (ui && ui.rights) || [],
-                  groups: (ui && ui.groups) || [],
-                };
-              })
-              .catch(function () {
-                return { rights: [], groups: [] };
-              });
-          }
-          return userRightsInfoPromise;
-        }
-
-        let rollbackRightPromise = null;
-        function hasRollbackRight() {
-          if (!rollbackRightPromise) {
-            rollbackRightPromise = getUserRightsInfo()
-              .then(function (info) {
-                return info.rights.indexOf("rollback") !== -1;
-              })
-              .catch(function () {
-                // Assume no rollback right if the check fails; the
-                // existing permissiondenied fallback inside
-                // runQuickRevert() still applies either way.
-                return false;
-              });
-          }
-          return rollbackRightPromise;
-        }
+        // Cached current-user rights and groups lookup (getUserRightsInfo) and
+        // rollback-right check (hasRollbackRight). MOVED to [[Tengu-rights.js]].
+        // The module receives apiGet and returns the names below, which are
+        // unchanged, so the call sites in init() (Section 09) and in Section 09b
+        // are unchanged.
+        const { getUserRightsInfo, hasRollbackRight } =
+          window.TenguRights.create({ apiGet: apiGet });
 
         // Emergency lockdown. MOVED to [[Tengu-emergency.js]]. The module
         // receives createDialog and makeBtn and returns the names below, which

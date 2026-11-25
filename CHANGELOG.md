@@ -1,3 +1,10 @@
+## 2.257.0
+
+### Changed
+
+* Modularisation: Extracted the session-cached current-user rights and rollback-capability lookups (`getUserRightsInfo` and `hasRollbackRight`) out of [Section 05] of `Tengu.js` into a standalone module at `Pengguna:Rachmat04/Tengu-rights.js` (`window.TenguRights.create`). The module depends only on the `apiGet` helper passed in by `Tengu.js`.
+* Loader & initialisation: Updated `Tengu.js` to load `Tengu-rights.js` after `Tengu-destcheck.js` and to obtain both functions from the factory in [Section 05]. Their names are unchanged, so every call site in `init()` and [Section 09b] is unchanged.
+
 ## 2.256.0
 
 ### Changed
