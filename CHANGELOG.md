@@ -1,3 +1,11 @@
+## 2.271.0
+
+### Changed
+
+* Modularisation: Extracted the Wikidata merge execution workflow (`mergeConfiguredEntities`) out of `work()` in `Tengu.js` into a standalone module at `Pengguna:Rachmat04/Tengu-mergeexec.js` (`window.TenguMergeExec.create`). The module depends only on `fetchWikidataEntities`, `detectWikidataMergeConflicts`, `mergeWikidataEntities`, `createWikidataRedirect`, `withToolTag`, and `formatApiError` passed in by `Tengu.js`.
+* Modularisation: Extracted the Meta-Wiki permission request execution workflow (`submitConfiguredPermRequest`) out of `work()` in `Tengu.js` into a standalone module at `Pengguna:Rachmat04/Tengu-permrequest.js` (`window.TenguPermRequest.create`). The module depends only on `submitPermissionRequest`, `withToolTag`, and `formatApiError` passed in by `Tengu.js`.
+* Loader & initialisation: Updated `Tengu.js` to load `Tengu-mergeexec.js` and `Tengu-permrequest.js` after `Tengu-srgreport.js` and to obtain both functions from their factories in [Section 05], wrapped inside `work()` with `config` and the per-run logging and statistics callbacks.
+
 ## 2.270.0
 
 ### Changed

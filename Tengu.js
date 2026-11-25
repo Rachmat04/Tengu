@@ -2,7 +2,7 @@
  * ============================================================================
  * Tengu — 天狗
  * All-in-one wiki moderation tool — Main script
- * Version 2.270.0
+ * Version 2.271.0
  * ============================================================================
  * PURPOSE:
  * An all-in-one moderation script for MediaWiki that streamlines user blocking,
@@ -205,6 +205,16 @@ $(function () {
       .then(function () {
         return mw.loader.getScript(
           "https://id.wikipedia.org/w/index.php?title=Pengguna:Rachmat04/Tengu-srgreport.js&action=raw&ctype=text/javascript",
+        );
+      })
+      .then(function () {
+        return mw.loader.getScript(
+          "https://id.wikipedia.org/w/index.php?title=Pengguna:Rachmat04/Tengu-mergeexec.js&action=raw&ctype=text/javascript",
+        );
+      })
+      .then(function () {
+        return mw.loader.getScript(
+          "https://id.wikipedia.org/w/index.php?title=Pengguna:Rachmat04/Tengu-permrequest.js&action=raw&ctype=text/javascript",
         );
       })
       .then(function () {
@@ -559,6 +569,29 @@ $(function () {
         const { reportTargetsToSRG: reportTargetsToSRGCore } =
           window.TenguSRGReport.create({
             submitSRGReport: submitSRGReport,
+            formatApiError: formatApiError,
+          });
+
+        // Wikidata merge execution helper. MOVED to [[Tengu-mergeexec.js]].
+        // The module receives the shared helpers below and returns the core
+        // function wrapped inside work().
+        const { mergeConfiguredEntities: mergeConfiguredEntitiesCore } =
+          window.TenguMergeExec.create({
+            fetchWikidataEntities: fetchWikidataEntities,
+            detectWikidataMergeConflicts: detectWikidataMergeConflicts,
+            mergeWikidataEntities: mergeWikidataEntities,
+            createWikidataRedirect: createWikidataRedirect,
+            withToolTag: withToolTag,
+            formatApiError: formatApiError,
+          });
+
+        // Meta-Wiki permission request execution helper. MOVED to
+        // [[Tengu-permrequest.js]]. The module receives the shared helpers
+        // below and returns the core function wrapped inside work().
+        const { submitConfiguredPermRequest: submitConfiguredPermRequestCore } =
+          window.TenguPermRequest.create({
+            submitPermissionRequest: submitPermissionRequest,
+            withToolTag: withToolTag,
             formatApiError: formatApiError,
           });
 
@@ -995,6 +1028,34 @@ $(function () {
             });
           }
 
+          // Wikidata merge execution helper (mergeConfiguredEntitiesCore) was
+          // MOVED to [[Tengu-mergeexec.js]] (see the destructuring call in
+          // Section 05).
+          function mergeConfiguredEntities() {
+            return mergeConfiguredEntitiesCore(config, {
+              addLog: addLog,
+              onMerged: function () {
+                stats.merge++;
+                updateStatusDisplay();
+              },
+              toolTag: toolTag,
+            });
+          }
+
+          // Meta-Wiki permission request execution helper
+          // (submitConfiguredPermRequestCore) was MOVED to
+          // [[Tengu-permrequest.js]] (see the destructuring call in Section 05).
+          function submitConfiguredPermRequest() {
+            return submitConfiguredPermRequestCore(config, {
+              addLog: addLog,
+              onReported: function () {
+                stats.report++;
+                updateStatusDisplay();
+              },
+              toolTag: toolTag,
+            });
+          }
+
           // removeBalancedFileEmbeds() was MOVED to [[Tengu-wikitext.js]] (see
           // the destructuring call in Section 05).
 
@@ -1004,59 +1065,7 @@ $(function () {
           // user/page target), so it runs once here rather than inside the
           // per-target loop below.
           if (config.mergeItems && !isAborted) {
-            addLog(
-              `[Merge] Processing merge of "${config.mergeFrom}" into "${config.mergeTo}"...`,
-            );
-            try {
-              const entities = await fetchWikidataEntities([
-                config.mergeFrom,
-                config.mergeTo,
-              ]);
-              const conflicts = detectWikidataMergeConflicts(entities);
-              if (Object.keys(conflicts).length) {
-                addLog(
-                  `[Merge] Aborted: sitelink conflicts detected between "${config.mergeFrom}" and "${config.mergeTo}" on ${Object.keys(conflicts).join(", ")} — resolve them manually before merging.`,
-                  true,
-                );
-              } else {
-                const mergeSummaryText = withToolTag(
-                  config.mergeSummary,
-                  toolTag,
-                );
-                await mergeWikidataEntities(
-                  config.mergeFrom,
-                  config.mergeTo,
-                  mergeSummaryText,
-                );
-                addLog(
-                  `[Merge] Successfully merged "${config.mergeFrom}" into "${config.mergeTo}"`,
-                );
-                stats.merge++;
-                updateStatusDisplay();
-
-                if (config.mergeCreateRedirect) {
-                  try {
-                    await createWikidataRedirect(
-                      config.mergeFrom,
-                      config.mergeTo,
-                    );
-                    addLog(
-                      `[Merge] Created redirect: "${config.mergeFrom}" → "${config.mergeTo}"`,
-                    );
-                  } catch (e) {
-                    addLog(
-                      `[Merge] Failed to create redirect "${config.mergeFrom}" → "${config.mergeTo}": ${formatApiError(e)}`,
-                      true,
-                    );
-                  }
-                }
-              }
-            } catch (e) {
-              addLog(
-                `[Merge] Failed to merge "${config.mergeFrom}" into "${config.mergeTo}": ${formatApiError(e)}`,
-                true,
-              );
-            }
+            await mergeConfiguredEntities();
           }
 
           // --- Request permissions on Meta-Wiki ---
@@ -1065,28 +1074,7 @@ $(function () {
           // target. The duplicate check in submitPermissionRequest() stops a
           // second filing if a resumed run reaches this step again.
           if (config.permRequest && !isAborted) {
-            addLog(
-              `[Permissions] Submitting request for "${config.permUsername}" (${config.permTypeLabel}) to Steward requests/Permissions...`,
-            );
-            try {
-              await submitPermissionRequest(
-                config.permType,
-                config.permUsername,
-                config.permText,
-                withToolTag(config.permSummary, toolTag),
-                config.permDomain,
-              );
-              addLog(
-                `[Permissions] Request for "${config.permUsername}" submitted to Steward requests/Permissions`,
-              );
-              stats.report++;
-              updateStatusDisplay();
-            } catch (e) {
-              addLog(
-                `[Permissions] Failed to submit request for "${config.permUsername}": ${formatApiError(e)}`,
-                true,
-              );
-            }
+            await submitConfiguredPermRequest();
           }
 
           for (const targetVal of config.targets || [config.target]) {
