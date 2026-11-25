@@ -2,7 +2,7 @@
  * ============================================================================
  * Tengu — 天狗
  * All-in-one wiki moderation tool — Main script
- * Version 2.262.0
+ * Version 2.263.0
  * ============================================================================
  * PURPOSE:
  * An all-in-one moderation script for MediaWiki that streamlines user blocking,
@@ -170,6 +170,11 @@ $(function () {
       .then(function () {
         return mw.loader.getScript(
           "https://id.wikipedia.org/w/index.php?title=Pengguna:Rachmat04/Tengu-summary.js&action=raw&ctype=text/javascript",
+        );
+      })
+      .then(function () {
+        return mw.loader.getScript(
+          "https://id.wikipedia.org/w/index.php?title=Pengguna:Rachmat04/Tengu-gsline.js&action=raw&ctype=text/javascript",
         );
       })
       .then(function () {
@@ -447,6 +452,14 @@ $(function () {
         function getInterwikiPrefix() {
           return deriveInterwikiPrefix(mw.config.get("wgServer"));
         }
+
+        // Global sysops/Requests report line builder. MOVED to
+        // [[Tengu-gsline.js]]. The module receives getInterwikiPrefix and
+        // returns the core function wrapped inside work().
+        const { buildGSLineForTarget: buildGSLineForTargetCore } =
+          window.TenguGSLine.create({
+            getInterwikiPrefix: getInterwikiPrefix,
+          });
 
         // The Meta-Wiki report helpers (submitGlobalSysopsReport(),
         // foreignApiGet(), submitSRGReport(), PERM_REQUEST_TYPES and
@@ -819,52 +832,11 @@ $(function () {
             });
           }
 
-          // Builds the wikitext line for a Global sysops/Requests report for
-          // a specific target. Called per-target inside the targets loop so
-          // every account or page in a multi-target run receives its own
-          // individual entry on the report page.
+          // Global sysops/Requests report line builder
+          // (buildGSLineForTargetCore) was MOVED to [[Tengu-gsline.js]]
+          // (see the destructuring call in Section 05).
           function buildGSLineForTarget(target) {
-            const prefix = getInterwikiPrefix();
-            const _isTargetIP = mw.util.isIPAddress(target);
-            const _isTempAccount = /^~\d{4}-\d+-\d+$/.test(target);
-            const reasonText = config.reportGSReasonText;
-            if (config.mode === "page") {
-              const requestVerb =
-                config.reportGSPageType === "protect"
-                  ? "Please protect"
-                  : config.reportGSPageType === "revdel"
-                    ? "Please delete revisions from"
-                    : "Please delete";
-              const pageLink = prefix
-                ? "[[:" + prefix + target + "|" + target + "]]"
-                : "[[:" + target + "]]";
-              return (
-                "* " +
-                requestVerb +
-                " " +
-                pageLink +
-                ": " +
-                reasonText +
-                " ~~~~"
-              );
-            }
-            let userLink;
-            if (_isTargetIP || _isTempAccount) {
-              userLink = prefix
-                ? "[[:" +
-                  prefix +
-                  "Special:Contributions/" +
-                  target +
-                  "|" +
-                  target +
-                  "]]"
-                : "[[Special:Contributions/" + target + "|" + target + "]]";
-            } else {
-              userLink = prefix
-                ? "{{LockHide|1=" + target + "|2=" + prefix + "}}"
-                : "{{LockHide|1=" + target + "}}";
-            }
-            return "* Please block " + userLink + ": " + reasonText + " ~~~~";
+            return buildGSLineForTargetCore(target, config);
           }
 
           // removeBalancedFileEmbeds() was MOVED to [[Tengu-wikitext.js]] (see

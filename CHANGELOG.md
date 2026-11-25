@@ -1,3 +1,10 @@
+## 2.263.0
+
+### Changed
+
+* Modularisation: Extracted the Global sysops/Requests report line builder (`buildGSLineForTarget`) out of `work()` in `Tengu.js` into a standalone module at `Pengguna:Rachmat04/Tengu-gsline.js` (`window.TenguGSLine.create`). The module depends only on `mw.util.isIPAddress` and the `getInterwikiPrefix` helper passed in by `Tengu.js`.
+* Loader & initialisation: Updated `Tengu.js` to load `Tengu-gsline.js` after `Tengu-summary.js` and to obtain the function from the factory in [Section 05], wrapped inside `work()` with `config` so the call site in the targets loop is unchanged.
+
 ## 2.262.0
 
 ### Changed
