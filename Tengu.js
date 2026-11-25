@@ -2,7 +2,7 @@
  * ============================================================================
  * Tengu — 天狗
  * All-in-one wiki moderation tool — Main script
- * Version 2.267.0
+ * Version 2.268.0
  * ============================================================================
  * PURPOSE:
  * An all-in-one moderation script for MediaWiki that streamlines user blocking,
@@ -1942,6 +1942,18 @@ $(function () {
               for (const t of config.selectedCreations) {
                 creation.push(t);
               }
+              // Delete pages must also process pages selected under
+              // "Edited pages". Previously only "Created pages" reached the
+              // deletion loop, so selecting edited pages deleted nothing.
+              if (config.massdel) {
+                const creationSeen = new Set(creation);
+                for (const t of Object.keys(pageEdits)) {
+                  if (!creationSeen.has(t)) {
+                    creation.push(t);
+                    creationSeen.add(t);
+                  }
+                }
+              }
               if (!Object.keys(pageEdits).length && !creation.length) {
                 addLog(
                   "[Info] Custom selection is active but no items were selected — no edits or pages will be processed.",
@@ -2674,6 +2686,17 @@ $(function () {
             const creatorMap = rs.creatorMap;
 
             // Mass-delete pages sequentially
+            if (
+              config.massdel &&
+              !rs.deletionLoopDone &&
+              !creation.length &&
+              !isAborted
+            ) {
+              addLog(
+                "[Delete] No pages to delete: no matching pages were found or selected",
+                "warn",
+              );
+            }
             if (config.massdel && !rs.deletionLoopDone) {
               for (const title of creation) {
                 if (isAborted) break;
@@ -3123,7 +3146,17 @@ $(function () {
                   setTimeout(resolve, THROTTLE_MS),
                 ); // Throttling window
               }
-              if (!isAborted) rs.deletionLoopDone = true;
+              if (!isAborted) {
+                rs.deletionLoopDone = true;
+                if (creation.length) {
+                  const deleteFailedCount =
+                    creation.length - deletedTitles.length;
+                  addLog(
+                    `[Delete] Finished: ${deletedTitles.length} of ${creation.length} page(s) deleted, ${deleteFailedCount} not deleted`,
+                    deleteFailedCount > 0 ? "warn" : false,
+                  );
+                }
+              }
             }
 
             // Post deletion notification to the target user's talk page (user mode).
@@ -3973,7 +4006,22 @@ $(function () {
             // Resume state is kept for single-target and multi-target runs.
             resumeState = rs;
           } else {
-            addLog("✅ All operations have been completed successfully");
+            const actionsDone = Object.keys(stats).reduce(function (n, k) {
+              return k === "error" ? n : n + stats[k];
+            }, 0);
+            if (stats.error > 0) {
+              addLog(
+                `⚠️ Operations finished with ${stats.error} error(s); review the log above`,
+                "warn",
+              );
+            } else if (actionsDone === 0) {
+              addLog(
+                "⚠️ Operations finished, but no actions were performed",
+                "warn",
+              );
+            } else {
+              addLog("✅ All operations have been completed successfully");
+            }
           }
           btnClose.disabled = false;
 
@@ -9832,7 +9880,9 @@ $(function () {
               }
               if (config.massdel) {
                 scopeLines.push(
-                  "🗑️ <b>Page deletion</b> — will delete <b>all pages created</b> by this user within the selected time window, not a single page.",
+                  config.customSelection
+                    ? "🗑️ <b>Page deletion</b> — will delete <b>every page selected</b> in the picker (edited and created pages), not a single page."
+                    : "🗑️ <b>Page deletion</b> — will delete <b>all pages created</b> by this user within the selected time window, not a single page.",
                 );
               }
               if (config.protect) {

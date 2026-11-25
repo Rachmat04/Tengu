@@ -1,3 +1,16 @@
+## 2.268.0
+
+### Fixed
+
+* Fixed **Delete pages** in user mode deleting nothing when **Select specific edits/pages** was used. Only pages selected under **Created pages** reached the deletion loop, so pages selected under **Edited pages** were ignored. Every selected page is now a deletion target in custom-selection mode.
+* Fixed the progress log reporting "All operations have been completed successfully" when no deletion was attempted.
+
+### Changed
+
+* The log now warns when **Delete pages** has no pages to delete and ends the deletion phase with a count of deleted and not-deleted pages.
+* The final line now reports errors or "no actions were performed" instead of success when applicable.
+* The confirmation dialogue states that every selected page will be deleted in custom-selection mode.
+
 ## 2.267.0
 
 ### Changed
