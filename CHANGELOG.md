@@ -1,3 +1,10 @@
+## 2.269.0
+
+### Changed
+
+* Modularisation: Extracted the Global sysops/Requests report submission and progress logging logic (`reportTargetToGS`) out of `work()` in `Tengu.js` into a standalone module at `Pengguna:Rachmat04/Tengu-gsreport.js` (`window.TenguGSReport.create`). The module depends only on the `buildGSLineForTarget`, `submitGlobalSysopsReport`, and `formatApiError` helpers passed in by `Tengu.js`.
+* Loader & initialisation: Updated `Tengu.js` to load `Tengu-gsreport.js` after `Tengu-block.js` and to obtain the function from the factory in [Section 05], wrapped inside `work()` with `config` and the per-run logging and statistics callbacks so the call site in the targets loop is unchanged.
+
 ## 2.268.0
 
 ### Fixed

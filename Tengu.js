@@ -2,7 +2,7 @@
  * ============================================================================
  * Tengu — 天狗
  * All-in-one wiki moderation tool — Main script
- * Version 2.268.0
+ * Version 2.269.0
  * ============================================================================
  * PURPOSE:
  * An all-in-one moderation script for MediaWiki that streamlines user blocking,
@@ -195,6 +195,11 @@ $(function () {
       .then(function () {
         return mw.loader.getScript(
           "https://id.wikipedia.org/w/index.php?title=Pengguna:Rachmat04/Tengu-block.js&action=raw&ctype=text/javascript",
+        );
+      })
+      .then(function () {
+        return mw.loader.getScript(
+          "https://id.wikipedia.org/w/index.php?title=Pengguna:Rachmat04/Tengu-gsreport.js&action=raw&ctype=text/javascript",
         );
       })
       .then(function () {
@@ -532,6 +537,16 @@ $(function () {
           translateDurationId: translateDurationId,
           useIndonesian: useIndonesian,
         });
+
+        // Global sysops/Requests report execution helper. MOVED to
+        // [[Tengu-gsreport.js]]. The module receives the shared helpers below
+        // and returns the core function wrapped inside work().
+        const { reportTargetToGS: reportTargetToGSCore } =
+          window.TenguGSReport.create({
+            buildGSLineForTarget: buildGSLineForTargetCore,
+            submitGlobalSysopsReport: submitGlobalSysopsReport,
+            formatApiError: formatApiError,
+          });
 
         // The Meta-Wiki report helpers (submitGlobalSysopsReport(),
         // foreignApiGet(), submitSRGReport(), PERM_REQUEST_TYPES and
@@ -892,11 +907,18 @@ $(function () {
             });
           }
 
-          // Global sysops/Requests report line builder
-          // (buildGSLineForTargetCore) was MOVED to [[Tengu-gsline.js]]
+          // Global sysops/Requests report execution helper
+          // (reportTargetToGSCore) was MOVED to [[Tengu-gsreport.js]]
           // (see the destructuring call in Section 05).
-          function buildGSLineForTarget(target) {
-            return buildGSLineForTargetCore(target, config);
+          function reportTargetToGS(targetVal) {
+            return reportTargetToGSCore(targetVal, config, {
+              addLog: addLog,
+              onReported: function () {
+                stats.report++;
+                updateStatusDisplay();
+              },
+              toolTag: toolTag,
+            });
           }
 
           // Account unblock helper (unblockTargetCore) was MOVED to
@@ -1148,32 +1170,7 @@ $(function () {
             // In multi-target mode, a separate entry is appended for each
             // target so every account or page gets its own individual report.
             if (!rs.reportGSDone && config.reportGS && !isAborted) {
-              addLog(
-                `[Report] Processing "${targetVal}" for Global sysops/Requests...`,
-              );
-              try {
-                const _gsLine = buildGSLineForTarget(targetVal);
-                const reportGSSummary =
-                  (config.mode === "page"
-                    ? "Reporting page for global sysops' attention"
-                    : "Reporting account for global sysops' attention") +
-                  toolTag;
-                await submitGlobalSysopsReport(
-                  _gsLine,
-                  reportGSSummary,
-                  targetVal,
-                );
-                addLog(
-                  `[Report] Completed: "${targetVal}" submitted to Global sysops/Requests`,
-                );
-                stats.report++;
-                updateStatusDisplay();
-              } catch (e) {
-                addLog(
-                  `[Report] Failed for "${targetVal}" on Global sysops/Requests: ${formatApiError(e)}`,
-                  true,
-                );
-              }
+              await reportTargetToGS(targetVal);
               rs.reportGSDone = true;
             }
 
