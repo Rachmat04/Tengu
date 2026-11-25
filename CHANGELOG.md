@@ -1,3 +1,11 @@
+## 2.274.0
+
+### Changed
+
+* Modularisation: Extracted contribution fetching, custom-selection assembly, and target-page preparation (`prepareTargetItems`) out of `work()` in `Tengu.js` into a standalone module at `Pengguna:Rachmat04/Tengu-contribs.js` (`window.TenguContribs.create`). The module depends only on the `apiGet` and `formatApiError` helpers passed in by `Tengu.js`.
+* Modularisation: Extracted the MediaInfo structured-data and revision metadata inspection step (`inspectRevisionMetadata`) out of `work()` in `Tengu.js` into a standalone module at `Pengguna:Rachmat04/Tengu-mediainfo.js` (`window.TenguMediaInfo.create`). The module depends only on the `apiGet` helper passed in by `Tengu.js`.
+* Loader & initialisation: Updated `Tengu.js` to load `Tengu-contribs.js` and `Tengu-mediainfo.js` after `Tengu-fixredirects.js` and to obtain both functions from their factories in [Section 05], delegating the corresponding steps inside `work()`.
+
 ## 2.273.0
 
 ### Changed

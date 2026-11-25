@@ -15,9 +15,6 @@
  * MediaWiki ResourceLoader module "mediawiki.api" (window.mw.Api).
  * No dependencies on Tengu.js internals.
  *
- * ATTRIBUTION:
- * Based on User:WhitePhosphorus/all-in-one (https://meta.wikimedia.org/wiki/User:WhitePhosphorus/all-in-one).
- *
  * REPOSITORY:
  * https://github.com/Rachmat04/Tengu
  * ============================================================================

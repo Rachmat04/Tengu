@@ -17,9 +17,6 @@
  * MediaWiki mw.Title and the apiGet, apiPost, getCategoryNamespaceAliases,
  * formatApiError, and useIndonesian helpers passed in by Tengu.js.
  *
- * ATTRIBUTION:
- * Based on User:WhitePhosphorus/all-in-one (https://meta.wikimedia.org/wiki/User:WhitePhosphorus/all-in-one).
- *
  * REPOSITORY:
  * https://github.com/Rachmat04/Tengu
  * ============================================================================

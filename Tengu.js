@@ -2,7 +2,7 @@
  * ============================================================================
  * Tengu — 天狗
  * All-in-one wiki moderation tool — Main script
- * Version 2.273.0
+ * Version 2.274.0
  * ============================================================================
  * PURPOSE:
  * An all-in-one moderation script for MediaWiki that streamlines user blocking,
@@ -235,6 +235,16 @@ $(function () {
       .then(function () {
         return mw.loader.getScript(
           "https://id.wikipedia.org/w/index.php?title=Pengguna:Rachmat04/Tengu-fixredirects.js&action=raw&ctype=text/javascript",
+        );
+      })
+      .then(function () {
+        return mw.loader.getScript(
+          "https://id.wikipedia.org/w/index.php?title=Pengguna:Rachmat04/Tengu-contribs.js&action=raw&ctype=text/javascript",
+        );
+      })
+      .then(function () {
+        return mw.loader.getScript(
+          "https://id.wikipedia.org/w/index.php?title=Pengguna:Rachmat04/Tengu-mediainfo.js&action=raw&ctype=text/javascript",
         );
       })
       .then(function () {
@@ -662,6 +672,23 @@ $(function () {
             withToolTag: withToolTag,
             formatApiError: formatApiError,
           });
+
+        // Contribution fetching and target-page preparation helper. MOVED to
+        // [[Tengu-contribs.js]]. The module receives the shared helpers below
+        // and returns the core function wrapped inside work().
+        const { prepareTargetItems: prepareTargetItemsCore } =
+          window.TenguContribs.create({
+            apiGet: apiGet,
+            formatApiError: formatApiError,
+          });
+
+        // MediaInfo and revision metadata inspection helper. MOVED to
+        // [[Tengu-mediainfo.js]]. The module receives apiGet and returns the
+        // function directly, so the call site inside work() is unchanged in
+        // signature.
+        const { inspectRevisionMetadata } = window.TenguMediaInfo.create({
+          apiGet: apiGet,
+        });
 
         // The Meta-Wiki report helpers (submitGlobalSysopsReport(),
         // foreignApiGet(), submitSRGReport(), PERM_REQUEST_TYPES and
@@ -1215,6 +1242,24 @@ $(function () {
             });
           }
 
+          // Contribution fetching and target-page preparation helper
+          // (prepareTargetItemsCore) was MOVED to [[Tengu-contribs.js]]
+          // (see the destructuring call in Section 05).
+          function prepareTargetItems(targetVal, targetIsRange) {
+            return prepareTargetItemsCore(
+              targetVal,
+              targetIsRange,
+              config,
+              rs,
+              {
+                addLog: addLog,
+                isAborted: function () {
+                  return isAborted;
+                },
+              },
+            );
+          }
+
           // removeBalancedFileEmbeds() was MOVED to [[Tengu-wikitext.js]] (see
           // the destructuring call in Section 05).
 
@@ -1393,177 +1438,14 @@ $(function () {
             }
 
             // --- Fetch user contributions OR prepare target page ---
-            // On a resume run, contribution data is loaded from the cache stored in rs,
-            // avoiding a repeat API call. On a fresh run data is fetched normally then cached.
-            let pageEdits = {};
-            let creation = [];
-            let pagesToProtect = new Set();
-            let pagesToProtectAfterDel;
-            const skipContribFetch = rs.pageEditsCache !== null;
-            if (skipContribFetch) {
-              pageEdits = rs.pageEditsCache;
-              creation = rs.creationCache;
-              pagesToProtect = rs.pagesToProtectCache;
-              pagesToProtectAfterDel = rs.pagesToProtectAfterDelCache;
-              addLog("▶️ Contribution data reloaded from the previous run.");
-            }
-
-            if (
-              !skipContribFetch &&
-              config.mode === "user" &&
-              config.customSelection
-            ) {
-              // Custom-selection mode: use the items chosen in the picker rather
-              // than fetching contributions from the API.
-              for (const [title, info] of Object.entries(
-                config.selectedPageEdits,
-              )) {
-                pageEdits[title] = info;
-              }
-              for (const t of config.selectedCreations) {
-                creation.push(t);
-              }
-              // Delete pages must also process pages selected under
-              // "Edited pages". Previously only "Created pages" reached the
-              // deletion loop, so selecting edited pages deleted nothing.
-              if (config.massdel) {
-                const creationSeen = new Set(creation);
-                for (const t of Object.keys(pageEdits)) {
-                  if (!creationSeen.has(t)) {
-                    creation.push(t);
-                    creationSeen.add(t);
-                  }
-                }
-              }
-              if (!Object.keys(pageEdits).length && !creation.length) {
-                addLog(
-                  "[Info] Custom selection is active but no items were selected — no edits or pages will be processed.",
-                  "warn",
-                );
-              }
-              if (config.protect) {
-                for (const title of Object.keys(pageEdits)) {
-                  pagesToProtect.add(title);
-                }
-                if (!config.massdel) {
-                  for (const title of creation) {
-                    pagesToProtect.add(title);
-                  }
-                }
-              }
-            }
-
-            if (
-              !skipContribFetch &&
-              config.mode === "user" &&
-              !config.customSelection &&
-              !targetIsRange
-            ) {
-              const contribParams = {
-                action: "query",
-                list: "usercontribs",
-                ucuser: targetVal,
-                uclimit: "max",
-              };
-              if (config.betweenMode) {
-                // Between-dates mode: ucend is the older (from) boundary;
-                // ucstart is the newer (to) boundary. Either may be null if
-                // the user left that picker blank, in which case the API
-                // returns edits up to or from the filled-in date with no
-                // constraint on the other end.
-                if (config.betweenFrom)
-                  contribParams.ucend = config.betweenFrom;
-                if (config.betweenTo) contribParams.ucstart = config.betweenTo;
-              } else if (config.endtime !== "inf") {
-                const untildate = new Date();
-                untildate.setSeconds(
-                  untildate.getSeconds() - parseInt(config.endtime),
-                );
-                contribParams.ucend = untildate.toISOString();
-              }
-
-              let contribs = [];
-              let hasMore = true;
-              let continueToken = {};
-
-              while (hasMore && !isAborted) {
-                const params = Object.assign({}, contribParams, continueToken);
-                try {
-                  const data = await apiGet(params);
-                  if (data.query && data.query.usercontribs) {
-                    contribs = contribs.concat(data.query.usercontribs);
-                  }
-                  if (data.continue) {
-                    continueToken = data.continue;
-                  } else {
-                    hasMore = false;
-                  }
-                } catch (e) {
-                  addLog(
-                    `[Error] Failed to fetch contribution history: ${formatApiError(e)}`,
-                    true,
-                  );
-                  hasMore = false;
-                }
-              }
-
-              if (!contribs.length && !isAborted) {
-                addLog("[Info] No contributions found within this timeframe");
-              } else if (!isAborted) {
-                for (const edit of contribs) {
-                  if (edit.new === "") {
-                    creation.push(edit.title);
-                  } else {
-                    if (!pageEdits[edit.title]) {
-                      pageEdits[edit.title] = {
-                        revids: [],
-                        latest: edit.revid,
-                        oldestParent: edit.parentid,
-                      };
-                    }
-                    pageEdits[edit.title].revids.push(edit.revid);
-                    pageEdits[edit.title].oldestParent = edit.parentid;
-                  }
-                }
-
-                // Aggregate pages for mass protection to avoid duplicates and skip deleted records
-                if (config.protect) {
-                  for (const title of Object.keys(pageEdits)) {
-                    pagesToProtect.add(title);
-                  }
-                  if (!config.massdel) {
-                    for (const title of creation) {
-                      pagesToProtect.add(title);
-                    }
-                  }
-                }
-              }
-            } else if (!skipContribFetch && config.mode === "page") {
-              // Page mode: bypass fetching and apply operations directly to the target page
-              if (config.protect) pagesToProtect.add(targetVal);
-              if (config.massdel) creation.push(targetVal);
-            }
-
-            // Pages scheduled for both deletion and protection must be deleted first,
-            // then protected against recreation. Protecting before deletion causes the
-            // protection to be lost when the page is removed. Identify the overlap now
-            // and defer those pages to a second protect pass that runs after deletion.
-            if (!skipContribFetch) {
-              const creationSet = new Set(creation);
-              pagesToProtectAfterDel = new Set(
-                [...pagesToProtect].filter(function (t) {
-                  return creationSet.has(t);
-                }),
-              );
-              for (const t of pagesToProtectAfterDel) {
-                pagesToProtect.delete(t);
-              }
-              // Cache contribution data and computed page sets for a potential resume run.
-              rs.pageEditsCache = pageEdits;
-              rs.creationCache = creation;
-              rs.pagesToProtectCache = pagesToProtect;
-              rs.pagesToProtectAfterDelCache = pagesToProtectAfterDel;
-            }
+            // prepareTargetItemsCore() was MOVED to [[Tengu-contribs.js]]
+            // (see the destructuring call in Section 05).
+            let {
+              pageEdits,
+              creation,
+              pagesToProtect,
+              pagesToProtectAfterDel,
+            } = await prepareTargetItems(targetVal, targetIsRange);
 
             // Titles successfully reverted via rollback/undo, collected so a single
             // consolidated notification can be sent to the target user's talk page
@@ -1609,75 +1491,15 @@ $(function () {
               }
 
               // --- MEDIAINFO / STRUCTURED DATA CHECK ---
-              // Because structured data edits cannot be undone natively via rollback or normal undo,
-              // we independently check if the mediainfo slot was modified in this revision range.
-              let mediainfoNeedsRevert = false;
-              let goodMediaInfo = null;
-              let pageId = null;
-              // Content model of the current page's main slot. Set during the
-              // revision fetch below; used to detect ZObject pages (Wikifunctions)
-              // and choose the appropriate revert method.
-              // ZObjects may not be reliably reverted via action=edit undo, since
-              // the undo path depends on a wikitext three-way merge that may not
-              // work for JSON-structured content.
-              let pageContentModel = null;
-              // Username of the author of the revision being reverted to (the
-              // parent of the target's earliest edit in this batch). Used below
-              // to make the undo edit summary clearer about which revision was
-              // restored.
-              let previousEditorUser = null;
-
-              try {
-                const revidsToFetch = info.oldestParent
-                  ? `${info.latest}|${info.oldestParent}`
-                  : `${info.latest}`;
-                const compData = await apiGet({
-                  action: "query",
-                  prop: "revisions",
-                  revids: revidsToFetch,
-                  rvprop: "ids|content|user|contentmodel",
-                  rvslots: "mediainfo",
-                });
-
-                const pages = compData.query && compData.query.pages;
-                if (pages) {
-                  pageId = Object.keys(pages)[0];
-                  const revs = pages[pageId].revisions;
-                  if (revs && revs.length > 0) {
-                    let latestMI = null;
-                    let oldestMI = null;
-                    for (const r of revs) {
-                      if (r.revid === info.oldestParent) {
-                        previousEditorUser = r.user || null;
-                      }
-                      if (r.revid === info.latest) {
-                        pageContentModel = r.contentmodel || null;
-                      }
-                      if (r.slots && r.slots.mediainfo) {
-                        if (r.revid === info.latest)
-                          latestMI = r.slots.mediainfo["*"];
-                        if (r.revid === info.oldestParent)
-                          oldestMI = r.slots.mediainfo["*"];
-                      }
-                    }
-
-                    if (latestMI !== null && latestMI !== oldestMI) {
-                      mediainfoNeedsRevert = true;
-                      goodMediaInfo = oldestMI
-                        ? JSON.parse(oldestMI)
-                        : { statements: {} };
-                    }
-                  }
-                }
-              } catch (e) {
-                // Gracefully ignore on wikis without Wikibase/MediaInfo configured,
-                // or on pages/namespaces where the mediainfo slot is fundamentally unavailable.
-                // This also covers ZObject pages on Wikifunctions, where the mediainfo
-                // slot is absent; pageContentModel is set within the same try block and
-                // is used separately below to choose the appropriate revert method.
-                // previousEditorUser remains null in this case; the undo summary
-                // falls back to its previous wording below.
-              }
+              // inspectRevisionMetadata() was MOVED to [[Tengu-mediainfo.js]]
+              // (see the destructuring call in Section 05).
+              let {
+                mediainfoNeedsRevert,
+                goodMediaInfo,
+                pageId,
+                pageContentModel,
+                previousEditorUser,
+              } = await inspectRevisionMetadata(info);
 
               // ZObjects (Wikifunctions content model "zobject") are stored as JSON
               // and cannot be reliably reverted via action=edit undo, since the undo
