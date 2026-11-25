@@ -2,7 +2,7 @@
  * ============================================================================
  * Tengu — 天狗
  * All-in-one wiki moderation tool — Main script
- * Version 2.266.0
+ * Version 2.267.0
  * ============================================================================
  * PURPOSE:
  * An all-in-one moderation script for MediaWiki that streamlines user blocking,
@@ -190,6 +190,11 @@ $(function () {
       .then(function () {
         return mw.loader.getScript(
           "https://id.wikipedia.org/w/index.php?title=Pengguna:Rachmat04/Tengu-warnuser.js&action=raw&ctype=text/javascript",
+        );
+      })
+      .then(function () {
+        return mw.loader.getScript(
+          "https://id.wikipedia.org/w/index.php?title=Pengguna:Rachmat04/Tengu-block.js&action=raw&ctype=text/javascript",
         );
       })
       .then(function () {
@@ -513,6 +518,21 @@ $(function () {
           warnMessages: WARN_MESSAGES,
         });
 
+        // Account block execution, self-block confirmation, and talk-page
+        // notification helper. MOVED to [[Tengu-block.js]]. The module
+        // receives the shared helpers below and returns the core function
+        // wrapped inside work().
+        const { blockTarget: blockTargetCore } = window.TenguBlock.create({
+          createDialog: createDialog,
+          makeBtn: makeBtn,
+          apiPost: apiPost,
+          pageExists: pageExists,
+          withToolTag: withToolTag,
+          formatApiError: formatApiError,
+          translateDurationId: translateDurationId,
+          useIndonesian: useIndonesian,
+        });
+
         // The Meta-Wiki report helpers (submitGlobalSysopsReport(),
         // foreignApiGet(), submitSRGReport(), PERM_REQUEST_TYPES and
         // submitPermissionRequest()) were MOVED to [[Tengu-reports.js]]
@@ -752,10 +772,6 @@ $(function () {
 
           // Notification edit summaries do not vary per target and are
           // declared once, outside the per-target loop below.
-          const notifySummaryBlock =
-            (useIndonesian
-              ? "Notifikasi: Pemberitahuan pemblokiran akun"
-              : "Notification: Account block notice") + toolTag;
           const notifySummaryDelete =
             (useIndonesian
               ? "Notifikasi: Pemberitahuan penghapusan halaman"
@@ -913,6 +929,18 @@ $(function () {
           function warnTarget(targetVal) {
             return warnTargetCore(targetVal, config, isMultiTarget, {
               addLog: addLog,
+              toolTag: toolTag,
+            });
+          }
+
+          // Account block helper (blockTargetCore) was MOVED to
+          // [[Tengu-block.js]] (see the destructuring call in Section 05).
+          function blockTarget(targetVal) {
+            return blockTargetCore(targetVal, config, {
+              addLog: addLog,
+              onBlocked: function () {
+                stats.block++;
+              },
               toolTag: toolTag,
             });
           }
@@ -1099,171 +1127,7 @@ $(function () {
               config.mode === "user" &&
               !isAborted
             ) {
-              let proceedWithBlock = true;
-
-              // Show a confirmation dialogue only when the target account matches the current user.
-              const isSelfBlock =
-                targetVal.toLowerCase() ===
-                (mw.config.get("wgUserName") || "").toLowerCase();
-              if (isSelfBlock) {
-                const confirmed = await new Promise((resolve) => {
-                  const { overlay, body, footer } = createDialog({
-                    title: "Self-block confirmation",
-                    icon: "️️⚠️️️",
-                    child: true,
-                    onClose: () => resolve(false),
-                  });
-                  body.innerHTML =
-                    "<p>You are about to block your own account. Are you certain you wish to proceed?</p>";
-                  const btnCancel = makeBtn("Cancel", "quiet");
-                  btnCancel.addEventListener("click", () => {
-                    resolve(false);
-                    overlay.closeHandler();
-                  });
-                  const btnConfirm = makeBtn("Proceed", "destructive");
-                  btnConfirm.addEventListener("click", () => {
-                    resolve(true);
-                    overlay.closeHandler();
-                  });
-                  footer.appendChild(btnCancel);
-                  footer.appendChild(btnConfirm);
-                });
-                if (!confirmed) {
-                  addLog("[Block] Self-block cancelled", "warn");
-                  proceedWithBlock = false;
-                }
-              }
-
-              if (proceedWithBlock) {
-                let blockSucceededThisTarget = false;
-                const data = {
-                  action: "block",
-                  user: targetVal,
-                  expiry: config.blockDur,
-                  reason: withToolTag(config.blockReason, toolTag),
-                  // Overwrites an existing block on the target. Without this
-                  // parameter, the API is expected to reject a block on an
-                  // already-blocked target (alreadyblocked), which would make
-                  // the pre-filled "modify an active block" flow fail.
-                  reblock: 1,
-                };
-                // If hardblock is checked, we do NOT want anononly=1 (registered users should be blocked too)
-                if (isTargetIP) {
-                  if (!config.blockAnon) {
-                    data.anononly = 1; // Standard anonymous-only block
-                  }
-                  // If config.blockAnon is true (meaning chkHardblock was checked), we omit data.anononly or set it to 0
-                } else {
-                  if (config.blockAuto) data.autoblock = 1;
-                }
-                if (config.blockCreate) data.nocreate = 1;
-                if (!config.blockTalk) data.allowusertalk = 1;
-                if (config.blockMail) data.noemail = 1;
-                if (config.blockHide) data.hidename = 1;
-                if (config.blockPartial) {
-                  data.partial = 1;
-                  if (config.blockPagerestrictions.length) {
-                    data.pagerestrictions =
-                      config.blockPagerestrictions.join("|");
-                  }
-                  if (config.blockNamespacerestrictions.length) {
-                    data.namespacerestrictions =
-                      config.blockNamespacerestrictions.join("|");
-                  }
-                  if (config.blockActionRestrictions.length) {
-                    data.actionrestrictions =
-                      config.blockActionRestrictions.join("|");
-                  }
-                }
-
-                try {
-                  await apiPost(data);
-                  addLog(`[Block] Successfully blocked user "${targetVal}"`);
-                  stats.block++;
-                  blockSucceededThisTarget = true;
-                } catch (e) {
-                  addLog(
-                    `[Block] Failed to block "${targetVal}": ${formatApiError(e)}`,
-                    true,
-                  );
-                }
-
-                // Post notification to user talk page (separate from block action above,
-                // so a notification failure does not misreport the block as having failed).
-                // Skipped for IP ranges: mw.Title would treat the slash in CIDR notation
-                // (e.g. "1.2.3.0/24") as a subpage separator, producing an incorrect title.
-                // Skipped for any range target (IPv4 or IPv6 CIDR): mw.Title
-                // would misparse the "/" in the range as a subpage separator,
-                // and an IPv6 address's ":" characters risk being misread as
-                // a namespace prefix, producing an incorrect title either way.
-                if (
-                  targetIsRange &&
-                  config.notifyBlock &&
-                  blockSucceededThisTarget
-                ) {
-                  addLog(
-                    "[Notify] Skipped block notification: talk pages are not applicable to IP range targets (IPv4 or IPv6).",
-                    "warn",
-                  );
-                }
-                if (
-                  blockSucceededThisTarget &&
-                  config.notifyBlock &&
-                  !targetIsRange
-                ) {
-                  const talkTitle = new mw.Title(
-                    targetVal,
-                    3,
-                  ).getPrefixedText();
-                  const isBlockIndef = config.blockDur === "never";
-                  const blockReasonNotice =
-                    config.blockReason && config.blockReason.trim()
-                      ? config.blockReason
-                      : useIndonesian
-                        ? "(tidak ada alasan diberikan)"
-                        : "(no reason given)";
-
-                  const notice = useIndonesian
-                    ? isBlockIndef
-                      ? `== Pemberitahuan pemblokiran akun ==\nHalo ${targetVal},\n\nAkun "${targetVal}" telah diblokir secara tidak terbatas dengan alasan berikut: ${blockReasonNotice}.\n\nSelama masa pemblokiran, akun ini mungkin tidak dapat melakukan sebagian atau seluruh tindakan yang biasanya memerlukan hak penyuntingan. Pemblokiran ini tidak berakhir secara otomatis dan akan tetap berlaku kecuali diubah oleh pengurus.\n\nPemberitahuan ini dikirimkan secara otomatis. Silakan sampaikan pertanyaan atau keberatan ke halaman pembicaraan saya. ~~~~`
-                      : `== Pemberitahuan pemblokiran akun ==\nHalo ${targetVal},\n\nAkun "${targetVal}" telah diblokir selama ${translateDurationId(config.blockDur)} dengan alasan berikut: ${blockReasonNotice}.\n\nSelama masa pemblokiran, akun ini mungkin tidak dapat melakukan sebagian atau seluruh tindakan yang biasanya memerlukan hak penyuntingan. Pemblokiran dijadwalkan berakhir pada waktunya, kecuali diubah oleh pengurus.\n\nPemberitahuan ini dikirimkan secara otomatis. Silakan sampaikan pertanyaan atau keberatan ke halaman pembicaraan saya. ~~~~`
-                    : isBlockIndef
-                      ? `== Account block notice ==\nDear ${targetVal},\n\nThe account "${targetVal}" has been blocked indefinitely due to the following reason: ${blockReasonNotice}.\n\nDuring the block period, the account may be unable to perform some or all actions that normally require editing privileges. This block does not expire automatically and will remain in effect unless modified by an administrator.\n\nThis notification was posted automatically. Please direct any questions or concerns to my user talk page. ~~~~`
-                      : `== Account block notice ==\nDear ${targetVal},\n\nThe account "${targetVal}" has been blocked for ${config.blockDur} due to the following reason: ${blockReasonNotice}.\n\nDuring the block period, the account may be unable to perform some or all actions that normally require editing privileges. The block is scheduled to remain in effect until it expires, unless modified by an administrator.\n\nThis notification was posted automatically. Please direct any questions or concerns to my user talk page. ~~~~`;
-
-                  // When a permanent block is applied with the clear-before-notify option,
-                  // replace the talk page with the notice in a single edit rather than
-                  // clearing and then appending as two separate operations.
-                  const shouldReplace =
-                    config.clearTalkPageBeforeNotify && isBlockIndef;
-                  try {
-                    const editParams = {
-                      action: "edit",
-                      title: talkTitle,
-                      summary: notifySummaryBlock,
-                      bot: true,
-                    };
-                    if (shouldReplace) {
-                      editParams.text = notice;
-                    } else {
-                      const talkExists = await pageExists(talkTitle);
-                      editParams.appendtext =
-                        (talkExists ? "\n\n" : "") + notice;
-                    }
-                    await apiPost(editParams);
-                    addLog(
-                      shouldReplace
-                        ? `[Notify] Talk page replaced with notification: "${talkTitle}"`
-                        : `[Notify] Notification posted to: "${talkTitle}"`,
-                    );
-                  } catch (e) {
-                    addLog(
-                      `[Notify] Failed to post block notification to "${talkTitle}": ${formatApiError(e)}`,
-                      "warn",
-                    );
-                  }
-                }
-              } // end if (proceedWithBlock)
+              await blockTarget(targetVal);
               rs.blockDone = true;
             }
 

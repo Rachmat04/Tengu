@@ -1,3 +1,10 @@
+## 2.267.0
+
+### Changed
+
+* Modularisation: Extracted the account, IP, and IP range block execution, self-block confirmation dialogue, and talk-page notification logic (`blockTarget`) out of `work()` in `Tengu.js` into a standalone module at `Pengguna:Rachmat04/Tengu-block.js` (`window.TenguBlock.create`). The module depends only on `mw.util.isIPAddress`, `mw.config`, `mw.Title`, and the `createDialog`, `makeBtn`, `apiPost`, `pageExists`, `withToolTag`, `formatApiError`, `translateDurationId`, and `useIndonesian` helpers passed in by `Tengu.js`.
+* Loader & initialisation: Updated `Tengu.js` to load `Tengu-block.js` after `Tengu-warnuser.js` and to obtain the function from the factory in [Section 05], wrapped inside `work()` with `config` and the per-run logging and statistics callbacks so the call site in the targets loop is unchanged.
+
 ## 2.266.0
 
 ### Changed
