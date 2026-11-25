@@ -2,7 +2,7 @@
  * ============================================================================
  * Tengu — 天狗
  * All-in-one wiki moderation tool — Main script
- * Version 2.271.0
+ * Version 2.272.0
  * ============================================================================
  * PURPOSE:
  * An all-in-one moderation script for MediaWiki that streamlines user blocking,
@@ -215,6 +215,16 @@ $(function () {
       .then(function () {
         return mw.loader.getScript(
           "https://id.wikipedia.org/w/index.php?title=Pengguna:Rachmat04/Tengu-permrequest.js&action=raw&ctype=text/javascript",
+        );
+      })
+      .then(function () {
+        return mw.loader.getScript(
+          "https://id.wikipedia.org/w/index.php?title=Pengguna:Rachmat04/Tengu-movetalk.js&action=raw&ctype=text/javascript",
+        );
+      })
+      .then(function () {
+        return mw.loader.getScript(
+          "https://id.wikipedia.org/w/index.php?title=Pengguna:Rachmat04/Tengu-movepage.js&action=raw&ctype=text/javascript",
         );
       })
       .then(function () {
@@ -593,6 +603,30 @@ $(function () {
             submitPermissionRequest: submitPermissionRequest,
             withToolTag: withToolTag,
             formatApiError: formatApiError,
+          });
+
+        // Associated talk page move helper for the Move page sub-mode.
+        // MOVED to [[Tengu-movetalk.js]]. The module receives the shared
+        // helpers below and returns the core function wrapped inside work().
+        const { moveAssociatedTalkPage: moveAssociatedTalkPageCore } =
+          window.TenguMoveTalk.create({
+            apiGet: apiGet,
+            apiPost: apiPost,
+            formatApiError: formatApiError,
+            useIndonesian: useIndonesian,
+          });
+
+        // Move page sub-mode execution helper. MOVED to [[Tengu-movepage.js]].
+        // The module receives the shared helpers below and returns the core
+        // function wrapped inside work().
+        const { movePageTarget: movePageTargetCore } =
+          window.TenguMovePage.create({
+            apiGet: apiGet,
+            apiPost: apiPost,
+            pageExists: pageExists,
+            withToolTag: withToolTag,
+            formatApiError: formatApiError,
+            useIndonesian: useIndonesian,
           });
 
         // The Meta-Wiki report helpers (submitGlobalSysopsReport(),
@@ -1056,6 +1090,55 @@ $(function () {
             });
           }
 
+          // Associated talk page move helper (moveAssociatedTalkPageCore)
+          // was MOVED to [[Tengu-movetalk.js]] (see the destructuring call
+          // in Section 05).
+          function moveAssociatedTalkPage(targetVal) {
+            return moveAssociatedTalkPageCore(targetVal, config, {
+              addLog: addLog,
+              onMoved: function () {
+                stats.move++;
+                updateStatusDisplay();
+              },
+              onDeleted: function () {
+                stats.delete++;
+                updateStatusDisplay();
+              },
+              logMoveSubpageResults: logMoveSubpageResults,
+              fixDoubleRedirectsForMove: fixDoubleRedirectsForMove,
+              isAborted: function () {
+                return isAborted;
+              },
+              toolTag: toolTag,
+            });
+          }
+
+          // Move page sub-mode execution helper (movePageTargetCore) was
+          // MOVED to [[Tengu-movepage.js]] (see the destructuring call in
+          // Section 05).
+          function movePageTarget(targetVal) {
+            return movePageTargetCore(targetVal, config, {
+              addLog: addLog,
+              onMoved: function () {
+                stats.move++;
+                updateStatusDisplay();
+              },
+              onDeleted: function () {
+                stats.delete++;
+                updateStatusDisplay();
+              },
+              logMoveSubpageResults: logMoveSubpageResults,
+              moveAssociatedTalkPage: moveAssociatedTalkPage,
+              fixDoubleRedirectsForMove: fixDoubleRedirectsForMove,
+              moveCategoryMembers: moveCategoryMembers,
+              isAborted: function () {
+                return isAborted;
+              },
+              toolTag: toolTag,
+              notifySummaryMovePage: notifySummaryMovePage,
+            });
+          }
+
           // removeBalancedFileEmbeds() was MOVED to [[Tengu-wikitext.js]] (see
           // the destructuring call in Section 05).
 
@@ -1226,304 +1309,7 @@ $(function () {
               !isAborted
             ) {
               if (config.moveSandboxMode === "movepage") {
-                // General page move. movetalk and movesubpages are native API
-                // parameters so the move, talk page move, and subpage moves are
-                // handled by the API in a single call rather than as separate requests.
-                const moveParams = {
-                  action: "move",
-                  from: targetVal,
-                  to: config.movePageDest,
-                  reason: withToolTag(config.movePageReason, toolTag),
-                };
-                if (config.movePageNoRedirect) moveParams.noredirect = 1;
-                if (config.movePageSubpages) moveParams.movesubpages = 1;
-                // The talk page move is no longer requested via the native
-                // movetalk parameter. It is instead performed as its own
-                // apiPost() call below (after the main move succeeds), so its
-                // success or failure can be logged independently rather than
-                // being folded silently into the main move's result.
-
-                // Delete the destination page first, if requested and it exists.
-                // A move fails outright if the destination title is already
-                // occupied by an existing page, so this must run before the
-                // move attempt below.
-                if (config.movePageDeleteDest && !isAborted) {
-                  try {
-                    const destExistData = await apiGet({
-                      action: "query",
-                      titles: config.movePageDest,
-                      formatversion: 2,
-                    });
-                    const destPage =
-                      destExistData.query &&
-                      destExistData.query.pages &&
-                      destExistData.query.pages[0];
-                    if (destPage && !destPage.missing) {
-                      await apiPost({
-                        action: "delete",
-                        title: config.movePageDest,
-                        reason:
-                          (useIndonesian
-                            ? "Menghapus halaman tujuan untuk memungkinkan pemindahan halaman: "
-                            : "Deleting destination page to allow page move: ") +
-                          config.movePageReason +
-                          toolTag,
-                      });
-                      addLog(
-                        `[Move] Deleted existing destination page: "${config.movePageDest}"`,
-                      );
-                      stats.delete++;
-                      updateStatusDisplay();
-                    }
-                  } catch (e) {
-                    addLog(
-                      `[Move] Failed to delete destination page "${config.movePageDest}": ${formatApiError(e)}`,
-                      true,
-                    );
-                  }
-                }
-
-                let movePageMoveSucceeded = false;
-                try {
-                  const movePageMoveResult = await apiPost(moveParams);
-                  addLog(
-                    `[Move] Moved "${targetVal}" to "${config.movePageDest}"`,
-                  );
-                  stats.move++;
-                  updateStatusDisplay();
-                  movePageMoveSucceeded = true;
-
-                  // redirectcreated is expected in the response
-                  // when a redirect was left at the old title.
-                  const mpMove = movePageMoveResult && movePageMoveResult.move;
-                  if (
-                    mpMove &&
-                    !config.movePageNoRedirect &&
-                    (mpMove.redirectcreated === undefined ||
-                      mpMove.redirectcreated === false)
-                  ) {
-                    addLog(
-                      `[Move] No redirect was reported as created at "${targetVal}" although redirect suppression was not selected`,
-                      "warn",
-                    );
-                  }
-                  if (config.movePageSubpages) {
-                    await logMoveSubpageResults(
-                      movePageMoveResult,
-                      config.movePageNoRedirect,
-                    );
-                  }
-                } catch (e) {
-                  addLog(
-                    `[Move] Failed to move "${targetVal}" to "${config.movePageDest}": ${formatApiError(e)}`,
-                    true,
-                  );
-                }
-
-                // Move the associated talk page, if requested. Performed as its
-                // own apiPost() call (rather than the native movetalk parameter)
-                // so its success or failure is logged separately from the main
-                // page move, and is only attempted once the main move has
-                // actually succeeded.
-                if (
-                  movePageMoveSucceeded &&
-                  config.movePageTalk &&
-                  !isAborted
-                ) {
-                  try {
-                    const sourceTitleObj = new mw.Title(targetVal);
-                    if (sourceTitleObj.isTalkPage()) {
-                      addLog(
-                        "[Move] Skipped talk page move: target is already a talk page",
-                        "warn",
-                      );
-                    } else {
-                      const sourceTalkTitle = sourceTitleObj
-                        .getTalkPage()
-                        .getPrefixedText();
-                      const destTalkTitle = new mw.Title(config.movePageDest)
-                        .getTalkPage()
-                        .getPrefixedText();
-
-                      // Delete the destination talk page first, if requested
-                      // and it exists, mirroring the destination deletion
-                      // already applied to the main page above. Without this,
-                      // the talk-page move below fails with "articleexists"
-                      // whenever the destination talk page already exists.
-                      if (config.movePageDeleteDest && !isAborted) {
-                        try {
-                          const destTalkExistData = await apiGet({
-                            action: "query",
-                            titles: destTalkTitle,
-                            formatversion: 2,
-                          });
-                          const destTalkPage =
-                            destTalkExistData.query &&
-                            destTalkExistData.query.pages &&
-                            destTalkExistData.query.pages[0];
-                          if (destTalkPage && !destTalkPage.missing) {
-                            await apiPost({
-                              action: "delete",
-                              title: destTalkTitle,
-                              reason:
-                                (useIndonesian
-                                  ? "Menghapus halaman pembicaraan tujuan untuk memungkinkan pemindahan halaman: "
-                                  : "Deleting destination talk page to allow page move: ") +
-                                config.movePageReason +
-                                toolTag,
-                            });
-                            addLog(
-                              `[Move] Deleted existing destination talk page: "${destTalkTitle}"`,
-                            );
-                            stats.delete++;
-                            updateStatusDisplay();
-                          }
-                        } catch (e) {
-                          addLog(
-                            `[Move] Failed to delete destination talk page "${destTalkTitle}": ${formatApiError(e)}`,
-                            true,
-                          );
-                        }
-                      }
-
-                      const talkExistData = await apiGet({
-                        action: "query",
-                        titles: sourceTalkTitle,
-                        formatversion: 2,
-                      });
-                      const talkPage =
-                        talkExistData.query &&
-                        talkExistData.query.pages &&
-                        talkExistData.query.pages[0];
-                      if (talkPage && !talkPage.missing) {
-                        const talkMoveParams = {
-                          action: "move",
-                          from: sourceTalkTitle,
-                          to: destTalkTitle,
-                          reason:
-                            (useIndonesian
-                              ? `Halaman pembicaraan dari halaman yang dipindahkan: ${config.movePageReason}`
-                              : `Talk page of moved page: ${config.movePageReason}`) +
-                            toolTag,
-                        };
-                        if (config.movePageNoRedirect)
-                          talkMoveParams.noredirect = 1;
-                        if (config.movePageSubpages)
-                          talkMoveParams.movesubpages = 1;
-                        const talkMoveResult = await apiPost(talkMoveParams);
-                        addLog(
-                          `[Move] Moved talk page "${sourceTalkTitle}" to "${destTalkTitle}"`,
-                        );
-                        stats.move++;
-                        updateStatusDisplay();
-                        if (config.movePageSubpages) {
-                          await logMoveSubpageResults(
-                            talkMoveResult,
-                            config.movePageNoRedirect,
-                          );
-                        }
-
-                        // Fix double redirects pointing to the talk page's old
-                        // title, mirroring the equivalent fix already applied
-                        // to the main page above. Only runs when both "Fix
-                        // double redirects" and a redirect being left behind
-                        // (i.e. "Suppress redirect" not used) apply.
-                        if (
-                          config.movePageFixDoubleRedirects &&
-                          !config.movePageNoRedirect &&
-                          !isAborted
-                        ) {
-                          await fixDoubleRedirectsForMove(
-                            sourceTalkTitle,
-                            destTalkTitle,
-                            " (talk page)",
-                          );
-                        }
-                      } else {
-                        addLog(
-                          `[Move] Skipped talk page move: "${sourceTalkTitle}" does not exist`,
-                          "warn",
-                        );
-                      }
-                    }
-                  } catch (e) {
-                    addLog(
-                      `[Move] Failed to move talk page for "${targetVal}": ${formatApiError(e)}`,
-                      true,
-                    );
-                  }
-                }
-
-                // Fix double redirects. A double redirect occurs when a page
-                // redirects to targetVal, which — following this move — is
-                // itself now a redirect to config.movePageDest, instead of the
-                // pre-existing redirect being updated to point directly to the
-                // final destination. Only relevant when a redirect was left
-                // behind at the old title (i.e. 'Suppress redirect' was not
-                // used), since otherwise there is no intermediate redirect for
-                // other pages to chain through.
-                if (
-                  movePageMoveSucceeded &&
-                  config.movePageFixDoubleRedirects &&
-                  !config.movePageNoRedirect &&
-                  !isAborted
-                ) {
-                  await fixDoubleRedirectsForMove(
-                    targetVal,
-                    config.movePageDest,
-                    "",
-                  );
-                }
-
-                // Move the members of the category to the new category, once
-                // the category itself has been moved.
-                if (
-                  movePageMoveSucceeded &&
-                  config.movePageCategoryMembers &&
-                  !isAborted
-                ) {
-                  await moveCategoryMembers(targetVal, config.movePageDest);
-                }
-
-                // Post a move notification to the moved page's own talk
-                // page, naming the source and destination titles. Only sent
-                // once the main move has actually succeeded.
-                if (
-                  movePageMoveSucceeded &&
-                  config.notifyMovePage &&
-                  !isAborted
-                ) {
-                  try {
-                    const movePageTalkTitle = new mw.Title(config.movePageDest)
-                      .getTalkPage()
-                      .getPrefixedText();
-                    const talkExists = await pageExists(movePageTalkTitle);
-                    const movePageReasonNotice =
-                      config.movePageReason && config.movePageReason.trim()
-                        ? config.movePageReason
-                        : useIndonesian
-                          ? "(tidak ada alasan diberikan)"
-                          : "(no reason given)";
-                    const notice = useIndonesian
-                      ? `== Pemberitahuan pemindahan halaman ==\nHalaman "${targetVal}" telah dipindahkan ke "${config.movePageDest}" dengan alasan berikut: ${movePageReasonNotice}.\n\nPemberitahuan ini dikirimkan secara otomatis. Silakan sampaikan pertanyaan atau keberatan ke halaman pembicaraan saya. ~~~~`
-                      : `== Page move notice ==\nThe page "${targetVal}" has been moved to "${config.movePageDest}" due to the following reason: ${movePageReasonNotice}.\n\nThis notification was posted automatically. Please direct any questions or concerns to my user talk page. ~~~~`;
-                    await apiPost({
-                      action: "edit",
-                      title: movePageTalkTitle,
-                      appendtext: (talkExists ? "\n\n" : "") + notice,
-                      summary: notifySummaryMovePage,
-                      bot: true,
-                    });
-                    addLog(
-                      `[Notify] Move notification posted to: "${movePageTalkTitle}"`,
-                    );
-                  } catch (e) {
-                    addLog(
-                      `[Notify] Failed to post move notification: ${formatApiError(e)}`,
-                      "warn",
-                    );
-                  }
-                }
+                await movePageTarget(targetVal);
               } else {
                 const moveParams = {
                   action: "move",

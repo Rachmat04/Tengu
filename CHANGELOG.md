@@ -1,3 +1,11 @@
+## 2.272.0
+
+### Changed
+
+* Modularisation: Extracted the associated talk page move workflow for the **Move page** sub-mode (`moveAssociatedTalkPage`) out of `work()` in `Tengu.js` into a standalone module at `Pengguna:Rachmat04/Tengu-movetalk.js` (`window.TenguMoveTalk.create`). The module depends only on `mw.Title` and the `apiGet`, `apiPost`, `formatApiError`, and `useIndonesian` helpers passed in by `Tengu.js`.
+* Modularisation: Extracted the **Move page** sub-mode execution workflow (`movePageTarget`) out of `work()` in `Tengu.js` into a standalone module at `Pengguna:Rachmat04/Tengu-movepage.js` (`window.TenguMovePage.create`). The module depends only on `mw.Title` and the `apiGet`, `apiPost`, `pageExists`, `withToolTag`, `formatApiError`, and `useIndonesian` helpers passed in by `Tengu.js`.
+* Loader & initialisation: Updated `Tengu.js` to load `Tengu-movetalk.js` and `Tengu-movepage.js` after `Tengu-permrequest.js` and to obtain both functions from their factories in [Section 05], wrapped inside `work()` with `config` and the per-run logging, abort, and statistics callbacks so the call site in the targets loop is unchanged.
+
 ## 2.271.0
 
 ### Changed
