@@ -1,3 +1,10 @@
+## 2.261.0
+
+### Changed
+
+* Modularisation: Extracted the page-protection parameter and pending-changes notice helpers (`buildPageProtections`, `buildPageProtectionExpiries`, `isProtectionRemoved`, `isPendingChangesActive`, `isPendingChangesOnly`, `describePendingChanges`, `buildPendingChangesOnlyNotice`, and `appendPendingChangesNote`) out of `work()` in `Tengu.js` into a standalone module at `Pengguna:Rachmat04/Tengu-protect.js` (`window.TenguProtect.create`). The module depends only on `mw.Title` and the `translateDurationId` and `useIndonesian` helpers passed in by `Tengu.js`.
+* Loader & initialisation: Updated `Tengu.js` to load `Tengu-protect.js` after `Tengu-subpages.js` and to obtain the functions from the factory in [Section 05], wrapped inside `work()` with `config` so existing call sites are unchanged.
+
 ## 2.260.0
 
 ### Changed

@@ -2,7 +2,7 @@
  * ============================================================================
  * Tengu — 天狗
  * All-in-one wiki moderation tool — Main script
- * Version 2.260.0
+ * Version 2.261.0
  * ============================================================================
  * PURPOSE:
  * An all-in-one moderation script for MediaWiki that streamlines user blocking,
@@ -160,6 +160,11 @@ $(function () {
       .then(function () {
         return mw.loader.getScript(
           "https://id.wikipedia.org/w/index.php?title=Pengguna:Rachmat04/Tengu-subpages.js&action=raw&ctype=text/javascript",
+        );
+      })
+      .then(function () {
+        return mw.loader.getScript(
+          "https://id.wikipedia.org/w/index.php?title=Pengguna:Rachmat04/Tengu-protect.js&action=raw&ctype=text/javascript",
         );
       })
       .then(function () {
@@ -368,6 +373,22 @@ $(function () {
             apiGet: apiGet,
             formatApiError: formatApiError,
           });
+
+        // Page protection parameter and pending-changes notice helpers. MOVED
+        // to [[Tengu-protect.js]]. The module receives the shared helpers below
+        // and returns the core functions wrapped inside work().
+        const {
+          buildPageProtections: buildPageProtectionsCore,
+          buildPageProtectionExpiries: buildPageProtectionExpiriesCore,
+          isProtectionRemoved: isProtectionRemovedCore,
+          isPendingChangesActive: isPendingChangesActiveCore,
+          isPendingChangesOnly: isPendingChangesOnlyCore,
+          buildPendingChangesOnlyNotice: buildPendingChangesOnlyNoticeCore,
+          appendPendingChangesNote: appendPendingChangesNoteCore,
+        } = window.TenguProtect.create({
+          translateDurationId: translateDurationId,
+          useIndonesian: useIndonesian,
+        });
 
         // Pure wikitext helpers. removeBalancedFileEmbeds() was MOVED to
         // [[Tengu-wikitext.js]]. The module has no dependencies, so the
@@ -735,129 +756,39 @@ $(function () {
               ? "Notifikasi: Pemberitahuan pemindahan halaman"
               : "Notification: Page move notice") + toolTag;
 
-          // Builds the protections parameter for a page protection request, adding
-          // upload= for File-namespace pages. Assumes upload-level
-          // protection is submitted through the same action=protect call as edit/move;
-          // this has not been independently confirmed against the MediaWiki API.
+          // Page protection parameter and pending-changes notice helpers
+          // (*Core) were MOVED to [[Tengu-protect.js]] (see the destructuring
+          // call in Section 05).
           function buildPageProtections(title) {
-            let protections = `edit=${config.protectEdit}|move=${config.protectMove}`;
-            try {
-              if (new mw.Title(title).getNamespaceId() === 6) {
-                protections += `|upload=${config.protectUpload}`;
-              }
-            } catch (e) {
-              // Skip if the title cannot be resolved
-            }
-            return protections;
+            return buildPageProtectionsCore(title, config);
           }
 
-          // Builds the expiry parameter matching the pipe-separated order of
-          // buildPageProtections(): edit expiry, then move expiry, then (for
-          // file pages) upload expiry. The MediaWiki protect API accepts a
-          // pipe-separated expiry list that is matched positionally against
-          // the pipe-separated protections list, so edit and move restrictions
-          // can expire independently in a single action=protect call. Upload
-          // restriction has no dedicated expiry control and reuses the edit
-          // protection expiry.
           function buildPageProtectionExpiries(title) {
-            let expiries = `${config.protectExpiry}|${config.protectMoveExpiry}`;
-            try {
-              if (new mw.Title(title).getNamespaceId() === 6) {
-                expiries += `|${config.protectExpiry}`;
-              }
-            } catch (e) {
-              // Skip if the title cannot be resolved
-            }
-            return expiries;
+            return buildPageProtectionExpiriesCore(title, config);
           }
 
-          // Returns true when the selected edit and move restriction levels are
-          // both "all" (no restriction), meaning the page is not actually
-          // protected despite the Page protection section being enabled. Used
-          // to adjust notification wording so it doesn't claim the page was
-          // "protected" when protection was effectively removed or never
-          // applied.
           function isProtectionRemoved() {
-            return config.protectEdit === "all" && config.protectMove === "all";
+            return isProtectionRemovedCore(config);
           }
 
-          // Returns true when pending changes protection is actually being
-          // applied: the option is ticked and its level is not "none".
           function isPendingChangesActive() {
-            return (
-              !!config.protectPendingChanges &&
-              config.protectPendingChangesLevel !== "none"
+            return isPendingChangesActiveCore(config);
+          }
+
+          function isPendingChangesOnly() {
+            return isPendingChangesOnlyCore(config);
+          }
+
+          function buildPendingChangesOnlyNotice(titles, reasonNotice) {
+            return buildPendingChangesOnlyNoticeCore(
+              titles,
+              reasonNotice,
+              config,
             );
           }
 
-          // Returns true when pending changes is the only protection applied
-          // (edit and move restrictions are both unrestricted).
-          function isPendingChangesOnly() {
-            return isProtectionRemoved() && isPendingChangesActive();
-          }
-
-          // Describes the pending changes level and expiry for notices.
-          function describePendingChanges() {
-            const level = config.protectPendingChangesLevel;
-            const indef = config.protectPendingChangesExpiry === "never";
-            const expiry = config.protectPendingChangesExpiry;
-            return {
-              indef: indef,
-              levelEn:
-                level === "sysop"
-                  ? "reviewers/administrators only"
-                  : "autoconfirmed users",
-              levelId:
-                level === "sysop"
-                  ? "hanya peninjau/pengurus"
-                  : "pengguna terkonfirmasi otomatis",
-              expiryEn: indef ? "indefinitely" : "for " + expiry,
-              expiryId: indef
-                ? "secara tidak terbatas"
-                : "selama " + translateDurationId(expiry),
-            };
-          }
-
-          // Builds a notice for runs where pending changes is the only
-          // protection applied, so the page is described as protected with
-          // pending changes rather than as no longer protected.
-          function buildPendingChangesOnlyNotice(titles, reasonNotice) {
-            const pc = describePendingChanges();
-            const listed = titles.map((t) => `"${t}"`).join(" and ");
-            const listedId = titles.map((t) => `"${t}"`).join(" dan ");
-            if (useIndonesian) {
-              const subject =
-                titles.length === 1
-                  ? `Halaman ${listedId}`
-                  : `Halaman-halaman berikut: ${listedId}`;
-              return `== Pemberitahuan perlindungan halaman ==\n${subject} telah diberi perlindungan perubahan tertunda (tingkat: ${pc.levelId}) ${pc.expiryId} dengan alasan berikut: ${reasonNotice}.\n\nPenyuntingan tetap terbuka bagi semua pengguna, tetapi sebagian suntingan mungkin perlu ditinjau sebelum ditampilkan kepada pembaca secara bawaan. ${pc.indef ? "Perlindungan ini tidak berakhir secara otomatis dan akan tetap berlaku kecuali diubah oleh pengurus." : "Perlindungan dijadwalkan berakhir pada waktunya, kecuali diubah oleh pengurus."}\n\nPemberitahuan ini dikirimkan secara otomatis. Silakan sampaikan pertanyaan atau keberatan ke halaman pembicaraan saya. ~~~~`;
-            }
-            const subject =
-              titles.length === 1
-                ? `The page ${listed} has`
-                : `The following pages have been given pending changes protection: ${listed}. They have`;
-            const subjectFull =
-              titles.length === 1
-                ? `${subject} been given pending changes protection (level: ${pc.levelEn}) ${pc.expiryEn} due to the following reason: ${reasonNotice}.`
-                : `${subject} this protection (level: ${pc.levelEn}) ${pc.expiryEn} due to the following reason: ${reasonNotice}.`;
-            return `== Page protection notice ==\n${subjectFull}\n\nEditing remains open to all users, but some edits may need to be reviewed before they are shown to readers by default. ${pc.indef ? "This protection does not expire automatically and will remain in effect unless modified by an administrator." : "The protection is scheduled to remain in effect until it expires, unless modified by an administrator."}\n\nThis notification was posted automatically. Please direct any questions or concerns to my user talk page. ~~~~`;
-          }
-
-          // Adds a pending changes sentence to a standard protection notice
-          // when pending changes protection is applied alongside edit/move
-          // restrictions. The sentence is inserted before the automatic-post
-          // line, so the notice keeps its original structure.
           function appendPendingChangesNote(notice) {
-            const pc = describePendingChanges();
-            const marker = useIndonesian
-              ? "Pemberitahuan ini dikirimkan secara otomatis."
-              : "This notification was posted automatically.";
-            const sentence = useIndonesian
-              ? `Perlindungan perubahan tertunda (tingkat: ${pc.levelId}) juga diterapkan ${pc.expiryId}.\n\n`
-              : `Pending changes protection (level: ${pc.levelEn}) has also been applied ${pc.expiryEn}.\n\n`;
-            const idx = notice.indexOf(marker);
-            if (idx === -1) return notice;
-            return notice.slice(0, idx) + sentence + notice.slice(idx);
+            return appendPendingChangesNoteCore(notice, config);
           }
 
           // Double-redirect helper (fixDoubleRedirectsForMoveCore) was MOVED to
