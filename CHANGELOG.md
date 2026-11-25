@@ -1,3 +1,10 @@
+## 2.270.0
+
+### Changed
+
+* Modularisation: Extracted the Steward requests/Global report submission and per-account progress logging logic (`reportTargetsToSRG`) out of `work()` in `Tengu.js` into a standalone module at `Pengguna:Rachmat04/Tengu-srgreport.js` (`window.TenguSRGReport.create`). The module depends only on the `submitSRGReport` and `formatApiError` helpers passed in by `Tengu.js`.
+* Loader & initialisation: Updated `Tengu.js` to load `Tengu-srgreport.js` after `Tengu-gsreport.js` and to obtain the function from the factory in [Section 05], wrapped inside `work()` with `config` and the per-run logging and statistics callbacks so the call site in the targets loop is unchanged.
+
 ## 2.269.0
 
 ### Changed

@@ -2,7 +2,7 @@
  * ============================================================================
  * Tengu — 天狗
  * All-in-one wiki moderation tool — Main script
- * Version 2.269.0
+ * Version 2.270.0
  * ============================================================================
  * PURPOSE:
  * An all-in-one moderation script for MediaWiki that streamlines user blocking,
@@ -200,6 +200,11 @@ $(function () {
       .then(function () {
         return mw.loader.getScript(
           "https://id.wikipedia.org/w/index.php?title=Pengguna:Rachmat04/Tengu-gsreport.js&action=raw&ctype=text/javascript",
+        );
+      })
+      .then(function () {
+        return mw.loader.getScript(
+          "https://id.wikipedia.org/w/index.php?title=Pengguna:Rachmat04/Tengu-srgreport.js&action=raw&ctype=text/javascript",
         );
       })
       .then(function () {
@@ -545,6 +550,15 @@ $(function () {
           window.TenguGSReport.create({
             buildGSLineForTarget: buildGSLineForTargetCore,
             submitGlobalSysopsReport: submitGlobalSysopsReport,
+            formatApiError: formatApiError,
+          });
+
+        // Steward requests/Global report execution helper. MOVED to
+        // [[Tengu-srgreport.js]]. The module receives the shared helpers below
+        // and returns the core function wrapped inside work().
+        const { reportTargetsToSRG: reportTargetsToSRGCore } =
+          window.TenguSRGReport.create({
+            submitSRGReport: submitSRGReport,
             formatApiError: formatApiError,
           });
 
@@ -921,6 +935,20 @@ $(function () {
             });
           }
 
+          // Steward requests/Global report execution helper
+          // (reportTargetsToSRGCore) was MOVED to [[Tengu-srgreport.js]]
+          // (see the destructuring call in Section 05).
+          function reportTargetsToSRG(targetVal) {
+            return reportTargetsToSRGCore(targetVal, config, {
+              addLog: addLog,
+              onReported: function () {
+                stats.report++;
+                updateStatusDisplay();
+              },
+              toolTag: toolTag,
+            });
+          }
+
           // Account unblock helper (unblockTargetCore) was MOVED to
           // [[Tengu-unblock.js]] (see the destructuring call in Section 05).
           function unblockTarget(targetVal) {
@@ -1187,64 +1215,7 @@ $(function () {
               !isAborted &&
               (!isMultiTarget || targetVal === config.target)
             ) {
-              // A Steward requests/Global report is submitted as a single edit
-              // covering every selected account (via {{MultiLock}} or multiple
-              // {{Luxotool}} lines), rather than one API call per account. Since
-              // there is only one underlying request, "processing" and
-              // "completed"/"failed" are logged once per account so the state
-              // of every account is still visible, even though they resolve
-              // together rather than one at a time.
-              const _srgAllTargets = config.targets || [targetVal];
-              const _srgTargetCount = _srgAllTargets.length;
-              const _srgKindLabel =
-                config.reportSRGKind === "block"
-                  ? "global block"
-                  : "global lock";
-
-              if (_srgTargetCount > 1) {
-                addLog(
-                  `[Report] Queued ${_srgTargetCount} accounts for Steward requests/Global (${_srgKindLabel}): ${_srgAllTargets.join(", ")}`,
-                );
-              }
-              for (const _srgTarget of _srgAllTargets) {
-                addLog(
-                  `[Report] Processing "${_srgTarget}" for Steward requests/Global (${_srgKindLabel})...`,
-                );
-              }
-
-              try {
-                const srgSummary =
-                  _srgTargetCount > 1
-                    ? "Reporting " +
-                      _srgTargetCount +
-                      " accounts for global " +
-                      (config.reportSRGKind === "block" ? "block" : "lock") +
-                      toolTag
-                    : "Reporting account for global " +
-                      (config.reportSRGKind === "block" ? "block" : "lock") +
-                      toolTag;
-                await submitSRGReport(
-                  config.reportSRGKind,
-                  _srgAllTargets,
-                  config.reportSRGSection,
-                  srgSummary,
-                );
-                for (const _srgTarget of _srgAllTargets) {
-                  addLog(
-                    `[Report] Completed: "${_srgTarget}" submitted to Steward requests/Global (${_srgKindLabel})`,
-                  );
-                }
-                stats.report++;
-                updateStatusDisplay();
-              } catch (e) {
-                const _srgErrText = formatApiError(e);
-                for (const _srgTarget of _srgAllTargets) {
-                  addLog(
-                    `[Report] Failed for "${_srgTarget}" on Steward requests/Global: ${_srgErrText}`,
-                    true,
-                  );
-                }
-              }
+              await reportTargetsToSRG(targetVal);
               rs.reportSRGDone = true;
             }
 
