@@ -2,7 +2,7 @@
  * ============================================================================
  * Tengu — 天狗
  * All-in-one wiki moderation tool — Main script
- * Version 2.254.0
+ * Version 2.255.0
  * ============================================================================
  * PURPOSE:
  * An all-in-one moderation script for MediaWiki that streamlines user blocking,
@@ -130,6 +130,11 @@ $(function () {
       .then(function () {
         return mw.loader.getScript(
           "https://id.wikipedia.org/w/index.php?title=Pengguna:Rachmat04/Tengu-revert.js&action=raw&ctype=text/javascript",
+        );
+      })
+      .then(function () {
+        return mw.loader.getScript(
+          "https://id.wikipedia.org/w/index.php?title=Pengguna:Rachmat04/Tengu-wikitext.js&action=raw&ctype=text/javascript",
         );
       })
       .then(function () {
@@ -346,6 +351,12 @@ $(function () {
           getCategoryNamespaceId,
           getCategoryNamespaceAliases,
         } = window.TenguSiteInfo.create({ apiGet: apiGet });
+
+        // Pure wikitext helpers. removeBalancedFileEmbeds() was MOVED to
+        // [[Tengu-wikitext.js]]. The module has no dependencies, so the
+        // factory takes no arguments. The name is unchanged, so the call in
+        // the unlink loop of work() is unchanged.
+        const { removeBalancedFileEmbeds } = window.TenguWikitext.create();
 
         // Meta-Wiki report helpers (Global sysops/Requests, Steward
         // requests/Global, Steward requests/Permissions) and foreignApiGet().
@@ -1381,85 +1392,8 @@ $(function () {
             return "* Please block " + userLink + ": " + reasonText + " ~~~~";
           }
 
-          // Removes an entire [[File:...]] or [[Image:...]] construct for the given
-          // file name, including any nested wikilinks or templates within its
-          // caption, by tracking bracket depth rather than matching with a regex.
-          // A regex such as /\[\[File:Name(?:\|[^\]]*)?\]\]/ stops at the first
-          // "]]" it finds, which incorrectly truncates captions that themselves
-          // contain wikilinks or templates (e.g. "[[Bart Simpson|Bart]]" or
-          // "{{small|(anjing)}}" inside the caption), leaving the remainder of the
-          // caption behind as stray wikitext. This function instead walks forward
-          // from the opening "[[", counting nested "[[" / "]]" pairs, so it finds
-          // the "]]" that actually closes the file embed. Any horizontal
-          // whitespace immediately before or after the removed construct is also
-          // trimmed, so the removal does not leave behind stray spaces.
-          function removeBalancedFileEmbeds(
-            text,
-            fileNameForMatch,
-            fileNsAliasPattern,
-          ) {
-            const escapedFileName = fileNameForMatch
-              .replace(/[.*+?^${}()|[\]\\]/g, "\\$&")
-              .replace(/[ _]/g, "[ _]");
-            // fileNsAliasPattern is a pre-escaped, pipe-separated alternation
-            // of every recognised File-namespace prefix on this wiki (e.g.
-            // "File|Berkas|Image"), so embeds using any of them are matched,
-            // not only the English "File"/"Image" forms. Falls back to the
-            // English forms if no pattern was supplied.
-            const nsPattern = fileNsAliasPattern || "[Ff]ile|[Ii]mage";
-            const startRe = new RegExp(
-              "\\[\\[\\s*(?:" +
-                nsPattern +
-                ")\\s*:\\s*" +
-                escapedFileName +
-                "\\s*(?:\\||\\]\\])",
-              "i",
-            );
-            let result = text;
-            let searchFrom = 0;
-            while (searchFrom < result.length) {
-              const remaining = result.slice(searchFrom);
-              const m = startRe.exec(remaining);
-              if (!m) break;
-              const startIdx = searchFrom + m.index;
-
-              // Walk forward from the opening "[[", tracking bracket depth, to
-              // find the matching closing "]]" for this specific file embed,
-              // rather than the first "]]" encountered.
-              let depth = 0;
-              let i = startIdx;
-              let endIdx = -1;
-              while (i < result.length - 1) {
-                const two = result.substr(i, 2);
-                if (two === "[[") {
-                  depth++;
-                  i += 2;
-                  continue;
-                }
-                if (two === "]]") {
-                  depth--;
-                  i += 2;
-                  if (depth === 0) {
-                    endIdx = i;
-                    break;
-                  }
-                  continue;
-                }
-                i++;
-              }
-
-              if (endIdx === -1) {
-                // Unbalanced brackets; stop rather than risk corrupting content.
-                break;
-              }
-
-              const before = result.slice(0, startIdx).replace(/[ \t]+$/, "");
-              const after = result.slice(endIdx).replace(/^[ \t]+/, "");
-              result = before + after;
-              searchFrom = before.length;
-            }
-            return result;
-          }
+          // removeBalancedFileEmbeds() was MOVED to [[Tengu-wikitext.js]] (see
+          // the destructuring call in Section 05).
 
           // --- Merge Wikidata items ---
           // Single-shot operation, independent of config.targets: a merge

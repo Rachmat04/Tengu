@@ -1,3 +1,10 @@
+## 2.255.0
+
+### Changed
+
+* Modularisation: Extracted `removeBalancedFileEmbeds` out of `work()` in `Tengu.js` into a standalone module at `Pengguna:Rachmat04/Tengu-wikitext.js` (`window.TenguWikitext.create`). The module is pure and has no dependencies.
+* Loader & initialisation: Updated `Tengu.js` to load `Tengu-wikitext.js` after `Tengu-revert.js` and to obtain the function from the factory in [Section 05]. The name is unchanged, so the call in the unlink loop of `work()` is unchanged.
+
 ## 2.254.0
 
 ### Changed
