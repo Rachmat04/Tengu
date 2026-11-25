@@ -2,7 +2,7 @@
  * ============================================================================
  * Tengu — 天狗
  * All-in-one wiki moderation tool — Main script
- * Version 2.265.0
+ * Version 2.266.0
  * ============================================================================
  * PURPOSE:
  * An all-in-one moderation script for MediaWiki that streamlines user blocking,
@@ -185,6 +185,11 @@ $(function () {
       .then(function () {
         return mw.loader.getScript(
           "https://id.wikipedia.org/w/index.php?title=Pengguna:Rachmat04/Tengu-undelete.js&action=raw&ctype=text/javascript",
+        );
+      })
+      .then(function () {
+        return mw.loader.getScript(
+          "https://id.wikipedia.org/w/index.php?title=Pengguna:Rachmat04/Tengu-warnuser.js&action=raw&ctype=text/javascript",
         );
       })
       .then(function () {
@@ -497,6 +502,17 @@ $(function () {
             useIndonesian: useIndonesian,
           });
 
+        // User warning talk-page posting helper. MOVED to
+        // [[Tengu-warnuser.js]]. The module receives the shared helpers below
+        // and returns the core function wrapped inside work().
+        const { warnTarget: warnTargetCore } = window.TenguWarnUser.create({
+          apiPost: apiPost,
+          pageExists: pageExists,
+          formatApiError: formatApiError,
+          useIndonesian: useIndonesian,
+          warnMessages: WARN_MESSAGES,
+        });
+
         // The Meta-Wiki report helpers (submitGlobalSysopsReport(),
         // foreignApiGet(), submitSRGReport(), PERM_REQUEST_TYPES and
         // submitPermissionRequest()) were MOVED to [[Tengu-reports.js]]
@@ -748,10 +764,6 @@ $(function () {
             (useIndonesian
               ? "Notifikasi: Pemberitahuan perlindungan halaman"
               : "Notification: Page protection notice") + toolTag;
-          const notifySummaryWarn =
-            (useIndonesian
-              ? "Notifikasi: Peringatan pengguna"
-              : "Notification: User warning") + toolTag;
           const notifySummaryRollback =
             (useIndonesian
               ? "Notifikasi: Pemberitahuan pembatalan suntingan"
@@ -892,6 +904,15 @@ $(function () {
                 stats.undelete++;
                 updateStatusDisplay();
               },
+              toolTag: toolTag,
+            });
+          }
+
+          // User warning helper (warnTargetCore) was MOVED to
+          // [[Tengu-warnuser.js]] (see the destructuring call in Section 05).
+          function warnTarget(targetVal) {
+            return warnTargetCore(targetVal, config, isMultiTarget, {
+              addLog: addLog,
               toolTag: toolTag,
             });
           }
@@ -1067,44 +1088,7 @@ $(function () {
               config.mode === "user" &&
               !isAborted
             ) {
-              const talkTitle = new mw.Title(targetVal, 3).getPrefixedText();
-              // In multi-target runs, rebuild the notice with the current
-              // target's name so each recipient is addressed correctly,
-              // rather than reusing the pre-built text that contains the
-              // primary target's name.
-              let notice = config.warnNotice;
-              if (isMultiTarget && config.warnTemplateValue) {
-                for (const group of WARN_MESSAGES) {
-                  if (!group.items) continue;
-                  const found = group.items.find(function (item) {
-                    return item.value === config.warnTemplateValue;
-                  });
-                  if (found) {
-                    notice = found.buildNotice(
-                      targetVal,
-                      config.warnExtra,
-                      config.warnFinal,
-                    );
-                    break;
-                  }
-                }
-              }
-              try {
-                const talkExists = await pageExists(talkTitle);
-                await apiPost({
-                  action: "edit",
-                  title: talkTitle,
-                  appendtext: (talkExists ? "\n\n" : "") + notice,
-                  summary: notifySummaryWarn,
-                  bot: true,
-                });
-                addLog(`[Warn] Warning posted to: "${talkTitle}"`);
-              } catch (e) {
-                addLog(
-                  `[Warn] Failed to post warning to "${talkTitle}": ${formatApiError(e)}`,
-                  "warn",
-                );
-              }
+              await warnTarget(targetVal);
               rs.warnDone = true;
             }
 

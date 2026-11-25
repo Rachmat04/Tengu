@@ -1,3 +1,10 @@
+## 2.266.0
+
+### Changed
+
+* Modularisation: Extracted the user warning talk-page posting logic (`warnTarget`) out of `work()` in `Tengu.js` into a standalone module at `Pengguna:Rachmat04/Tengu-warnuser.js` (`window.TenguWarnUser.create`). The module depends only on `mw.Title` and the `apiPost`, `pageExists`, `formatApiError`, `useIndonesian`, and `warnMessages` helpers passed in by `Tengu.js`.
+* Loader & initialisation: Updated `Tengu.js` to load `Tengu-warnuser.js` after `Tengu-undelete.js` and to obtain the function from the factory in [Section 05], wrapped inside `work()` with `config`, `isMultiTarget`, and the per-run logging callback so the call site in the targets loop is unchanged.
+
 ## 2.265.0
 
 ### Changed
