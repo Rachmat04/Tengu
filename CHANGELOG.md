@@ -1,3 +1,11 @@
+## 2.273.0
+
+### Changed
+
+* Modularisation: Extracted the **Move to user's sandbox** sub-mode execution workflow (`moveToSandboxTarget`) out of `work()` in `Tengu.js` into a standalone module at `Pengguna:Rachmat04/Tengu-movesandbox.js` (`window.TenguMoveSandbox.create`). The module depends only on `mw.Title` and the `apiGet`, `apiPost`, `pageExists`, `withToolTag`, `formatApiError`, and `useIndonesian` helpers passed in by `Tengu.js`.
+* Modularisation: Extracted the **Fix redirects** execution workflow (`fixRedirectsTarget`) out of `work()` in `Tengu.js` into a standalone module at `Pengguna:Rachmat04/Tengu-fixredirects.js` (`window.TenguFixRedirects.create`). The module depends only on the `apiGet`, `apiPost`, `withToolTag`, and `formatApiError` helpers passed in by `Tengu.js`.
+* Loader & initialisation: Updated `Tengu.js` to load `Tengu-movesandbox.js` and `Tengu-fixredirects.js` after `Tengu-movepage.js` and to obtain both functions from their factories in [Section 05], wrapped inside `work()` with `config` and the per-run logging, abort, resume-tracking, and statistics callbacks so the call sites in the targets loop are unchanged.
+
 ## 2.272.0
 
 ### Changed

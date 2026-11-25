@@ -2,7 +2,7 @@
  * ============================================================================
  * Tengu — 天狗
  * All-in-one wiki moderation tool — Main script
- * Version 2.272.0
+ * Version 2.273.0
  * ============================================================================
  * PURPOSE:
  * An all-in-one moderation script for MediaWiki that streamlines user blocking,
@@ -225,6 +225,16 @@ $(function () {
       .then(function () {
         return mw.loader.getScript(
           "https://id.wikipedia.org/w/index.php?title=Pengguna:Rachmat04/Tengu-movepage.js&action=raw&ctype=text/javascript",
+        );
+      })
+      .then(function () {
+        return mw.loader.getScript(
+          "https://id.wikipedia.org/w/index.php?title=Pengguna:Rachmat04/Tengu-movesandbox.js&action=raw&ctype=text/javascript",
+        );
+      })
+      .then(function () {
+        return mw.loader.getScript(
+          "https://id.wikipedia.org/w/index.php?title=Pengguna:Rachmat04/Tengu-fixredirects.js&action=raw&ctype=text/javascript",
         );
       })
       .then(function () {
@@ -627,6 +637,30 @@ $(function () {
             withToolTag: withToolTag,
             formatApiError: formatApiError,
             useIndonesian: useIndonesian,
+          });
+
+        // Move to user's sandbox sub-mode execution helper. MOVED to
+        // [[Tengu-movesandbox.js]]. The module receives the shared helpers
+        // below and returns the core function wrapped inside work().
+        const { moveToSandboxTarget: moveToSandboxTargetCore } =
+          window.TenguMoveSandbox.create({
+            apiGet: apiGet,
+            apiPost: apiPost,
+            pageExists: pageExists,
+            withToolTag: withToolTag,
+            formatApiError: formatApiError,
+            useIndonesian: useIndonesian,
+          });
+
+        // Fix redirects execution helper. MOVED to [[Tengu-fixredirects.js]].
+        // The module receives the shared helpers below and returns the core
+        // function wrapped inside work().
+        const { fixRedirectsTarget: fixRedirectsTargetCore } =
+          window.TenguFixRedirects.create({
+            apiGet: apiGet,
+            apiPost: apiPost,
+            withToolTag: withToolTag,
+            formatApiError: formatApiError,
           });
 
         // The Meta-Wiki report helpers (submitGlobalSysopsReport(),
@@ -1139,6 +1173,48 @@ $(function () {
             });
           }
 
+          // Move to user's sandbox sub-mode execution helper
+          // (moveToSandboxTargetCore) was MOVED to [[Tengu-movesandbox.js]]
+          // (see the destructuring call in Section 05).
+          function moveToSandboxTarget(targetVal) {
+            return moveToSandboxTargetCore(targetVal, config, {
+              addLog: addLog,
+              onMoved: function () {
+                stats.move++;
+                updateStatusDisplay();
+              },
+              onDeleted: function () {
+                stats.delete++;
+                updateStatusDisplay();
+              },
+              isAborted: function () {
+                return isAborted;
+              },
+              toolTag: toolTag,
+              throttleMs: THROTTLE_MS,
+              notifySummaryMovePage: notifySummaryMovePage,
+            });
+          }
+
+          // Fix redirects execution helper (fixRedirectsTargetCore) was MOVED
+          // to [[Tengu-fixredirects.js]] (see the destructuring call in
+          // Section 05).
+          function fixRedirectsTarget(targetVal) {
+            return fixRedirectsTargetCore(targetVal, config, {
+              addLog: addLog,
+              onRedirectFixed: function () {
+                stats.redirfix++;
+                updateStatusDisplay();
+              },
+              processedTitles: rs.processedFixRedirectsTitles,
+              isAborted: function () {
+                return isAborted;
+              },
+              toolTag: toolTag,
+              throttleMs: THROTTLE_MS,
+            });
+          }
+
           // removeBalancedFileEmbeds() was MOVED to [[Tengu-wikitext.js]] (see
           // the destructuring call in Section 05).
 
@@ -1311,345 +1387,8 @@ $(function () {
               if (config.moveSandboxMode === "movepage") {
                 await movePageTarget(targetVal);
               } else {
-                const moveParams = {
-                  action: "move",
-                  from: targetVal,
-                  to: config.moveSandboxDest,
-                  reason: withToolTag(config.moveSandboxReason, toolTag),
-                };
-                if (config.moveSandboxNoRedirect) moveParams.noredirect = 1;
-
-                // Delete the destination page first, if requested and it exists.
-                // A move fails outright if the destination title is already
-                // occupied by an existing page, so this must run before the
-                // move attempt below, matching the equivalent option in the
-                // Move page sub-mode.
-                if (config.moveSandboxDeleteDest && !isAborted) {
-                  try {
-                    const destExistData = await apiGet({
-                      action: "query",
-                      titles: config.moveSandboxDest,
-                      formatversion: 2,
-                    });
-                    const destPage =
-                      destExistData.query &&
-                      destExistData.query.pages &&
-                      destExistData.query.pages[0];
-                    if (destPage && !destPage.missing) {
-                      await apiPost({
-                        action: "delete",
-                        title: config.moveSandboxDest,
-                        reason:
-                          (useIndonesian
-                            ? "Menghapus halaman tujuan untuk memungkinkan pemindahan halaman: "
-                            : "Deleting destination page to allow page move: ") +
-                          config.moveSandboxReason +
-                          toolTag,
-                      });
-                      addLog(
-                        `[Move] Deleted existing destination page: "${config.moveSandboxDest}"`,
-                      );
-                      stats.delete++;
-                      updateStatusDisplay();
-                    }
-                  } catch (e) {
-                    addLog(
-                      `[Move] Failed to delete destination page "${config.moveSandboxDest}": ${formatApiError(e)}`,
-                      true,
-                    );
-                  }
-                }
-
-                let sandboxMoveSucceeded = false;
-                try {
-                  await apiPost(moveParams);
-                  addLog(
-                    `[Move] Moved "${targetVal}" to "${config.moveSandboxDest}"`,
-                  );
-                  stats.move++;
-                  updateStatusDisplay();
-                  sandboxMoveSucceeded = true;
-                } catch (e) {
-                  addLog(
-                    `[Move] Failed to move "${targetVal}" to "${config.moveSandboxDest}": ${formatApiError(e)}`,
-                    true,
-                  );
-                }
-
-                // Move the associated talk page if the option was selected,
-                // and only if the main page move succeeded.
-                if (
-                  sandboxMoveSucceeded &&
-                  config.moveSandboxTalk &&
-                  !isAborted
-                ) {
-                  try {
-                    const sourceTitleObj = new mw.Title(targetVal);
-                    if (sourceTitleObj.isTalkPage()) {
-                      addLog(
-                        "[Move] Skipped talk page move: target is already a talk page",
-                        "warn",
-                      );
-                    } else {
-                      const sourceTalkTitle = sourceTitleObj
-                        .getTalkPage()
-                        .getPrefixedText();
-
-                      // Delete the destination talk page first, if requested
-                      // and it exists, mirroring the destination deletion
-                      // already applied to the main destination above.
-                      if (config.moveSandboxDeleteDest && !isAborted) {
-                        try {
-                          const destTalkExistData = await apiGet({
-                            action: "query",
-                            titles: config.moveSandboxTalkDest,
-                            formatversion: 2,
-                          });
-                          const destTalkPage =
-                            destTalkExistData.query &&
-                            destTalkExistData.query.pages &&
-                            destTalkExistData.query.pages[0];
-                          if (destTalkPage && !destTalkPage.missing) {
-                            await apiPost({
-                              action: "delete",
-                              title: config.moveSandboxTalkDest,
-                              reason:
-                                (useIndonesian
-                                  ? "Menghapus halaman pembicaraan tujuan untuk memungkinkan pemindahan halaman: "
-                                  : "Deleting destination talk page to allow page move: ") +
-                                config.moveSandboxReason +
-                                toolTag,
-                            });
-                            addLog(
-                              `[Move] Deleted existing destination talk page: "${config.moveSandboxTalkDest}"`,
-                            );
-                            stats.delete++;
-                            updateStatusDisplay();
-                          }
-                        } catch (e) {
-                          addLog(
-                            `[Move] Failed to delete destination talk page "${config.moveSandboxTalkDest}": ${formatApiError(e)}`,
-                            true,
-                          );
-                        }
-                      }
-
-                      const talkExistData = await apiGet({
-                        action: "query",
-                        titles: sourceTalkTitle,
-                        formatversion: 2,
-                      });
-                      const talkPage =
-                        talkExistData.query &&
-                        talkExistData.query.pages &&
-                        talkExistData.query.pages[0];
-                      if (talkPage && !talkPage.missing) {
-                        const talkMoveParams = {
-                          action: "move",
-                          from: sourceTalkTitle,
-                          to: config.moveSandboxTalkDest,
-                          reason:
-                            (useIndonesian
-                              ? `Halaman pembicaraan dari halaman yang dipindahkan: ${config.moveSandboxReason}`
-                              : `Talk page of moved page: ${config.moveSandboxReason}`) +
-                            toolTag,
-                        };
-                        if (config.moveSandboxNoRedirect)
-                          talkMoveParams.noredirect = 1;
-                        await apiPost(talkMoveParams);
-                        addLog(
-                          `[Move] Moved talk page "${sourceTalkTitle}" to "${config.moveSandboxTalkDest}"`,
-                        );
-                        stats.move++;
-                        updateStatusDisplay();
-                      } else {
-                        addLog(
-                          `[Move] Skipped talk page move: "${sourceTalkTitle}" does not exist`,
-                          "warn",
-                        );
-                      }
-                    }
-                  } catch (e) {
-                    addLog(
-                      `[Move] Failed to move talk page to "${config.moveSandboxTalkDest}": ${formatApiError(e)}`,
-                      true,
-                    );
-                  }
-                }
-
-                // Move all subpages if the option was selected, and only if
-                // the main page move succeeded.
-                if (
-                  sandboxMoveSucceeded &&
-                  config.moveSandboxSubpages &&
-                  !isAborted
-                ) {
-                  try {
-                    const sourceTitleObj = new mw.Title(targetVal);
-                    if (sourceTitleObj.isTalkPage()) {
-                      addLog(
-                        "[Move] Skipped subpage moves: target is already a talk page",
-                        "warn",
-                      );
-                    } else {
-                      const ns = sourceTitleObj.getNamespaceId();
-                      const mainText = sourceTitleObj.getMain();
-                      const spData = await apiGet({
-                        action: "query",
-                        list: "allpages",
-                        apprefix: mainText + "/",
-                        apnamespace: ns,
-                        aplimit: "max",
-                        formatversion: 2,
-                      });
-                      const subpages =
-                        (spData.query && spData.query.allpages) || [];
-                      if (!subpages.length) {
-                        addLog(
-                          `[Move] No subpages found for: "${targetVal}"`,
-                          "warn",
-                        );
-                      }
-                      // Normalise the source prefix so that the suffix can be
-                      // extracted reliably regardless of how the user typed it.
-                      const normalizedSource = sourceTitleObj.getPrefixedText();
-                      for (const sp of subpages) {
-                        if (isAborted) break;
-                        const suffix = sp.title.slice(normalizedSource.length); // e.g. "/Section"
-                        const spDest = config.moveSandboxDest + suffix;
-                        const spMoveParams = {
-                          action: "move",
-                          from: sp.title,
-                          to: spDest,
-                          reason:
-                            (useIndonesian
-                              ? `Memindahkan subhalaman karena halaman utama yang terkait telah dipindahkan: ${config.moveSandboxReason}`
-                              : `Moving subpage because its associated main page has been moved: ${config.moveSandboxReason}`) +
-                            toolTag,
-                        };
-                        if (config.moveSandboxNoRedirect)
-                          spMoveParams.noredirect = 1;
-                        try {
-                          await apiPost(spMoveParams);
-                          addLog(
-                            `[Move] Moved subpage "${sp.title}" to "${spDest}"`,
-                          );
-                          stats.move++;
-                          updateStatusDisplay();
-                        } catch (e) {
-                          addLog(
-                            `[Move] Failed to move subpage "${sp.title}" to "${spDest}": ${formatApiError(e)}`,
-                            true,
-                          );
-                        }
-
-                        // Move the talk page of this subpage if the option is selected.
-                        if (config.moveSandboxTalk && !isAborted) {
-                          try {
-                            const spTitleObj = new mw.Title(sp.title);
-                            const spTalkTitle = spTitleObj
-                              .getTalkPage()
-                              .getPrefixedText();
-                            const spTalkExistData = await apiGet({
-                              action: "query",
-                              titles: spTalkTitle,
-                              formatversion: 2,
-                            });
-                            const spTalkPage =
-                              spTalkExistData.query &&
-                              spTalkExistData.query.pages &&
-                              spTalkExistData.query.pages[0];
-                            if (spTalkPage && !spTalkPage.missing) {
-                              const spTalkDest =
-                                config.moveSandboxTalkDest + suffix;
-                              const spTalkMoveParams = {
-                                action: "move",
-                                from: spTalkTitle,
-                                to: spTalkDest,
-                                reason:
-                                  (useIndonesian
-                                    ? `Halaman pembicaraan dari subhalaman yang dipindahkan: ${config.moveSandboxReason}`
-                                    : `Talk page of moved subpage: ${config.moveSandboxReason}`) +
-                                  toolTag,
-                              };
-                              if (config.moveSandboxNoRedirect)
-                                spTalkMoveParams.noredirect = 1;
-                              await apiPost(spTalkMoveParams);
-                              addLog(
-                                `[Move] Moved subpage talk page "${spTalkTitle}" to "${spTalkDest}"`,
-                              );
-                              stats.move++;
-                              updateStatusDisplay();
-                            } else {
-                              addLog(
-                                `[Move] Skipped subpage talk page move: "${spTalkTitle}" does not exist`,
-                                "warn",
-                              );
-                            }
-                          } catch (e) {
-                            addLog(
-                              `[Move] Failed to move talk page for subpage "${sp.title}": ${formatApiError(e)}`,
-                              true,
-                            );
-                          }
-                        }
-
-                        await new Promise((resolve) =>
-                          setTimeout(resolve, THROTTLE_MS),
-                        );
-                      }
-                    }
-                  } catch (e) {
-                    addLog(
-                      `[Move] Failed to fetch subpages for "${targetVal}": ${formatApiError(e)}`,
-                      true,
-                    );
-                  }
-                }
-
-                // Post a move notification to the destination user's talk
-                // page, using ns 3 (User talk) so localised namespace names
-                // are resolved via mw.Title rather than an assumed English
-                // prefix. Only sent once the sandbox move has succeeded.
-                if (
-                  sandboxMoveSucceeded &&
-                  config.notifyMovePage &&
-                  !isAborted
-                ) {
-                  try {
-                    const sandboxUserTalkTitle = new mw.Title(
-                      config.moveSandboxUser,
-                      3,
-                    ).getPrefixedText();
-                    const talkExists = await pageExists(sandboxUserTalkTitle);
-                    const moveSandboxReasonNotice =
-                      config.moveSandboxReason &&
-                      config.moveSandboxReason.trim()
-                        ? config.moveSandboxReason
-                        : useIndonesian
-                          ? "(tidak ada alasan diberikan)"
-                          : "(no reason given)";
-                    const notice = useIndonesian
-                      ? `== Pemberitahuan pemindahan halaman ==\nHalo ${config.moveSandboxUser},\n\nHalaman "${targetVal}" telah dipindahkan ke bak pasir Anda di "${config.moveSandboxDest}" dengan alasan berikut: ${moveSandboxReasonNotice}.\n\nPemberitahuan ini dikirimkan secara otomatis. Silakan sampaikan pertanyaan atau keberatan ke halaman pembicaraan saya. ~~~~`
-                      : `== Page move notice ==\nDear ${config.moveSandboxUser},\n\nThe page "${targetVal}" has been moved to your sandbox at "${config.moveSandboxDest}" due to the following reason: ${moveSandboxReasonNotice}.\n\nThis notification was posted automatically. Please direct any questions or concerns to my user talk page. ~~~~`;
-                    await apiPost({
-                      action: "edit",
-                      title: sandboxUserTalkTitle,
-                      appendtext: (talkExists ? "\n\n" : "") + notice,
-                      summary: notifySummaryMovePage,
-                      bot: true,
-                    });
-                    addLog(
-                      `[Notify] Move notification posted to: "${sandboxUserTalkTitle}"`,
-                    );
-                  } catch (e) {
-                    addLog(
-                      `[Notify] Failed to post move notification: ${formatApiError(e)}`,
-                      "warn",
-                    );
-                  }
-                }
-              } // end else (sandbox mode)
+                await moveToSandboxTarget(targetVal);
+              }
               rs.moveSandboxDone = true;
             }
 
@@ -3535,136 +3274,7 @@ $(function () {
               !rs.fixRedirectsDone &&
               !isAborted
             ) {
-              const sourceTitle = targetVal;
-              const destTitle = config.fixRedirectsDest;
-
-              if (!destTitle) {
-                addLog(
-                  "[Fix redirects] No destination specified; skipping.",
-                  "warn",
-                );
-              } else {
-                const escapedSource = sourceTitle
-                  .replace(/[.*+?^${}()|[\]\\]/g, "\\$&")
-                  .replace(/[ _]/g, "[ _]");
-                // Group 1: section anchor (optional). Group 2: display text (optional).
-                const linkRe = new RegExp(
-                  "\\[\\[\\s*" +
-                    escapedSource +
-                    "\\s*(#[^|\\]]*)?(?:\\|([^\\]]*?))?\\]\\]",
-                  "gi",
-                );
-
-                addLog(
-                  `[Fix redirects] Searching for pages linking to: "${sourceTitle}"...`,
-                );
-
-                let blContinue;
-                do {
-                  if (isAborted) break;
-                  const blParams = {
-                    action: "query",
-                    list: "backlinks",
-                    bltitle: sourceTitle,
-                    bllimit: 50,
-                    formatversion: 2,
-                  };
-                  if (blContinue) blParams.blcontinue = blContinue;
-                  try {
-                    const blData = await apiGet(blParams);
-                    blContinue = blData.continue && blData.continue.blcontinue;
-                    const links =
-                      (blData.query && blData.query.backlinks) || [];
-                    for (const link of links) {
-                      if (isAborted) break;
-                      const linkTitle = link.title;
-                      if (rs.processedFixRedirectsTitles.has(linkTitle))
-                        continue;
-                      try {
-                        const revData = await apiGet({
-                          action: "query",
-                          prop: "revisions",
-                          titles: linkTitle,
-                          rvprop: "content",
-                          rvslots: "main",
-                          formatversion: 2,
-                        });
-                        const page =
-                          revData.query &&
-                          revData.query.pages &&
-                          revData.query.pages[0];
-                        if (!page || page.missing) {
-                          rs.processedFixRedirectsTitles.add(linkTitle);
-                          continue;
-                        }
-                        const slot =
-                          page.revisions &&
-                          page.revisions[0] &&
-                          page.revisions[0].slots &&
-                          page.revisions[0].slots.main;
-                        if (!slot) {
-                          rs.processedFixRedirectsTitles.add(linkTitle);
-                          continue;
-                        }
-                        const wikitext = slot.content;
-                        // Replace [[A]], [[A|text]], [[A#section]], [[A#section|text]]
-                        // with the equivalent link pointing to destTitle.
-                        const newWikitext = wikitext.replace(
-                          linkRe,
-                          function (match, section, displayText) {
-                            const sec = section || "";
-                            if (displayText !== undefined) {
-                              return (
-                                "[[" +
-                                destTitle +
-                                sec +
-                                "|" +
-                                displayText +
-                                "]]"
-                              );
-                            }
-                            return "[[" + destTitle + sec + "]]";
-                          },
-                        );
-                        if (newWikitext === wikitext) {
-                          rs.processedFixRedirectsTitles.add(linkTitle);
-                          continue;
-                        }
-                        await apiPost({
-                          action: "edit",
-                          title: linkTitle,
-                          text: newWikitext,
-                          summary: withToolTag(
-                            config.fixRedirectsReason,
-                            toolTag,
-                          ),
-                          bot: true,
-                        });
-                        addLog(
-                          `[Fix redirects] Updated links in: "${linkTitle}"`,
-                        );
-                        stats.redirfix++;
-                        updateStatusDisplay();
-                      } catch (e) {
-                        addLog(
-                          `[Fix redirects] Failed to update "${linkTitle}": ${formatApiError(e)}`,
-                          true,
-                        );
-                      }
-                      rs.processedFixRedirectsTitles.add(linkTitle);
-                      await new Promise((resolve) =>
-                        setTimeout(resolve, THROTTLE_MS),
-                      );
-                    }
-                  } catch (e) {
-                    addLog(
-                      `[Fix redirects] Failed to fetch backlinks for "${sourceTitle}": ${formatApiError(e)}`,
-                      true,
-                    );
-                    break;
-                  }
-                } while (blContinue && !isAborted);
-              }
+              await fixRedirectsTarget(targetVal);
               if (!isAborted) rs.fixRedirectsDone = true;
             }
 
