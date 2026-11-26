@@ -118,8 +118,11 @@
             if (!pickerCreatedPages[edit.title]) {
               pickerCreatedPages[edit.title] = {
                 timestamp: edit.timestamp,
+                revids: [],
               };
             }
+            // Keeps the creation revision ID so Delete revisions can hide it.
+            pickerCreatedPages[edit.title].revids.push(edit.revid);
           } else {
             if (!pickerEditedPages[edit.title]) {
               pickerEditedPages[edit.title] = {
@@ -543,6 +546,7 @@
         btnConfirmPicker.addEventListener("click", function () {
           const nextPageEdits = {};
           const nextCreations = [];
+          const nextCreationRevids = {};
           allEditedCheckboxes.forEach(function (c) {
             if (c.checked) {
               nextPageEdits[c.dataset.pickerKey] =
@@ -552,12 +556,15 @@
           allCreatedCheckboxes.forEach(function (c) {
             if (c.checked) {
               nextCreations.push(c.dataset.pickerKey);
+              nextCreationRevids[c.dataset.pickerKey] =
+                pickerCreatedPages[c.dataset.pickerKey].revids;
             }
           });
           if (typeof onConfirm === "function") {
             onConfirm({
               selectedPageEdits: nextPageEdits,
               selectedCreations: nextCreations,
+              selectedCreationRevids: nextCreationRevids,
             });
           }
           pickerOverlay.closeHandler();

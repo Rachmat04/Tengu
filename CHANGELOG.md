@@ -1,3 +1,14 @@
+## 2.275.0
+
+### Fixed
+
+* Fixed **Delete revisions** doing nothing in user mode when only **Created pages** were selected in **Select specific edits/pages**. The picker kept no revision IDs for created pages, and creation revisions never reach the revision deletion loop, so the run ended with "no actions were performed". The picker now keeps creation revision IDs, and `work()` hides them in a new pass for selected created pages.
+
+### Changed
+
+* Added the `hideRevisions()` helper, used by every revision deletion call. It logs the number of revisions hidden, each revision the API rejects with its error codes, pages skipped because no revision IDs were recorded, and an empty selection.
+* The revision count shown in the success log now comes from the API response items when present.
+
 ## 2.274.0
 
 ### Changed

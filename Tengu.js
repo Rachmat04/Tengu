@@ -2,7 +2,7 @@
  * ============================================================================
  * Tengu — 天狗
  * All-in-one wiki moderation tool — Main script
- * Version 2.274.0
+ * Version 2.275.0
  * ============================================================================
  * PURPOSE:
  * An all-in-one moderation script for MediaWiki that streamlines user blocking,
@@ -1263,6 +1263,62 @@ $(function () {
           // removeBalancedFileEmbeds() was MOVED to [[Tengu-wikitext.js]] (see
           // the destructuring call in Section 05).
 
+          // Hides the given revisions on one page and logs the real result.
+          // Returns true when at least one revision was hidden. Per-item
+          // results are read from revisiondelete.items[].status; the "error"
+          // status value is [Unverified] against a live wiki.
+          async function hideRevisions(title, idlist) {
+            if (!idlist || !idlist.length) {
+              addLog(
+                `[Revdel] Skipped "${title}": no revision IDs were recorded for this page`,
+                "warn",
+              );
+              return false;
+            }
+            try {
+              const result = await apiPost({
+                action: "revisiondelete",
+                type: "revision",
+                ids: idlist.join("|"),
+                hide: config.rdHides,
+                reason: withToolTag(config.rdReason, toolTag),
+                suppress: config.os ? "yes" : "nochange",
+              });
+              const rdResult = result && result.revisiondelete;
+              const items = (rdResult && rdResult.items) || [];
+              const failed = items.filter(function (i) {
+                return i.status === "error";
+              });
+              failed.forEach(function (i) {
+                const reasons = (i.errors || [])
+                  .map(function (er) {
+                    return er.code || er.message || String(er);
+                  })
+                  .join(", ");
+                addLog(
+                  `[Revdel] Revision ${i.id} at "${title}" was rejected${reasons ? ": " + reasons : ""}`,
+                  true,
+                );
+              });
+              if (items.length && failed.length === items.length) return false;
+              const hiddenCount = items.length
+                ? items.length - failed.length
+                : idlist.length;
+              addLog(
+                `[Revdel] Hid ${hiddenCount} of ${idlist.length} revision(s) at: "${title}"`,
+              );
+              stats.revdel++;
+              updateStatusDisplay();
+              return true;
+            } catch (e) {
+              addLog(
+                `[Revdel] Failed at "${title}": ${formatApiError(e)}`,
+                true,
+              );
+              return false;
+            }
+          }
+
           // --- Merge Wikidata items ---
           // Single-shot operation, independent of config.targets: a merge
           // always involves exactly two specific entity IDs (not the
@@ -1463,26 +1519,7 @@ $(function () {
               if (!config.rollback) {
                 // Only revision delete
                 if (config.rd) {
-                  try {
-                    await apiPost({
-                      action: "revisiondelete",
-                      type: "revision",
-                      ids: idlist,
-                      hide: config.rdHides,
-                      reason: withToolTag(config.rdReason, toolTag),
-                      suppress: config.os ? "yes" : "nochange",
-                    });
-                    addLog(
-                      `[Revdel] Hiding ${idlist.length} revisions at: "${title}"`,
-                    );
-                    stats.revdel++;
-                    updateStatusDisplay();
-                  } catch (e) {
-                    addLog(
-                      `[Revdel] Failed at "${title}": ${formatApiError(e)}`,
-                      true,
-                    );
-                  }
+                  await hideRevisions(title, idlist);
                 }
                 await new Promise((resolve) =>
                   setTimeout(resolve, THROTTLE_MS),
@@ -1684,28 +1721,43 @@ $(function () {
                 !isAborted &&
                 (standardRevertSuccess || mediainfoNeedsRevert)
               ) {
-                try {
-                  await apiPost({
-                    action: "revisiondelete",
-                    type: "revision",
-                    ids: idlist,
-                    hide: config.rdHides,
-                    reason: withToolTag(config.rdReason, toolTag),
-                    suppress: config.os ? "yes" : "nochange",
-                  });
-                  addLog(`[Revdel] Hiding revisions at: "${title}"`);
-                  stats.revdel++;
-                  updateStatusDisplay();
-                } catch (e) {
-                  addLog(
-                    `[Revdel] Failed at "${title}": ${formatApiError(e)}`,
-                    true,
-                  );
-                }
+                await hideRevisions(title, idlist);
               }
 
               rs.processedRollbackTitles.add(title);
               await new Promise((resolve) => setTimeout(resolve, THROTTLE_MS)); // Throttling window
+            }
+            // --- Revision deletion for selected created pages ---
+            // Creation revisions are not part of pageEdits, so they are handled
+            // here. Only used with "Select specific edits/pages" in user mode.
+            // Progress is tracked in processedRollbackTitles under a prefixed
+            // key, so a resumed run skips pages that are already done.
+            if (
+              config.rd &&
+              config.mode === "user" &&
+              config.customSelection &&
+              !isAborted
+            ) {
+              const creationRevids = config.selectedCreationRevids || {};
+              if (
+                !Object.keys(pageEdits).length &&
+                !config.selectedCreations.length
+              ) {
+                addLog(
+                  "[Revdel] No revisions to hide: nothing was selected",
+                  "warn",
+                );
+              }
+              for (const title of config.selectedCreations) {
+                if (isAborted) break;
+                const key = "creation-revdel:" + title;
+                if (rs.processedRollbackTitles.has(key)) continue;
+                await hideRevisions(title, creationRevids[title]);
+                rs.processedRollbackTitles.add(key);
+                await new Promise((resolve) =>
+                  setTimeout(resolve, THROTTLE_MS),
+                );
+              }
             }
             if (!isAborted) rs.rollbackLoopDone = true;
 
@@ -3395,6 +3447,9 @@ $(function () {
           let customSelectedPageEdits = {};
           // Array of page titles the user created, chosen via the custom-selection picker.
           let customSelectedCreations = [];
+          // Maps created page title → creation revision IDs, used by Delete revisions.
+          // Only titles in customSelectedCreations are read, so stale keys are harmless.
+          let customSelectedCreationRevids = {};
           // Set to true once the rights check confirms the user lacks the undelete
           // right; guards the dynamic per-target enable/disable logic in
           // updateSectionStatus() so a permanent rights lock is never undone.
@@ -4075,6 +4130,8 @@ $(function () {
               function (result) {
                 customSelectedPageEdits = result.selectedPageEdits;
                 customSelectedCreations = result.selectedCreations;
+                customSelectedCreationRevids =
+                  result.selectedCreationRevids || {};
                 updatePickerSelectionSummary();
               },
             );
@@ -8756,6 +8813,10 @@ $(function () {
                 selEndtime.value === "custom" ? customSelectedPageEdits : {},
               selectedCreations:
                 selEndtime.value === "custom" ? customSelectedCreations : [],
+              selectedCreationRevids:
+                selEndtime.value === "custom"
+                  ? customSelectedCreationRevids
+                  : {},
               rollback: chkRollback.checked,
               rollbackMethod: chkUndo.checked ? "undo" : "rollback",
               rollbackBot: chkBot.checked,
