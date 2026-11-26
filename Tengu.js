@@ -2,7 +2,7 @@
  * ============================================================================
  * Tengu — 天狗
  * All-in-one wiki moderation tool — Main script
- * Version 2.275.0
+ * Version 2.276.0
  * ============================================================================
  * PURPOSE:
  * An all-in-one moderation script for MediaWiki that streamlines user blocking,
@@ -245,6 +245,16 @@ $(function () {
       .then(function () {
         return mw.loader.getScript(
           "https://id.wikipedia.org/w/index.php?title=Pengguna:Rachmat04/Tengu-mediainfo.js&action=raw&ctype=text/javascript",
+        );
+      })
+      .then(function () {
+        return mw.loader.getScript(
+          "https://id.wikipedia.org/w/index.php?title=Pengguna:Rachmat04/Tengu-rollback.js&action=raw&ctype=text/javascript",
+        );
+      })
+      .then(function () {
+        return mw.loader.getScript(
+          "https://id.wikipedia.org/w/index.php?title=Pengguna:Rachmat04/Tengu-revdel.js&action=raw&ctype=text/javascript",
         );
       })
       .then(function () {
@@ -684,10 +694,31 @@ $(function () {
 
         // MediaInfo and revision metadata inspection helper. MOVED to
         // [[Tengu-mediainfo.js]]. The module receives apiGet and returns the
-        // function directly, so the call site inside work() is unchanged in
-        // signature.
+        // function directly.
         const { inspectRevisionMetadata } = window.TenguMediaInfo.create({
           apiGet: apiGet,
+        });
+
+        // Per-page rollback, undo, and MediaInfo revert execution helper.
+        // MOVED to [[Tengu-rollback.js]]. The module receives the shared helpers
+        // below and returns the core function wrapped inside work().
+        const { revertPageTarget: revertPageTargetCore } =
+          window.TenguRollback.create({
+            inspectRevisionMetadata: inspectRevisionMetadata,
+            buildQuickRevertSummaryText: buildQuickRevertSummaryText,
+            apiPost: apiPost,
+            apiRollback: apiRollback,
+            withToolTag: withToolTag,
+            formatApiError: formatApiError,
+          });
+
+        // Revision deletion execution helper. MOVED to [[Tengu-revdel.js]].
+        // The module receives the shared helpers below and returns the core
+        // function wrapped inside work().
+        const { hideRevisions: hideRevisionsCore } = window.TenguRevdel.create({
+          apiPost: apiPost,
+          withToolTag: withToolTag,
+          formatApiError: formatApiError,
         });
 
         // The Meta-Wiki report helpers (submitGlobalSysopsReport(),
@@ -1263,60 +1294,17 @@ $(function () {
           // removeBalancedFileEmbeds() was MOVED to [[Tengu-wikitext.js]] (see
           // the destructuring call in Section 05).
 
-          // Hides the given revisions on one page and logs the real result.
-          // Returns true when at least one revision was hidden. Per-item
-          // results are read from revisiondelete.items[].status; the "error"
-          // status value is [Unverified] against a live wiki.
-          async function hideRevisions(title, idlist) {
-            if (!idlist || !idlist.length) {
-              addLog(
-                `[Revdel] Skipped "${title}": no revision IDs were recorded for this page`,
-                "warn",
-              );
-              return false;
-            }
-            try {
-              const result = await apiPost({
-                action: "revisiondelete",
-                type: "revision",
-                ids: idlist.join("|"),
-                hide: config.rdHides,
-                reason: withToolTag(config.rdReason, toolTag),
-                suppress: config.os ? "yes" : "nochange",
-              });
-              const rdResult = result && result.revisiondelete;
-              const items = (rdResult && rdResult.items) || [];
-              const failed = items.filter(function (i) {
-                return i.status === "error";
-              });
-              failed.forEach(function (i) {
-                const reasons = (i.errors || [])
-                  .map(function (er) {
-                    return er.code || er.message || String(er);
-                  })
-                  .join(", ");
-                addLog(
-                  `[Revdel] Revision ${i.id} at "${title}" was rejected${reasons ? ": " + reasons : ""}`,
-                  true,
-                );
-              });
-              if (items.length && failed.length === items.length) return false;
-              const hiddenCount = items.length
-                ? items.length - failed.length
-                : idlist.length;
-              addLog(
-                `[Revdel] Hid ${hiddenCount} of ${idlist.length} revision(s) at: "${title}"`,
-              );
-              stats.revdel++;
-              updateStatusDisplay();
-              return true;
-            } catch (e) {
-              addLog(
-                `[Revdel] Failed at "${title}": ${formatApiError(e)}`,
-                true,
-              );
-              return false;
-            }
+          // Revision deletion execution helper (hideRevisionsCore) was MOVED to
+          // [[Tengu-revdel.js]] (see the destructuring call in Section 05).
+          function hideRevisions(title, idlist) {
+            return hideRevisionsCore(title, idlist, config, {
+              addLog: addLog,
+              onRevdel: function () {
+                stats.revdel++;
+                updateStatusDisplay();
+              },
+              toolTag: toolTag,
+            });
           }
 
           // --- Merge Wikidata items ---
@@ -1527,193 +1515,19 @@ $(function () {
                 continue;
               }
 
-              // --- MEDIAINFO / STRUCTURED DATA CHECK ---
-              // inspectRevisionMetadata() was MOVED to [[Tengu-mediainfo.js]]
+              // Per-page rollback, undo, and MediaInfo revert execution helper
+              // (revertPageTargetCore) was MOVED to [[Tengu-rollback.js]]
               // (see the destructuring call in Section 05).
-              let {
-                mediainfoNeedsRevert,
-                goodMediaInfo,
-                pageId,
-                pageContentModel,
-                previousEditorUser,
-              } = await inspectRevisionMetadata(info);
-
-              // ZObjects (Wikifunctions content model "zobject") are stored as JSON
-              // and cannot be reliably reverted via action=edit undo, since the undo
-              // path performs a wikitext three-way merge. When undo is selected and a
-              // ZObject page is detected, Tengu falls back to native rollback, which
-              // operates at the database level and is not content-model-specific.
-              const isZObject = pageContentModel === "zobject";
-              if (isZObject && config.rollbackMethod === "undo") {
-                addLog(
-                  `[Rollback] ZObject content model detected at "${title}": undo is not supported for this content model. Falling back to native rollback.`,
-                  "warn",
-                );
-              }
-
-              let standardRevertSuccess = false;
-              let standardErr = null;
-
-              // Builds the shared "Reverted [[Special:Diff/X|edit]] by ..." wording
-              // used by both the undo and native rollback summaries below. Always
-              // links to the diff of the reverted revision. When a custom reason is
-              // supplied, the summary reads "Reverted [[Special:Diff/X|edit]] by
-              // [user]: [reason]"; otherwise it names the author of the revision
-              // being restored, where known, so it is clear which revision the page
-              // was reverted to. Falls back to omitting the "to the previous
-              // revision by..." clause when the previous editor could not be
-              // determined (e.g. the lookup above failed, or there is no parent
-              // revision), and to omitting the username entirely when "Show
-              // username in summary" is unticked.
-              const revertedRevId = info.latest;
-              // Links to the full diff between the revision immediately before the
-              // reverted edit(s) and the latest reverted revision, using MediaWiki's
-              // two-ID Special:Diff/<oldid>/<diffid> form, rather than the single-ID
-              // form (Special:Diff/<diffid>), which only shows that one revision's
-              // individual change against its immediate parent. This matters when
-              // rollback reverts several consecutive edits at once: the single-ID
-              // form would only reflect the last of those edits, not the cumulative
-              // change being reverted. Falls back to the single-ID form when no
-              // parent revision is known (info.oldestParent is unset).
-              const diffLinkTarget = info.oldestParent
-                ? `${info.oldestParent}/${revertedRevId}`
-                : `${revertedRevId}`;
-              const buildRevertSummaryText = function () {
-                return buildQuickRevertSummaryText(
-                  targetVal,
-                  diffLinkTarget,
-                  config.rollbackReason,
-                  config.rollbackShow,
-                  previousEditorUser,
-                  config.rollbackMethod === "undo" ? "undo" : "rollback",
-                );
-              };
-
-              const revertSummaryStr = withToolTag(
-                buildRevertSummaryText(),
-                toolTag,
-              );
-
-              // Execute standard rollback or undo operation sequentially based on settings
-              if (config.rollbackMethod === "undo" && !isZObject) {
-                const undoData = {
-                  action: "edit",
-                  title: title,
-                  undo: info.latest,
-                  summary: revertSummaryStr,
-                };
-                if (info.oldestParent) undoData.undoafter = info.oldestParent;
-                if (config.rollbackBot) undoData.bot = 1;
-
-                try {
-                  const undoResult = await apiPost(undoData);
-                  const editResult = undoResult && undoResult.edit;
-                  const noChangeMade = !!(
-                    editResult &&
-                    Object.prototype.hasOwnProperty.call(editResult, "nochange")
-                  );
-                  if (noChangeMade) {
-                    if (!mediainfoNeedsRevert) {
-                      addLog(
-                        `[Undo] Skipped: "${title}" — the edit appears to have already been undone; no changes were made`,
-                        "warn",
-                      );
-                    }
-                  } else {
-                    addLog(
-                      `[Undo] Successfully reverted edits via undo: "${title}"`,
-                    );
-                    standardRevertSuccess = true;
+              const { standardRevertSuccess, mediainfoNeedsRevert } =
+                await revertPageTargetCore(title, info, targetVal, config, {
+                  addLog: addLog,
+                  onReverted: function () {
                     stats.rollback++;
                     rollbackNotifiedTitles.push(title);
                     updateStatusDisplay();
-                  }
-                } catch (e) {
-                  standardErr = String(e);
-                  if (
-                    standardErr.includes("alreadyreverted") ||
-                    standardErr.includes("nothingtorevert")
-                  ) {
-                    if (!mediainfoNeedsRevert) {
-                      addLog(
-                        `[Undo] Skipped: "${title}" — page had already been reverted by another user; undo was not applied by this operation`,
-                        "warn",
-                      );
-                    }
-                  } else {
-                    addLog(
-                      `[Undo] Failed at "${title}": ${formatApiError(e)}`,
-                      true,
-                    );
-                  }
-                }
-              } else {
-                // Native rollback
-                const rbData = config.rollbackBot ? { markbot: 1 } : {};
-                rbData.summary = revertSummaryStr;
-
-                try {
-                  await apiRollback(title, targetVal, rbData);
-                  addLog(`[Rollback] Successfully reverted: "${title}"`);
-                  standardRevertSuccess = true;
-                  stats.rollback++;
-                  rollbackNotifiedTitles.push(title);
-                  updateStatusDisplay();
-                } catch (e) {
-                  standardErr = String(e);
-                  if (
-                    standardErr.includes("alreadyreverted") ||
-                    standardErr.includes("onlyauthor")
-                  ) {
-                    if (!mediainfoNeedsRevert) {
-                      addLog(
-                        `[Rollback] Skipped: "${title}" — already reverted or user is the only author`,
-                        "warn",
-                      );
-                    }
-                  } else {
-                    addLog(
-                      `[Rollback] Failed at "${title}": ${formatApiError(e)}`,
-                      true,
-                    );
-                  }
-                }
-              }
-
-              // --- MEDIAINFO / STRUCTURED DATA REVERT EXECUTION ---
-              if (mediainfoNeedsRevert && pageId) {
-                try {
-                  let restoredData = Object.assign({}, goodMediaInfo);
-                  if (restoredData.statements) {
-                    restoredData.claims = restoredData.statements;
-                    delete restoredData.statements;
-                  } else if (!restoredData.claims) {
-                    restoredData.claims = {};
-                  }
-
-                  await apiPost({
-                    action: "wbeditentity",
-                    id: "M" + pageId,
-                    clear: true,
-                    data: JSON.stringify(restoredData),
-                    summary: revertSummaryStr,
-                    bot: config.rollbackBot ? 1 : 0,
-                  });
-                  addLog(
-                    `[Undo] Successfully reverted structured data at: "${title}"`,
-                  );
-                  if (!standardRevertSuccess) {
-                    stats.rollback++;
-                    rollbackNotifiedTitles.push(title);
-                    updateStatusDisplay();
-                  }
-                } catch (e) {
-                  addLog(
-                    `[Undo] Failed to revert structured data at "${title}": ${formatApiError(e)}`,
-                    true,
-                  );
-                }
-              }
+                  },
+                  toolTag: toolTag,
+                });
 
               // Trigger revision deletion if either standard or mediainfo revert succeeded, or if we need to revdel anyway.
               if (
