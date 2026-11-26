@@ -1,3 +1,19 @@
+## 2.277.0
+
+### Changed
+
+* Modularisation: Extracted the consolidated rollback/undo talk-page notification workflow (`notifyRollbackTarget`) out of `work()` in `Tengu.js` into a standalone module at `Pengguna:Rachmat04/Tengu-notifyrollback.js` (`window.TenguNotifyRollback.create`). The module depends only on `mw.Title` and the `apiPost`, `pageExists`, `formatApiError`, and `useIndonesian` helpers passed in by `Tengu.js`.
+* Modularisation: Extracted the FlaggedRevs pending changes protection workflow (`stabilizePageTarget`) out of `work()` in `Tengu.js` into a standalone module at `Pengguna:Rachmat04/Tengu-stabilize.js` (`window.TenguStabilize.create`). The module depends only on the `apiPost`, `withToolTag`, and `formatApiError` helpers passed in by `Tengu.js`.
+* Loader & initialisation: Updated `Tengu.js` to load `Tengu-notifyrollback.js` and `Tengu-stabilize.js` after `Tengu-revdel.js` and to obtain both functions from their factories in [Section 05], wrapped inside `work()` with `config` and the per-run logging and statistics callbacks.
+
+## v2.276.0
+
+### Changed
+
+* Extracted rollback and undo execution (`Tengu-rollback.js`): Moved per-page native rollback, `action=edit` undo (including ZObject content-model fallback), and MediaInfo (`wbeditentity`) structured-data revert logic out of `work()` in `Tengu.js` into `Pengguna:Rachmat04/Tengu-rollback.js`.
+* Extracted revision deletion execution (`Tengu-revdel.js`): Moved `hideRevisions()` (`action=revisiondelete`) and per-revision rejection logging out of `work()` in `Tengu.js` into `Pengguna:Rachmat04/Tengu-revdel.js`.
+* Updated module loader: Added `Tengu-rollback.js` and `Tengu-revdel.js` to the sequential `mw.loader.getScript` chain in `Tengu.js` and wired both factories into `[Section 05]`.
+
 ## 2.275.0
 
 ### Fixed

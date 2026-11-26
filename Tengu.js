@@ -2,7 +2,7 @@
  * ============================================================================
  * Tengu — 天狗
  * All-in-one wiki moderation tool — Main script
- * Version 2.276.0
+ * Version 2.277.0
  * ============================================================================
  * PURPOSE:
  * An all-in-one moderation script for MediaWiki that streamlines user blocking,
@@ -255,6 +255,16 @@ $(function () {
       .then(function () {
         return mw.loader.getScript(
           "https://id.wikipedia.org/w/index.php?title=Pengguna:Rachmat04/Tengu-revdel.js&action=raw&ctype=text/javascript",
+        );
+      })
+      .then(function () {
+        return mw.loader.getScript(
+          "https://id.wikipedia.org/w/index.php?title=Pengguna:Rachmat04/Tengu-notifyrollback.js&action=raw&ctype=text/javascript",
+        );
+      })
+      .then(function () {
+        return mw.loader.getScript(
+          "https://id.wikipedia.org/w/index.php?title=Pengguna:Rachmat04/Tengu-stabilize.js&action=raw&ctype=text/javascript",
         );
       })
       .then(function () {
@@ -720,6 +730,27 @@ $(function () {
           withToolTag: withToolTag,
           formatApiError: formatApiError,
         });
+
+        // Rollback/undo talk-page notification helper. MOVED to
+        // [[Tengu-notifyrollback.js]]. The module receives the shared helpers
+        // below and returns the core function wrapped inside work().
+        const { notifyRollbackTarget: notifyRollbackTargetCore } =
+          window.TenguNotifyRollback.create({
+            apiPost: apiPost,
+            pageExists: pageExists,
+            formatApiError: formatApiError,
+            useIndonesian: useIndonesian,
+          });
+
+        // Pending changes (FlaggedRevs) protection helper. MOVED to
+        // [[Tengu-stabilize.js]]. The module receives the shared helpers
+        // below and returns the core function wrapped inside work().
+        const { stabilizePageTarget: stabilizePageTargetCore } =
+          window.TenguStabilize.create({
+            apiPost: apiPost,
+            withToolTag: withToolTag,
+            formatApiError: formatApiError,
+          });
 
         // The Meta-Wiki report helpers (submitGlobalSysopsReport(),
         // foreignApiGet(), submitSRGReport(), PERM_REQUEST_TYPES and
@@ -1307,6 +1338,31 @@ $(function () {
             });
           }
 
+          // Rollback/undo notification helper (notifyRollbackTargetCore) was
+          // MOVED to [[Tengu-notifyrollback.js]] (see the destructuring call
+          // in Section 05).
+          function notifyRollbackTarget(targetVal, revertedTitles) {
+            return notifyRollbackTargetCore(targetVal, revertedTitles, config, {
+              addLog: addLog,
+              notifySummaryRollback: notifySummaryRollback,
+            });
+          }
+
+          // Pending changes protection helper (stabilizePageTargetCore) was
+          // MOVED to [[Tengu-stabilize.js]] (see the destructuring call in
+          // Section 05).
+          function stabilizePageTarget(title) {
+            return stabilizePageTargetCore(title, config, {
+              addLog: addLog,
+              onProtected: function () {
+                stats.protect++;
+                updateStatusDisplay();
+              },
+              toolTag: toolTag,
+              throttleMs: THROTTLE_MS,
+            });
+          }
+
           // --- Merge Wikidata items ---
           // Single-shot operation, independent of config.targets: a merge
           // always involves exactly two specific entity IDs (not the
@@ -1585,43 +1641,7 @@ $(function () {
               rollbackNotifiedTitles.length > 0 &&
               !isAborted
             ) {
-              const talkTitle = new mw.Title(targetVal, 3).getPrefixedText();
-              const reasonText =
-                config.rollbackReason ||
-                (useIndonesian
-                  ? "(tidak ada alasan diberikan)"
-                  : "(no reason given)");
-              try {
-                const talkExists = await pageExists(talkTitle);
-                let notice;
-                if (rollbackNotifiedTitles.length === 1) {
-                  notice = useIndonesian
-                    ? `== Pemberitahuan pembatalan suntingan ==\nHalo ${targetVal},\n\nSuntingan Anda pada halaman "${rollbackNotifiedTitles[0]}" telah dibatalkan dengan alasan berikut: ${reasonText}.\n\nPemberitahuan ini dikirimkan secara otomatis. Silakan sampaikan pertanyaan atau keberatan ke halaman pembicaraan saya. ~~~~`
-                    : `== Edit reversion notice ==\nDear ${targetVal},\n\nYour edit to the page "${rollbackNotifiedTitles[0]}" has been reverted due to the following reason: ${reasonText}.\n\nThis notification was posted automatically. Please direct any questions or concerns to my user talk page. ~~~~`;
-                } else {
-                  const listed = rollbackNotifiedTitles
-                    .map((t) => `* "${t}"`)
-                    .join("\n");
-                  notice = useIndonesian
-                    ? `== Pemberitahuan pembatalan suntingan ==\nHalo ${targetVal},\n\nSuntingan Anda pada halaman-halaman berikut telah dibatalkan dengan alasan berikut: ${reasonText}.\n\n${listed}\n\nPemberitahuan ini dikirimkan secara otomatis. Silakan sampaikan pertanyaan atau keberatan ke halaman pembicaraan saya. ~~~~`
-                    : `== Edit reversion notice ==\nDear ${targetVal},\n\nYour edits to the following pages have been reverted due to the following reason: ${reasonText}.\n\n${listed}\n\nThis notification was posted automatically. Please direct any questions or concerns to my user talk page. ~~~~`;
-                }
-                await apiPost({
-                  action: "edit",
-                  title: talkTitle,
-                  appendtext: (talkExists ? "\n\n" : "") + notice,
-                  summary: notifySummaryRollback,
-                  bot: true,
-                });
-                addLog(
-                  `[Notify] Reversion notification posted to: "${talkTitle}"`,
-                );
-              } catch (e) {
-                addLog(
-                  `[Notify] Failed to post reversion notification to "${talkTitle}": ${formatApiError(e)}`,
-                  "warn",
-                );
-              }
+              await notifyRollbackTarget(targetVal, rollbackNotifiedTitles);
               rs.notifyRollbackDone = true;
             }
 
@@ -1660,39 +1680,9 @@ $(function () {
                   continue;
                 }
 
-                // Pending changes (FlaggedRevs) protection. Assumes
-                // the stabilize API module accepts protectlevel/expiry/reason
-                // parameters analogous to action=protect.
+                // Pending changes (FlaggedRevs) protection.
                 if (config.protectPendingChanges) {
-                  try {
-                    await apiPost({
-                      action: "stabilize",
-                      title: title,
-                      protectlevel: config.protectPendingChangesLevel,
-                      // action=stabilize may not accept "never" as
-                      // an indefinite-expiry alias the way action=protect does;
-                      // this appears to be the cause of the previous
-                      // stabilize_expiry_invalid error and is translated here.
-                      expiry:
-                        config.protectPendingChangesExpiry === "never"
-                          ? "infinite"
-                          : config.protectPendingChangesExpiry,
-                      reason: withToolTag(config.protectReason, toolTag),
-                    });
-                    addLog(
-                      `[Protect] Enabled pending changes protection: "${title}"`,
-                    );
-                    stats.protect++;
-                    updateStatusDisplay();
-                  } catch (e) {
-                    addLog(
-                      `[Protect] Failed to enable pending changes protection for "${title}": ${formatApiError(e)}`,
-                      true,
-                    );
-                  }
-                  await new Promise((resolve) =>
-                    setTimeout(resolve, THROTTLE_MS),
-                  );
+                  await stabilizePageTarget(title);
                 }
 
                 // Also protect the talk page if that option was selected and this
