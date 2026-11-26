@@ -74,7 +74,7 @@
           ? items.length - failed.length
           : idlist.length;
         addLog(
-          `[Revdel] Hid ${hiddenCount} of ${idlist.length} revision(s) at: "${title}"`,
+          `[Revdel] Hid ${hiddenCount} of ${idlist.length} revision(s) at: "${title}" (revision IDs: ${idlist.join(", ")}; hidden: ${String(config.rdHides).replace(/\|$/, "").replace(/\|/g, ", ")}${config.os ? "; suppressed" : ""})`,
         );
         onRevdel();
         return true;

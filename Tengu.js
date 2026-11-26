@@ -2,7 +2,7 @@
  * ============================================================================
  * Tengu — 天狗
  * All-in-one wiki moderation tool — Main script
- * Version 2.278.0
+ * Version 2.279.0
  * ============================================================================
  * PURPOSE:
  * An all-in-one moderation script for MediaWiki that streamlines user blocking,
@@ -947,7 +947,11 @@ $(function () {
           // In multi-target runs, holds the current target name so every log
           // entry is prefixed with it, replacing the old separator elements.
           let currentTargetLabel = "";
-          const addLog = (msg, isErr) => {
+          // Number of warnings that report a skipped item. Counted in addLog()
+          // and shown in the per-target and final summaries.
+          let skippedCount = 0;
+          // noCount = true stops a summary line from being counted as a skip.
+          const addLog = (msg, isErr, noCount) => {
             const d = document.createElement("div");
             logCount++;
             const _n = new Date();
@@ -970,6 +974,7 @@ $(function () {
             d.textContent = logCount + ". [" + _ts + "] " + _prefix + msg;
             if (isErr === "warn") {
               d.className = "tng-log-warn";
+              if (!noCount && /\bskipped\b/i.test(msg)) skippedCount++;
             } else if (isErr) {
               d.className = "tng-log-err";
               stats.error++;
@@ -987,7 +992,112 @@ $(function () {
               "▶️ Resuming operations — skipping already-completed steps...",
             );
           }
-          addLog("⏳ Processing operations... please wait...");
+          // --- Shared logging helpers ---
+          // Joins [label, value] pairs into "label: value · label: value",
+          // leaving out pairs with an empty value, so only supplied
+          // parameters are shown.
+          const fmtLogParams = function (pairs) {
+            return pairs
+              .filter(function (p) {
+                return (
+                  p[1] !== undefined &&
+                  p[1] !== null &&
+                  String(p[1]).trim() !== ""
+                );
+              })
+              .map(function (p) {
+                return p[0] + ": " + p[1];
+              })
+              .join(" · ");
+          };
+          const reasonOrNone = function (r) {
+            return r && String(r).trim() ? r : "(no reason given)";
+          };
+          // Logs "[Tag] Started: Feature name for "target" · parameters".
+          // The target is omitted when it equals the multi-target prefix.
+          const logOpStart = function (tag, feature, target, pairs) {
+            const params = fmtLogParams(pairs || []);
+            addLog(
+              "[" +
+                tag +
+                "] Started: " +
+                feature +
+                (target && target !== currentTargetLabel
+                  ? ' for "' + target + '"'
+                  : "") +
+                (params ? " · " + params : ""),
+            );
+          };
+          // Counts successful operations (every counter except errors).
+          const countDoneActions = function () {
+            return Object.keys(stats).reduce(function (n, k) {
+              return k === "error" ? n : n + stats[k];
+            }, 0);
+          };
+          // Describes an applied protection from the action=protect response,
+          // falling back to the request values when the response has no
+          // protections list. [Unverified] The response shape
+          // (protect.protections[] with the restriction type as key and
+          // "expiry") has not been checked against a live wiki.
+          const describeProtection = function (result, req) {
+            const list = result && result.protect && result.protect.protections;
+            if (Array.isArray(list) && list.length) {
+              return list
+                .map(function (p) {
+                  const lvl = Object.keys(p)
+                    .filter(function (k) {
+                      return k !== "expiry" && k !== "cascade";
+                    })
+                    .map(function (k) {
+                      return k + ": " + (p[k] || "all");
+                    })
+                    .join(", ");
+                  return lvl + (p.expiry ? " (expiry: " + p.expiry + ")" : "");
+                })
+                .join("; ");
+            }
+            return req.protections + " (expiry: " + req.expiry + ")";
+          };
+          const enabledOperationLabels = function () {
+            const l = [];
+            if (config.mergeItems) l.push("Merge items");
+            if (config.permRequest) l.push("Request permissions on Meta-Wiki");
+            if (config.warn && config.mode === "user") l.push("Warn users");
+            if (config.block && config.mode === "user")
+              l.push("Block accounts");
+            if (config.unblock && config.mode === "user")
+              l.push("Unblock accounts");
+            if (config.reportGS) l.push("Report to Global sysops/Requests");
+            if (config.reportSRG) l.push("Report to Steward requests/Global");
+            if (config.undelete && config.mode === "page")
+              l.push("Undelete pages");
+            if (config.moveSandbox && config.mode === "page")
+              l.push(
+                config.moveSandboxMode === "movepage"
+                  ? "Move pages"
+                  : "Move pages to user's sandbox",
+              );
+            if (config.rollback && config.mode === "user")
+              l.push(
+                config.rollbackMethod === "undo"
+                  ? "Undo edits"
+                  : "Roll back edits",
+              );
+            if (config.rd) l.push("Delete revisions");
+            if (config.protect) l.push("Protect pages");
+            if (config.massdel) l.push("Delete pages");
+            if (config.protectRecreation && config.mode === "page")
+              l.push("Protect pages against recreation");
+            if (config.fixRedirects && config.mode === "page")
+              l.push("Fix redirects");
+            return l;
+          };
+          addLog(
+            "⏳ Run started: " +
+              (config.targets || [config.target]).length +
+              " target(s) · operations: " +
+              (enabledOperationLabels().join(", ") || "none"),
+          );
 
           // Notification edit summaries do not vary per target and are
           // declared once, outside the per-target loop below.
@@ -1115,6 +1225,18 @@ $(function () {
           // (reportTargetToGSCore) was MOVED to [[Tengu-gsreport.js]]
           // (see the destructuring call in Section 05).
           function reportTargetToGS(targetVal) {
+            logOpStart(
+              "Report",
+              "Report to Global sysops/Requests",
+              targetVal,
+              [
+                [
+                  "type",
+                  config.mode === "page" ? config.reportGSPageType : "account",
+                ],
+                ["reason", reasonOrNone(config.reportGSReasonText)],
+              ],
+            );
             return reportTargetToGSCore(targetVal, config, {
               addLog: addLog,
               onReported: function () {
@@ -1129,6 +1251,15 @@ $(function () {
           // (reportTargetsToSRGCore) was MOVED to [[Tengu-srgreport.js]]
           // (see the destructuring call in Section 05).
           function reportTargetsToSRG(targetVal) {
+            logOpStart(
+              "Report",
+              "Report to Steward requests/Global",
+              targetVal,
+              [
+                ["request", "global " + config.reportSRGKind],
+                ["accounts", (config.targets || [targetVal]).length],
+              ],
+            );
             return reportTargetsToSRGCore(targetVal, config, {
               addLog: addLog,
               onReported: function () {
@@ -1142,6 +1273,9 @@ $(function () {
           // Account unblock helper (unblockTargetCore) was MOVED to
           // [[Tengu-unblock.js]] (see the destructuring call in Section 05).
           function unblockTarget(targetVal) {
+            logOpStart("Unblock", "Unblock accounts", targetVal, [
+              ["reason", reasonOrNone(config.unblockReason)],
+            ]);
             return unblockTargetCore(targetVal, config, {
               addLog: addLog,
               onUnblocked: function () {
@@ -1154,6 +1288,9 @@ $(function () {
           // Page undeletion helper (undeleteTargetCore) was MOVED to
           // [[Tengu-undelete.js]] (see the destructuring call in Section 05).
           function undeleteTarget(targetVal) {
+            logOpStart("Undelete", "Undelete pages", targetVal, [
+              ["reason", reasonOrNone(config.undeleteReason)],
+            ]);
             return undeleteTargetCore(targetVal, config, {
               addLog: addLog,
               onUndeleted: function () {
@@ -1167,6 +1304,10 @@ $(function () {
           // User warning helper (warnTargetCore) was MOVED to
           // [[Tengu-warnuser.js]] (see the destructuring call in Section 05).
           function warnTarget(targetVal) {
+            logOpStart("Warn", "Warn users", targetVal, [
+              ["template", config.warnTemplateValue],
+              ["final warning", config.warnFinal ? "yes" : ""],
+            ]);
             return warnTargetCore(targetVal, config, isMultiTarget, {
               addLog: addLog,
               toolTag: toolTag,
@@ -1176,6 +1317,11 @@ $(function () {
           // Account block helper (blockTargetCore) was MOVED to
           // [[Tengu-block.js]] (see the destructuring call in Section 05).
           function blockTarget(targetVal) {
+            logOpStart("Block", "Block accounts", targetVal, [
+              ["type", config.blockPartial ? "partial" : "full"],
+              ["expiry", config.blockDur],
+              ["reason", reasonOrNone(config.blockReason)],
+            ]);
             return blockTargetCore(targetVal, config, {
               addLog: addLog,
               onBlocked: function () {
@@ -1189,6 +1335,11 @@ $(function () {
           // MOVED to [[Tengu-mergeexec.js]] (see the destructuring call in
           // Section 05).
           function mergeConfiguredEntities() {
+            logOpStart("Merge", "Merge items", null, [
+              ["from", config.mergeFrom],
+              ["into", config.mergeTo],
+              ["reason", reasonOrNone(config.mergeSummary)],
+            ]);
             return mergeConfiguredEntitiesCore(config, {
               addLog: addLog,
               onMerged: function () {
@@ -1203,6 +1354,15 @@ $(function () {
           // (submitConfiguredPermRequestCore) was MOVED to
           // [[Tengu-permrequest.js]] (see the destructuring call in Section 05).
           function submitConfiguredPermRequest() {
+            logOpStart(
+              "Permissions",
+              "Request permissions on Meta-Wiki",
+              null,
+              [
+                ["type", config.permTypeLabel],
+                ["user", config.permUsername],
+              ],
+            );
             return submitConfiguredPermRequestCore(config, {
               addLog: addLog,
               onReported: function () {
@@ -1240,6 +1400,10 @@ $(function () {
           // MOVED to [[Tengu-movepage.js]] (see the destructuring call in
           // Section 05).
           function movePageTarget(targetVal) {
+            logOpStart("Move", "Move pages", targetVal, [
+              ["destination", config.movePageDest],
+              ["reason", reasonOrNone(config.movePageReason)],
+            ]);
             return movePageTargetCore(targetVal, config, {
               addLog: addLog,
               onMoved: function () {
@@ -1266,6 +1430,10 @@ $(function () {
           // (moveToSandboxTargetCore) was MOVED to [[Tengu-movesandbox.js]]
           // (see the destructuring call in Section 05).
           function moveToSandboxTarget(targetVal) {
+            logOpStart("Move", "Move pages to user's sandbox", targetVal, [
+              ["destination", config.moveSandboxDest],
+              ["reason", reasonOrNone(config.moveSandboxReason)],
+            ]);
             return moveToSandboxTargetCore(targetVal, config, {
               addLog: addLog,
               onMoved: function () {
@@ -1289,6 +1457,10 @@ $(function () {
           // to [[Tengu-fixredirects.js]] (see the destructuring call in
           // Section 05).
           function fixRedirectsTarget(targetVal) {
+            logOpStart("Fix redirects", "Fix redirects", targetVal, [
+              ["destination", config.fixRedirectsDest],
+              ["reason", reasonOrNone(config.fixRedirectsReason)],
+            ]);
             return fixRedirectsTargetCore(targetVal, config, {
               addLog: addLog,
               onRedirectFixed: function () {
@@ -1386,6 +1558,13 @@ $(function () {
 
             // On resume, targets that already finished are skipped.
             if (isMultiTarget && rs.completedTargets.has(targetVal)) continue;
+
+            // Counters at the start of this target, used for its summary line.
+            const targetSnap = {
+              done: countDoneActions(),
+              err: stats.error,
+              skip: skippedCount,
+            };
 
             // True when this target was in progress at the time of the abort.
             // Its phase flags, caches, and processed-item sets are kept, so
@@ -1585,6 +1764,37 @@ $(function () {
               }
             }
 
+            if (
+              config.mode === "user" &&
+              !rs.rollbackLoopDone &&
+              !isAborted &&
+              Object.keys(pageEdits).length
+            ) {
+              if (config.rollback) {
+                logOpStart(
+                  "Rollback",
+                  config.rollbackMethod === "undo"
+                    ? "Undo edits"
+                    : "Roll back edits",
+                  targetVal,
+                  [
+                    ["pages", Object.keys(pageEdits).length],
+                    ["reason", reasonOrNone(config.rollbackReason)],
+                  ],
+                );
+              }
+              if (config.rd) {
+                logOpStart("Revdel", "Delete revisions", targetVal, [
+                  ["pages", Object.keys(pageEdits).length],
+                  [
+                    "hide",
+                    config.rdHides.replace(/\|$/, "").replace(/\|/g, ", "),
+                  ],
+                  ["suppressed", config.os ? "yes" : ""],
+                  ["reason", reasonOrNone(config.rdReason)],
+                ]);
+              }
+            }
             // Process rollbacks, undos and revision deletions sequentially with a throttling buffer delay
             for (const [title, info] of Object.entries(pageEdits)) {
               if (isAborted) break;
@@ -1728,6 +1938,16 @@ $(function () {
               pagesToProtect.size > 0 &&
               !rs.mainProtectLoopDone
             ) {
+              logOpStart("Protect", "Protect pages", targetVal, [
+                ["pages", pagesToProtect.size],
+                ["edit", config.protectEdit],
+                ["move", config.protectMove],
+                ["edit expiry", config.protectExpiry],
+                ["move expiry", config.protectMoveExpiry],
+                ["cascade", config.protectCascade ? "yes" : ""],
+                ["talk pages", config.protectTalk ? "yes" : ""],
+                ["reason", reasonOrNone(config.protectReason)],
+              ]);
               for (const title of pagesToProtect) {
                 if (isAborted) break;
                 try {
@@ -1739,8 +1959,10 @@ $(function () {
                     reason: withToolTag(config.protectReason, toolTag),
                     ...(config.protectCascade ? { cascade: "" } : {}),
                   };
-                  await apiPost(protectData);
-                  addLog(`[Protect] Protected page: "${title}"`);
+                  const protectResult = await apiPost(protectData);
+                  addLog(
+                    `[Protect] Protected page: "${title}" · ${describeProtection(protectResult, protectData)}`,
+                  );
                   protectedMain++;
                   stats.protect++;
                   updateStatusDisplay();
@@ -1939,6 +2161,24 @@ $(function () {
               );
             }
             if (config.massdel && !rs.deletionLoopDone) {
+              if (creation.length) {
+                logOpStart("Delete", "Delete pages", targetVal, [
+                  ["pages", creation.length],
+                  ["talk pages", config.massdelTalk ? "yes" : ""],
+                  ["redirects", config.massdelRedirects ? "yes" : ""],
+                  ["subpages", config.massdelSubpages ? "yes" : ""],
+                  [
+                    "recreation protection",
+                    config.massdelProtectRecreation
+                      ? config.massdelProtectRecreationLevel +
+                        " (expiry: " +
+                        config.massdelProtectRecreationExpiry +
+                        ")"
+                      : "",
+                  ],
+                  ["reason", reasonOrNone(config.massdelReason)],
+                ]);
+              }
               for (const title of creation) {
                 if (isAborted) break;
                 if (rs.processedDeletionTitles.has(title)) continue;
@@ -1982,12 +2222,19 @@ $(function () {
                 // so a talk-page failure does not misreport the main deletion as having failed)
                 let mainDeleted = false;
                 try {
-                  await apiPost({
+                  const deleteResult = await apiPost({
                     action: "delete",
                     title: title,
                     reason: withToolTag(config.massdelReason, toolTag),
                   });
-                  addLog(`[Delete] Deleted page: "${title}"`);
+                  addLog(
+                    `[Delete] Deleted page: "${title}"` +
+                      (deleteResult &&
+                      deleteResult.delete &&
+                      deleteResult.delete.logid
+                        ? ` (log ID ${deleteResult.delete.logid})`
+                        : ""),
+                  );
                   stats.delete++;
                   updateStatusDisplay();
                   mainDeleted = true;
@@ -2537,7 +2784,12 @@ $(function () {
                 addLog(
                   '[Protect] Protected page against recreation: "' +
                     targetVal +
-                    '"',
+                    '" · create: ' +
+                    config.protectRecreationLevel +
+                    " (expiry: " +
+                    config.protectRecreationExpiry +
+                    ") · reason: " +
+                    reasonOrNone(config.protectRecreationReason),
                 );
                 stats.protect++;
                 updateStatusDisplay();
@@ -2794,6 +3046,9 @@ $(function () {
               deletedTitles.length > 0 &&
               !rs.unlinkLoopDone
             ) {
+              logOpStart("Unlink", "Remove links to deleted pages", targetVal, [
+                ["deleted pages", deletedTitles.length],
+              ]);
               for (const delTitle of deletedTitles) {
                 if (isAborted) break;
                 if (rs.processedUnlinkTitles.has(delTitle)) continue;
@@ -3038,6 +3293,19 @@ $(function () {
               if (!isAborted) rs.fixRedirectsDone = true;
             }
 
+            // Per-target result, so partial success is visible for each
+            // account or page in a multi-target run.
+            if (isMultiTarget) {
+              const tDone = countDoneActions() - targetSnap.done;
+              const tErr = stats.error - targetSnap.err;
+              const tSkip = skippedCount - targetSnap.skip;
+              addLog(
+                `[Summary] ${isAborted ? "Stopped" : "Finished"}: ${tDone} succeeded, ${tErr} failed, ${tSkip} skipped`,
+                tErr > 0 || tSkip > 0 ? "warn" : false,
+                true,
+              );
+            }
+
             // Mark this target as complete so a resumed run skips it.
             if (isMultiTarget && !isAborted) {
               rs.completedTargets.add(targetVal);
@@ -3113,27 +3381,39 @@ $(function () {
           );
           statusTextSpan.innerHTML = "<b>Status:</b> " + completionSummary;
 
+          const runDone = countDoneActions();
+          const runCounts = `${runDone} succeeded, ${stats.error} failed, ${skippedCount} skipped`;
           if (isAborted) {
             addLog("⏹️ Operations aborted by user");
+            addLog(`📊 Result so far: ${runCounts}`, "warn", true);
             // Resume state is kept for single-target and multi-target runs.
             resumeState = rs;
+          } else if (stats.error > 0 && runDone > 0) {
+            addLog(
+              `⚠️ Run finished with partial success: ${runCounts}; review the log above`,
+              "warn",
+              true,
+            );
+          } else if (stats.error > 0) {
+            addLog(
+              `⚠️ Run finished, but no operation succeeded: ${runCounts}; review the log above`,
+              "warn",
+              true,
+            );
+          } else if (runDone === 0) {
+            addLog(
+              `⚠️ Run finished, but no operation was performed: ${runCounts}`,
+              "warn",
+              true,
+            );
+          } else if (skippedCount > 0) {
+            addLog(
+              `⚠️ Run finished: ${runCounts}; review the skipped items above`,
+              "warn",
+              true,
+            );
           } else {
-            const actionsDone = Object.keys(stats).reduce(function (n, k) {
-              return k === "error" ? n : n + stats[k];
-            }, 0);
-            if (stats.error > 0) {
-              addLog(
-                `⚠️ Operations finished with ${stats.error} error(s); review the log above`,
-                "warn",
-              );
-            } else if (actionsDone === 0) {
-              addLog(
-                "⚠️ Operations finished, but no actions were performed",
-                "warn",
-              );
-            } else {
-              addLog("✅ All operations have been completed successfully");
-            }
+            addLog(`✅ Run finished: ${runCounts}`);
           }
           btnClose.disabled = false;
 

@@ -1,4 +1,22 @@
-## 2.278.0
+## 2.279.0
+
+### Changed
+
+* Redesigned the progress log so each operation is identified, its parameters are shown, and results are reported per target.
+* Replaced the generic "Processing operations" line with a run start line that gives the number of targets and the operations that will run.
+* Added a "Started" line for each operation (Warn, Block, Unblock, Undelete, Report, Merge, Permissions, Move, Fix redirects, Rollback or Undo, Delete revisions, Protect, Delete, Unlink). It shows the feature name, the target where it differs from the multi-target prefix, and the supplied reason and parameters. Empty parameters are left out, and a missing reason reads "(no reason given)".
+* **Protect pages**: each success line now shows the protection levels and expiry taken from the `action=protect` response, with the request values as a fallback.
+* **Delete pages**: each success line now shows the log ID from the API response, when present.
+* **Roll back edits** and **Undo**: success lines now include the revision ID. **Delete revisions** success lines now list the revision IDs and the hidden fields.
+* Recreation protection (page mode) success lines now show the level, expiry and reason.
+* Multi-target runs now end each target with a `[Summary]` line giving its succeeded, failed and skipped counts.
+* The final line now reports the counts for the whole run. It reports partial success when some operations failed and others succeeded, and no longer says "All operations have been completed successfully" when items were skipped.
+
+### Notes
+
+* Skipped items are counted from warning entries that contain the word "skipped".
+* The counts are operation counts, not target counts. For example, a deleted talk page counts as a second deletion.
+* Operation logic is unchanged. No changes were made to `Tengu.css` or other modules.
 
 ### Changed
 

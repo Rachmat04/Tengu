@@ -113,7 +113,9 @@
               );
             }
           } else {
-            addLog(`[Undo] Successfully reverted edits via undo: "${title}"`);
+            addLog(
+              `[Undo] Successfully reverted edits via undo: "${title}" (revision ${info.latest}${info.oldestParent ? ", restored to revision " + info.oldestParent : ""})`,
+            );
             standardRevertSuccess = true;
             onReverted();
           }
@@ -140,7 +142,9 @@
 
         try {
           await apiRollback(title, targetVal, rbData);
-          addLog(`[Rollback] Successfully reverted: "${title}"`);
+          addLog(
+            `[Rollback] Successfully reverted: "${title}" (latest edit by "${targetVal}": revision ${info.latest})`,
+          );
           standardRevertSuccess = true;
           onReverted();
         } catch (e) {
