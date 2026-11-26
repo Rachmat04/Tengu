@@ -79,6 +79,13 @@
             }
           }
         }
+        {
+          const selEditedCount = Object.keys(config.selectedPageEdits).length;
+          const selCreatedCount = config.selectedCreations.length;
+          addLog(
+            `[Info] Custom selection: ${selEditedCount} edited page${selEditedCount !== 1 ? "s" : ""} and ${selCreatedCount} created page${selCreatedCount !== 1 ? "s" : ""} selected`,
+          );
+        }
         if (!Object.keys(pageEdits).length && !creation.length) {
           addLog(
             "[Info] Custom selection is active but no items were selected — no edits or pages will be processed.",

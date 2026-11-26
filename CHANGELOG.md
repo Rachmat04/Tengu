@@ -1,3 +1,19 @@
+## 2.278.0
+
+### Changed
+
+* Select specific edits/pages: extended the clearer logging and eligibility handling used by Delete pages and Delete revisions to **Roll back edits** and **Protect pages**. Selection logic in `Tengu-contribs.js` is reused; no new selection code was added.
+* `Tengu-contribs.js` now logs how many edited and created pages were selected before the run starts.
+* **Roll back edits**: logs a warning when no edited pages were selected, and when selected created pages are skipped because page creations cannot be rolled back. A result line now reports how many edited pages were reverted or undone and how many were not. The success colour is used only when every page was processed.
+* **Protect pages**: logs a warning when there is nothing to protect, and a result line with the protected and not-protected counts.
+* **Delete revisions**: when it runs together with Roll back edits, a page whose revert did not succeed now logs a skip warning instead of being ignored silently.
+* The confirmation dialogue now describes the scope of Roll back edits, Protect pages and Delete revisions correctly when a custom selection is active, instead of "within the selected time window".
+
+### Notes
+
+* Block, Unblock, Warn users, reports, Move pages, Fix redirects and Undelete pages do not use the selection and are unchanged.
+* Page mode is unchanged. The new checks run only in user mode with a custom selection, apart from the protect empty-set warning and the protect and rollback result lines, which also apply to fresh runs.
+
 ## 2.277.0
 
 ### Changed

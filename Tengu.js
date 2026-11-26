@@ -2,7 +2,7 @@
  * ============================================================================
  * Tengu — 天狗
  * All-in-one wiki moderation tool — Main script
- * Version 2.277.0
+ * Version 2.278.0
  * ============================================================================
  * PURPOSE:
  * An all-in-one moderation script for MediaWiki that streamlines user blocking,
@@ -1553,6 +1553,38 @@ $(function () {
             // array from rs so all reverted titles across runs are included.
             const rollbackNotifiedTitles = rs.rollbackNotifiedTitles;
 
+            const revertVerb =
+              config.rollbackMethod === "undo" ? "undone" : "reverted";
+
+            // Eligibility checks for a custom selection. Rollback acts on
+            // edited pages only; selected created pages are reported as
+            // skipped instead of being ignored silently.
+            if (
+              config.rollback &&
+              config.mode === "user" &&
+              config.customSelection &&
+              !rs.rollbackLoopDone &&
+              !isAborted
+            ) {
+              if (!Object.keys(pageEdits).length) {
+                addLog(
+                  "[Rollback] No edited pages to revert: none were selected under Edited pages",
+                  "warn",
+                );
+              }
+              const skippedCreated = config.selectedCreations.filter(
+                function (t) {
+                  return !Object.prototype.hasOwnProperty.call(pageEdits, t);
+                },
+              );
+              if (skippedCreated.length) {
+                addLog(
+                  `[Rollback] Skipped ${skippedCreated.length} selected created page${skippedCreated.length !== 1 ? "s" : ""}: page creations cannot be rolled back (use Delete pages instead)`,
+                  "warn",
+                );
+              }
+            }
+
             // Process rollbacks, undos and revision deletions sequentially with a throttling buffer delay
             for (const [title, info] of Object.entries(pageEdits)) {
               if (isAborted) break;
@@ -1592,6 +1624,11 @@ $(function () {
                 (standardRevertSuccess || mediainfoNeedsRevert)
               ) {
                 await hideRevisions(title, idlist);
+              } else if (config.rd && !isAborted) {
+                addLog(
+                  `[Revdel] Skipped "${title}": the revert was not performed, so its revisions were not hidden`,
+                  "warn",
+                );
               }
 
               rs.processedRollbackTitles.add(title);
@@ -1629,7 +1666,25 @@ $(function () {
                 );
               }
             }
-            if (!isAborted) rs.rollbackLoopDone = true;
+            if (!isAborted) {
+              const editedTitles = Object.keys(pageEdits);
+              if (
+                config.rollback &&
+                config.mode === "user" &&
+                editedTitles.length &&
+                !rs.rollbackLoopDone
+              ) {
+                const revertedCount = editedTitles.filter(function (t) {
+                  return rollbackNotifiedTitles.includes(t);
+                }).length;
+                const notRevertedCount = editedTitles.length - revertedCount;
+                addLog(
+                  `[Rollback] Finished: ${revertedCount} of ${editedTitles.length} edited page(s) ${revertVerb}, ${notRevertedCount} not ${revertVerb}`,
+                  notRevertedCount > 0 ? "warn" : false,
+                );
+              }
+              rs.rollbackLoopDone = true;
+            }
 
             // --- Rollback/undo notification ---
             // Posted once per run to the target user's talk page, listing every
@@ -1647,6 +1702,25 @@ $(function () {
 
             // On resume, reuse the notification queue from the previous run.
             const notifyQueue = rs.notifyQueue;
+
+            // Warn when protection is enabled but there is nothing to protect.
+            if (
+              config.protect &&
+              !rs.mainProtectLoopDone &&
+              !isAborted &&
+              pagesToProtect.size === 0 &&
+              pagesToProtectAfterDel.size === 0
+            ) {
+              addLog(
+                "[Protect] No pages to protect: no matching pages were found or selected" +
+                  (config.mode === "user" && config.massdel
+                    ? " (pages created by the target are deleted, not protected, when Delete pages is also enabled)"
+                    : ""),
+                "warn",
+              );
+            }
+            // Counts pages whose main protection request succeeded.
+            let protectedMain = 0;
 
             // Execute sequential page protections if enabled
             if (
@@ -1667,6 +1741,7 @@ $(function () {
                   };
                   await apiPost(protectData);
                   addLog(`[Protect] Protected page: "${title}"`);
+                  protectedMain++;
                   stats.protect++;
                   updateStatusDisplay();
                 } catch (e) {
@@ -1740,7 +1815,14 @@ $(function () {
                   setTimeout(resolve, THROTTLE_MS),
                 );
               }
-              if (!isAborted) rs.mainProtectLoopDone = true;
+              if (!isAborted) {
+                const notProtectedCount = pagesToProtect.size - protectedMain;
+                addLog(
+                  `[Protect] Finished: ${protectedMain} of ${pagesToProtect.size} page(s) protected, ${notProtectedCount} not protected`,
+                  notProtectedCount > 0 ? "warn" : false,
+                );
+                rs.mainProtectLoopDone = true;
+              }
             }
 
             // Dispatch protection notifications. If two or more protected pages resolve
@@ -8914,7 +8996,9 @@ $(function () {
               const scopeLines = [];
               if (config.rollback) {
                 scopeLines.push(
-                  "🔙 <b>Rollback</b> — will revert all edits by this user within the selected time window.",
+                  config.customSelection
+                    ? "🔙 <b>Rollback</b> — will revert this user's edits only on the <b>edited pages selected</b> in the picker. Selected created pages are not rolled back."
+                    : "🔙 <b>Rollback</b> — will revert all edits by this user within the selected time window.",
                 );
               }
               if (config.massdel) {
@@ -8926,7 +9010,14 @@ $(function () {
               }
               if (config.protect) {
                 scopeLines.push(
-                  "🛡️ <b>Page protection</b> — will protect <b>all pages edited or created</b> by this user within the selected time window, not a single page.",
+                  config.customSelection
+                    ? "🛡️ <b>Page protection</b> — will protect only the <b>pages selected</b> in the picker (edited pages, and created pages unless Delete pages is also enabled)."
+                    : "🛡️ <b>Page protection</b> — will protect <b>all pages edited or created</b> by this user within the selected time window, not a single page.",
+                );
+              }
+              if (config.rd && config.customSelection) {
+                scopeLines.push(
+                  "👁️ <b>Revision deletion</b> — will hide this user's revisions only on the <b>pages selected</b> in the picker.",
                 );
               }
               if (scopeLines.length) {
