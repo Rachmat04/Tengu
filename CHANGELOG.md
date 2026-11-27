@@ -1,3 +1,10 @@
+## 2.280.0
+
+### Changed
+
+* Increased the coloured left-border accent from 3px to 5px on the Multi-target card and on the grouped panels that use `.tng-recreation-group` (partial block settings, recreation protection, pending changes, and the Export edits and Select edits/pages filter groups). The grey and blue accent colours and their meaning are unchanged. Left padding was reduced by 2px so the content position is unchanged.
+* Replaced the pure white and cool grey light-mode surfaces with softer, warmer neutrals: `#fff` became `#fffefb` (inputs, selects, the combobox dropdown, and info entries), `#f8f9fa` became `#f6f4ef` (header, footer, grouped panels, log box, lists), and `#f0f2f5` and `#e6e8eb` became `#f1eee8` and `#e8e4dc` (section headers, rights panel, quiet button hover).
+
 ## 2.279.0
 
 ### Changed

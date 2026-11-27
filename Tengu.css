@@ -63,7 +63,7 @@
 /* --- Dialogue header --- */
 .tng-dialog-header {
   padding: 11px 16px;
-  background: #f8f9fa;
+  background: #f6f4ef;
   border-bottom: 1px solid #eaecf0;
   font-weight: 700;
   font-size: 1.05em;
@@ -104,7 +104,7 @@
 /* --- Dialogue footer --- */
 .tng-dialog-footer {
   padding: 10px 14px;
-  background: #f8f9fa;
+  background: #f6f4ef;
   border-top: 1px solid #eaecf0;
   display: flex;
   justify-content: flex-end;
@@ -159,7 +159,7 @@
 
 .tng-section-header {
   padding: 8px 12px;
-  background: #f0f2f5;
+  background: #f1eee8;
   border-bottom: 1px solid #eaecf0;
   display: flex;
   align-items: center;
@@ -169,7 +169,7 @@
   user-select: none;
 }
 .tng-section-header:hover {
-  background: #e6e8eb;
+  background: #e8e4dc;
 }
 
 /* --- Form rows --- */
@@ -204,13 +204,13 @@
   flex-direction: column;
   gap: 6px;
   border: 1px solid #a2a9b1;
-  border-left: 3px solid #a2a9b1;
+  border-left: 5px solid #a2a9b1;
   border-radius: 6px;
-  padding: 8px 10px;
+  padding: 8px 10px 8px 8px;
   margin-top: 6px;
   width: 100%;
   box-sizing: border-box;
-  background: #f8f9fa;
+  background: #f6f4ef;
   transition:
     border-color 0.25s ease,
     background-color 0.25s ease;
@@ -259,7 +259,7 @@
   border: 1px solid #a2a9b1;
   border-radius: 4px;
   font-size: 0.9em;
-  background: #fff;
+  background: #fffefb;
   color: #202122;
   font-family: inherit;
 }
@@ -368,7 +368,7 @@
   border-color: #a2a9b1;
 }
 .tng-btn-quiet:hover {
-  background: #f0f2f5;
+  background: #f1eee8;
 }
 .tng-btn-destructive {
   background: #b00020;
@@ -468,7 +468,7 @@
   border-color: #a5d6a7;
 }
 .tng-status-note-loading {
-  background: #f8f9fa;
+  background: #f6f4ef;
   color: #72777d;
   border-color: #eaecf0;
   font-style: italic;
@@ -483,7 +483,7 @@
   padding: 10px;
   border: 1px solid #a2a9b1;
   border-radius: 4px;
-  background: #f8f9fa;
+  background: #f6f4ef;
   color: #202122;
 }
 .tng-log-err {
@@ -508,7 +508,7 @@
   padding: 5px 10px;
   border: 1px solid #a2a9b1;
   border-radius: 6px;
-  background: #f0f2f5;
+  background: #f1eee8;
 }
 .tng-rights-title {
   font-size: 0.78em;
@@ -588,7 +588,7 @@
   padding: 8px 10px;
   border: 1px solid #eaecf0;
   border-radius: 4px;
-  background: #fff;
+  background: #fffefb;
   font-size: 0.87em;
   line-height: 1.6;
   display: flex;
@@ -623,7 +623,7 @@
 }
 .tng-user-rights-header {
   padding: 8px 12px;
-  background: #f0f2f5;
+  background: #f1eee8;
   border-bottom: 1px solid #eaecf0;
   font-weight: 700;
   font-size: 0.9em;
@@ -679,7 +679,7 @@
   border-color: #a8c4e8;
 }
 .tng-rights-badge-none {
-  background: #f0f2f5;
+  background: #f1eee8;
   color: #72777d;
   border-color: #c8ccd1;
   font-style: italic;
@@ -694,7 +694,7 @@
   color: #54595d;
   line-height: 1.55;
   padding: 4px 7px;
-  background: #f8f9fa;
+  background: #f6f4ef;
   border-radius: 3px;
   border: 1px solid #eaecf0;
   word-break: break-word;
@@ -1201,7 +1201,7 @@
   left: 0;
   right: 0;
   z-index: 20;
-  background: #fff;
+  background: #fffefb;
   border: 1px solid #a2a9b1;
   border-radius: 4px;
   box-shadow: 0 4px 14px rgba(0, 0, 0, 0.18);
@@ -1337,7 +1337,7 @@
   margin-top: 6px;
   padding-top: 8px;
   padding-bottom: 8px;
-  border-width: 1px 1px 1px 3px;
+  border-width: 1px 1px 1px 5px;
   border-left-color: #3366cc;
 }
 
@@ -1352,7 +1352,7 @@
 /* --- Confirmation dialogue target list --- */
 .tng-confirm-target-list {
   font-size: 1em;
-  background: #f8f9fa;
+  background: #f6f4ef;
   border: 1px solid #eaecf0;
   border-radius: 4px;
   padding: 6px 10px;
@@ -1521,11 +1521,11 @@
   flex-direction: column;
   width: 100%;
   box-sizing: border-box;
-  padding: 8px 10px;
+  padding: 8px 10px 8px 8px;
   border: 1px solid #a2a9b1;
-  border-left: 3px solid #a2a9b1;
+  border-left: 5px solid #a2a9b1;
   border-radius: 6px;
-  background: #f8f9fa;
+  background: #f6f4ef;
   transition:
     border-color 0.25s ease,
     background-color 0.25s ease;
